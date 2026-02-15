@@ -3,10 +3,13 @@ import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
 import VolumeControl from '@/components/VolumeControl';
 import SetlistManager from '@/components/SetlistManager';
-import { setMasterVolume, getAudioContext } from '@/lib/audio-engine';
+import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
+import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
+import { toast } from 'sonner';
 
 const STORAGE_KEY = 'drum-pads-worship-songs';
+const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
 
 function loadSongs(): SetlistSong[] {
   try {
@@ -19,6 +22,17 @@ function saveSongsToStorage(songs: SetlistSong[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
 }
 
+function loadCustomNames(): Record<string, string> {
+  try {
+    const data = localStorage.getItem(CUSTOM_NAMES_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch { return {}; }
+}
+
+function saveCustomNames(names: Record<string, string>) {
+  localStorage.setItem(CUSTOM_NAMES_KEY, JSON.stringify(names));
+}
+
 const Index = () => {
   const [masterVolume, setMasterVol] = useState(0.7);
   const [bpm, setBpm] = useState(120);
@@ -28,6 +42,7 @@ const Index = () => {
   const [songs, setSongs] = useState<SetlistSong[]>(loadSongs);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
   const [audioReady, setAudioReady] = useState(false);
+  const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
 
   // Init audio on first interaction
   const initAudio = useCallback(() => {
@@ -43,6 +58,24 @@ const Index = () => {
     return () => document.removeEventListener('pointerdown', handler);
   }, [initAudio]);
 
+  // Load custom sounds from IndexedDB on mount
+  useEffect(() => {
+    async function loadAll() {
+      const ids = await getAllCustomSoundIds();
+      for (const id of ids) {
+        const data = await getCustomSound(id);
+        if (data) {
+          try {
+            await loadCustomBuffer(id, data.buffer);
+          } catch (e) {
+            console.warn('Failed to load custom sound:', id, e);
+          }
+        }
+      }
+    }
+    loadAll();
+  }, []);
+
   useEffect(() => {
     setMasterVolume(masterVolume);
   }, [masterVolume]);
@@ -55,6 +88,32 @@ const Index = () => {
       return next;
     });
   }, []);
+
+  // Custom sound import
+  const handleImportSound = useCallback(async (padId: string, file: File) => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      await loadCustomBuffer(padId, arrayBuffer);
+      await saveCustomSound(padId, arrayBuffer, file.name);
+      const updated = { ...customSounds, [padId]: file.name };
+      setCustomSounds(updated);
+      saveCustomNames(updated);
+      toast.success(`Som "${file.name}" importado!`);
+    } catch (e) {
+      console.error('Error importing sound:', e);
+      toast.error('Erro ao importar som. Verifique o formato do arquivo.');
+    }
+  }, [customSounds]);
+
+  const handleRemoveCustomSound = useCallback(async (padId: string) => {
+    removeCustomBuffer(padId);
+    await deleteCustomSound(padId);
+    const updated = { ...customSounds };
+    delete updated[padId];
+    setCustomSounds(updated);
+    saveCustomNames(updated);
+    toast.success('Som customizado removido');
+  }, [customSounds]);
 
   // Setlist management
   const handleSaveSong = useCallback((name: string) => {
@@ -103,13 +162,21 @@ const Index = () => {
         />
       </header>
 
+      {/* Info bar */}
+      <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50">
+        Segure um pad para importar som personalizado (MP3/WAV)
+      </div>
+
       {/* Pad Grid - Main area */}
       <main className="flex-1 flex items-center justify-center overflow-hidden">
         <PadGrid
           pads={defaultPads}
           padVolumes={padVolumes}
           activeLoops={activeLoops}
+          customSounds={customSounds}
           onToggleLoop={toggleLoop}
+          onImportSound={handleImportSound}
+          onRemoveCustomSound={handleRemoveCustomSound}
         />
       </main>
 
