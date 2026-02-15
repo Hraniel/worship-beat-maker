@@ -48,7 +48,7 @@ serve(async (req) => {
     const email = userData.user.email;
     logStep("User authenticated", { email });
 
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
 
     const customers = await stripe.customers.list({ email, limit: 1 });
     if (customers.data.length === 0) {
@@ -73,8 +73,9 @@ serve(async (req) => {
     }
 
     const sub = subscriptions.data[0];
-    const productId = sub.items.data[0].price.product as string;
-    const subscriptionEnd = new Date(sub.current_period_end * 1000).toISOString();
+    const productId = sub.items.data[0]?.price?.product as string;
+    const periodEnd = sub.current_period_end;
+    const subscriptionEnd = periodEnd ? new Date(periodEnd * 1000).toISOString() : null;
     logStep("Active subscription found", { productId, subscriptionEnd });
 
     return new Response(JSON.stringify({ subscribed: true, product_id: productId, subscription_end: subscriptionEnd }), {
