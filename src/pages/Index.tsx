@@ -24,7 +24,7 @@ function loadCustomNames(): Record<string, string> {
   try {
     const data = localStorage.getItem(CUSTOM_NAMES_KEY);
     return data ? JSON.parse(data) : {};
-  } catch { return {}; }
+  } catch {return {};}
 }
 
 function saveCustomNames(names: Record<string, string>) {
@@ -57,16 +57,16 @@ const Index = () => {
   const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
   const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
   const [padNames, setPadNames] = useState<Record<string, string>>(() => {
-    try { const d = localStorage.getItem('drum-pads-pad-names'); return d ? JSON.parse(d) : {}; } catch { return {}; }
+    try {const d = localStorage.getItem('drum-pads-pad-names');return d ? JSON.parse(d) : {};} catch {return {};}
   });
   const [focusMode, setFocusMode] = useState(() => localStorage.getItem(FOCUS_MODE_KEY) === 'true');
   const [padPans, setPadPans] = useState<Record<string, number>>(() => {
-    try { const d = localStorage.getItem('drum-pads-pad-pans'); return d ? JSON.parse(d) : {}; } catch { return {}; }
+    try {const d = localStorage.getItem('drum-pads-pad-pans');return d ? JSON.parse(d) : {};} catch {return {};}
   });
   const [metronomePan, setMetronomePanState] = useState(0);
 
   const changePadSize = useCallback((dir: 1 | -1) => {
-    setPadSize(prev => {
+    setPadSize((prev) => {
       const idx = PAD_SIZES.indexOf(prev);
       const next = PAD_SIZES[Math.max(0, Math.min(PAD_SIZES.length - 1, idx + dir))];
       localStorage.setItem(PAD_SIZE_KEY, next);
@@ -75,7 +75,7 @@ const Index = () => {
   }, []);
 
   const toggleFocusMode = useCallback(() => {
-    setFocusMode(prev => {
+    setFocusMode((prev) => {
       const next = !prev;
       localStorage.setItem(FOCUS_MODE_KEY, String(next));
       return next;
@@ -138,10 +138,10 @@ const Index = () => {
   }, [masterVolume]);
 
   const toggleLoop = useCallback((padId: string) => {
-    const pad = defaultPads.find(p => p.id === padId);
+    const pad = defaultPads.find((p) => p.id === padId);
     if (!pad) return;
 
-    setActiveLoops(prev => {
+    setActiveLoops((prev) => {
       const next = new Set(prev);
       if (next.has(padId)) {
         next.delete(padId);
@@ -182,12 +182,12 @@ const Index = () => {
   }, [customSounds]);
 
   const handlePadVolumeChange = useCallback((padId: string, vol: number) => {
-    setPadVolumes(prev => ({ ...prev, [padId]: vol }));
+    setPadVolumes((prev) => ({ ...prev, [padId]: vol }));
     updateLoopVolume(padId, vol);
   }, []);
 
   const handleEffectsChange = useCallback((padId: string, fx: PadEffects) => {
-    setPadEffects(prev => {
+    setPadEffects((prev) => {
       const next = { ...prev, [padId]: fx };
       saveAllEffects(next);
       applyEffects(padId, fx);
@@ -196,16 +196,16 @@ const Index = () => {
   }, []);
 
   const handleRenamePad = useCallback((padId: string, name: string) => {
-    setPadNames(prev => {
+    setPadNames((prev) => {
       const next = { ...prev };
-      if (name) next[padId] = name; else delete next[padId];
+      if (name) next[padId] = name;else delete next[padId];
       localStorage.setItem('drum-pads-pad-names', JSON.stringify(next));
       return next;
     });
   }, []);
 
   const handlePadPanChange = useCallback((padId: string, pan: number) => {
-    setPadPans(prev => {
+    setPadPans((prev) => {
       const next = { ...prev, [padId]: pan };
       localStorage.setItem('drum-pads-pad-pans', JSON.stringify(next));
       return next;
@@ -220,16 +220,16 @@ const Index = () => {
 
   // Setlist management — now backed by database
   const songs = setlists.flatMap((sl) =>
-    sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, id: sl.id, _setlistId: sl.id })) : [{ 
-      id: sl.id, name: sl.name, bpm: 120, timeSignature: '4/4', 
-      pads: defaultPads, padVolumes: {}, _setlistId: sl.id 
-    }]
+  sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, id: sl.id, _setlistId: sl.id })) : [{
+    id: sl.id, name: sl.name, bpm: 120, timeSignature: '4/4',
+    pads: defaultPads, padVolumes: {}, _setlistId: sl.id
+  }]
   );
 
   // Auto-save current song before switching
   const autoSaveCurrentSong = useCallback(async () => {
     if (!currentSongId) return;
-    const setlist = setlists.find(s => s.id === currentSongId);
+    const setlist = setlists.find((s) => s.id === currentSongId);
     if (!setlist) return;
     const updatedSong: SetlistSong = {
       id: setlist.songs[0]?.id || currentSongId,
@@ -237,7 +237,7 @@ const Index = () => {
       bpm,
       timeSignature,
       pads: defaultPads,
-      padVolumes: { ...padVolumes },
+      padVolumes: { ...padVolumes }
     };
     await updateSetlist(currentSongId, [updatedSong]);
   }, [currentSongId, bpm, timeSignature, padVolumes, setlists, updateSetlist]);
@@ -249,7 +249,7 @@ const Index = () => {
       bpm,
       timeSignature,
       pads: defaultPads,
-      padVolumes: { ...padVolumes },
+      padVolumes: { ...padVolumes }
     };
     const result = await createSetlist(name, [song]);
     if (result) setCurrentSongId(result.id);
@@ -274,13 +274,13 @@ const Index = () => {
     if (currentSongId === id) setCurrentSongId(null);
   }, [deleteSetlist, currentSongId]);
 
-  const currentSongName = currentSongId ? setlists.find(s => s.id === currentSongId)?.name || null : null;
+  const currentSongName = currentSongId ? setlists.find((s) => s.id === currentSongId)?.name || null : null;
 
   return (
     <div className="flex flex-col h-[100dvh] bg-background overflow-hidden" onPointerDown={initAudio}>
       {/* Header - hidden in focus mode */}
-      {!focusMode && (
-        <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/50 backdrop-blur shrink-0">
+      {!focusMode &&
+      <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/50 backdrop-blur shrink-0">
           <div className="flex items-center gap-2 min-w-0 shrink-0">
             <span className="text-lg font-bold text-primary">🥁</span>
             <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Drum Pads Worship</h1>
@@ -289,74 +289,74 @@ const Index = () => {
 
           {/* Current song name - centered */}
           <div className="flex-1 min-w-0 mx-2 text-center">
-            {currentSongName && (
-              <span className="text-xs font-medium text-primary truncate block">
+            {currentSongName &&
+          <span className="text-xs font-medium text-primary truncate block">
                 ♪ {currentSongName}
               </span>
-            )}
+          }
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Pad size controls */}
             <div className="flex items-center gap-0.5 mr-1 border border-border rounded-md">
               <button
-                onClick={() => changePadSize(-1)}
-                disabled={padSize === 'sm'}
-                className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                title="Diminuir pads"
-              >
+              onClick={() => changePadSize(-1)}
+              disabled={padSize === 'sm'}
+              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+              title="Diminuir pads">
+
                 <Minus className="h-3 w-3" />
               </button>
               <span className="text-[10px] text-muted-foreground w-5 text-center uppercase tabular-nums">{padSize}</span>
               <button
-                onClick={() => changePadSize(1)}
-                disabled={padSize === 'lg'}
-                className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                title="Aumentar pads"
-              >
+              onClick={() => changePadSize(1)}
+              disabled={padSize === 'lg'}
+              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+              title="Aumentar pads">
+
                 <Plus className="h-3 w-3" />
               </button>
             </div>
 
             <SetlistManager
-              songs={songs}
-              currentSongId={currentSongId}
-              onSaveSong={handleSaveSong}
-              onLoadSong={handleLoadSong}
-              onDeleteSong={handleDeleteSong}
-              onReorder={reorderSetlists}
-            />
+            songs={songs}
+            currentSongId={currentSongId}
+            onSaveSong={handleSaveSong}
+            onLoadSong={handleLoadSong}
+            onDeleteSong={handleDeleteSong}
+            onReorder={reorderSetlists} />
+
             <button
-              onClick={() => navigate('/pricing')}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
-              title="Planos"
-            >
+            onClick={() => navigate('/pricing')}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+            title="Planos">
+
               <Crown className="h-4 w-4" />
             </button>
             <button
-              onClick={toggleFocusMode}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Modo foco"
-            >
+            onClick={toggleFocusMode}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Modo foco">
+
               <Maximize className="h-4 w-4" />
             </button>
             <button
-              onClick={signOut}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Sair"
-            >
+            onClick={signOut}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Sair">
+
               <LogOut className="h-4 w-4" />
             </button>
           </div>
         </header>
-      )}
+      }
 
       {/* Info bar - hidden in focus mode */}
-      {!focusMode && (
-        <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">
-          Segure um pad para ajustar volume e importar som · Toque nos loops (RCK/BLD) para ativar padrões rítmicos
-        </div>
-      )}
+      {!focusMode &&
+      <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">Segure um pad para ajustar volume e importar som.
+
+      </div>
+      }
 
       {/* Pad Grid - Main area */}
       <main className="flex-1 flex items-center justify-center overflow-hidden">
@@ -375,66 +375,66 @@ const Index = () => {
           onEffectsChange={handleEffectsChange}
           onPadPanChange={handlePadPanChange}
           padNames={padNames}
-          onRenamePad={handleRenamePad}
-        />
+          onRenamePad={handleRenamePad} />
+
       </main>
 
       {/* Bottom controls */}
       <footer className="shrink-0 border-t border-border bg-card/50 backdrop-blur p-2 sm:p-3 space-y-2">
         <div className="max-w-[600px] mx-auto space-y-2">
           {/* Focus mode: show exit button + song name */}
-          {focusMode && (
-            <div className="flex items-center justify-between">
-              {currentSongName && (
-                <span className="text-xs font-medium text-primary truncate">♪ {currentSongName}</span>
-              )}
+          {focusMode &&
+          <div className="flex items-center justify-between">
+              {currentSongName &&
+            <span className="text-xs font-medium text-primary truncate">♪ {currentSongName}</span>
+            }
               <button
-                onClick={toggleFocusMode}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-auto"
-                title="Sair do modo foco"
-              >
+              onClick={toggleFocusMode}
+              className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-auto"
+              title="Sair do modo foco">
+
                 <Minimize className="h-3 w-3" />
                 Sair do foco
               </button>
             </div>
-          )}
+          }
 
           <VolumeControl
             volume={masterVolume}
             onVolumeChange={setMasterVol}
-            label="Volume Master"
-          />
+            label="Volume Master" />
+
 
           {/* Metronome */}
           <div className="bg-card rounded-lg border border-border overflow-hidden">
             <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
-              onClick={() => setMetronomeOpen(prev => !prev)}
-            >
+            onClick={() => setMetronomeOpen((prev) => !prev)}>
+
               <div className="flex items-center gap-2">
                 <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
                 <span className="text-xs text-muted-foreground">BPM</span>
                 <span className="text-xs text-muted-foreground">· {timeSignature}</span>
               </div>
               <div className="flex items-center gap-1">
-                {!metronomeOpen && (
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setMetronomeIsPlaying(prev => !prev); }}
-                    className={`p-1.5 rounded-md transition-colors ${
-                      metronomeIsPlaying 
-                        ? 'text-destructive hover:bg-destructive/10' 
-                        : 'text-primary hover:bg-primary/10'
-                    }`}
-                    title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
-                  >
+                {!metronomeOpen &&
+                <button
+                  type="button"
+                  onClick={(e) => {e.stopPropagation();setMetronomeIsPlaying((prev) => !prev);}}
+                  className={`p-1.5 rounded-md transition-colors ${
+                  metronomeIsPlaying ?
+                  'text-destructive hover:bg-destructive/10' :
+                  'text-primary hover:bg-primary/10'}`
+                  }
+                  title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}>
+
                     {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </button>
-                )}
-                {metronomeOpen ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                )}
+                }
+                {metronomeOpen ?
+                <ChevronDown className="h-4 w-4 text-muted-foreground" /> :
+
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                }
               </div>
             </div>
             <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
@@ -444,19 +444,19 @@ const Index = () => {
                 timeSignature={timeSignature}
                 onTimeSignatureChange={setTimeSignature}
                 isPlaying={metronomeIsPlaying}
-                onTogglePlay={() => setMetronomeIsPlaying(prev => !prev)}
-              />
+                onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+
               <PanControl
                 label="Pan Metrônomo"
                 pan={metronomePan}
-                onPanChange={handleMetronomePanChange}
-              />
+                onPanChange={handleMetronomePanChange} />
+
             </div>
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>);
+
 };
 
 export default Index;
