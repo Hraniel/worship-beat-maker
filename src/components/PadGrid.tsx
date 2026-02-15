@@ -11,11 +11,13 @@ interface PadGridProps {
   customSounds: Record<string, string>;
   padSize: 'sm' | 'md' | 'lg';
   padEffects: Record<string, PadEffects>;
+  padNames: Record<string, string>;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onRemoveCustomSound: (padId: string) => void;
   onPadVolumeChange: (padId: string, volume: number) => void;
   onEffectsChange: (padId: string, fx: PadEffects) => void;
+  onRenamePad: (padId: string, name: string) => void;
 }
 
 const sizeMaxWidths = {
@@ -25,8 +27,8 @@ const sizeMaxWidths = {
 };
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padEffects,
-  onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange
+  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames,
+  onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onRenamePad
 }) => {
   const { tierConfig, tier } = useSubscription();
   const maxPads = tierConfig.maxPads;
@@ -56,6 +58,8 @@ const PadGrid: React.FC<PadGridProps> = ({
             onRemoveCustomSound={onRemoveCustomSound}
             onVolumeChange={onPadVolumeChange}
             onEffectsChange={onEffectsChange}
+            customName={padNames[pad.id]}
+            onRename={onRenamePad}
           />
         );
       })}

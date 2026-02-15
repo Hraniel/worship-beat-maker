@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound } from '@/lib/audio-engine';
-import { Upload, X, Volume2, Lock, Repeat, AudioWaveform } from 'lucide-react';
+import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
@@ -23,17 +23,21 @@ interface DrumPadProps {
   onRemoveCustomSound?: (padId: string) => void;
   onVolumeChange?: (padId: string, volume: number) => void;
   onEffectsChange?: (padId: string, fx: PadEffects) => void;
+  customName?: string;
+  onRename?: (padId: string, name: string) => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
-  isMasterTier, effects = DEFAULT_EFFECTS,
-  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange
+  isMasterTier, effects = DEFAULT_EFFECTS, customName,
+  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onRename
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showBpmGuide, setShowBpmGuide] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState('');
   const timeoutRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressRef = useRef<number | null>(null);
@@ -139,7 +143,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
               className={`${sizes.label} font-bold tracking-wider opacity-90`}
               style={{ color: `hsl(var(${pad.colorVar}))` }}
             >
-              {pad.shortName}
+              {customName || pad.shortName}
             </span>
             <span className={`${sizes.name} text-muted-foreground mt-0.5 max-w-full truncate px-1`}>
               {hasCustomSound ? (customFileName || 'Custom') : pad.name}
@@ -202,6 +206,46 @@ const DrumPad: React.FC<DrumPadProps> = ({
             </div>
 
             <div className="h-px bg-border" />
+
+            {/* Rename inline */}
+            {isRenaming ? (
+              <div className="flex items-center gap-1 px-2">
+                <input
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value.slice(0, 6))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const val = renameValue.trim();
+                      if (val) onRename?.(pad.id, val);
+                      else onRename?.(pad.id, '');
+                      setIsRenaming(false);
+                    }
+                    if (e.key === 'Escape') setIsRenaming(false);
+                  }}
+                  placeholder={pad.shortName}
+                  maxLength={6}
+                  className="flex-1 h-8 px-2 text-sm rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                <button
+                  className="px-2 py-1 text-xs text-primary hover:bg-muted rounded"
+                  onClick={() => {
+                    const val = renameValue.trim();
+                    if (val) onRename?.(pad.id, val);
+                    else onRename?.(pad.id, '');
+                    setIsRenaming(false);
+                  }}
+                >OK</button>
+              </div>
+            ) : (
+              <button
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
+                onClick={() => { setRenameValue(customName || pad.shortName); setIsRenaming(true); }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Renomear
+              </button>
+            )}
 
             <button
               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
