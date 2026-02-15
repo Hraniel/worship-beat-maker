@@ -3,6 +3,7 @@ import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
 import VolumeControl from '@/components/VolumeControl';
 import SetlistManager from '@/components/SetlistManager';
+import SpotifySearch from '@/components/SpotifySearch';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer, setMasterPan, setMetronomePan, setPadPan } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
@@ -268,6 +269,52 @@ const Index = () => {
     setPadPan(padId, pan);
   }, []);
 
+  const handleApplySpotifyConfig = useCallback((config: any) => {
+    // Apply BPM
+    if (config.bpm) setBpm(Math.round(config.bpm));
+    // Apply time signature
+    if (config.timeSignature) setTimeSignature(config.timeSignature);
+    // Apply pad configs
+    if (config.pads) {
+      const newVolumes: Record<string, number> = { ...padVolumes };
+      const newPans: Record<string, number> = { ...padPans };
+      const newEffects: Record<string, PadEffects> = { ...padEffects };
+
+      for (const [padId, cfg] of Object.entries(config.pads) as [string, any][]) {
+        if (cfg.volume != null) newVolumes[padId] = cfg.volume;
+        if (cfg.pan != null) {
+          newPans[padId] = cfg.pan;
+          setPadPan(padId, cfg.pan);
+        }
+        newEffects[padId] = {
+          eqLow: cfg.eqLow ?? 0,
+          eqMid: cfg.eqMid ?? 0,
+          eqHigh: cfg.eqHigh ?? 0,
+          reverb: cfg.reverb ?? 0,
+          delay: cfg.delay ?? 0,
+          delayTime: cfg.delayTime ?? 0.3,
+        };
+      }
+
+      setPadVolumes(newVolumes);
+      localStorage.setItem('drum-pads-volumes', JSON.stringify(newVolumes));
+      setPadPans(newPans);
+      localStorage.setItem('drum-pads-pad-pans', JSON.stringify(newPans));
+      setPadEffects(newEffects);
+      saveAllEffects(newEffects);
+    }
+
+    // Auto-start recommended loop
+    if (config.recommendedLoop) {
+      const loopPad = defaultPads.find(p => p.id === config.recommendedLoop);
+      if (loopPad && !activeLoops.has(loopPad.id)) {
+        const vol = config.pads?.[loopPad.id]?.volume ?? 0.7;
+        setActiveLoops(prev => new Set(prev).add(loopPad.id));
+        addLoop(loopPad, vol);
+      }
+    }
+  }, [padVolumes, padPans, padEffects, activeLoops]);
+
   const handleMetronomePanChange = useCallback((pan: number) => {
     setMetronomePanState(pan);
     setMetronomePan(pan);
@@ -397,6 +444,8 @@ const Index = () => {
             onDeleteSong={handleDeleteSong}
             onReorder={reorderSetlists} />
             </div>
+
+            <SpotifySearch onApplyConfig={handleApplySpotifyConfig} />
 
             <button
             onClick={toggleFocusMode}
