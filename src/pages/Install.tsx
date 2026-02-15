@@ -89,8 +89,12 @@ const Install: React.FC = () => {
       ) : (
         <div className="flex flex-col items-center gap-4 bg-card p-6 rounded-xl border border-border max-w-sm">
           <p className="text-foreground font-medium">Para instalar:</p>
-          <p className="text-sm text-muted-foreground">
-            Abra o menu do navegador (⋮) e toque em <strong>"Instalar app"</strong> ou <strong>"Adicionar à tela inicial"</strong>.
+          <ol className="text-sm text-muted-foreground text-left space-y-2">
+            <li>1. Abra o menu do navegador (⋮)</li>
+            <li>2. Toque em <strong>"Instalar app"</strong> ou <strong>"Adicionar à tela inicial"</strong></li>
+          </ol>
+          <p className="text-xs text-muted-foreground mt-2">
+            No <strong>Google Chrome</strong>, você também pode tocar em <strong>"Compartilhar"</strong> e depois em <strong>"Adicionar à tela inicial"</strong>.
           </p>
           <Button variant="outline" onClick={() => navigate('/')} className="mt-2">
             Voltar ao App
