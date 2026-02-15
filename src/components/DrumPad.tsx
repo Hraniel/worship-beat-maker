@@ -78,15 +78,16 @@ const DrumPad: React.FC<DrumPadProps> = ({
       setShowMenu(true);
       longPressRef.current = null;
     }, 500);
-    trigger();
   }, [trigger, isLocked]);
 
   const handlePointerUp = useCallback(() => {
     if (longPressRef.current) {
       clearTimeout(longPressRef.current);
       longPressRef.current = null;
+      // Only trigger sound on quick tap (not long press)
+      trigger();
     }
-  }, []);
+  }, [trigger]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
