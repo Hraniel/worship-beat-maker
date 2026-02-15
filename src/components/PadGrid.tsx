@@ -1,7 +1,6 @@
 import React from 'react';
 import DrumPad from './DrumPad';
 import type { PadSound } from '@/lib/sounds';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 import { type PadEffects } from '@/lib/audio-effects';
 
 interface PadGridProps {
@@ -14,6 +13,7 @@ interface PadGridProps {
   padNames: Record<string, string>;
   padPans: Record<string, number>;
   editMode?: boolean;
+  isMasterTier?: boolean;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onRemoveCustomSound: (padId: string) => void;
@@ -30,11 +30,9 @@ const sizeMaxWidths = {
 };
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, editMode,
+  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, editMode, isMasterTier: isMaster = false,
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad
 }) => {
-  const { tier } = useSubscription();
-  const isMaster = tier === 'master';
 
   // Show all 8 pads — no pads are hidden
   const visiblePads = pads.slice(0, 8);
