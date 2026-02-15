@@ -10,8 +10,8 @@ export const TIERS = {
   },
   pro: {
     name: 'Pro',
-    price_id: 'price_1T15vdRxuHlcX9jON3PmEf2V',
-    product_id: 'prod_Tz43Hy4fOJbwgw',
+    price_id: 'price_1T19YHRsrW8NGuEjGhc8E2Xb',
+    product_id: 'prod_Tz7nOBkWdUxb9Q',
     maxPads: 16,
     maxImports: 999,
     individualVolume: true,
@@ -20,8 +20,8 @@ export const TIERS = {
   },
   master: {
     name: 'Master',
-    price_id: 'price_1T15w1RxuHlcX9jOJMtCdJvO',
-    product_id: 'prod_Tz44FUgl3v2ZCJ',
+    price_id: 'price_1T19YXRsrW8NGuEjDybPdEic',
+    product_id: 'prod_Tz7oenwSZLQFdS',
     maxPads: 16,
     maxImports: 999,
     individualVolume: true,
