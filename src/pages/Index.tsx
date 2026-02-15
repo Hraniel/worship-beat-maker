@@ -437,23 +437,21 @@ const Index = () => {
                 )}
               </div>
             </div>
-            {metronomeOpen && (
-              <div className="px-0 pb-0">
-                <Metronome
-                  bpm={bpm}
-                  onBpmChange={setBpm}
-                  timeSignature={timeSignature}
-                  onTimeSignatureChange={setTimeSignature}
-                  isPlaying={metronomeIsPlaying}
-                  onTogglePlay={() => setMetronomeIsPlaying(prev => !prev)}
-                />
-                <PanControl
-                  label="Pan Metrônomo"
-                  pan={metronomePan}
-                  onPanChange={handleMetronomePanChange}
-                />
-              </div>
-            )}
+            <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
+              <Metronome
+                bpm={bpm}
+                onBpmChange={setBpm}
+                timeSignature={timeSignature}
+                onTimeSignatureChange={setTimeSignature}
+                isPlaying={metronomeIsPlaying}
+                onTogglePlay={() => setMetronomeIsPlaying(prev => !prev)}
+              />
+              <PanControl
+                label="Pan Metrônomo"
+                pan={metronomePan}
+                onPanChange={handleMetronomePanChange}
+              />
+            </div>
           </div>
         </div>
       </footer>
