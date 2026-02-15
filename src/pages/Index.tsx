@@ -10,7 +10,7 @@ import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -333,10 +333,15 @@ const Index = () => {
             <TutorialGuide />
 
             <button
+            onClick={() => navigate('/install')}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+            title="Instalar app">
+              <Download className="h-4 w-4" />
+            </button>
+            <button
             onClick={() => navigate('/pricing')}
             className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
             title="Planos">
-
               <Crown className="h-4 w-4" />
             </button>
             <button
