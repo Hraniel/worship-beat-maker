@@ -2,6 +2,7 @@ import React from 'react';
 import DrumPad from './DrumPad';
 import type { PadSound } from '@/lib/sounds';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { type PadEffects } from '@/lib/audio-effects';
 
 interface PadGridProps {
   pads: PadSound[];
@@ -9,10 +10,12 @@ interface PadGridProps {
   activeLoops: Set<string>;
   customSounds: Record<string, string>;
   padSize: 'sm' | 'md' | 'lg';
+  padEffects: Record<string, PadEffects>;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onRemoveCustomSound: (padId: string) => void;
   onPadVolumeChange: (padId: string, volume: number) => void;
+  onEffectsChange: (padId: string, fx: PadEffects) => void;
 }
 
 const sizeMaxWidths = {
@@ -22,11 +25,12 @@ const sizeMaxWidths = {
 };
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize,
-  onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange
+  pads, padVolumes, activeLoops, customSounds, padSize, padEffects,
+  onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange
 }) => {
-  const { tierConfig } = useSubscription();
+  const { tierConfig, tier } = useSubscription();
   const maxPads = tierConfig.maxPads;
+  const isMaster = tier === 'master';
 
   // Show only first 8 pads in 4x2 layout
   const visiblePads = pads.slice(0, 8);
@@ -45,10 +49,13 @@ const PadGrid: React.FC<PadGridProps> = ({
             customFileName={customSounds[pad.id]}
             isLocked={isLocked}
             padSize={padSize}
+            isMasterTier={isMaster}
+            effects={padEffects[pad.id]}
             onToggleLoop={pad.isLoop ? () => onToggleLoop(pad.id) : undefined}
             onImportSound={onImportSound}
             onRemoveCustomSound={onRemoveCustomSound}
             onVolumeChange={onPadVolumeChange}
+            onEffectsChange={onEffectsChange}
           />
         );
       })}
