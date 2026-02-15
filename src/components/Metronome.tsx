@@ -1,8 +1,8 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Play, Pause, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { playMetronomeClick } from '@/lib/audio-engine';
+import { enableMetronome, disableMetronome, onMetronomeBeat } from '@/lib/loop-engine';
 
 interface MetronomeProps {
   bpm: number;
@@ -20,56 +20,30 @@ const Metronome: React.FC<MetronomeProps> = ({
   bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat
 }) => {
   const [currentBeat, setCurrentBeat] = React.useState(0);
-  const intervalRef = useRef<number | null>(null);
-  const beatRef = useRef(0);
-  const isPlayingRef = useRef(isPlaying);
-
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
 
+  // Wire metronome beat callback
   useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
-
-  const stopInterval = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setCurrentBeat(0);
-    beatRef.current = 0;
-  }, []);
-
-  const startInterval = useCallback(() => {
-    stopInterval();
-    const interval = (60 / bpm) * 1000;
-    beatRef.current = 0;
-
-    const tick = () => {
-      const beat = beatRef.current;
-      playMetronomeClick(beat === 0, 0.3);
+    const handler = (beat: number) => {
       setCurrentBeat(beat);
       onBeat?.(beat);
-      beatRef.current = (beat + 1) % beatsPerMeasure;
     };
+    onMetronomeBeat(handler);
+    return () => onMetronomeBeat(null);
+  }, [onBeat]);
 
-    tick();
-    intervalRef.current = window.setInterval(tick, interval);
-  }, [bpm, beatsPerMeasure, stopInterval, onBeat]);
-
-  // Start/stop based on isPlaying prop
+  // Start/stop metronome via unified engine
   useEffect(() => {
     if (isPlaying) {
-      startInterval();
+      enableMetronome(0.3);
     } else {
-      stopInterval();
+      disableMetronome();
+      setCurrentBeat(0);
     }
-    return stopInterval;
-  }, [isPlaying, startInterval, stopInterval]);
-
-  // Restart if bpm/timeSignature changes while playing
-  useEffect(() => {
-    if (isPlaying) startInterval();
-  }, [bpm, timeSignature]); // eslint-disable-line react-hooks/exhaustive-deps
+    return () => {
+      disableMetronome();
+    };
+  }, [isPlaying]);
 
   return (
     <div className="flex flex-col items-center gap-3 px-4 py-3">
