@@ -246,7 +246,8 @@ const Index = () => {
   const songs = setlists.flatMap((sl) =>
   sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, id: sl.id, _setlistId: sl.id })) : [{
     id: sl.id, name: sl.name, bpm: 120, timeSignature: '4/4',
-    pads: defaultPads, padVolumes: {}, _setlistId: sl.id
+    pads: defaultPads, padVolumes: {}, padNames: {}, padPans: {}, padEffects: {}, customSounds: {},
+    _setlistId: sl.id
   }]
   );
 
@@ -261,10 +262,14 @@ const Index = () => {
       bpm,
       timeSignature,
       pads: defaultPads,
-      padVolumes: { ...padVolumes }
+      padVolumes: { ...padVolumes },
+      padNames: { ...padNames },
+      padPans: { ...padPans },
+      padEffects: { ...padEffects },
+      customSounds: { ...customSounds },
     };
     await updateSetlist(currentSongId, [updatedSong]);
-  }, [currentSongId, bpm, timeSignature, padVolumes, setlists, updateSetlist]);
+  }, [currentSongId, bpm, timeSignature, padVolumes, padNames, padPans, padEffects, customSounds, setlists, updateSetlist]);
 
   const handleSaveSong = useCallback(async (name: string) => {
     const song: SetlistSong = {
@@ -273,11 +278,15 @@ const Index = () => {
       bpm,
       timeSignature,
       pads: defaultPads,
-      padVolumes: { ...padVolumes }
+      padVolumes: { ...padVolumes },
+      padNames: { ...padNames },
+      padPans: { ...padPans },
+      padEffects: { ...padEffects },
+      customSounds: { ...customSounds },
     };
     const result = await createSetlist(name, [song]);
     if (result) setCurrentSongId(result.id);
-  }, [bpm, timeSignature, padVolumes, createSetlist]);
+  }, [bpm, timeSignature, padVolumes, padNames, padPans, padEffects, customSounds, createSetlist]);
 
   const handleLoadSong = useCallback(async (song: SetlistSong) => {
     // Auto-save current song first
@@ -291,10 +300,14 @@ const Index = () => {
     setCurrentSongId((song as any)._setlistId || song.id);
     stopAllLoops();
     setActiveLoops(new Set());
-    // Reset per-pad customizations so they don't bleed between songs
-    setPadNames({});
-    setPadPans({});
-    setPadEffects({});
+    // Restore per-pad customizations from the song
+    setPadNames(song.padNames || {});
+    setPadPans(song.padPans || {});
+    setPadEffects(song.padEffects || {});
+    setCustomSounds(song.customSounds || {});
+    // Apply restored pan and effects to audio engine
+    Object.entries(song.padPans || {}).forEach(([id, pan]) => setPadPan(id, pan));
+    Object.entries(song.padEffects || {}).forEach(([id, fx]) => applyEffects(id, fx));
   }, [autoSaveCurrentSong]);
 
   const handleDeleteSong = useCallback(async (id: string) => {

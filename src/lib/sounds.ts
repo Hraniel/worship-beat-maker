@@ -65,6 +65,10 @@ export interface SetlistSong {
   timeSignature: string;
   pads: PadSound[];
   padVolumes: Record<string, number>;
+  padNames?: Record<string, string>;
+  padPans?: Record<string, number>;
+  padEffects?: Record<string, any>;
+  customSounds?: Record<string, string>;
 }
 
 export interface Setlist {
