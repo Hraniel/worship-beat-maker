@@ -219,7 +219,7 @@ const Index = () => {
 
   // Setlist management — now backed by database
   const songs = setlists.flatMap((sl) =>
-    sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, _setlistId: sl.id })) : [{ 
+    sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, id: sl.id, _setlistId: sl.id })) : [{ 
       id: sl.id, name: sl.name, bpm: 120, timeSignature: '4/4', 
       pads: defaultPads, padVolumes: {}, _setlistId: sl.id 
     }]
