@@ -10,12 +10,13 @@ import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import PanControl from '@/components/PanControl';
 import TutorialGuide from '@/components/TutorialGuide';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
 const PAD_SIZE_KEY = 'drum-pads-pad-size';
@@ -68,6 +69,19 @@ const Index = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const startTutorialRef = useRef<(() => void) | null>(null);
+
+  // PWA update detection
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisteredSW(swUrl, r) {
+      // Check for updates every 60 seconds
+      if (r) {
+        setInterval(() => { r.update(); }, 60 * 1000);
+      }
+    },
+  });
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -381,14 +395,22 @@ const Index = () => {
             <div className="relative">
               <button
                 onClick={() => setMobileMenuOpen((p) => !p)}
-                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors relative"
                 title="Menu">
                 <Menu className="h-4 w-4" />
+                {needRefresh && (
+                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
+                )}
               </button>
               {mobileMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[180px]">
+                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]" style={{ backgroundColor: 'hsl(var(--card))' }}>
+                    {needRefresh && (
+                      <button onClick={() => { updateServiceWorker(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-primary font-medium hover:bg-muted transition-colors">
+                        <Bell className="h-4 w-4 text-primary animate-bounce" /> Nova versão disponível!
+                      </button>
+                    )}
                     <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                     </button>
