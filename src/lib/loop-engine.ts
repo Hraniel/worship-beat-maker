@@ -1,6 +1,7 @@
-// Loop engine: schedules loop patterns synchronized to BPM using Web Audio API scheduling
+// Unified clock engine: single timing source for loops AND metronome
+// Both sync to the same 16th-note subdivision grid
 
-import { getAudioContext, playSound } from './audio-engine';
+import { getAudioContext, playSound, playMetronomeClick } from './audio-engine';
 import type { PadSound } from './sounds';
 
 const SUBDIVISIONS_PER_BAR = 16; // 16th-note grid
@@ -19,12 +20,17 @@ let onSubdivisionCallback: ((sub: number) => void) | null = null;
 let currentBpm = 120;
 let beatsPerBar = 4;
 
+// Metronome state (driven by the same clock)
+let metronomeEnabled = false;
+let metronomeVolume = 0.3;
+let onMetronomeBeatCallback: ((beat: number) => void) | null = null;
+
 export function setLoopBpm(bpm: number) {
   currentBpm = bpm;
   // If running, restart with new timing
   if (isRunning) {
-    stopLoopEngine();
-    startLoopEngine();
+    stopEngine();
+    startEngine();
   }
 }
 
@@ -36,17 +42,48 @@ export function setOnSubdivision(cb: ((sub: number) => void) | null) {
   onSubdivisionCallback = cb;
 }
 
+// --- Metronome integration ---
+
+export function enableMetronome(volume: number = 0.3) {
+  metronomeEnabled = true;
+  metronomeVolume = volume;
+  if (!isRunning) {
+    startEngine();
+  }
+}
+
+export function disableMetronome() {
+  metronomeEnabled = false;
+  if (isRunning && activeLoops.size === 0) {
+    stopEngine();
+  }
+}
+
+export function setMetronomeVolume(vol: number) {
+  metronomeVolume = vol;
+}
+
+export function onMetronomeBeat(cb: ((beat: number) => void) | null) {
+  onMetronomeBeatCallback = cb;
+}
+
+export function isMetronomeActive() {
+  return metronomeEnabled;
+}
+
+// --- Loop management ---
+
 export function addLoop(pad: PadSound, volume: number) {
   activeLoops.set(pad.id, { pad, volume });
-  if (!isRunning && activeLoops.size > 0) {
-    startLoopEngine();
+  if (!isRunning) {
+    startEngine();
   }
 }
 
 export function removeLoop(padId: string) {
   activeLoops.delete(padId);
-  if (isRunning && activeLoops.size === 0) {
-    stopLoopEngine();
+  if (isRunning && activeLoops.size === 0 && !metronomeEnabled) {
+    stopEngine();
   }
 }
 
@@ -65,8 +102,10 @@ export function getActiveLoopIds(): string[] {
   return Array.from(activeLoops.keys());
 }
 
+// --- Unified tick ---
+
 function tick() {
-  // Fire sounds for this subdivision
+  // Fire loop sounds for this subdivision
   for (const [, loop] of activeLoops) {
     if (!loop.pad.loopSteps) continue;
     for (const [sub, soundId] of loop.pad.loopSteps) {
@@ -76,14 +115,24 @@ function tick() {
     }
   }
 
+  // Fire metronome click on quarter-note subdivisions
+  if (metronomeEnabled) {
+    // Quarter notes fall on subdivisions: 0, 4, 8, 12 (in 4/4)
+    const subsPerBeat = SUBDIVISIONS_PER_BAR / beatsPerBar;
+    if (currentSubdivision % subsPerBeat === 0) {
+      const beatIndex = currentSubdivision / subsPerBeat;
+      playMetronomeClick(beatIndex === 0, metronomeVolume);
+      onMetronomeBeatCallback?.(beatIndex);
+    }
+  }
+
   onSubdivisionCallback?.(currentSubdivision);
 
   // Advance
-  const subsForBar = SUBDIVISIONS_PER_BAR; // always 16 subdivisions regardless of time sig
-  currentSubdivision = (currentSubdivision + 1) % subsForBar;
+  currentSubdivision = (currentSubdivision + 1) % SUBDIVISIONS_PER_BAR;
 }
 
-function startLoopEngine() {
+function startEngine() {
   if (isRunning) return;
   isRunning = true;
   currentSubdivision = 0;
@@ -96,12 +145,11 @@ function startLoopEngine() {
     timerRef = window.setTimeout(scheduleNext, intervalMs);
   };
 
-  // Use AudioContext for initial timing reference
   getAudioContext();
   scheduleNext();
 }
 
-function stopLoopEngine() {
+function stopEngine() {
   isRunning = false;
   if (timerRef !== null) {
     clearTimeout(timerRef);
@@ -113,5 +161,7 @@ function stopLoopEngine() {
 
 export function stopAllLoops() {
   activeLoops.clear();
-  stopLoopEngine();
+  if (!metronomeEnabled) {
+    stopEngine();
+  }
 }
