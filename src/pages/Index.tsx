@@ -7,6 +7,8 @@ import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer 
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
+import { useAuth } from '@/contexts/AuthContext';
+import { LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'drum-pads-worship-songs';
@@ -35,6 +37,7 @@ function saveCustomNames(names: Record<string, string>) {
 }
 
 const Index = () => {
+  const { signOut } = useAuth();
   const [masterVolume, setMasterVol] = useState(0.7);
   const [bpm, setBpm] = useState(120);
   const [timeSignature, setTimeSignature] = useState('4/4');
@@ -191,13 +194,22 @@ const Index = () => {
           <span className="text-lg font-bold text-primary">🥁</span>
           <h1 className="text-sm font-bold text-foreground tracking-tight">Drum Pads Worship</h1>
         </div>
-        <SetlistManager
-          songs={songs}
-          currentSongId={currentSongId}
-          onSaveSong={handleSaveSong}
-          onLoadSong={handleLoadSong}
-          onDeleteSong={handleDeleteSong}
-        />
+        <div className="flex items-center gap-2">
+          <SetlistManager
+            songs={songs}
+            currentSongId={currentSongId}
+            onSaveSong={handleSaveSong}
+            onLoadSong={handleLoadSong}
+            onDeleteSong={handleDeleteSong}
+          />
+          <button
+            onClick={signOut}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       {/* Info bar */}
