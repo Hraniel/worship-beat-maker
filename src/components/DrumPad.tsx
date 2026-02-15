@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound } from '@/lib/audio-engine';
-import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil } from 'lucide-react';
+import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +22,7 @@ interface DrumPadProps {
   isMasterTier?: boolean;
   effects?: PadEffects;
   pan?: number;
+  editMode?: boolean;
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
   onRemoveCustomSound?: (padId: string) => void;
@@ -34,7 +35,7 @@ interface DrumPadProps {
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
-  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName,
+  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode,
   onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename
 }) => {
   const [isActive, setIsActive] = useState(false);
@@ -80,6 +81,11 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
+    if (editMode) {
+      // In edit mode, open context menu directly, no sound
+      setShowMenu(true);
+      return;
+    }
     // Play sound IMMEDIATELY on touch for minimum latency
     trigger();
     if (!isLocked) {
@@ -88,7 +94,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
         longPressRef.current = null;
       }, 500);
     }
-  }, [trigger, isLocked]);
+  }, [trigger, isLocked, editMode]);
 
   const handlePointerUp = useCallback(() => {
     if (longPressRef.current) {
@@ -161,6 +167,9 @@ const DrumPad: React.FC<DrumPadProps> = ({
             : 'none',
         }}
       >
+        {editMode && (
+          <Settings2 className="absolute top-1 left-1 h-3 w-3 text-primary/70" />
+        )}
         {isLocked && (
           <Lock className={`absolute top-1 right-1 h-3 w-3 text-muted-foreground/60`} />
         )}
