@@ -416,12 +416,14 @@ const Index = () => {
             </div>
           }
 
+          {!focusMode &&
           <div data-tutorial="volume-master">
           <VolumeControl
             volume={masterVolume}
             onVolumeChange={setMasterVol}
             label="Volume Master" />
           </div>
+          }
 
           {/* Metronome */}
           <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
