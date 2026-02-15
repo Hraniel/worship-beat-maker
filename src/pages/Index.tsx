@@ -10,7 +10,7 @@ import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,7 @@ const Index = () => {
   const [metronomePan, setMetronomePanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const startTutorialRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -368,53 +369,45 @@ const Index = () => {
             onReorder={reorderSetlists} />
             </div>
 
-            <TutorialGuide />
+            <button
+            onClick={toggleFocusMode}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Modo foco"
+            data-tutorial="focus-mode">
+              <Maximize className="h-4 w-4" />
+            </button>
 
-            {/* Secondary actions - visible on desktop, in menu on mobile */}
-            <div className="hidden sm:flex items-center gap-1">
-              <button onClick={handleInstallClick} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors" title="Instalar app">
-                <Download className="h-4 w-4" />
-              </button>
-              <button onClick={() => navigate('/pricing')} className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors" title="Planos">
-                <Crown className="h-4 w-4" />
-              </button>
-              <button onClick={toggleFocusMode} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Modo foco" data-tutorial="focus-mode">
-                <Maximize className="h-4 w-4" />
-              </button>
-              <button onClick={signOut} className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" title="Sair">
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-
-            {/* Mobile overflow menu */}
-            <div className="relative sm:hidden">
+            {/* Unified menu */}
+            <div className="relative">
               <button
                 onClick={() => setMobileMenuOpen((p) => !p)}
                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Mais opções">
-                <MoreVertical className="h-4 w-4" />
+                title="Menu">
+                <Menu className="h-4 w-4" />
               </button>
               {mobileMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMobileMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px]">
-                    <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
-                      <Download className="h-4 w-4" /> Instalar App
+                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[180px]">
+                    <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                     </button>
-                    <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
-                      <Crown className="h-4 w-4" /> Planos
+                    <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <Crown className="h-4 w-4 text-muted-foreground" /> Planos
                     </button>
-                    <button onClick={() => { toggleFocusMode(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors">
-                      <Maximize className="h-4 w-4" /> Modo Foco
+                    <button onClick={() => { if (startTutorialRef.current) startTutorialRef.current(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" /> Guia Prático
                     </button>
                     <div className="border-t border-border my-1" />
-                    <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-muted transition-colors">
+                    <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors">
                       <LogOut className="h-4 w-4" /> Sair
                     </button>
                   </div>
                 </>
               )}
             </div>
+
+            <TutorialGuide externalTrigger onStartRef={(fn) => { startTutorialRef.current = fn; }} />
           </div>
         </header>
       }
