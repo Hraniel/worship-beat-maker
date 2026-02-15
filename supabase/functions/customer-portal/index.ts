@@ -20,19 +20,17 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !userData.user?.email) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
 
-    const email = claimsData.claims.email as string;
-    if (!email) throw new Error("Email not available");
-
+    const email = userData.user.email;
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
 
     const customers = await stripe.customers.list({ email, limit: 1 });
