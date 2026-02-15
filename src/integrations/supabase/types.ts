@@ -41,6 +41,7 @@ export type Database = {
           id: string
           name: string
           songs: Json
+          sort_order: number
           updated_at: string
           user_id: string
         }
@@ -49,6 +50,7 @@ export type Database = {
           id?: string
           name: string
           songs?: Json
+          sort_order?: number
           updated_at?: string
           user_id: string
         }
@@ -57,6 +59,7 @@ export type Database = {
           id?: string
           name?: string
           songs?: Json
+          sort_order?: number
           updated_at?: string
           user_id?: string
         }

@@ -42,7 +42,7 @@ function loadPadSize(): PadSize {
 
 const Index = () => {
   const { signOut } = useAuth();
-  const { setlists, createSetlist, updateSetlist, deleteSetlist } = useSetlists();
+  const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
   const [bpm, setBpm] = useState(120);
@@ -309,6 +309,7 @@ const Index = () => {
               onSaveSong={handleSaveSong}
               onLoadSong={handleLoadSong}
               onDeleteSong={handleDeleteSong}
+              onReorder={reorderSetlists}
             />
             <button
               onClick={() => navigate('/pricing')}
