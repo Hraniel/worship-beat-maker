@@ -341,7 +341,7 @@ export function hasCustomBuffer(padId: string): boolean {
   return customBuffers.has(padId);
 }
 
-function playCustomBuffer(padId: string, volume = 0.7) {
+function playCustomBuffer(padId: string, volume = 0.7, destination?: AudioNode) {
   const buffer = customBuffers.get(padId);
   if (!buffer) return;
   const ctx = getAudioContext();
@@ -350,15 +350,21 @@ function playCustomBuffer(padId: string, volume = 0.7) {
   const gain = ctx.createGain();
   gain.gain.value = volume;
   source.connect(gain);
-  gain.connect(getMasterGain());
+  gain.connect(destination || getMasterGain());
   source.start(0);
 }
 
-export function playSound(id: string, volume = 0.7) {
+/**
+ * Play a sound, optionally routing through a custom destination node (e.g. effects chain).
+ */
+export function playSound(id: string, volume = 0.7, destination?: AudioNode) {
   if (customBuffers.has(id)) {
-    playCustomBuffer(id, volume);
+    playCustomBuffer(id, volume, destination);
     return;
   }
+  // For synth sounds with a destination, we need to reroute — but synth functions
+  // connect directly to master. For simplicity, synth sounds always go through master.
+  // Effects chain will only work on custom buffers for now, synth sounds pass through.
   const fn = soundMap[id];
   if (fn) fn(volume);
 }

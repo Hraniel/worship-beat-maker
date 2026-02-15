@@ -7,6 +7,7 @@ import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer 
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
+import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
 import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus } from 'lucide-react';
@@ -51,6 +52,7 @@ const Index = () => {
   const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
   const [metronomeOpen, setMetronomeOpen] = useState(true);
   const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
+  const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
 
   const changePadSize = useCallback((dir: 1 | -1) => {
     setPadSize(prev => {
@@ -165,6 +167,15 @@ const Index = () => {
     updateLoopVolume(padId, vol);
   }, []);
 
+  const handleEffectsChange = useCallback((padId: string, fx: PadEffects) => {
+    setPadEffects(prev => {
+      const next = { ...prev, [padId]: fx };
+      saveAllEffects(next);
+      applyEffects(padId, fx);
+      return next;
+    });
+  }, []);
+
   // Setlist management — now backed by database
   const songs = setlists.flatMap((sl) =>
     sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, _setlistId: sl.id })) : [{ 
@@ -268,10 +279,12 @@ const Index = () => {
           activeLoops={activeLoops}
           customSounds={customSounds}
           padSize={padSize}
+          padEffects={padEffects}
           onToggleLoop={toggleLoop}
           onImportSound={handleImportSound}
           onRemoveCustomSound={handleRemoveCustomSound}
           onPadVolumeChange={handlePadVolumeChange}
+          onEffectsChange={handleEffectsChange}
         />
       </main>
 

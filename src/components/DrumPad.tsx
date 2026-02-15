@@ -1,10 +1,12 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound } from '@/lib/audio-engine';
-import { Upload, X, Volume2, Lock, Repeat } from 'lucide-react';
+import { Upload, X, Volume2, Lock, Repeat, AudioWaveform } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
 import BpmGuideDialog from './BpmGuideDialog';
+import PadEffectsPanel from './PadEffectsPanel';
+import { type PadEffects, DEFAULT_EFFECTS, getEffectInput, applyEffects, hasActiveEffects } from '@/lib/audio-effects';
 
 interface DrumPadProps {
   pad: PadSound;
@@ -14,19 +16,24 @@ interface DrumPadProps {
   hasCustomSound?: boolean;
   customFileName?: string;
   padSize?: 'sm' | 'md' | 'lg';
+  isMasterTier?: boolean;
+  effects?: PadEffects;
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
   onRemoveCustomSound?: (padId: string) => void;
   onVolumeChange?: (padId: string, volume: number) => void;
+  onEffectsChange?: (padId: string, fx: PadEffects) => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
-  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange
+  isMasterTier, effects = DEFAULT_EFFECTS,
+  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showBpmGuide, setShowBpmGuide] = useState(false);
+  const [showEffects, setShowEffects] = useState(false);
   const timeoutRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressRef = useRef<number | null>(null);
@@ -41,11 +48,18 @@ const DrumPad: React.FC<DrumPadProps> = ({
       onToggleLoop();
       return;
     }
-    playSound(pad.id, volume);
+    // Route through effects chain if Master tier has active effects
+    if (isMasterTier && hasActiveEffects(effects)) {
+      applyEffects(pad.id, effects);
+      const dest = getEffectInput(pad.id);
+      playSound(pad.id, volume, dest);
+    } else {
+      playSound(pad.id, volume);
+    }
     setIsActive(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = window.setTimeout(() => setIsActive(false), 120);
-  }, [pad, volume, onToggleLoop, isLocked, navigate]);
+  }, [pad, volume, onToggleLoop, isLocked, navigate, isMasterTier, effects]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -163,11 +177,11 @@ const DrumPad: React.FC<DrumPadProps> = ({
       {showMenu && !isLocked && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
-          <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg shadow-2xl p-3 min-w-[200px] space-y-2">
+          <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg shadow-2xl p-3 min-w-[240px] max-w-[300px] max-h-[80vh] overflow-y-auto space-y-2">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-foreground">{pad.name}</span>
               <button
-                onClick={() => setShowMenu(false)}
+                onClick={() => { setShowMenu(false); setShowEffects(false); }}
                 className="p-0.5 rounded hover:bg-muted transition-colors"
               >
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
@@ -193,6 +207,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
               onClick={() => {
                 setShowMenu(false);
+                setShowEffects(false);
                 setShowBpmGuide(true);
               }}
             >
@@ -205,11 +220,37 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 onClick={() => {
                   onRemoveCustomSound?.(pad.id);
                   setShowMenu(false);
+                  setShowEffects(false);
                 }}
               >
                 <X className="h-3.5 w-3.5" />
                 Remover custom
               </button>
+            )}
+
+            {/* Effects toggle - Master tier only */}
+            {isMasterTier && (
+              <>
+                <div className="h-px bg-border" />
+                <button
+                  className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                    showEffects ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setShowEffects(prev => !prev)}
+                >
+                  <AudioWaveform className="h-3.5 w-3.5" />
+                  Efeitos
+                  {hasActiveEffects(effects) && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                  )}
+                </button>
+                {showEffects && (
+                  <PadEffectsPanel
+                    effects={effects}
+                    onChange={(fx) => onEffectsChange?.(pad.id, fx)}
+                  />
+                )}
+              </>
             )}
           </div>
         </>
