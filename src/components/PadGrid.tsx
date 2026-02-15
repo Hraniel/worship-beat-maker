@@ -32,41 +32,37 @@ const PadGrid: React.FC<PadGridProps> = ({
   pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans,
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad
 }) => {
-  const { tierConfig, tier } = useSubscription();
-  const maxPads = tierConfig.maxPads;
+  const { tier } = useSubscription();
   const isMaster = tier === 'master';
 
-  // Show only first 8 pads in 4x2 layout
+  // Show all 8 pads — no pads are hidden
   const visiblePads = pads.slice(0, 8);
 
   return (
     <div className={`grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
-      {visiblePads.map((pad, index) => {
-        const isLocked = index >= maxPads;
-        return (
-          <DrumPad
-            key={pad.id}
-            pad={pad}
-            volume={padVolumes[pad.id] ?? 0.7}
-            isLooping={activeLoops.has(pad.id)}
-            hasCustomSound={!!customSounds[pad.id]}
-            customFileName={customSounds[pad.id]}
-            isLocked={isLocked}
-            padSize={padSize}
-            isMasterTier={isMaster}
-            effects={padEffects[pad.id]}
-            pan={padPans[pad.id] ?? 0}
-            onToggleLoop={pad.isLoop ? () => onToggleLoop(pad.id) : undefined}
-            onImportSound={onImportSound}
-            onRemoveCustomSound={onRemoveCustomSound}
-            onVolumeChange={onPadVolumeChange}
-            onEffectsChange={onEffectsChange}
-            onPanChange={onPadPanChange}
-            customName={padNames[pad.id]}
-            onRename={onRenamePad}
-          />
-        );
-      })}
+      {visiblePads.map((pad) => (
+        <DrumPad
+          key={pad.id}
+          pad={pad}
+          volume={padVolumes[pad.id] ?? 0.7}
+          isLooping={activeLoops.has(pad.id)}
+          hasCustomSound={!!customSounds[pad.id]}
+          customFileName={customSounds[pad.id]}
+          isLocked={false}
+          padSize={padSize}
+          isMasterTier={isMaster}
+          effects={padEffects[pad.id]}
+          pan={padPans[pad.id] ?? 0}
+          onToggleLoop={pad.isLoop ? () => onToggleLoop(pad.id) : undefined}
+          onImportSound={onImportSound}
+          onRemoveCustomSound={onRemoveCustomSound}
+          onVolumeChange={onPadVolumeChange}
+          onEffectsChange={onEffectsChange}
+          onPanChange={onPadPanChange}
+          customName={padNames[pad.id]}
+          onRename={onRenamePad}
+        />
+      ))}
     </div>
   );
 };

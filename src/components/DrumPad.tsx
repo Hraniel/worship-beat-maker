@@ -8,6 +8,8 @@ import BpmGuideDialog from './BpmGuideDialog';
 import PadEffectsPanel from './PadEffectsPanel';
 import PanControl from './PanControl';
 import { type PadEffects, DEFAULT_EFFECTS, getEffectInput, applyEffects, hasActiveEffects } from '@/lib/audio-effects';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { toast } from 'sonner';
 
 interface DrumPadProps {
   pad: PadSound;
@@ -45,18 +47,26 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressRef = useRef<number | null>(null);
   const navigate = useNavigate();
+  const { tier, tierConfig } = useSubscription();
+
+  const isPro = tier === 'pro' || tier === 'master';
+  const isMaster = tier === 'master';
+
+  const goToPricing = useCallback((feature: string) => {
+    toast('🔒 Recurso disponível nos planos pagos', { description: `Desbloqueie ${feature} assinando um plano.` });
+    navigate('/pricing');
+  }, [navigate]);
 
   const trigger = useCallback(() => {
     if (isLocked) {
-      navigate('/pricing');
+      goToPricing('este pad');
       return;
     }
     if (pad.isLoop && onToggleLoop) {
       onToggleLoop();
       return;
     }
-    // Route through effects chain if Master tier has active effects
-    if (isMasterTier && hasActiveEffects(effects)) {
+    if (isMaster && hasActiveEffects(effects)) {
       applyEffects(pad.id, effects);
       const dest = getEffectInput(pad.id);
       playSound(pad.id, volume, dest);
@@ -66,7 +76,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
     setIsActive(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = window.setTimeout(() => setIsActive(false), 120);
-  }, [pad, volume, onToggleLoop, isLocked, navigate, isMasterTier, effects]);
+  }, [pad, volume, onToggleLoop, isLocked, goToPricing, isMaster, effects]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
@@ -84,7 +94,6 @@ const DrumPad: React.FC<DrumPadProps> = ({
     if (longPressRef.current) {
       clearTimeout(longPressRef.current);
       longPressRef.current = null;
-      // Only trigger sound on quick tap (not long press)
       trigger();
     }
   }, [trigger]);
@@ -107,6 +116,29 @@ const DrumPad: React.FC<DrumPadProps> = ({
   };
   const sizes = textSizes[padSize];
 
+  // Locked feature row component
+  const LockedRow = ({ label, feature }: { label: string; feature: string }) => (
+    <button
+      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
+      onClick={() => goToPricing(feature)}
+    >
+      <Lock className="h-3.5 w-3.5" />
+      {label}
+      <span className="ml-auto text-[10px] text-primary font-medium">PRO</span>
+    </button>
+  );
+
+  const LockedMasterRow = ({ label, feature }: { label: string; feature: string }) => (
+    <button
+      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
+      onClick={() => goToPricing(feature)}
+    >
+      <Lock className="h-3.5 w-3.5" />
+      {label}
+      <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>
+    </button>
+  );
+
   return (
     <div className="relative">
       <button
@@ -119,18 +151,11 @@ const DrumPad: React.FC<DrumPadProps> = ({
           aspect-square w-full touch-none
           ${isActive && !isLocked ? 'animate-pad-pulse' : ''}
           ${isLooping ? 'animate-loop-border' : ''}
-          ${isLocked ? 'opacity-40 grayscale' : ''}
         `}
         style={{
-          backgroundColor: isLocked
-            ? 'hsl(var(--muted) / 0.3)'
-            : `hsl(var(${pad.colorVar}) / ${isActive ? 0.6 : isLooping ? 0.35 : 0.2})`,
-          borderColor: isLocked
-            ? 'hsl(var(--border))'
-            : `hsl(var(${pad.colorVar}) / ${isActive ? 0.9 : isLooping ? 0.7 : 0.3})`,
-          boxShadow: isLocked
-            ? 'none'
-            : isActive
+          backgroundColor: `hsl(var(${pad.colorVar}) / ${isActive ? 0.6 : isLooping ? 0.35 : 0.2})`,
+          borderColor: `hsl(var(${pad.colorVar}) / ${isActive ? 0.9 : isLooping ? 0.7 : 0.3})`,
+          boxShadow: isActive
             ? `0 0 20px hsl(var(${pad.colorVar}) / 0.4), inset 0 0 15px hsl(var(${pad.colorVar}) / 0.2)`
             : isLooping
             ? `0 0 12px hsl(var(${pad.colorVar}) / 0.25)`
@@ -138,19 +163,17 @@ const DrumPad: React.FC<DrumPadProps> = ({
         }}
       >
         {isLocked && (
-          <Lock className={`absolute ${sizes.lock} text-muted-foreground`} />
+          <Lock className={`absolute top-1 right-1 h-3 w-3 text-muted-foreground/60`} />
         )}
 
-        {!isLocked && (
-          <span
-            className={`${sizes.label} font-bold tracking-wider opacity-90 max-w-full truncate px-1 text-center`}
-            style={{ color: `hsl(var(${pad.colorVar}))` }}
-          >
-            {customName || pad.name}
-          </span>
-        )}
+        <span
+          className={`${sizes.label} font-bold tracking-wider opacity-90 max-w-full truncate px-1 text-center`}
+          style={{ color: `hsl(var(${pad.colorVar}))` }}
+        >
+          {customName || pad.name}
+        </span>
 
-        {pad.isLoop && !isLocked && (
+        {pad.isLoop && (
           <div className="absolute top-1 right-1 flex items-center gap-0.5">
             <Repeat
               className={sizes.loop}
@@ -171,13 +194,13 @@ const DrumPad: React.FC<DrumPadProps> = ({
           </div>
         )}
 
-        {hasCustomSound && !isLocked && (
+        {hasCustomSound && (
           <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-primary" />
         )}
       </button>
 
-      {/* Context menu — rendered as fixed overlay to avoid z-index issues */}
-      {showMenu && !isLocked && (
+      {/* Context menu */}
+      {showMenu && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
           <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg shadow-2xl p-3 min-w-[240px] max-w-[300px] max-h-[80vh] overflow-y-auto space-y-2">
@@ -191,29 +214,39 @@ const DrumPad: React.FC<DrumPadProps> = ({
               </button>
             </div>
 
-            <div className="flex items-center gap-2 px-1 py-1">
-              <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <Slider
-                value={[volume * 100]}
-                onValueChange={([v]) => onVolumeChange?.(pad.id, v / 100)}
-                min={0}
-                max={100}
-                step={1}
-                className="flex-1"
-              />
-              <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{volumePercent}%</span>
-            </div>
+            {/* Volume - Pro feature */}
+            {isPro ? (
+              <div className="flex items-center gap-2 px-1 py-1">
+                <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Slider
+                  value={[volume * 100]}
+                  onValueChange={([v]) => onVolumeChange?.(pad.id, v / 100)}
+                  min={0}
+                  max={100}
+                  step={1}
+                  className="flex-1"
+                />
+                <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{volumePercent}%</span>
+              </div>
+            ) : (
+              <LockedRow label="Volume individual" feature="volume individual" />
+            )}
 
-            <PanControl
-              label="Pan"
-              pan={pan}
-              onPanChange={(p) => onPanChange?.(pad.id, p)}
-              compact
-            />
+            {/* Pan - Pro feature */}
+            {isPro ? (
+              <PanControl
+                label="Pan"
+                pan={pan}
+                onPanChange={(p) => onPanChange?.(pad.id, p)}
+                compact
+              />
+            ) : (
+              <LockedRow label="Pan (L/R)" feature="controle de panorâmica" />
+            )}
 
             <div className="h-px bg-border" />
 
-            {/* Rename inline */}
+            {/* Rename - always available */}
             {isRenaming ? (
               <div className="flex items-center gap-1 px-2">
                 <input
@@ -253,17 +286,23 @@ const DrumPad: React.FC<DrumPadProps> = ({
               </button>
             )}
 
-            <button
-              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
-              onClick={() => {
-                setShowMenu(false);
-                setShowEffects(false);
-                setShowBpmGuide(true);
-              }}
-            >
-              <Upload className="h-3.5 w-3.5" />
-              Importar som
-            </button>
+            {/* Import sound - Pro feature (limited on free) */}
+            {isPro ? (
+              <button
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
+                onClick={() => {
+                  setShowMenu(false);
+                  setShowEffects(false);
+                  setShowBpmGuide(true);
+                }}
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Importar som
+              </button>
+            ) : (
+              <LockedRow label="Importar som ilimitado" feature="importação de sons" />
+            )}
+
             {hasCustomSound && (
               <button
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-muted rounded-md transition-colors"
@@ -278,10 +317,10 @@ const DrumPad: React.FC<DrumPadProps> = ({
               </button>
             )}
 
-            {/* Effects toggle - Master tier only */}
-            {isMasterTier && (
+            {/* Effects - Master tier */}
+            <div className="h-px bg-border" />
+            {isMaster ? (
               <>
-                <div className="h-px bg-border" />
                 <button
                   className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
                     showEffects ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
@@ -301,6 +340,8 @@ const DrumPad: React.FC<DrumPadProps> = ({
                   />
                 )}
               </>
+            ) : (
+              <LockedMasterRow label="Efeitos de áudio" feature="efeitos de áudio" />
             )}
           </div>
         </>
