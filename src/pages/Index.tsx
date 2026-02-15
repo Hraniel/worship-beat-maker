@@ -467,6 +467,7 @@ const Index = () => {
         <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
         <PadGrid
           isMasterTier={tier === 'master'}
+          tier={tier}
           pads={defaultPads}
           padVolumes={padVolumes}
           activeLoops={activeLoops}

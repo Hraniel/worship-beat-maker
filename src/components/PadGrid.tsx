@@ -2,6 +2,7 @@ import React from 'react';
 import DrumPad from './DrumPad';
 import type { PadSound } from '@/lib/sounds';
 import { type PadEffects } from '@/lib/audio-effects';
+import { TIERS, type TierKey } from '@/lib/tiers';
 
 interface PadGridProps {
   pads: PadSound[];
@@ -14,6 +15,7 @@ interface PadGridProps {
   padPans: Record<string, number>;
   editMode?: boolean;
   isMasterTier?: boolean;
+  tier?: TierKey;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onRemoveCustomSound: (padId: string) => void;
@@ -30,16 +32,17 @@ const sizeMaxWidths = {
 };
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, editMode, isMasterTier: isMaster = false,
+  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, editMode, isMasterTier: isMaster = false, tier = 'free',
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad
 }) => {
+  const maxPads = TIERS[tier].maxPads;
 
   // Show all 8 pads — no pads are hidden
   const visiblePads = pads.slice(0, 8);
 
   return (
     <div className={`grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
-      {visiblePads.map((pad) => (
+      {visiblePads.map((pad, index) => (
         <DrumPad
           key={pad.id}
           pad={pad}
@@ -47,7 +50,7 @@ const PadGrid: React.FC<PadGridProps> = ({
           isLooping={activeLoops.has(pad.id)}
           hasCustomSound={!!customSounds[pad.id]}
           customFileName={customSounds[pad.id]}
-          isLocked={false}
+          isLocked={index >= maxPads}
           padSize={padSize}
           isMasterTier={isMaster}
           effects={padEffects[pad.id]}
