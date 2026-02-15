@@ -67,7 +67,7 @@ const Metronome: React.FC<MetronomeProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-3 px-4 py-3 bg-card rounded-lg border border-border">
+    <div className="flex flex-col items-center gap-3 px-4 py-3">
       <div className="flex items-center gap-2 w-full">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onBpmChange(Math.max(40, bpm - 1))}>
           <Minus className="h-3 w-3" />

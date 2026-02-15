@@ -9,11 +9,13 @@ import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundId
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
+const PAD_SIZE_KEY = 'drum-pads-pad-size';
 
 function loadCustomNames(): Record<string, string> {
   try {
@@ -24,6 +26,15 @@ function loadCustomNames(): Record<string, string> {
 
 function saveCustomNames(names: Record<string, string>) {
   localStorage.setItem(CUSTOM_NAMES_KEY, JSON.stringify(names));
+}
+
+type PadSize = 'sm' | 'md' | 'lg';
+const PAD_SIZES: PadSize[] = ['sm', 'md', 'lg'];
+
+function loadPadSize(): PadSize {
+  const v = localStorage.getItem(PAD_SIZE_KEY);
+  if (v === 'sm' || v === 'md' || v === 'lg') return v;
+  return 'md';
 }
 
 const Index = () => {
@@ -38,6 +49,17 @@ const Index = () => {
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
   const [audioReady, setAudioReady] = useState(false);
   const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
+  const [metronomeOpen, setMetronomeOpen] = useState(true);
+  const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
+
+  const changePadSize = useCallback((dir: 1 | -1) => {
+    setPadSize(prev => {
+      const idx = PAD_SIZES.indexOf(prev);
+      const next = PAD_SIZES[Math.max(0, Math.min(PAD_SIZES.length - 1, idx + dir))];
+      localStorage.setItem(PAD_SIZE_KEY, next);
+      return next;
+    });
+  }, []);
 
   // Keep loop engine in sync with BPM/time signature
   const bpmRef = useRef(bpm);
@@ -140,7 +162,6 @@ const Index = () => {
 
   const handlePadVolumeChange = useCallback((padId: string, vol: number) => {
     setPadVolumes(prev => ({ ...prev, [padId]: vol }));
-    // Update loop engine volume if this pad is looping
     updateLoopVolume(padId, vol);
   }, []);
 
@@ -185,9 +206,31 @@ const Index = () => {
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/50 backdrop-blur shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold text-primary">🥁</span>
-          <h1 className="text-sm font-bold text-foreground tracking-tight">Drum Pads Worship</h1>
+          <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Drum Pads Worship</h1>
+          <h1 className="text-sm font-bold text-foreground tracking-tight sm:hidden">DPW</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          {/* Pad size controls */}
+          <div className="flex items-center gap-0.5 mr-1 border border-border rounded-md">
+            <button
+              onClick={() => changePadSize(-1)}
+              disabled={padSize === 'sm'}
+              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+              title="Diminuir pads"
+            >
+              <Minus className="h-3 w-3" />
+            </button>
+            <span className="text-[10px] text-muted-foreground w-5 text-center uppercase tabular-nums">{padSize}</span>
+            <button
+              onClick={() => changePadSize(1)}
+              disabled={padSize === 'lg'}
+              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+              title="Aumentar pads"
+            >
+              <Plus className="h-3 w-3" />
+            </button>
+          </div>
+
           <SetlistManager
             songs={songs}
             currentSongId={currentSongId}
@@ -213,7 +256,7 @@ const Index = () => {
       </header>
 
       {/* Info bar */}
-      <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50">
+      <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">
         Segure um pad para ajustar volume e importar som · Toque nos loops (RCK/BLD) para ativar padrões rítmicos
       </div>
 
@@ -224,6 +267,7 @@ const Index = () => {
           padVolumes={padVolumes}
           activeLoops={activeLoops}
           customSounds={customSounds}
+          padSize={padSize}
           onToggleLoop={toggleLoop}
           onImportSound={handleImportSound}
           onRemoveCustomSound={handleRemoveCustomSound}
@@ -239,12 +283,35 @@ const Index = () => {
             onVolumeChange={setMasterVol}
             label="Volume Master"
           />
-          <Metronome
-            bpm={bpm}
-            onBpmChange={setBpm}
-            timeSignature={timeSignature}
-            onTimeSignatureChange={setTimeSignature}
-          />
+
+          {/* Collapsible Metronome */}
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setMetronomeOpen(prev => !prev)}
+              className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
+                <span className="text-xs text-muted-foreground">BPM</span>
+                <span className="text-xs text-muted-foreground">· {timeSignature}</span>
+              </div>
+              {metronomeOpen ? (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
+            {metronomeOpen && (
+              <div className="px-0 pb-0">
+                <Metronome
+                  bpm={bpm}
+                  onBpmChange={setBpm}
+                  timeSignature={timeSignature}
+                  onTimeSignatureChange={setTimeSignature}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </footer>
     </div>

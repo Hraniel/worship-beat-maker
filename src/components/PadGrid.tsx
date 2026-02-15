@@ -8,14 +8,21 @@ interface PadGridProps {
   padVolumes: Record<string, number>;
   activeLoops: Set<string>;
   customSounds: Record<string, string>;
+  padSize: 'sm' | 'md' | 'lg';
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onRemoveCustomSound: (padId: string) => void;
   onPadVolumeChange: (padId: string, volume: number) => void;
 }
 
+const sizeMaxWidths = {
+  sm: 'max-w-[400px]',
+  md: 'max-w-[560px]',
+  lg: 'max-w-[720px]',
+};
+
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds,
+  pads, padVolumes, activeLoops, customSounds, padSize,
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange
 }) => {
   const { tierConfig } = useSubscription();
@@ -25,7 +32,7 @@ const PadGrid: React.FC<PadGridProps> = ({
   const visiblePads = pads.slice(0, 8);
 
   return (
-    <div className="grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 p-2 sm:p-4 max-w-[600px] mx-auto w-full">
+    <div className={`grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
       {visiblePads.map((pad, index) => {
         const isLocked = index >= maxPads;
         return (
@@ -37,6 +44,7 @@ const PadGrid: React.FC<PadGridProps> = ({
             hasCustomSound={!!customSounds[pad.id]}
             customFileName={customSounds[pad.id]}
             isLocked={isLocked}
+            padSize={padSize}
             onToggleLoop={pad.isLoop ? () => onToggleLoop(pad.id) : undefined}
             onImportSound={onImportSound}
             onRemoveCustomSound={onRemoveCustomSound}
