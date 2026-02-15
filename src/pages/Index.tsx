@@ -407,9 +407,8 @@ const Index = () => {
 
           {/* Metronome */}
           <div className="bg-card rounded-lg border border-border overflow-hidden">
-            <button
+            <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
               onClick={() => setMetronomeOpen(prev => !prev)}
-              className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
@@ -417,10 +416,9 @@ const Index = () => {
                 <span className="text-xs text-muted-foreground">· {timeSignature}</span>
               </div>
               <div className="flex items-center gap-1">
-                {/* Play/pause button visible when minimized */}
                 {!metronomeOpen && (
-                  <span
-                    role="button"
+                  <button
+                    type="button"
                     onClick={(e) => { e.stopPropagation(); setMetronomeIsPlaying(prev => !prev); }}
                     className={`p-1.5 rounded-md transition-colors ${
                       metronomeIsPlaying 
@@ -430,7 +428,7 @@ const Index = () => {
                     title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
                   >
                     {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </span>
+                  </button>
                 )}
                 {metronomeOpen ? (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -438,7 +436,7 @@ const Index = () => {
                   <ChevronUp className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
-            </button>
+            </div>
             {metronomeOpen && (
               <div className="px-0 pb-0">
                 <Metronome
