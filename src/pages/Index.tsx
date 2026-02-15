@@ -53,6 +53,9 @@ const Index = () => {
   const [metronomeOpen, setMetronomeOpen] = useState(true);
   const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
   const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
+  const [padNames, setPadNames] = useState<Record<string, string>>(() => {
+    try { const d = localStorage.getItem('drum-pads-pad-names'); return d ? JSON.parse(d) : {}; } catch { return {}; }
+  });
 
   const changePadSize = useCallback((dir: 1 | -1) => {
     setPadSize(prev => {
@@ -176,6 +179,15 @@ const Index = () => {
     });
   }, []);
 
+  const handleRenamePad = useCallback((padId: string, name: string) => {
+    setPadNames(prev => {
+      const next = { ...prev };
+      if (name) next[padId] = name; else delete next[padId];
+      localStorage.setItem('drum-pads-pad-names', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   // Setlist management — now backed by database
   const songs = setlists.flatMap((sl) =>
     sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, _setlistId: sl.id })) : [{ 
@@ -285,6 +297,8 @@ const Index = () => {
           onRemoveCustomSound={handleRemoveCustomSound}
           onPadVolumeChange={handlePadVolumeChange}
           onEffectsChange={handleEffectsChange}
+          padNames={padNames}
+          onRenamePad={handleRenamePad}
         />
       </main>
 
