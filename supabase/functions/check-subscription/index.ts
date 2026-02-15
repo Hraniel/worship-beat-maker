@@ -12,6 +12,19 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
 };
 
+async function retryAsync<T>(fn: () => Promise<T>, retries = 2, delay = 500): Promise<T> {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (i === retries) throw err;
+      logStep(`Retry ${i + 1}/${retries} after error`, { error: String(err) });
+      await new Promise(r => setTimeout(r, delay * (i + 1)));
+    }
+  }
+  throw new Error("Unreachable");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -50,7 +63,8 @@ serve(async (req) => {
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
 
-    const customers = await stripe.customers.list({ email, limit: 1 });
+    // Retry Stripe customer lookup to handle intermittent API issues
+    const customers = await retryAsync(() => stripe.customers.list({ email, limit: 1 }));
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");
       return new Response(JSON.stringify({ subscribed: false, product_id: null, subscription_end: null }), {
@@ -62,7 +76,10 @@ serve(async (req) => {
     const customerId = customers.data[0].id;
     logStep("Found customer", { customerId });
 
-    const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 });
+    // Retry subscription lookup too
+    const subscriptions = await retryAsync(() => 
+      stripe.subscriptions.list({ customer: customerId, status: "active", limit: 1 })
+    );
 
     if (subscriptions.data.length === 0) {
       logStep("No active subscription");
