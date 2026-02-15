@@ -115,6 +115,10 @@ const Index = () => {
     toast.success('Som customizado removido');
   }, [customSounds]);
 
+  const handlePadVolumeChange = useCallback((padId: string, vol: number) => {
+    setPadVolumes(prev => ({ ...prev, [padId]: vol }));
+  }, []);
+
   // Setlist management
   const handleSaveSong = useCallback((name: string) => {
     const song: SetlistSong = {
@@ -164,7 +168,7 @@ const Index = () => {
 
       {/* Info bar */}
       <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50">
-        Segure um pad para importar som personalizado (MP3/WAV)
+        Segure um pad para ajustar volume e importar som (MP3/WAV)
       </div>
 
       {/* Pad Grid - Main area */}
@@ -177,6 +181,7 @@ const Index = () => {
           onToggleLoop={toggleLoop}
           onImportSound={handleImportSound}
           onRemoveCustomSound={handleRemoveCustomSound}
+          onPadVolumeChange={handlePadVolumeChange}
         />
       </main>
 
