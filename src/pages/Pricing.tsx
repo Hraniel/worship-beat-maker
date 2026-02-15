@@ -60,7 +60,7 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-4 overflow-y-auto">
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <button onClick={() => navigate('/')} className="text-muted-foreground text-sm hover:text-foreground">
