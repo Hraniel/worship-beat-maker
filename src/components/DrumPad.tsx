@@ -80,23 +80,22 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
-    if (isLocked) {
-      trigger();
-      return;
+    // Play sound IMMEDIATELY on touch for minimum latency
+    trigger();
+    if (!isLocked) {
+      longPressRef.current = window.setTimeout(() => {
+        setShowMenu(true);
+        longPressRef.current = null;
+      }, 500);
     }
-    longPressRef.current = window.setTimeout(() => {
-      setShowMenu(true);
-      longPressRef.current = null;
-    }, 500);
   }, [trigger, isLocked]);
 
   const handlePointerUp = useCallback(() => {
     if (longPressRef.current) {
       clearTimeout(longPressRef.current);
       longPressRef.current = null;
-      trigger();
     }
-  }, [trigger]);
+  }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

@@ -1,10 +1,11 @@
 // Web Audio API sound synthesis engine for drum pads
+// Optimized for minimum touch-to-sound latency
 
 let audioCtx: AudioContext | null = null;
 
 export function getAudioContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new AudioContext();
+    audioCtx = new AudioContext({ latencyHint: 'interactive' });
   }
   if (audioCtx.state === 'suspended') {
     audioCtx.resume();
