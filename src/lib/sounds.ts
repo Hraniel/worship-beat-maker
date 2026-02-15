@@ -7,7 +7,8 @@ export interface PadSound {
   category: PadCategory;
   colorVar: string;
   isLoop?: boolean;
-  loopPattern?: number[]; // beat subdivisions where sound plays (0-indexed within a bar)
+  /** Each entry: [subdivisionIndex, soundId] — subdivision 0-15 in a 16th-note grid per bar */
+  loopSteps?: [number, string][];
 }
 
 export const defaultPads: PadSound[] = [
@@ -21,7 +22,7 @@ export const defaultPads: PadSound[] = [
   { id: 'ride', name: 'Ride', shortName: 'RDE', category: 'drums', colorVar: '--pad-crash' },
   { id: 'tom-high', name: 'Tom High', shortName: 'TMH', category: 'drums', colorVar: '--pad-tom' },
   { id: 'tom-mid', name: 'Tom Mid', shortName: 'TMM', category: 'drums', colorVar: '--pad-tom' },
-  // Row 3 - Percussion
+  // Row 3 - Percussion & Effects
   { id: 'tom-low', name: 'Tom Low', shortName: 'TML', category: 'drums', colorVar: '--pad-tom' },
   { id: 'clap', name: 'Clap', shortName: 'CLP', category: 'percussion', colorVar: '--pad-percussion' },
   { id: 'shaker', name: 'Shaker', shortName: 'SHK', category: 'percussion', colorVar: '--pad-percussion' },
@@ -30,12 +31,30 @@ export const defaultPads: PadSound[] = [
   { id: 'swell', name: 'Swell', shortName: 'SWL', category: 'effects', colorVar: '--pad-effects' },
   { id: 'reverse-cymbal', name: 'Rev Cymbal', shortName: 'RVC', category: 'effects', colorVar: '--pad-effects' },
   {
-    id: 'loop-rock', name: 'Rock Loop', shortName: 'RCK', category: 'loops', colorVar: '--pad-loops',
-    isLoop: true, loopPattern: [0, 0, 4, 0, 8, 0, 12, 0] // kick on 1,3 snare on 2,4
+    id: 'loop-rock', name: 'Rock Beat', shortName: 'RCK', category: 'loops', colorVar: '--pad-loops',
+    isLoop: true,
+    loopSteps: [
+      // Kick on 1 and 3 (subdivisions 0, 8)
+      [0, 'kick'], [8, 'kick'],
+      // Snare on 2 and 4 (subdivisions 4, 12)
+      [4, 'snare'], [12, 'snare'],
+      // Hi-hat on every 8th note (0,2,4,6,8,10,12,14)
+      [0, 'hihat-closed'], [2, 'hihat-closed'], [4, 'hihat-closed'], [6, 'hihat-closed'],
+      [8, 'hihat-closed'], [10, 'hihat-closed'], [12, 'hihat-closed'], [14, 'hihat-closed'],
+    ],
   },
   {
-    id: 'loop-ballad', name: 'Ballad Loop', shortName: 'BLD', category: 'loops', colorVar: '--pad-loops',
-    isLoop: true, loopPattern: [0, 4, 8, 12]
+    id: 'loop-ballad', name: 'Ballad', shortName: 'BLD', category: 'loops', colorVar: '--pad-loops',
+    isLoop: true,
+    loopSteps: [
+      // Soft kick on 1 and "and" of 3
+      [0, 'kick'], [10, 'kick'],
+      // Snare on 3
+      [8, 'snare'],
+      // Shaker on every 8th
+      [0, 'shaker'], [2, 'shaker'], [4, 'shaker'], [6, 'shaker'],
+      [8, 'shaker'], [10, 'shaker'], [12, 'shaker'], [14, 'shaker'],
+    ],
   },
 ];
 

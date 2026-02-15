@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
 import VolumeControl from '@/components/VolumeControl';
@@ -6,6 +6,7 @@ import SetlistManager from '@/components/SetlistManager';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
+import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'drum-pads-worship-songs';
@@ -44,6 +45,25 @@ const Index = () => {
   const [audioReady, setAudioReady] = useState(false);
   const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
 
+  // Keep loop engine in sync with BPM/time signature
+  const bpmRef = useRef(bpm);
+  const tsRef = useRef(timeSignature);
+
+  useEffect(() => {
+    bpmRef.current = bpm;
+    setLoopBpm(bpm);
+  }, [bpm]);
+
+  useEffect(() => {
+    tsRef.current = timeSignature;
+    setLoopTimeSignature(timeSignature);
+  }, [timeSignature]);
+
+  // Cleanup loops on unmount
+  useEffect(() => {
+    return () => stopAllLoops();
+  }, []);
+
   // Init audio on first interaction
   const initAudio = useCallback(() => {
     if (!audioReady) {
@@ -81,13 +101,22 @@ const Index = () => {
   }, [masterVolume]);
 
   const toggleLoop = useCallback((padId: string) => {
+    const pad = defaultPads.find(p => p.id === padId);
+    if (!pad) return;
+
     setActiveLoops(prev => {
       const next = new Set(prev);
-      if (next.has(padId)) next.delete(padId);
-      else next.add(padId);
+      if (next.has(padId)) {
+        next.delete(padId);
+        removeLoop(padId);
+      } else {
+        next.add(padId);
+        const vol = padVolumes[padId] ?? 0.7;
+        addLoop(pad, vol);
+      }
       return next;
     });
-  }, []);
+  }, [padVolumes]);
 
   // Custom sound import
   const handleImportSound = useCallback(async (padId: string, file: File) => {
@@ -117,6 +146,8 @@ const Index = () => {
 
   const handlePadVolumeChange = useCallback((padId: string, vol: number) => {
     setPadVolumes(prev => ({ ...prev, [padId]: vol }));
+    // Update loop engine volume if this pad is looping
+    updateLoopVolume(padId, vol);
   }, []);
 
   // Setlist management
@@ -140,6 +171,9 @@ const Index = () => {
     setTimeSignature(song.timeSignature);
     setPadVolumes(song.padVolumes);
     setCurrentSongId(song.id);
+    // Stop all loops when switching songs
+    stopAllLoops();
+    setActiveLoops(new Set());
   }, []);
 
   const handleDeleteSong = useCallback((id: string) => {
@@ -168,7 +202,7 @@ const Index = () => {
 
       {/* Info bar */}
       <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50">
-        Segure um pad para ajustar volume e importar som (MP3/WAV)
+        Segure um pad para ajustar volume e importar som · Toque nos loops (RCK/BLD) para ativar padrões rítmicos
       </div>
 
       {/* Pad Grid - Main area */}
