@@ -224,7 +224,7 @@ const Index = () => {
   }, [deleteSetlist, currentSongId]);
 
   return (
-    <div className="flex flex-col h-screen bg-background overflow-hidden" onPointerDown={initAudio}>
+    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden" onPointerDown={initAudio}>
       {/* Header */}
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/50 backdrop-blur shrink-0">
         <div className="flex items-center gap-2">
