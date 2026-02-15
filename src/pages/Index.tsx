@@ -10,7 +10,7 @@ import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -53,6 +53,7 @@ const Index = () => {
   const [audioReady, setAudioReady] = useState(false);
   const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
   const [metronomeOpen, setMetronomeOpen] = useState(true);
+  const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
   const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
   const [padNames, setPadNames] = useState<Record<string, string>>(() => {
@@ -257,6 +258,8 @@ const Index = () => {
   const handleLoadSong = useCallback(async (song: SetlistSong) => {
     // Auto-save current song first
     await autoSaveCurrentSong();
+    // Stop metronome when switching songs
+    setMetronomeIsPlaying(false);
     // Load the new song
     setBpm(song.bpm);
     setTimeSignature(song.timeSignature);
@@ -271,17 +274,29 @@ const Index = () => {
     if (currentSongId === id) setCurrentSongId(null);
   }, [deleteSetlist, currentSongId]);
 
+  const currentSongName = currentSongId ? setlists.find(s => s.id === currentSongId)?.name || null : null;
+
   return (
     <div className="flex flex-col h-[100dvh] bg-background overflow-hidden" onPointerDown={initAudio}>
       {/* Header - hidden in focus mode */}
       {!focusMode && (
         <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/50 backdrop-blur shrink-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 shrink-0">
             <span className="text-lg font-bold text-primary">🥁</span>
             <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Drum Pads Worship</h1>
             <h1 className="text-sm font-bold text-foreground tracking-tight sm:hidden">DPW</h1>
           </div>
-          <div className="flex items-center gap-1 sm:gap-2">
+
+          {/* Current song name - centered */}
+          <div className="flex-1 min-w-0 mx-2 text-center">
+            {currentSongName && (
+              <span className="text-xs font-medium text-primary truncate block">
+                ♪ {currentSongName}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Pad size controls */}
             <div className="flex items-center gap-0.5 mr-1 border border-border rounded-md">
               <button
@@ -367,12 +382,15 @@ const Index = () => {
       {/* Bottom controls */}
       <footer className="shrink-0 border-t border-border bg-card/50 backdrop-blur p-2 sm:p-3 space-y-2">
         <div className="max-w-[600px] mx-auto space-y-2">
-          {/* Focus mode: show exit button */}
+          {/* Focus mode: show exit button + song name */}
           {focusMode && (
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              {currentSongName && (
+                <span className="text-xs font-medium text-primary truncate">♪ {currentSongName}</span>
+              )}
               <button
                 onClick={toggleFocusMode}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-auto"
                 title="Sair do modo foco"
               >
                 <Minimize className="h-3 w-3" />
@@ -387,41 +405,58 @@ const Index = () => {
             label="Volume Master"
           />
 
-          {/* Metronome - hidden in focus mode */}
-          {!focusMode && (
-            <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <button
-                onClick={() => setMetronomeOpen(prev => !prev)}
-                className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
-                  <span className="text-xs text-muted-foreground">BPM</span>
-                  <span className="text-xs text-muted-foreground">· {timeSignature}</span>
-                </div>
+          {/* Metronome */}
+          <div className="bg-card rounded-lg border border-border overflow-hidden">
+            <button
+              onClick={() => setMetronomeOpen(prev => !prev)}
+              className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
+                <span className="text-xs text-muted-foreground">BPM</span>
+                <span className="text-xs text-muted-foreground">· {timeSignature}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {/* Play/pause button visible when minimized */}
+                {!metronomeOpen && (
+                  <span
+                    role="button"
+                    onClick={(e) => { e.stopPropagation(); setMetronomeIsPlaying(prev => !prev); }}
+                    className={`p-1.5 rounded-md transition-colors ${
+                      metronomeIsPlaying 
+                        ? 'text-destructive hover:bg-destructive/10' 
+                        : 'text-primary hover:bg-primary/10'
+                    }`}
+                    title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
+                  >
+                    {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  </span>
+                )}
                 {metronomeOpen ? (
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 ) : (
                   <ChevronUp className="h-4 w-4 text-muted-foreground" />
                 )}
-              </button>
-              {metronomeOpen && (
-                <div className="px-0 pb-0">
-                  <Metronome
-                    bpm={bpm}
-                    onBpmChange={setBpm}
-                    timeSignature={timeSignature}
-                    onTimeSignatureChange={setTimeSignature}
-                  />
-                  <PanControl
-                    label="Pan Metrônomo"
-                    pan={metronomePan}
-                    onPanChange={handleMetronomePanChange}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+              </div>
+            </button>
+            {metronomeOpen && (
+              <div className="px-0 pb-0">
+                <Metronome
+                  bpm={bpm}
+                  onBpmChange={setBpm}
+                  timeSignature={timeSignature}
+                  onTimeSignatureChange={setTimeSignature}
+                  isPlaying={metronomeIsPlaying}
+                  onTogglePlay={() => setMetronomeIsPlaying(prev => !prev)}
+                />
+                <PanControl
+                  label="Pan Metrônomo"
+                  pan={metronomePan}
+                  onPanChange={handleMetronomePanChange}
+                />
+              </div>
+            )}
+          </div>
         </div>
       </footer>
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { Play, Pause, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -9,34 +9,38 @@ interface MetronomeProps {
   onBpmChange: (bpm: number) => void;
   timeSignature: string;
   onTimeSignatureChange: (ts: string) => void;
+  isPlaying: boolean;
+  onTogglePlay: () => void;
   onBeat?: (beat: number) => void;
 }
 
 const TIME_SIGNATURES = ['4/4', '3/4', '6/8'];
 
 const Metronome: React.FC<MetronomeProps> = ({
-  bpm, onBpmChange, timeSignature, onTimeSignatureChange, onBeat
+  bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat
 }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentBeat, setCurrentBeat] = useState(0);
+  const [currentBeat, setCurrentBeat] = React.useState(0);
   const intervalRef = useRef<number | null>(null);
   const beatRef = useRef(0);
+  const isPlayingRef = useRef(isPlaying);
 
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
 
-  const stop = useCallback(() => {
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
+
+  const stopInterval = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    setIsPlaying(false);
     setCurrentBeat(0);
     beatRef.current = 0;
   }, []);
 
-  const start = useCallback(() => {
-    stop();
-    setIsPlaying(true);
+  const startInterval = useCallback(() => {
+    stopInterval();
     const interval = (60 / bpm) * 1000;
     beatRef.current = 0;
 
@@ -50,21 +54,22 @@ const Metronome: React.FC<MetronomeProps> = ({
 
     tick();
     intervalRef.current = window.setInterval(tick, interval);
-  }, [bpm, beatsPerMeasure, stop, onBeat]);
+  }, [bpm, beatsPerMeasure, stopInterval, onBeat]);
 
+  // Start/stop based on isPlaying prop
   useEffect(() => {
-    return stop;
-  }, [stop]);
+    if (isPlaying) {
+      startInterval();
+    } else {
+      stopInterval();
+    }
+    return stopInterval;
+  }, [isPlaying, startInterval, stopInterval]);
 
   // Restart if bpm/timeSignature changes while playing
   useEffect(() => {
-    if (isPlaying) start();
+    if (isPlaying) startInterval();
   }, [bpm, timeSignature]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const togglePlay = () => {
-    if (isPlaying) stop();
-    else start();
-  };
 
   return (
     <div className="flex flex-col items-center gap-3 px-4 py-3">
@@ -92,7 +97,7 @@ const Metronome: React.FC<MetronomeProps> = ({
 
       <div className="flex items-center gap-2 w-full">
         <Button
-          onClick={togglePlay}
+          onClick={onTogglePlay}
           variant={isPlaying ? "destructive" : "default"}
           size="sm"
           className="flex-1"
