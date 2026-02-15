@@ -1,13 +1,15 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound } from '@/lib/audio-engine';
-import { Upload, X, Volume2 } from 'lucide-react';
+import { Upload, X, Volume2, Lock, Repeat } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
+import { useNavigate } from 'react-router-dom';
 
 interface DrumPadProps {
   pad: PadSound;
   volume: number;
   isLooping?: boolean;
+  isLocked?: boolean;
   hasCustomSound?: boolean;
   customFileName?: string;
   onToggleLoop?: () => void;
@@ -17,7 +19,7 @@ interface DrumPadProps {
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
-  pad, volume, isLooping, hasCustomSound, customFileName,
+  pad, volume, isLooping, isLocked, hasCustomSound, customFileName,
   onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange
 }) => {
   const [isActive, setIsActive] = useState(false);
@@ -25,8 +27,13 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const timeoutRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressRef = useRef<number | null>(null);
+  const navigate = useNavigate();
 
   const trigger = useCallback(() => {
+    if (isLocked) {
+      navigate('/pricing');
+      return;
+    }
     if (pad.isLoop && onToggleLoop) {
       onToggleLoop();
       return;
@@ -35,16 +42,20 @@ const DrumPad: React.FC<DrumPadProps> = ({
     setIsActive(true);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = window.setTimeout(() => setIsActive(false), 120);
-  }, [pad, volume, onToggleLoop]);
+  }, [pad, volume, onToggleLoop, isLocked, navigate]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
+    if (isLocked) {
+      trigger();
+      return;
+    }
     longPressRef.current = window.setTimeout(() => {
       setShowMenu(true);
       longPressRef.current = null;
     }, 500);
     trigger();
-  }, [trigger]);
+  }, [trigger, isLocked]);
 
   const handlePointerUp = useCallback(() => {
     if (longPressRef.current) {
@@ -74,45 +85,76 @@ const DrumPad: React.FC<DrumPadProps> = ({
           relative flex flex-col items-center justify-center rounded-lg
           border-2 transition-all duration-75 select-none cursor-pointer
           aspect-square w-full touch-none
-          ${isActive ? 'animate-pad-pulse' : ''}
+          ${isActive && !isLocked ? 'animate-pad-pulse' : ''}
           ${isLooping ? 'animate-loop-border' : ''}
+          ${isLocked ? 'opacity-40 grayscale' : ''}
         `}
         style={{
-          backgroundColor: `hsl(var(${pad.colorVar}) / ${isActive ? 0.6 : isLooping ? 0.35 : 0.2})`,
-          borderColor: `hsl(var(${pad.colorVar}) / ${isActive ? 0.9 : isLooping ? 0.7 : 0.3})`,
-          boxShadow: isActive
+          backgroundColor: isLocked
+            ? 'hsl(var(--muted) / 0.3)'
+            : `hsl(var(${pad.colorVar}) / ${isActive ? 0.6 : isLooping ? 0.35 : 0.2})`,
+          borderColor: isLocked
+            ? 'hsl(var(--border))'
+            : `hsl(var(${pad.colorVar}) / ${isActive ? 0.9 : isLooping ? 0.7 : 0.3})`,
+          boxShadow: isLocked
+            ? 'none'
+            : isActive
             ? `0 0 20px hsl(var(${pad.colorVar}) / 0.4), inset 0 0 15px hsl(var(${pad.colorVar}) / 0.2)`
             : isLooping
             ? `0 0 12px hsl(var(${pad.colorVar}) / 0.25)`
             : 'none',
         }}
       >
-        <span
-          className="text-xs font-bold tracking-wider opacity-90"
-          style={{ color: `hsl(var(${pad.colorVar}))` }}
-        >
-          {pad.shortName}
-        </span>
-        <span className="text-[10px] text-muted-foreground mt-0.5 max-w-full truncate px-1">
-          {hasCustomSound ? (customFileName || 'Custom') : pad.name}
-        </span>
-        {pad.isLoop && (
-          <div
-            className="absolute top-1 right-1 w-2 h-2 rounded-full"
-            style={{
-              backgroundColor: isLooping
-                ? `hsl(var(${pad.colorVar}))`
-                : `hsl(var(${pad.colorVar}) / 0.3)`,
-            }}
-          />
+        {/* Lock overlay for locked pads */}
+        {isLocked && (
+          <Lock className="absolute h-5 w-5 text-muted-foreground" />
         )}
-        {hasCustomSound && (
+
+        {/* Pad content */}
+        {!isLocked && (
+          <>
+            <span
+              className="text-xs font-bold tracking-wider opacity-90"
+              style={{ color: `hsl(var(${pad.colorVar}))` }}
+            >
+              {pad.shortName}
+            </span>
+            <span className="text-[10px] text-muted-foreground mt-0.5 max-w-full truncate px-1">
+              {hasCustomSound ? (customFileName || 'Custom') : pad.name}
+            </span>
+          </>
+        )}
+
+        {/* Loop indicator */}
+        {pad.isLoop && !isLocked && (
+          <div className="absolute top-1 right-1 flex items-center gap-0.5">
+            <Repeat
+              className="h-2.5 w-2.5"
+              style={{
+                color: isLooping
+                  ? `hsl(var(${pad.colorVar}))`
+                  : `hsl(var(${pad.colorVar}) / 0.4)`,
+              }}
+            />
+            <div
+              className={`w-1.5 h-1.5 rounded-full ${isLooping ? 'animate-pulse' : ''}`}
+              style={{
+                backgroundColor: isLooping
+                  ? `hsl(var(${pad.colorVar}))`
+                  : `hsl(var(${pad.colorVar}) / 0.3)`,
+              }}
+            />
+          </div>
+        )}
+
+        {/* Custom sound indicator */}
+        {hasCustomSound && !isLocked && (
           <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-primary" />
         )}
       </button>
 
       {/* Context menu */}
-      {showMenu && (
+      {showMenu && !isLocked && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
           <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 bg-card border border-border rounded-md shadow-lg p-2 min-w-[160px] space-y-1">
