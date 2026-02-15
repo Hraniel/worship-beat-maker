@@ -10,7 +10,7 @@ import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -397,6 +397,21 @@ const Index = () => {
                     </button>
                     <button onClick={() => { if (startTutorialRef.current) startTutorialRef.current(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <HelpCircle className="h-4 w-4 text-muted-foreground" /> Guia Prático
+                    </button>
+                    <button onClick={async () => {
+                      setMobileMenuOpen(false);
+                      if ('caches' in window) {
+                        const keys = await caches.keys();
+                        await Promise.all(keys.map((k) => caches.delete(k)));
+                      }
+                      if ('serviceWorker' in navigator) {
+                        const regs = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(regs.map((r) => r.unregister()));
+                      }
+                      toast.success('Cache limpo! Recarregando...');
+                      setTimeout(() => window.location.reload(), 500);
+                    }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <RefreshCw className="h-4 w-4 text-muted-foreground" /> Atualizar App
                     </button>
                     <div className="border-t border-border my-1" />
                     <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors">
