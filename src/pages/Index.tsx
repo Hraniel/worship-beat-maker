@@ -8,6 +8,7 @@ import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
+import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
@@ -71,6 +72,9 @@ const Index = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [padColors, setPadColors] = useState<Record<string, PadColor>>(() => {
+    try { const d = localStorage.getItem('drum-pads-pad-colors'); return d ? JSON.parse(d) : {}; } catch { return {}; }
+  });
   const startTutorialRef = useRef<(() => void) | null>(null);
 
   // PWA update detection
@@ -243,6 +247,14 @@ const Index = () => {
       const next = { ...prev };
       if (name) next[padId] = name;else delete next[padId];
       localStorage.setItem('drum-pads-pad-names', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const handlePadColorChange = useCallback((padId: string, color: PadColor) => {
+    setPadColors((prev) => {
+      const next = { ...prev, [padId]: color };
+      localStorage.setItem('drum-pads-pad-colors', JSON.stringify(next));
       return next;
     });
   }, []);
@@ -483,6 +495,8 @@ const Index = () => {
           onPadPanChange={handlePadPanChange}
           padNames={padNames}
           onRenamePad={handleRenamePad}
+          padColors={padColors}
+          onPadColorChange={handlePadColorChange}
           editMode={editMode} />
         </div>
       </main>

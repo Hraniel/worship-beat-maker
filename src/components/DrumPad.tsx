@@ -1,12 +1,13 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound } from '@/lib/audio-engine';
-import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2 } from 'lucide-react';
+import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
 import BpmGuideDialog from './BpmGuideDialog';
 import PadEffectsPanel from './PadEffectsPanel';
 import PanControl from './PanControl';
+import PadColorPicker, { type PadColor, padColorToHsl } from './PadColorPicker';
 import { type PadEffects, DEFAULT_EFFECTS, getEffectInput, applyEffects, hasActiveEffects } from '@/lib/audio-effects';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
@@ -31,17 +32,20 @@ interface DrumPadProps {
   onPanChange?: (padId: string, pan: number) => void;
   customName?: string;
   onRename?: (padId: string, name: string) => void;
+  customColor?: PadColor;
+  onColorChange?: (padId: string, color: PadColor) => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
-  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode,
-  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename
+  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor,
+  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showBpmGuide, setShowBpmGuide] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const timeoutRef = useRef<number | null>(null);
@@ -114,6 +118,14 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
   const volumePercent = Math.round(volume * 100);
 
+  // Use custom color or fall back to CSS variable
+  const colorHsl = customColor ? padColorToHsl(customColor) : null;
+  const colorOpacity = customColor?.opacity ?? 1;
+  const colorRef = (alpha: number) =>
+    colorHsl
+      ? `hsl(${colorHsl} / ${alpha * colorOpacity})`
+      : `hsl(var(${pad.colorVar}) / ${alpha})`;
+  const colorSolid = colorHsl ? `hsl(${colorHsl})` : `hsl(var(${pad.colorVar}))`;
   const textSizes = {
     sm: { label: 'text-[9px]', name: 'text-[8px]', lock: 'h-4 w-4', loop: 'h-2 w-2' },
     md: { label: 'text-xs', name: 'text-[10px]', lock: 'h-5 w-5', loop: 'h-2.5 w-2.5' },
@@ -158,12 +170,12 @@ const DrumPad: React.FC<DrumPadProps> = ({
           ${isLooping ? 'animate-loop-border' : ''}
         `}
         style={{
-          backgroundColor: `hsl(var(${pad.colorVar}) / ${isActive ? 0.6 : isLooping ? 0.35 : 0.2})`,
-          borderColor: `hsl(var(${pad.colorVar}) / ${isActive ? 0.9 : isLooping ? 0.7 : 0.3})`,
+          backgroundColor: colorRef(isActive ? 0.6 : isLooping ? 0.35 : 0.2),
+          borderColor: colorRef(isActive ? 0.9 : isLooping ? 0.7 : 0.3),
           boxShadow: isActive
-            ? `0 0 20px hsl(var(${pad.colorVar}) / 0.4), inset 0 0 15px hsl(var(${pad.colorVar}) / 0.2)`
+            ? `0 0 20px ${colorRef(0.4)}, inset 0 0 15px ${colorRef(0.2)}`
             : isLooping
-            ? `0 0 12px hsl(var(${pad.colorVar}) / 0.25)`
+            ? `0 0 12px ${colorRef(0.25)}`
             : 'none',
         }}
       >
@@ -176,7 +188,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
         <span
           className={`${sizes.label} font-bold tracking-wider opacity-90 max-w-full truncate px-1 text-center`}
-          style={{ color: `hsl(var(${pad.colorVar}))` }}
+          style={{ color: colorSolid }}
         >
           {customName || pad.name}
         </span>
@@ -186,17 +198,13 @@ const DrumPad: React.FC<DrumPadProps> = ({
             <Repeat
               className={sizes.loop}
               style={{
-                color: isLooping
-                  ? `hsl(var(${pad.colorVar}))`
-                  : `hsl(var(${pad.colorVar}) / 0.4)`,
+                color: isLooping ? colorSolid : colorRef(0.4),
               }}
             />
             <div
               className={`w-1.5 h-1.5 rounded-full ${isLooping ? 'animate-pulse' : ''}`}
               style={{
-                backgroundColor: isLooping
-                  ? `hsl(var(${pad.colorVar}))`
-                  : `hsl(var(${pad.colorVar}) / 0.3)`,
+                backgroundColor: isLooping ? colorSolid : colorRef(0.3),
               }}
             />
           </div>
@@ -215,7 +223,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-foreground">{pad.name}</span>
               <button
-                onClick={() => { setShowMenu(false); setShowEffects(false); }}
+                onClick={() => { setShowMenu(false); setShowEffects(false); setShowColorPicker(false); }}
                 className="p-0.5 rounded hover:bg-muted transition-colors"
               >
                 <X className="h-3.5 w-3.5 text-muted-foreground" />
@@ -294,7 +302,29 @@ const DrumPad: React.FC<DrumPadProps> = ({
               </button>
             )}
 
-            {/* Import sound - Pro feature (limited on free) */}
+            {/* Color picker - always available */}
+            <button
+              className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                showColorPicker ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
+              }`}
+              onClick={() => setShowColorPicker(prev => !prev)}
+            >
+              <Palette className="h-3.5 w-3.5" />
+              Alterar cor
+              {customColor && (
+                <span
+                  className="ml-auto w-3 h-3 rounded-full border border-border"
+                  style={{ backgroundColor: `hsl(${padColorToHsl(customColor)} / ${customColor.opacity})` }}
+                />
+              )}
+            </button>
+            {showColorPicker && (
+              <PadColorPicker
+                color={customColor || { hue: 0, saturation: 75, lightness: 55, opacity: 1 }}
+                onChange={(c) => onColorChange?.(pad.id, c)}
+              />
+            )}
+
             {isPro ? (
               <button
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
