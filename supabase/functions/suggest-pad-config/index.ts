@@ -71,7 +71,7 @@ Dados do Spotify:
 Sugira as configurações ideais dos pads para reproduzir um acompanhamento rítmico similar a esta música.`;
 
     // Try with retry and backoff
-    const models = ["gemini-2.0-flash", "gemini-1.5-flash"];
+    const models = ["gemini-2.0-flash", "gemini-2.0-flash-lite"];
     let lastError = "";
 
     for (const model of models) {
