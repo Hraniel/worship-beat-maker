@@ -6,15 +6,16 @@ interface PadGridProps {
   pads: PadSound[];
   padVolumes: Record<string, number>;
   activeLoops: Set<string>;
-  customSounds: Record<string, string>; // padId -> fileName
+  customSounds: Record<string, string>;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onRemoveCustomSound: (padId: string) => void;
+  onPadVolumeChange: (padId: string, volume: number) => void;
 }
 
 const PadGrid: React.FC<PadGridProps> = ({
   pads, padVolumes, activeLoops, customSounds,
-  onToggleLoop, onImportSound, onRemoveCustomSound
+  onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange
 }) => {
   return (
     <div className="grid grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-4 max-w-[600px] mx-auto">
@@ -29,6 +30,7 @@ const PadGrid: React.FC<PadGridProps> = ({
           onToggleLoop={pad.isLoop ? () => onToggleLoop(pad.id) : undefined}
           onImportSound={onImportSound}
           onRemoveCustomSound={onRemoveCustomSound}
+          onVolumeChange={onPadVolumeChange}
         />
       ))}
     </div>

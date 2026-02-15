@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound } from '@/lib/audio-engine';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Volume2 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 
 interface DrumPadProps {
@@ -12,11 +13,12 @@ interface DrumPadProps {
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
   onRemoveCustomSound?: (padId: string) => void;
+  onVolumeChange?: (padId: string, volume: number) => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, hasCustomSound, customFileName,
-  onToggleLoop, onImportSound, onRemoveCustomSound
+  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -37,7 +39,6 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
-    // Long press to show menu
     longPressRef.current = window.setTimeout(() => {
       setShowMenu(true);
       longPressRef.current = null;
@@ -60,6 +61,8 @@ const DrumPad: React.FC<DrumPadProps> = ({
     setShowMenu(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [pad.id, onImportSound]);
+
+  const volumePercent = Math.round(volume * 100);
 
   return (
     <div className="relative">
@@ -108,13 +111,29 @@ const DrumPad: React.FC<DrumPadProps> = ({
         )}
       </button>
 
-      {/* Context menu for import */}
+      {/* Context menu */}
       {showMenu && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-          <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 bg-card border border-border rounded-md shadow-lg p-1 min-w-[140px]">
+          <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 bg-card border border-border rounded-md shadow-lg p-2 min-w-[160px] space-y-1">
+            {/* Volume slider */}
+            <div className="flex items-center gap-2 px-1 py-1">
+              <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
+              <Slider
+                value={[volume * 100]}
+                onValueChange={([v]) => onVolumeChange?.(pad.id, v / 100)}
+                min={0}
+                max={100}
+                step={1}
+                className="flex-1"
+              />
+              <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">{volumePercent}%</span>
+            </div>
+
+            <div className="h-px bg-border" />
+
             <button
-              className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground hover:bg-muted rounded-sm transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted rounded-sm transition-colors"
               onClick={() => fileInputRef.current?.click()}
             >
               <Upload className="h-3 w-3" />
@@ -122,7 +141,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
             </button>
             {hasCustomSound && (
               <button
-                className="flex items-center gap-2 w-full px-3 py-2 text-xs text-destructive hover:bg-muted rounded-sm transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-destructive hover:bg-muted rounded-sm transition-colors"
                 onClick={() => {
                   onRemoveCustomSound?.(pad.id);
                   setShowMenu(false);
