@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import PanControl from '@/components/PanControl';
+import TutorialGuide from '@/components/TutorialGuide';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
 const PAD_SIZE_KEY = 'drum-pads-pad-size';
@@ -298,7 +299,7 @@ const Index = () => {
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Pad size controls */}
-            <div className="flex items-center gap-0.5 mr-1 border border-border rounded-md">
+            <div className="flex items-center gap-0.5 mr-1 border border-border rounded-md" data-tutorial="pad-size">
               <button
               onClick={() => changePadSize(-1)}
               disabled={padSize === 'sm'}
@@ -318,6 +319,7 @@ const Index = () => {
               </button>
             </div>
 
+            <div data-tutorial="setlist">
             <SetlistManager
             songs={songs}
             currentSongId={currentSongId}
@@ -325,6 +327,10 @@ const Index = () => {
             onLoadSong={handleLoadSong}
             onDeleteSong={handleDeleteSong}
             onReorder={reorderSetlists} />
+
+            </div>
+
+            <TutorialGuide />
 
             <button
             onClick={() => navigate('/pricing')}
@@ -336,7 +342,8 @@ const Index = () => {
             <button
             onClick={toggleFocusMode}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Modo foco">
+            title="Modo foco"
+            data-tutorial="focus-mode">
 
               <Maximize className="h-4 w-4" />
             </button>
@@ -360,6 +367,7 @@ const Index = () => {
 
       {/* Pad Grid - Main area */}
       <main className="flex-1 flex items-center justify-center overflow-hidden">
+        <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
         <PadGrid
           pads={defaultPads}
           padVolumes={padVolumes}
@@ -376,7 +384,7 @@ const Index = () => {
           onPadPanChange={handlePadPanChange}
           padNames={padNames}
           onRenamePad={handleRenamePad} />
-
+        </div>
       </main>
 
       {/* Bottom controls */}
@@ -399,14 +407,15 @@ const Index = () => {
             </div>
           }
 
+          <div data-tutorial="volume-master">
           <VolumeControl
             volume={masterVolume}
             onVolumeChange={setMasterVol}
             label="Volume Master" />
-
+          </div>
 
           {/* Metronome */}
-          <div className="bg-card rounded-lg border border-border overflow-hidden">
+          <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
             <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => setMetronomeOpen((prev) => !prev)}>
 
