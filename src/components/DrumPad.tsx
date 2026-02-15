@@ -13,6 +13,7 @@ interface DrumPadProps {
   isLocked?: boolean;
   hasCustomSound?: boolean;
   customFileName?: string;
+  padSize?: 'sm' | 'md' | 'lg';
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
   onRemoveCustomSound?: (padId: string) => void;
@@ -20,7 +21,7 @@ interface DrumPadProps {
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
-  pad, volume, isLooping, isLocked, hasCustomSound, customFileName,
+  pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
   onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange
 }) => {
   const [isActive, setIsActive] = useState(false);
@@ -77,6 +78,13 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
   const volumePercent = Math.round(volume * 100);
 
+  const textSizes = {
+    sm: { label: 'text-[9px]', name: 'text-[8px]', lock: 'h-4 w-4', loop: 'h-2 w-2' },
+    md: { label: 'text-xs', name: 'text-[10px]', lock: 'h-5 w-5', loop: 'h-2.5 w-2.5' },
+    lg: { label: 'text-sm', name: 'text-xs', lock: 'h-6 w-6', loop: 'h-3 w-3' },
+  };
+  const sizes = textSizes[padSize];
+
   return (
     <div className="relative">
       <button
@@ -107,31 +115,28 @@ const DrumPad: React.FC<DrumPadProps> = ({
             : 'none',
         }}
       >
-        {/* Lock overlay for locked pads */}
         {isLocked && (
-          <Lock className="absolute h-5 w-5 text-muted-foreground" />
+          <Lock className={`absolute ${sizes.lock} text-muted-foreground`} />
         )}
 
-        {/* Pad content */}
         {!isLocked && (
           <>
             <span
-              className="text-xs font-bold tracking-wider opacity-90"
+              className={`${sizes.label} font-bold tracking-wider opacity-90`}
               style={{ color: `hsl(var(${pad.colorVar}))` }}
             >
               {pad.shortName}
             </span>
-            <span className="text-[10px] text-muted-foreground mt-0.5 max-w-full truncate px-1">
+            <span className={`${sizes.name} text-muted-foreground mt-0.5 max-w-full truncate px-1`}>
               {hasCustomSound ? (customFileName || 'Custom') : pad.name}
             </span>
           </>
         )}
 
-        {/* Loop indicator */}
         {pad.isLoop && !isLocked && (
           <div className="absolute top-1 right-1 flex items-center gap-0.5">
             <Repeat
-              className="h-2.5 w-2.5"
+              className={sizes.loop}
               style={{
                 color: isLooping
                   ? `hsl(var(${pad.colorVar}))`
@@ -149,20 +154,28 @@ const DrumPad: React.FC<DrumPadProps> = ({
           </div>
         )}
 
-        {/* Custom sound indicator */}
         {hasCustomSound && !isLocked && (
           <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-primary" />
         )}
       </button>
 
-      {/* Context menu */}
+      {/* Context menu — rendered as fixed overlay to avoid z-index issues */}
       {showMenu && !isLocked && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
-          <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1 bg-card border border-border rounded-md shadow-lg p-2 min-w-[160px] space-y-1">
-            {/* Volume slider */}
+          <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
+          <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg shadow-2xl p-3 min-w-[200px] space-y-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-semibold text-foreground">{pad.name}</span>
+              <button
+                onClick={() => setShowMenu(false)}
+                className="p-0.5 rounded hover:bg-muted transition-colors"
+              >
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </div>
+
             <div className="flex items-center gap-2 px-1 py-1">
-              <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
+              <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <Slider
                 value={[volume * 100]}
                 onValueChange={([v]) => onVolumeChange?.(pad.id, v / 100)}
@@ -171,30 +184,30 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 step={1}
                 className="flex-1"
               />
-              <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">{volumePercent}%</span>
+              <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{volumePercent}%</span>
             </div>
 
             <div className="h-px bg-border" />
 
             <button
-              className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted rounded-sm transition-colors"
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
               onClick={() => {
                 setShowMenu(false);
                 setShowBpmGuide(true);
               }}
             >
-              <Upload className="h-3 w-3" />
+              <Upload className="h-3.5 w-3.5" />
               Importar som
             </button>
             {hasCustomSound && (
               <button
-                className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-destructive hover:bg-muted rounded-sm transition-colors"
+                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-muted rounded-md transition-colors"
                 onClick={() => {
                   onRemoveCustomSound?.(pad.id);
                   setShowMenu(false);
                 }}
               >
-                <X className="h-3 w-3" />
+                <X className="h-3.5 w-3.5" />
                 Remover custom
               </button>
             )}
