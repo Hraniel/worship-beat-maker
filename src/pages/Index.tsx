@@ -9,6 +9,7 @@ import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundId
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
 import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +45,7 @@ function loadPadSize(): PadSize {
 
 const Index = () => {
   const { signOut } = useAuth();
+  const { tier } = useSubscription();
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
@@ -464,6 +466,7 @@ const Index = () => {
       <main className="flex-1 flex items-center justify-center overflow-hidden">
         <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
         <PadGrid
+          isMasterTier={tier === 'master'}
           pads={defaultPads}
           padVolumes={padVolumes}
           activeLoops={activeLoops}
