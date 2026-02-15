@@ -337,7 +337,7 @@ const Index = () => {
     <div className="flex flex-col h-[100dvh] bg-background overflow-hidden" onPointerDown={initAudio}>
       {/* Header - hidden in focus mode */}
       {!focusMode &&
-      <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card/50 backdrop-blur shrink-0">
+      <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-2 min-w-0 shrink-0">
             <span className="text-lg font-bold text-primary">🥁</span>
             <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Drum Pads Worship</h1>
