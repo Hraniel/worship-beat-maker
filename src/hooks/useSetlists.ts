@@ -11,6 +11,7 @@ interface DbSetlist {
   songs: SetlistSong[];
   created_at: string;
   updated_at: string;
+  sort_order: number;
 }
 
 export function useSetlists() {
@@ -29,7 +30,7 @@ export function useSetlists() {
         .from('setlists')
         .select('*')
         .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+        .order('sort_order', { ascending: true });
 
       if (error) throw error;
       setSetlists(
@@ -39,6 +40,7 @@ export function useSetlists() {
           songs: (d.songs as unknown as SetlistSong[]) || [],
           created_at: d.created_at,
           updated_at: d.updated_at,
+          sort_order: d.sort_order ?? 0,
         }))
       );
     } catch (e) {
@@ -57,25 +59,29 @@ export function useSetlists() {
     async (name: string, songs: SetlistSong[]) => {
       if (!user) return null;
       try {
+        const maxOrder = setlists.reduce((max, s) => Math.max(max, s.sort_order), 0);
         const { data, error } = await supabase
           .from('setlists')
           .insert({
             user_id: user.id,
             name,
             songs: songs as unknown as Json,
+            sort_order: maxOrder + 1,
           })
           .select()
           .single();
 
         if (error) throw error;
+        const newOrder = setlists.reduce((max, s) => Math.max(max, s.sort_order), 0) + 1;
         const newSetlist: DbSetlist = {
           id: data.id,
           name: data.name,
           songs: (data.songs as unknown as SetlistSong[]) || [],
           created_at: data.created_at,
           updated_at: data.updated_at,
+          sort_order: newOrder,
         };
-        setSetlists((prev) => [newSetlist, ...prev]);
+        setSetlists((prev) => [...prev, newSetlist]);
         toast.success('Setlist salva!');
         return newSetlist;
       } catch (e) {
@@ -130,5 +136,37 @@ export function useSetlists() {
     [user]
   );
 
-  return { setlists, loading, createSetlist, updateSetlist, deleteSetlist, refetch: fetchSetlists };
+  const reorderSetlists = useCallback(
+    async (reorderedIds: string[]) => {
+      if (!user) return;
+      // Optimistic update
+      setSetlists((prev) => {
+        const map = new Map(prev.map((s) => [s.id, s]));
+        return reorderedIds
+          .map((id, i) => {
+            const s = map.get(id);
+            return s ? { ...s, sort_order: i } : null;
+          })
+          .filter(Boolean) as DbSetlist[];
+      });
+      // Persist
+      try {
+        const updates = reorderedIds.map((id, i) =>
+          supabase
+            .from('setlists')
+            .update({ sort_order: i })
+            .eq('id', id)
+            .eq('user_id', user.id)
+        );
+        await Promise.all(updates);
+      } catch (e) {
+        console.error('Failed to reorder setlists:', e);
+        toast.error('Erro ao reordenar setlists');
+        fetchSetlists(); // rollback
+      }
+    },
+    [user, fetchSetlists]
+  );
+
+  return { setlists, loading, createSetlist, updateSetlist, deleteSetlist, reorderSetlists, refetch: fetchSetlists };
 }
