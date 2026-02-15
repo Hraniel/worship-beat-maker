@@ -8,23 +8,12 @@ import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSetlists } from '@/hooks/useSetlists';
 import { LogOut, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-const STORAGE_KEY = 'drum-pads-worship-songs';
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
-
-function loadSongs(): SetlistSong[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch { return []; }
-}
-
-function saveSongsToStorage(songs: SetlistSong[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
-}
 
 function loadCustomNames(): Record<string, string> {
   try {
@@ -39,13 +28,13 @@ function saveCustomNames(names: Record<string, string>) {
 
 const Index = () => {
   const { signOut } = useAuth();
+  const { setlists, createSetlist, deleteSetlist } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
   const [bpm, setBpm] = useState(120);
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [activeLoops, setActiveLoops] = useState<Set<string>>(new Set());
   const [padVolumes, setPadVolumes] = useState<Record<string, number>>({});
-  const [songs, setSongs] = useState<SetlistSong[]>(loadSongs);
   const [currentSongId, setCurrentSongId] = useState<string | null>(null);
   const [audioReady, setAudioReady] = useState(false);
   const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
@@ -155,8 +144,15 @@ const Index = () => {
     updateLoopVolume(padId, vol);
   }, []);
 
-  // Setlist management
-  const handleSaveSong = useCallback((name: string) => {
+  // Setlist management — now backed by database
+  const songs = setlists.flatMap((sl) =>
+    sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, _setlistId: sl.id })) : [{ 
+      id: sl.id, name: sl.name, bpm: 120, timeSignature: '4/4', 
+      pads: defaultPads, padVolumes: {}, _setlistId: sl.id 
+    }]
+  );
+
+  const handleSaveSong = useCallback(async (name: string) => {
     const song: SetlistSong = {
       id: Date.now().toString(),
       name,
@@ -165,28 +161,23 @@ const Index = () => {
       pads: defaultPads,
       padVolumes: { ...padVolumes },
     };
-    const updated = [...songs, song];
-    setSongs(updated);
-    saveSongsToStorage(updated);
-    setCurrentSongId(song.id);
-  }, [bpm, timeSignature, padVolumes, songs]);
+    const result = await createSetlist(name, [song]);
+    if (result) setCurrentSongId(result.id);
+  }, [bpm, timeSignature, padVolumes, createSetlist]);
 
   const handleLoadSong = useCallback((song: SetlistSong) => {
     setBpm(song.bpm);
     setTimeSignature(song.timeSignature);
-    setPadVolumes(song.padVolumes);
-    setCurrentSongId(song.id);
-    // Stop all loops when switching songs
+    setPadVolumes(song.padVolumes || {});
+    setCurrentSongId((song as any)._setlistId || song.id);
     stopAllLoops();
     setActiveLoops(new Set());
   }, []);
 
-  const handleDeleteSong = useCallback((id: string) => {
-    const updated = songs.filter(s => s.id !== id);
-    setSongs(updated);
-    saveSongsToStorage(updated);
+  const handleDeleteSong = useCallback(async (id: string) => {
+    await deleteSetlist(id);
     if (currentSongId === id) setCurrentSongId(null);
-  }, [songs, currentSongId]);
+  }, [deleteSetlist, currentSongId]);
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden" onPointerDown={initAudio}>
