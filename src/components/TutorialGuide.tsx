@@ -42,7 +42,12 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
 ];
 
-const TutorialGuide: React.FC = () => {
+interface TutorialGuideProps {
+  externalTrigger?: boolean;
+  onStartRef?: (startFn: () => void) => void;
+}
+
+const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartRef }) => {
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
@@ -73,6 +78,10 @@ const TutorialGuide: React.FC = () => {
     setStep(0);
     setActive(true);
   }, []);
+
+  useEffect(() => {
+    if (onStartRef) onStartRef(start);
+  }, [onStartRef, start]);
 
   const close = useCallback(() => {
     setActive(false);
@@ -180,13 +189,15 @@ const TutorialGuide: React.FC = () => {
 
   return (
     <>
-      <button
-        onClick={start}
-        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        title="Tutorial"
-      >
-        <HelpCircle className="h-4 w-4" />
-      </button>
+      {!externalTrigger && (
+        <button
+          onClick={start}
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          title="Tutorial"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </button>
+      )}
       {overlay}
     </>
   );
