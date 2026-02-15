@@ -10,9 +10,8 @@ serve(async (req) => {
 
   try {
     const { trackName, artist, features } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
+    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
     const systemPrompt = `Você é um especialista em produção musical e bateria para worship/louvor.
 Dado os dados de uma música do Spotify, sugira configurações para 8 pads de bateria.
 
@@ -70,18 +69,14 @@ Dados do Spotify:
 
 Sugira as configurações ideais dos pads para reproduzir um acompanhamento rítmico similar a esta música.`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+        contents: [
+          { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
         ],
+        generationConfig: { temperature: 0.7 },
       }),
     });
 
@@ -102,10 +97,7 @@ Sugira as configurações ideais dos pads para reproduzir um acompanhamento rít
     }
 
     const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content || "";
-
-    // Extract JSON from response (may be wrapped in markdown code block)
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    const content = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     if (!jsonMatch) {
       console.error("No JSON found in AI response:", content);
       throw new Error("AI did not return valid configuration");
