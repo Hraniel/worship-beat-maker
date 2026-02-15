@@ -4,6 +4,7 @@ import { Upload, X, Volume2, Lock, Repeat } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
+import BpmGuideDialog from './BpmGuideDialog';
 
 interface DrumPadProps {
   pad: PadSound;
@@ -24,6 +25,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showBpmGuide, setShowBpmGuide] = useState(false);
   const timeoutRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressRef = useRef<number | null>(null);
@@ -176,7 +178,10 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
             <button
               className="flex items-center gap-2 w-full px-3 py-1.5 text-xs text-foreground hover:bg-muted rounded-sm transition-colors"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                setShowMenu(false);
+                setShowBpmGuide(true);
+              }}
             >
               <Upload className="h-3 w-3" />
               Importar som
@@ -203,6 +208,15 @@ const DrumPad: React.FC<DrumPadProps> = ({
         accept="audio/mp3,audio/wav,audio/mpeg,audio/ogg,.mp3,.wav,.ogg"
         className="hidden"
         onChange={handleFileChange}
+      />
+
+      <BpmGuideDialog
+        open={showBpmGuide}
+        onClose={() => setShowBpmGuide(false)}
+        onConfirm={() => {
+          setShowBpmGuide(false);
+          fileInputRef.current?.click();
+        }}
       />
     </div>
   );
