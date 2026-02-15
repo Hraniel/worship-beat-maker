@@ -8,7 +8,8 @@ import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, Crown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'drum-pads-worship-songs';
@@ -38,6 +39,7 @@ function saveCustomNames(names: Record<string, string>) {
 
 const Index = () => {
   const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
   const [bpm, setBpm] = useState(120);
   const [timeSignature, setTimeSignature] = useState('4/4');
@@ -202,6 +204,13 @@ const Index = () => {
             onLoadSong={handleLoadSong}
             onDeleteSong={handleDeleteSong}
           />
+          <button
+            onClick={() => navigate('/pricing')}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+            title="Planos"
+          >
+            <Crown className="h-4 w-4" />
+          </button>
           <button
             onClick={signOut}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
