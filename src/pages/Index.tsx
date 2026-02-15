@@ -268,6 +268,10 @@ const Index = () => {
     setCurrentSongId((song as any)._setlistId || song.id);
     stopAllLoops();
     setActiveLoops(new Set());
+    // Reset per-pad customizations so they don't bleed between songs
+    setPadNames({});
+    setPadPans({});
+    setPadEffects({});
   }, [autoSaveCurrentSong]);
 
   const handleDeleteSong = useCallback(async (id: string) => {
