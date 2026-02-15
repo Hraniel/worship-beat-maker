@@ -141,17 +141,12 @@ const DrumPad: React.FC<DrumPadProps> = ({
         )}
 
         {!isLocked && (
-          <>
-            <span
-              className={`${sizes.label} font-bold tracking-wider opacity-90`}
-              style={{ color: `hsl(var(${pad.colorVar}))` }}
-            >
-              {customName || pad.shortName}
-            </span>
-            <span className={`${sizes.name} text-muted-foreground mt-0.5 max-w-full truncate px-1`}>
-              {hasCustomSound ? (customFileName || 'Custom') : pad.name}
-            </span>
-          </>
+          <span
+            className={`${sizes.label} font-bold tracking-wider opacity-90 max-w-full truncate px-1 text-center`}
+            style={{ color: `hsl(var(${pad.colorVar}))` }}
+          >
+            {customName || pad.name}
+          </span>
         )}
 
         {pad.isLoop && !isLocked && (
