@@ -20,6 +20,7 @@ const PanControl: React.FC<PanControlProps> = ({ label = 'Pan', pan, onPanChange
       <Slider
         value={[pan * 100]}
         onValueChange={([v]) => onPanChange(v / 100)}
+        onReset={() => onPanChange(0)}
         min={-100}
         max={100}
         step={5}
