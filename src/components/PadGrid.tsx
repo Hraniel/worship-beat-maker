@@ -41,7 +41,7 @@ const PadGrid: React.FC<PadGridProps> = ({
   const visiblePads = pads.slice(0, 8);
 
   return (
-    <div className={`grid grid-cols-4 grid-rows-2 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
+    <div className={`grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
       {visiblePads.map((pad, index) => (
         <DrumPad
           key={pad.id}
