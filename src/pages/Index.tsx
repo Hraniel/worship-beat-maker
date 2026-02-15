@@ -10,7 +10,7 @@ import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -68,6 +68,7 @@ const Index = () => {
   const [metronomePan, setMetronomePanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
   const startTutorialRef = useRef<(() => void) | null>(null);
 
   // PWA update detection
@@ -414,6 +415,9 @@ const Index = () => {
                     <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                     </button>
+                    <button onClick={() => { setEditMode(p => !p); setMobileMenuOpen(false); }} className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? 'text-primary font-medium bg-primary/10' : 'text-foreground hover:bg-muted'}`}>
+                      <Settings2 className="h-4 w-4" /> {editMode ? 'Sair do modo edição' : 'Modo Edição'}
+                    </button>
                     <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Crown className="h-4 w-4 text-muted-foreground" /> Planos
                     </button>
@@ -474,7 +478,8 @@ const Index = () => {
           onEffectsChange={handleEffectsChange}
           onPadPanChange={handlePadPanChange}
           padNames={padNames}
-          onRenamePad={handleRenamePad} />
+          onRenamePad={handleRenamePad}
+          editMode={editMode} />
         </div>
       </main>
 
