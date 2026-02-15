@@ -324,7 +324,41 @@ export const soundMap: Record<string, (volume?: number) => void> = {
   'reverse-cymbal': playReverseCymbal,
 };
 
+// Custom sound buffer cache
+const customBuffers: Map<string, AudioBuffer> = new Map();
+
+export async function loadCustomBuffer(padId: string, arrayBuffer: ArrayBuffer): Promise<void> {
+  const ctx = getAudioContext();
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+  customBuffers.set(padId, audioBuffer);
+}
+
+export function removeCustomBuffer(padId: string) {
+  customBuffers.delete(padId);
+}
+
+export function hasCustomBuffer(padId: string): boolean {
+  return customBuffers.has(padId);
+}
+
+function playCustomBuffer(padId: string, volume = 0.7) {
+  const buffer = customBuffers.get(padId);
+  if (!buffer) return;
+  const ctx = getAudioContext();
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  const gain = ctx.createGain();
+  gain.gain.value = volume;
+  source.connect(gain);
+  gain.connect(getMasterGain());
+  source.start(0);
+}
+
 export function playSound(id: string, volume = 0.7) {
+  if (customBuffers.has(id)) {
+    playCustomBuffer(id, volume);
+    return;
+  }
   const fn = soundMap[id];
   if (fn) fn(volume);
 }
