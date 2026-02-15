@@ -14,18 +14,80 @@ export function getAudioContext(): AudioContext {
 
 // Master gain node
 let masterGain: GainNode | null = null;
+let masterPanner: StereoPannerNode | null = null;
+let masterStereoMode: 'stereo' | 'mono' = 'stereo';
 
 export function getMasterGain(): GainNode {
   const ctx = getAudioContext();
   if (!masterGain) {
     masterGain = ctx.createGain();
-    masterGain.connect(ctx.destination);
+    masterPanner = ctx.createStereoPanner();
+    masterGain.connect(masterPanner);
+    masterPanner.connect(ctx.destination);
   }
   return masterGain;
 }
 
 export function setMasterVolume(value: number) {
   getMasterGain().gain.setValueAtTime(value, getAudioContext().currentTime);
+}
+
+// --- PAN / STEREO CONTROLS ---
+
+// Per-pad pan nodes
+const padPanners = new Map<string, StereoPannerNode>();
+
+export function getPadPanner(padId: string): StereoPannerNode {
+  if (padPanners.has(padId)) return padPanners.get(padId)!;
+  const ctx = getAudioContext();
+  const panner = ctx.createStereoPanner();
+  panner.connect(getMasterGain());
+  padPanners.set(padId, panner);
+  return panner;
+}
+
+export function setPadPan(padId: string, pan: number) {
+  const panner = getPadPanner(padId);
+  panner.pan.setValueAtTime(pan, getAudioContext().currentTime);
+}
+
+export function setMasterPan(pan: number) {
+  getMasterGain(); // ensure init
+  if (masterPanner) {
+    masterPanner.pan.setValueAtTime(pan, getAudioContext().currentTime);
+  }
+}
+
+export function setMasterStereoMode(mode: 'stereo' | 'mono') {
+  masterStereoMode = mode;
+  getMasterGain(); // ensure init
+  if (masterPanner) {
+    if (mode === 'mono') {
+      // In mono, we merge channels by using a channel merger approach
+      // Simple approach: just set pan to 0
+      masterPanner.pan.setValueAtTime(0, getAudioContext().currentTime);
+    }
+  }
+}
+
+export function getMasterStereoMode() {
+  return masterStereoMode;
+}
+
+// Metronome pan
+let metronomePanner: StereoPannerNode | null = null;
+
+export function getMetronomePanner(): StereoPannerNode {
+  const ctx = getAudioContext();
+  if (!metronomePanner) {
+    metronomePanner = ctx.createStereoPanner();
+    metronomePanner.connect(getMasterGain());
+  }
+  return metronomePanner;
+}
+
+export function setMetronomePan(pan: number) {
+  getMetronomePanner().pan.setValueAtTime(pan, getAudioContext().currentTime);
 }
 
 // --- DRUM SYNTHESIS ---
@@ -297,7 +359,7 @@ export function playMetronomeClick(accent = false, volume = 0.3) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
-  gain.connect(getMasterGain());
+  gain.connect(getMetronomePanner());
   osc.frequency.value = accent ? 1200 : 800;
   osc.type = 'sine';
   gain.gain.setValueAtTime(volume, ctx.currentTime);
@@ -350,7 +412,12 @@ function playCustomBuffer(padId: string, volume = 0.7, destination?: AudioNode) 
   const gain = ctx.createGain();
   gain.gain.value = volume;
   source.connect(gain);
-  gain.connect(destination || getMasterGain());
+  // Route through pad panner if no custom destination
+  if (destination) {
+    gain.connect(destination);
+  } else {
+    gain.connect(getPadPanner(padId));
+  }
   source.start(0);
 }
 

@@ -6,6 +6,7 @@ import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
 import BpmGuideDialog from './BpmGuideDialog';
 import PadEffectsPanel from './PadEffectsPanel';
+import PanControl from './PanControl';
 import { type PadEffects, DEFAULT_EFFECTS, getEffectInput, applyEffects, hasActiveEffects } from '@/lib/audio-effects';
 
 interface DrumPadProps {
@@ -18,19 +19,21 @@ interface DrumPadProps {
   padSize?: 'sm' | 'md' | 'lg';
   isMasterTier?: boolean;
   effects?: PadEffects;
+  pan?: number;
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
   onRemoveCustomSound?: (padId: string) => void;
   onVolumeChange?: (padId: string, volume: number) => void;
   onEffectsChange?: (padId: string, fx: PadEffects) => void;
+  onPanChange?: (padId: string, pan: number) => void;
   customName?: string;
   onRename?: (padId: string, name: string) => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
-  isMasterTier, effects = DEFAULT_EFFECTS, customName,
-  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onRename
+  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName,
+  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -204,6 +207,13 @@ const DrumPad: React.FC<DrumPadProps> = ({
               />
               <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{volumePercent}%</span>
             </div>
+
+            <PanControl
+              label="Pan"
+              pan={pan}
+              onPanChange={(p) => onPanChange?.(pad.id, p)}
+              compact
+            />
 
             <div className="h-px bg-border" />
 
