@@ -65,6 +65,29 @@ const Index = () => {
     try {const d = localStorage.getItem('drum-pads-pad-pans');return d ? JSON.parse(d) : {};} catch {return {};}
   });
   const [metronomePan, setMetronomePanState] = useState(0);
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === 'accepted') {
+        toast.success('App instalado com sucesso!');
+      }
+      setInstallPrompt(null);
+    } else {
+      navigate('/install');
+    }
+  };
 
   const changePadSize = useCallback((dir: 1 | -1) => {
     setPadSize((prev) => {
@@ -337,7 +360,7 @@ const Index = () => {
             <TutorialGuide />
 
             <button
-            onClick={() => navigate('/install')}
+            onClick={handleInstallClick}
             className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
             title="Instalar app">
               <Download className="h-4 w-4" />
