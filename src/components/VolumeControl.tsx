@@ -27,6 +27,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, l
         <Slider
           value={[volume * 100]}
           onValueChange={([v]) => onVolumeChange(v / 100)}
+          onReset={() => onVolumeChange(0.7)}
           min={0}
           max={100}
           step={1}

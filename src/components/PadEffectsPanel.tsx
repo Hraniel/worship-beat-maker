@@ -33,6 +33,7 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, onChange }) 
             <Slider
               value={[effects[key]]}
               onValueChange={([v]) => update(key, v)}
+              onReset={() => update(key, 0)}
               min={-12}
               max={12}
               step={1}
@@ -52,6 +53,7 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, onChange }) 
         <Slider
           value={[effects.reverb * 100]}
           onValueChange={([v]) => update('reverb', v / 100)}
+          onReset={() => update('reverb', 0)}
           min={0}
           max={100}
           step={1}
@@ -70,6 +72,7 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, onChange }) 
           <Slider
             value={[effects.delay * 100]}
             onValueChange={([v]) => update('delay', v / 100)}
+            onReset={() => update('delay', 0)}
             min={0}
             max={100}
             step={1}
@@ -85,6 +88,7 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, onChange }) 
             <Slider
               value={[effects.delayTime * 1000]}
               onValueChange={([v]) => update('delayTime', v / 1000)}
+              onReset={() => update('delayTime', 0.3)}
               min={100}
               max={1000}
               step={50}

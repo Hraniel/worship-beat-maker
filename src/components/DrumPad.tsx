@@ -237,6 +237,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 <Slider
                   value={[volume * 100]}
                   onValueChange={([v]) => onVolumeChange?.(pad.id, v / 100)}
+                  onReset={() => onVolumeChange?.(pad.id, 0.7)}
                   min={0}
                   max={100}
                   step={1}
