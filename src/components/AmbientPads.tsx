@@ -34,30 +34,31 @@ const AmbientPads: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingNoteRef = useRef<NoteName | null>(null);
 
-  // Load saved samples on mount
-  useEffect(() => {
-    initAmbientSamples().then(() => {
-      getAllAmbientSoundNotes().then(notes => {
-        setCustomNotes(new Set(notes));
-      });
-    });
+  const samplesLoadedRef = useRef(false);
+
+  // Lazy-load samples on first user interaction (ensures AudioContext is allowed)
+  const ensureSamplesLoaded = useCallback(async () => {
+    if (samplesLoadedRef.current) return;
+    samplesLoadedRef.current = true;
+    await initAmbientSamples();
+    const notes = await getAllAmbientSoundNotes();
+    setCustomNotes(new Set(notes));
   }, []);
 
-  const handleToggle = useCallback((note: NoteName) => {
+  const handleToggle = useCallback(async (note: NoteName) => {
     if (editMode) {
-      // In edit mode, clicking opens file picker for that note
       pendingNoteRef.current = note;
       fileInputRef.current?.click();
       return;
     }
+    await ensureSamplesLoaded();
     const isNowActive = toggleAmbientNote(note);
     if (isNowActive) {
-      // Only one note active at a time
       setActiveNotes(new Set([note]));
     } else {
       setActiveNotes(new Set());
     }
-  }, [editMode]);
+  }, [editMode, ensureSamplesLoaded]);
 
   const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
