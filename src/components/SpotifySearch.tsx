@@ -52,6 +52,10 @@ const PAD_LABELS: Record<string, string> = {
 };
 
 
+// In-memory cache for AI suggestions keyed by track ID
+const suggestionCache = new Map<string, SuggestedConfig>();
+
+
 
 
 const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
@@ -90,19 +94,26 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
 
   const handleSelectTrack = useCallback(async (track: SpotifyTrack) => {
     setSelectedTrack(track);
-    setAnalyzing(true);
     setSuggestion(null);
 
+    // Check cache first
+    const cached = suggestionCache.get(track.id);
+    if (cached) {
+      setSuggestion(cached);
+      toast.info('Sugestão carregada do cache');
+      return;
+    }
+
+    setAnalyzing(true);
+
     try {
-      // Step 1: Get audio features + analysis
       setAnalysisStep('Obtendo dados de áudio...');
       const { data: featuresData, error: featuresError } = await supabase.functions.invoke('spotify-search', {
         body: { trackId: track.id },
       });
       if (featuresError) throw featuresError;
 
-      // Step 2: Get AI suggestion with real analysis data
-      setAnalysisStep('IA analisando timbres e padrões...');
+      setAnalysisStep('IA analisando timbres e efeitos...');
       const { data: aiData, error: aiError } = await supabase.functions.invoke('suggest-pad-config', {
         body: {
           trackName: track.name,
@@ -114,6 +125,8 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
       if (aiError) throw aiError;
       if (aiData?.error) throw new Error(aiData.error);
 
+      // Cache the result
+      suggestionCache.set(track.id, aiData.config);
       setSuggestion(aiData.config);
     } catch (e) {
       console.error('Analysis error:', e);
