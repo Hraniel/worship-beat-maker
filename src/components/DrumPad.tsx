@@ -1,11 +1,10 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
-import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
+import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
-import BpmGuideDialog from './BpmGuideDialog';
 import PadEffectsPanel from './PadEffectsPanel';
 import PanControl from './PanControl';
 import PadColorPicker, { type PadColor, padColorToHsl } from './PadColorPicker';
@@ -44,13 +43,11 @@ const DrumPad: React.FC<DrumPadProps> = ({
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [showBpmGuide, setShowBpmGuide] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const timeoutRef = useRef<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressRef = useRef<number | null>(null);
   const navigate = useNavigate();
   const { tier, tierConfig } = useSubscription();
@@ -124,14 +121,6 @@ const DrumPad: React.FC<DrumPadProps> = ({
     }
   }, []);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onImportSound) {
-      onImportSound(pad.id, file);
-    }
-    setShowMenu(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  }, [pad.id, onImportSound]);
 
   const volumePercent = Math.round(volume * 100);
 
@@ -336,22 +325,6 @@ const DrumPad: React.FC<DrumPadProps> = ({
               />
             )}
 
-            {isPro ? (
-              <button
-                className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
-                onClick={() => {
-                  setShowMenu(false);
-                  setShowEffects(false);
-                  setShowBpmGuide(true);
-                }}
-              >
-                <Upload className="h-3.5 w-3.5" />
-                Importar som
-              </button>
-            ) : (
-              <LockedRow label="Importar som ilimitado" feature="importação de sons" />
-            )}
-
             {hasCustomSound && (
               <button
                 className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-muted rounded-md transition-colors"
@@ -396,22 +369,6 @@ const DrumPad: React.FC<DrumPadProps> = ({
         </>
       )}
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="audio/mp3,audio/wav,audio/mpeg,audio/ogg,.mp3,.wav,.ogg"
-        className="hidden"
-        onChange={handleFileChange}
-      />
-
-      <BpmGuideDialog
-        open={showBpmGuide}
-        onClose={() => setShowBpmGuide(false)}
-        onConfirm={() => {
-          setShowBpmGuide(false);
-          fileInputRef.current?.click();
-        }}
-      />
     </div>
   );
 };
