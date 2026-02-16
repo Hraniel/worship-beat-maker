@@ -15,14 +15,14 @@ import {
   loadAmbientSample,
   initAmbientSamples,
   stopAmbientNote,
-  startAmbientNote,
-} from '@/lib/ambient-engine';
+  startAmbientNote } from
+'@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
 
 const NOTE_COLORS: Record<NoteName, string> = {
   C: '0 70% 55%', 'C#': '20 65% 50%', D: '35 70% 55%', 'D#': '50 65% 50%',
   E: '80 60% 50%', F: '140 55% 45%', 'F#': '170 60% 45%', G: '200 65% 50%',
-  'G#': '230 60% 55%', A: '260 65% 55%', 'A#': '290 60% 50%', B: '320 65% 50%',
+  'G#': '230 60% 55%', A: '260 65% 55%', 'A#': '290 60% 50%', B: '320 65% 50%'
 };
 
 const AmbientPads: React.FC = () => {
@@ -80,7 +80,7 @@ const AmbientPads: React.FC = () => {
       await loadAmbientSample(note);
       if (wasActive) startAmbientNote(note);
 
-      setCustomNotes(prev => new Set([...prev, note]));
+      setCustomNotes((prev) => new Set([...prev, note]));
       toast.success(`Pad ${note} importado: ${file.name}`);
     } catch (err) {
       toast.error('Erro ao importar arquivo');
@@ -101,7 +101,7 @@ const AmbientPads: React.FC = () => {
     await loadAmbientSample(note); // clears the buffer
 
     if (wasActive) startAmbientNote(note); // restart with synth
-    setCustomNotes(prev => {
+    setCustomNotes((prev) => {
       const next = new Set(prev);
       next.delete(note);
       return next;
@@ -130,120 +130,120 @@ const AmbientPads: React.FC = () => {
         type="file"
         accept="audio/*"
         className="hidden"
-        onChange={handleFileImport}
-      />
+        onChange={handleFileImport} />
+
 
       <button
-        onClick={() => setExpanded(p => !p)}
-        className="flex items-center justify-between w-full px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-      >
+        onClick={() => setExpanded((p) => !p)}
+        className="flex items-center justify-between w-full px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">🎹 Ambient Pads</span>
-          {hasActive && (
-            <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
+          <span className="text-sm font-semibold text-foreground"> Ambient Pads</span>
+          {hasActive &&
+          <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
               {[...activeNotes][0]} ativa
             </span>
-          )}
+          }
         </div>
         {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
 
-      {expanded && (
-        <div className="mt-2 space-y-3">
+      {expanded &&
+      <div className="mt-2 space-y-3">
           {/* Volume + controls */}
           <div className="flex items-center gap-2 px-1">
             <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <Slider
-              value={[volume * 100]}
-              onValueChange={handleVolumeChange}
-              min={0}
-              max={100}
-              step={1}
-              className="flex-1"
-            />
+            value={[volume * 100]}
+            onValueChange={handleVolumeChange}
+            min={0}
+            max={100}
+            step={1}
+            className="flex-1" />
+
             <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{Math.round(volume * 100)}%</span>
             <Button
-              variant={editMode ? 'default' : 'ghost'}
-              size="sm"
-              className="h-7 px-2 text-xs gap-1"
-              onClick={() => setEditMode(p => !p)}
-            >
+            variant={editMode ? 'default' : 'ghost'}
+            size="sm"
+            className="h-7 px-2 text-xs gap-1"
+            onClick={() => setEditMode((p) => !p)}>
+
               <Upload className="h-3 w-3" />
               {editMode ? 'Pronto' : 'Importar'}
             </Button>
-            {hasActive && (
-              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={handleStopAll}>
+            {hasActive &&
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={handleStopAll}>
                 <StopCircle className="h-3 w-3" />
                 Parar
               </Button>
-            )}
+          }
           </div>
 
-          {editMode && (
-            <p className="text-[10px] text-primary text-center animate-pulse">
+          {editMode &&
+        <p className="text-[10px] text-primary text-center animate-pulse">
               Toque em uma nota para importar seu arquivo MP3
             </p>
-          )}
+        }
 
           {/* Note grid */}
           <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-12">
             {ALL_NOTES.map((note) => {
-              const isActive = activeNotes.has(note);
-              const isCustom = customNotes.has(note);
-              const color = NOTE_COLORS[note];
-              const isSharp = note.includes('#');
-              return (
-                <button
-                  key={note}
-                  onClick={() => handleToggle(note)}
-                  className={`
+            const isActive = activeNotes.has(note);
+            const isCustom = customNotes.has(note);
+            const color = NOTE_COLORS[note];
+            const isSharp = note.includes('#');
+            return (
+              <button
+                key={note}
+                onClick={() => handleToggle(note)}
+                className={`
                     relative flex items-center justify-center rounded-md
                     border transition-all duration-200 select-none cursor-pointer
                     h-10 sm:h-12 text-xs font-bold
                     ${isSharp ? 'text-[10px]' : ''}
                     ${editMode ? 'ring-2 ring-primary/30 animate-pulse' : ''}
                   `}
-                  style={{
-                    backgroundColor: `hsl(${color} / ${isActive ? 0.5 : 0.15})`,
-                    borderColor: `hsl(${color} / ${isActive ? 0.8 : 0.25})`,
-                    boxShadow: isActive ? `0 0 12px hsl(${color} / 0.3)` : 'none',
-                    color: `hsl(${color})`,
-                  }}
-                >
+                style={{
+                  backgroundColor: `hsl(${color} / ${isActive ? 0.5 : 0.15})`,
+                  borderColor: `hsl(${color} / ${isActive ? 0.8 : 0.25})`,
+                  boxShadow: isActive ? `0 0 12px hsl(${color} / 0.3)` : 'none',
+                  color: `hsl(${color})`
+                }}>
+
                   {note}
-                  {isCustom && (
-                    <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] opacity-60">
+                  {isCustom &&
+                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] opacity-60">
                       MP3
                     </span>
-                  )}
-                  {isActive && (
-                    <span
-                      className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse"
-                      style={{ backgroundColor: `hsl(${color})` }}
-                    />
-                  )}
-                  {editMode && isCustom && (
-                    <button
-                      onClick={(e) => handleRemoveCustom(note, e)}
-                      className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-3.5 h-3.5 flex items-center justify-center z-10"
-                    >
+                }
+                  {isActive &&
+                <span
+                  className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: `hsl(${color})` }} />
+
+                }
+                  {editMode && isCustom &&
+                <button
+                  onClick={(e) => handleRemoveCustom(note, e)}
+                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-3.5 h-3.5 flex items-center justify-center z-10">
+
                       <X className="h-2.5 w-2.5" />
                     </button>
-                  )}
-                </button>
-              );
-            })}
+                }
+                </button>);
+
+          })}
           </div>
 
           <p className="text-[10px] text-muted-foreground text-center">
-            {editMode
-              ? 'Clique em uma nota para substituir por seu MP3 • Clique no X para remover'
-              : 'Toque para ativar/desativar acordes sustentados'}
+            {editMode ?
+          'Clique em uma nota para substituir por seu MP3 • Clique no X para remover' :
+          'Toque para ativar/desativar acordes sustentados'}
           </p>
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default AmbientPads;
