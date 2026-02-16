@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Volume2, StopCircle, Upload, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Volume2, StopCircle, Upload, X, Lock } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import {
   ALL_NOTES,
   type NoteName,
@@ -29,6 +30,8 @@ const NOTE_COLORS: Record<NoteName, string> = {
 };
 
 const AmbientPads: React.FC = () => {
+  const { tier } = useSubscription();
+  const isMaster = tier === 'master';
   const [expanded, setExpanded] = useState(false);
   const [activeNotes, setActiveNotes] = useState<Set<NoteName>>(new Set());
   const [volume, setVolume] = useState(getAmbientVolume);
@@ -194,7 +197,18 @@ const AmbientPads: React.FC = () => {
             </p>
         }
 
-          <PanControl label="Pan Ambient" pan={pan} onPanChange={handlePanChange} />
+          {isMaster ? (
+            <PanControl label="Pan Ambient" pan={pan} onPanChange={handlePanChange} />
+          ) : (
+            <button
+              className="flex items-center gap-2 w-full px-1 py-1.5 text-xs text-muted-foreground hover:bg-muted rounded-md transition-colors"
+              onClick={() => toast('🔒 Pan disponível no plano Master')}
+            >
+              <Lock className="h-3 w-3" />
+              Pan Ambient
+              <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>
+            </button>
+          )}
 
           {/* Note grid */}
           <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-12">
