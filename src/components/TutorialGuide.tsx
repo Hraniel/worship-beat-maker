@@ -20,16 +20,16 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'pads',
     label: 'Pads de Bateria',
-    emoji: '🥁',
+    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
-        title: '🥁 Pads de Bateria',
+        title: 'Pads de Bateria',
         description: 'Toque nos pads para reproduzir sons. Cada pad toca um som diferente de bateria ou percussão.',
       },
       {
         targetSelector: '[data-tutorial="pad-grid"]',
-        title: '⚙️ Opções do Pad',
+        title: 'Opções do Pad',
         description: 'Segure um pad para acessar opções como volume individual, pan, renomear, alterar cor e efeitos de áudio.',
       },
     ],
@@ -37,16 +37,16 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'repertorio',
     label: 'Repertório',
-    emoji: '📋',
+    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="setlist"]',
-        title: '📋 Repertório',
+        title: 'Repertório',
         description: 'Salve configurações completas por música: BPM, volumes, pans, efeitos e sons customizados.',
       },
       {
         targetSelector: '[data-tutorial="setlist"]',
-        title: '🔀 Reordenar',
+        title: 'Reordenar',
         description: 'Arraste as músicas para reordenar. Clique em uma música para carregar suas configurações.',
       },
     ],
@@ -54,16 +54,16 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'metronomo',
     label: 'Metrônomo',
-    emoji: '🎵',
+    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="metronome"]',
-        title: '🎵 Metrônomo',
+        title: 'Metrônomo',
         description: 'Ajuste o BPM com o slider ou botões +/–. Escolha a fórmula de compasso (4/4, 3/4, 6/8).',
       },
       {
         targetSelector: '[data-tutorial="metronome"]',
-        title: '🔊 Pan do Metrônomo',
+        title: 'Pan do Metrônomo',
         description: 'Use o knob de pan para direcionar o metrônomo para o lado esquerdo ou direito do áudio.',
       },
     ],
@@ -71,11 +71,11 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'volume',
     label: 'Volume Master',
-    emoji: '🔊',
+    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="volume-master"]',
-        title: '🔊 Volume Master',
+        title: 'Volume Master',
         description: 'Controle o volume geral de todos os pads. Use o knob de pan para direcionar o áudio.',
       },
     ],
@@ -83,11 +83,11 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'ambient',
     label: 'Ambient Pads',
-    emoji: '🎹',
+    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
-        title: '🎹 Ambient Pads',
+        title: 'Ambient Pads',
         description: 'Use os pads ambientes no rodapé para tocar notas sustentadas. Ideal para criar atmosferas de louvor.',
       },
     ],
@@ -95,16 +95,16 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'edicao',
     label: 'Modo Edição',
-    emoji: '✏️',
+    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
-        title: '✏️ Modo Edição',
+        title: 'Modo Edição',
         description: 'Ative o Modo Edição no menu para acessar rapidamente as configurações de cada pad com um único toque.',
       },
       {
         targetSelector: '[data-tutorial="pad-grid"]',
-        title: '📐 Tamanho dos Pads',
+        title: 'Tamanho dos Pads',
         description: 'No modo edição, use os botões – e + no cabeçalho para ajustar o tamanho dos pads.',
       },
     ],
@@ -112,11 +112,11 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'foco',
     label: 'Modo Foco',
-    emoji: '🎯',
+    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="focus-mode"]',
-        title: '🎯 Modo Foco',
+        title: 'Modo Foco',
         description: 'Oculta o cabeçalho para maximizar o espaço dos pads. Ideal para apresentações ao vivo!',
       },
     ],

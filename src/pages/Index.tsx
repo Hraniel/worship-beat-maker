@@ -580,7 +580,7 @@ const Index = () => {
                             onClick={() => { if (startTutorialRef.current) startTutorialRef.current(); setMobileMenuOpen(false); setTutorialMenuOpen(false); }}
                             className="flex items-center gap-2 w-full px-5 py-2 text-xs font-medium text-primary hover:bg-muted transition-colors"
                           >
-                            🚀 Tour Completo
+                            Tour Completo
                           </button>
                           {TUTORIAL_SECTIONS.map(section => (
                             <button
@@ -588,7 +588,7 @@ const Index = () => {
                               onClick={() => { if (startTutorialRef.current) startTutorialRef.current(section.id); setMobileMenuOpen(false); setTutorialMenuOpen(false); }}
                               className="flex items-center gap-2 w-full px-5 py-2 text-xs text-foreground hover:bg-muted transition-colors"
                             >
-                              {section.emoji} {section.label}
+                              {section.label}
                             </button>
                           ))}
                         </div>
