@@ -59,7 +59,8 @@ function getAmbientPanner(): StereoPannerNode {
 
 const ATTACK = 2.0;
 const RELEASE = 1.5;
-const MAX_LOOP_DURATION = 15; // seconds — trim decoded buffers to save mobile memory
+const MAX_LOOP_DURATION = 30; // seconds — trim decoded buffers to save mobile memory
+const CROSSFADE_DURATION = 2; // seconds — crossfade at loop boundaries for seamless looping
 
 export function setAmbientVolume(vol: number) {
   ambientVolume = vol;
@@ -83,14 +84,38 @@ export function getAmbientPan() {
   return ambientPan;
 }
 
-// Trim an AudioBuffer to a max duration to save memory on mobile
+// Trim an AudioBuffer and apply crossfade at loop boundary for seamless looping
 function trimBuffer(ctx: AudioContext, buffer: AudioBuffer, maxSeconds: number): AudioBuffer {
   const maxSamples = Math.min(buffer.length, Math.ceil(maxSeconds * buffer.sampleRate));
-  if (maxSamples >= buffer.length) return buffer; // already short enough
+  if (maxSamples >= buffer.length && buffer.duration < maxSeconds + 1) return buffer;
+
+  const fadeSamples = Math.min(
+    Math.ceil(CROSSFADE_DURATION * buffer.sampleRate),
+    Math.floor(maxSamples / 4) // never more than 25% of total
+  );
+
   const trimmed = ctx.createBuffer(buffer.numberOfChannels, maxSamples, buffer.sampleRate);
+
   for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
-    trimmed.copyToChannel(buffer.getChannelData(ch).subarray(0, maxSamples), ch);
+    const src = buffer.getChannelData(ch);
+    const dst = trimmed.getChannelData(ch);
+
+    // Copy the main portion
+    for (let i = 0; i < maxSamples; i++) {
+      dst[i] = src[i];
+    }
+
+    // Crossfade: blend the end into the start for a seamless loop
+    // Fade out the last `fadeSamples` and mix in the beginning
+    for (let i = 0; i < fadeSamples; i++) {
+      const t = i / fadeSamples; // 0→1
+      const fadeOut = Math.cos(t * Math.PI * 0.5); // 1→0 (equal power)
+      const fadeIn = Math.sin(t * Math.PI * 0.5);  // 0→1 (equal power)
+      const endIdx = maxSamples - fadeSamples + i;
+      dst[endIdx] = dst[endIdx] * fadeOut + dst[i] * fadeIn;
+    }
   }
+
   return trimmed;
 }
 
