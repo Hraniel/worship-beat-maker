@@ -487,7 +487,7 @@ const Index = () => {
             onReorder={reorderSetlists} />
             </div>
 
-            <SpotifySearch onApplyConfig={handleApplySpotifyConfig} />
+            {tier === 'master' && <SpotifySearch onApplyConfig={handleApplySpotifyConfig} />}
 
             <button
             onClick={toggleFocusMode}
