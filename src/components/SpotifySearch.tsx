@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Search, Music, Loader2, Sparkles, Check, X, Zap } from 'lucide-react';
+import { Search, Music, Loader2, Sparkles, Check, X, Zap, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
@@ -38,6 +38,7 @@ interface SuggestedConfig {
 
 interface SpotifySearchProps {
   onApplyConfig: (config: SuggestedConfig) => void;
+  locked?: boolean;
 }
 
 const PAD_LABELS: Record<string, string> = {
@@ -81,7 +82,7 @@ function incrementUsage(fromCache: boolean) {
 }
 
 
-const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
+const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
@@ -189,12 +190,20 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
   
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={locked ? false : open} onOpenChange={locked ? undefined : setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
-          <Music className="h-4 w-4" />
-          <span className="hidden sm:inline">Spotify</span>
-        </Button>
+        {locked ? (
+          <Button variant="outline" size="sm" className="gap-1.5 opacity-70" onClick={(e) => { e.preventDefault(); toast('🔒 Spotify disponível no plano Master'); }}>
+            <Lock className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Spotify</span>
+            <span className="text-[10px] text-primary font-medium">MASTER</span>
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" className="gap-1.5">
+            <Music className="h-4 w-4" />
+            <span className="hidden sm:inline">Spotify</span>
+          </Button>
+        )}
       </SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
