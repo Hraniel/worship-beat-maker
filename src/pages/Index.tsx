@@ -108,6 +108,13 @@ const Index = () => {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  // Tutorial auto-expand listeners
+  useEffect(() => {
+    const expandMetronome = () => setMetronomeOpen(true);
+    window.addEventListener('tutorial:expand-metronome', expandMetronome);
+    return () => window.removeEventListener('tutorial:expand-metronome', expandMetronome);
+  }, []);
+
   const handleInstallClick = async () => {
     if (installPrompt) {
       await installPrompt.prompt();
@@ -508,7 +515,6 @@ const Index = () => {
             </div>
             )}
 
-            
 
             {!editMode && (
             <button
@@ -713,7 +719,9 @@ const Index = () => {
           }
 
           {/* Ambient Pads */}
-          <AmbientPads />
+          <div data-tutorial="ambient-pads">
+            <AmbientPads />
+          </div>
 
           {!focusMode &&
           <div data-tutorial="volume-master">
@@ -776,10 +784,12 @@ const Index = () => {
                 isPlaying={metronomeIsPlaying}
                 onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
 
+              <div data-tutorial="pan-metronome">
               <PanControl
                 label="Pan Metrônomo"
                 pan={metronomePan}
                 onPanChange={handleMetronomePanChange} />
+              </div>
 
             </div>
           </div>

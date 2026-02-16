@@ -55,6 +55,13 @@ const AmbientPads: React.FC = () => {
     ensureSamplesLoaded();
   }, [ensureSamplesLoaded]);
 
+  // Listen for tutorial expand event
+  useEffect(() => {
+    const handler = () => setExpanded(true);
+    window.addEventListener('tutorial:expand-ambient', handler);
+    return () => window.removeEventListener('tutorial:expand-ambient', handler);
+  }, []);
+
   const handleToggle = useCallback(async (note: NoteName) => {
     if (togglingRef.current) return;
     togglingRef.current = true;
