@@ -75,6 +75,7 @@ const Index = () => {
     try {const d = localStorage.getItem('drum-pads-pad-pans');return d ? JSON.parse(d) : {};} catch {return {};}
   });
   const [metronomePan, setMetronomePanState] = useState(0);
+  const [masterPanState, setMasterPanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
@@ -656,7 +657,9 @@ const Index = () => {
           <VolumeControl
             volume={masterVolume}
             onVolumeChange={setMasterVol}
-            label="Volume Master" />
+            label="Master"
+            pan={masterPanState}
+            onPanChange={(p) => { setMasterPanState(p); setMasterPan(p); }} />
           </div>
           }
 
