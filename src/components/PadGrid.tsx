@@ -16,6 +16,7 @@ interface PadGridProps {
   padPans: Record<string, number>;
   padColors: Record<string, PadColor>;
   editMode?: boolean;
+  disabled?: boolean;
   isMasterTier?: boolean;
   tier?: TierKey;
   onToggleLoop: (padId: string) => void;
@@ -29,7 +30,7 @@ interface PadGridProps {
 }
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, padColors, editMode, isMasterTier: isMaster = false, tier = 'free',
+  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, padColors, editMode, disabled, isMasterTier: isMaster = false, tier = 'free',
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange
 }) => {
   const maxPads = TIERS[tier].maxPads;
@@ -38,7 +39,7 @@ const PadGrid: React.FC<PadGridProps> = ({
   const visiblePads = pads.slice(0, 9);
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-4 w-full mx-auto transition-all duration-200">
+    <div className={`grid grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-4 w-full mx-auto transition-all duration-200 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
       {visiblePads.map((pad, index) => (
         <DrumPad
           key={pad.id}

@@ -659,7 +659,8 @@ const Index = () => {
           onRenamePad={handleRenamePad}
           padColors={padColors}
           onPadColorChange={handlePadColorChange}
-          editMode={editMode} />
+          editMode={editMode}
+          disabled={!currentSongId} />
         </div>
       </main>
 
