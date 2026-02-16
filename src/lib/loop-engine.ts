@@ -4,7 +4,7 @@
 import { getAudioContext, playSound, playMetronomeClick, getPadPanner } from './audio-engine';
 import type { PadSound } from './sounds';
 
-const SUBDIVISIONS_PER_BAR = 16; // 16th-note grid
+const SUBDIVISIONS_PER_BAR = 16;
 
 interface ActiveLoop {
   pad: PadSound;
@@ -111,8 +111,10 @@ function tick() {
   // Fire loop sounds for this subdivision
   for (const [, loop] of activeLoops) {
     if (!loop.pad.loopSteps) continue;
+    const totalSubs = SUBDIVISIONS_PER_BAR * (loop.pad.loopBars || 1);
+    const loopPos = currentSubdivision % totalSubs;
     for (const [sub, soundId] of loop.pad.loopSteps) {
-      if (sub === currentSubdivision) {
+      if (sub === loopPos) {
         const panner = getPadPanner(loop.pad.id);
         playSound(soundId, loop.volume, panner);
       }
@@ -122,17 +124,23 @@ function tick() {
   // Fire metronome click on quarter-note subdivisions
   if (metronomeEnabled) {
     const subsPerBeat = SUBDIVISIONS_PER_BAR / beatsPerBar;
-    if (currentSubdivision % subsPerBeat === 0) {
-      const beatIndex = currentSubdivision / subsPerBeat;
+    const barPos = currentSubdivision % SUBDIVISIONS_PER_BAR;
+    if (barPos % subsPerBeat === 0) {
+      const beatIndex = barPos / subsPerBeat;
       playMetronomeClick(beatIndex === 0, metronomeVolume);
       onMetronomeBeatCallback?.(beatIndex);
     }
   }
 
-  onSubdivisionCallback?.(currentSubdivision);
+  onSubdivisionCallback?.(currentSubdivision % SUBDIVISIONS_PER_BAR);
 
-  // Advance
-  currentSubdivision = (currentSubdivision + 1) % SUBDIVISIONS_PER_BAR;
+  // Advance – use max loop length across all active loops
+  let maxSubs = SUBDIVISIONS_PER_BAR;
+  for (const [, loop] of activeLoops) {
+    const s = SUBDIVISIONS_PER_BAR * (loop.pad.loopBars || 1);
+    if (s > maxSubs) maxSubs = s;
+  }
+  currentSubdivision = (currentSubdivision + 1) % maxSubs;
 }
 
 function startEngine() {

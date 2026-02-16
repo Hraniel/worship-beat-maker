@@ -7,8 +7,10 @@ export interface PadSound {
   category: PadCategory;
   colorVar: string;
   isLoop?: boolean;
-  /** Each entry: [subdivisionIndex, soundId] — subdivision 0-15 in a 16th-note grid per bar */
+  /** Each entry: [subdivisionIndex, soundId] — subdivision 0-15 in a 16th-note grid per bar (or 0-31 for 2-bar patterns) */
   loopSteps?: [number, string][];
+  /** Number of bars in this loop pattern (default 1) */
+  loopBars?: number;
 }
 
 export const defaultPads: PadSound[] = [
@@ -23,9 +25,13 @@ export const defaultPads: PadSound[] = [
   {
     id: 'loop-worship-1', name: 'Worship Snap', shortName: 'WSP', category: 'loops', colorVar: '--pad-loops',
     isLoop: true,
+    loopBars: 2,
     loopSteps: [
+      // Bar 1: 3 kicks only
       [0, 'kick-reverb'], [6, 'kick-reverb'], [12, 'kick-reverb'],
-      [8, 'snare-dry'],
+      // Bar 2: 3 kicks + snare on beat 3
+      [16, 'kick-reverb'], [22, 'kick-reverb'], [28, 'kick-reverb'],
+      [24, 'snare-dry'],
     ],
   },
   {
