@@ -14,12 +14,13 @@ import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import PanControl from '@/components/PanControl';
 import TutorialGuide, { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
+import SettingsDialog, { loadAudioSettings, type AudioSettings } from '@/components/SettingsDialog';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
@@ -85,6 +86,8 @@ const Index = () => {
     try { const d = localStorage.getItem('drum-pads-pad-colors'); return d ? JSON.parse(d) : {}; } catch { return {}; }
   });
   const startTutorialRef = useRef<((sectionId?: string) => void) | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [audioSettings, setAudioSettings] = useState<AudioSettings>(loadAudioSettings);
 
   // PWA update detection
   const {
@@ -570,6 +573,9 @@ const Index = () => {
                     <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Crown className="h-4 w-4 text-muted-foreground" /> Planos
                     </button>
+                    <button onClick={() => { setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
+                    </button>
                     {/* Guia Prático with sub-menu */}
                     <div className="relative">
                       <button
@@ -850,6 +856,12 @@ const Index = () => {
         locked={tier !== 'master'}
         externalOpen={spotifySheetOpen}
         onExternalOpenChange={setSpotifySheetOpen}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onAudioSettingsChange={setAudioSettings}
       />
     </div>);
 
