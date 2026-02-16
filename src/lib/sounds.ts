@@ -28,7 +28,7 @@ export const defaultPads: PadSound[] = [
     loopBars: 2,
     loopSteps: [
       // Bar 1: 3 kicks (tempos 1, entre 2-3, 4)
-      [0, 'kick-reverb'], [6, 'kick-reverb'], [12, 'kick-reverb'],
+      [0, 'kick'], [6, 'kick'], [12, 'kick'],
       // Bar 2: só snare no tempo 7 (tempo 3 do compasso 2)
       [24, 'snare-dry'],
     ],
