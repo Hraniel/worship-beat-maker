@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Volume2, StopCircle, Upload, X, Lock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Volume2, StopCircle, X, Lock } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -37,10 +37,7 @@ const AmbientPads: React.FC = () => {
   const [volume, setVolume] = useState(getAmbientVolume);
   const [pan, setPan] = useState(getAmbientPan);
   const [customNotes, setCustomNotes] = useState<Set<string>>(new Set());
-  const [editMode, setEditMode] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const pendingNoteRef = useRef<NoteName | null>(null);
-  const togglingRef = useRef(false); // guard against concurrent toggles
+  const togglingRef = useRef(false);
 
   const samplesLoadedRef = useRef(false);
 
@@ -64,11 +61,6 @@ const AmbientPads: React.FC = () => {
   }, [ensureSamplesLoaded]);
 
   const handleToggle = useCallback(async (note: NoteName) => {
-    if (editMode) {
-      pendingNoteRef.current = note;
-      fileInputRef.current?.click();
-      return;
-    }
     // Prevent concurrent toggles (rapid taps causing race conditions)
     if (togglingRef.current) return;
     togglingRef.current = true;
@@ -86,38 +78,6 @@ const AmbientPads: React.FC = () => {
     }
     setLoading(false);
     togglingRef.current = false;
-  }, [editMode]);
-
-  const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    const note = pendingNoteRef.current;
-    if (!file || !note) return;
-
-    if (!file.type.startsWith('audio/')) {
-      toast.error('Selecione um arquivo de áudio (MP3/WAV)');
-      return;
-    }
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      await saveAmbientSound(note, arrayBuffer, file.name);
-
-      // If note is currently playing, restart with new sample
-      const wasActive = isAmbientNoteActive(note);
-      if (wasActive) stopAmbientNote(note);
-      await loadAmbientSample(note);
-      if (wasActive) startAmbientNote(note);
-
-      setCustomNotes((prev) => new Set([...prev, note]));
-      toast.success(`Pad ${note} importado: ${file.name}`);
-    } catch (err) {
-      toast.error('Erro ao importar arquivo');
-      console.error(err);
-    }
-
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    pendingNoteRef.current = null;
   }, []);
 
   const handleRemoveCustom = useCallback(async (note: NoteName, e: React.MouseEvent) => {
@@ -157,13 +117,6 @@ const AmbientPads: React.FC = () => {
 
   return (
     <div className="w-full">
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="audio/*"
-        className="hidden"
-        onChange={handleFileImport} />
 
 
       <button
@@ -195,15 +148,6 @@ const AmbientPads: React.FC = () => {
             className="flex-1" />
 
             <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{Math.round(volume * 100)}%</span>
-            <Button
-            variant={editMode ? 'default' : 'ghost'}
-            size="sm"
-            className="h-7 px-2 text-xs gap-1"
-            onClick={() => setEditMode((p) => !p)}>
-
-              <Upload className="h-3 w-3" />
-              {editMode ? 'Pronto' : 'Importar'}
-            </Button>
             {hasActive &&
           <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={handleStopAll}>
                 <StopCircle className="h-3 w-3" />
@@ -211,13 +155,6 @@ const AmbientPads: React.FC = () => {
               </Button>
           }
           </div>
-
-          {editMode &&
-        <p className="text-[10px] text-primary text-center animate-pulse">
-              Toque em uma nota para importar seu arquivo MP3
-            </p>
-        }
-
           {isMaster ? (
             <PanControl label="Pan Ambient" pan={pan} onPanChange={handlePanChange} />
           ) : (
@@ -249,7 +186,6 @@ const AmbientPads: React.FC = () => {
                     h-10 sm:h-12 text-xs font-bold text-foreground
                     ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
                     ${isSharp ? 'text-[10px]' : ''}
-                    ${editMode ? 'ring-2 ring-primary/30 animate-pulse' : ''}
                   `}
                 style={{
                   backgroundColor: isActive ? 'hsl(0 0% 20%)' : 'hsl(0 0% 8%)',
@@ -268,14 +204,6 @@ const AmbientPads: React.FC = () => {
                   className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse bg-foreground" />
 
                 }
-                  {editMode && isCustom &&
-                <button
-                  onClick={(e) => handleRemoveCustom(note, e)}
-                  className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full w-3.5 h-3.5 flex items-center justify-center z-10">
-
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                }
                 </button>);
 
           })}
@@ -288,9 +216,7 @@ const AmbientPads: React.FC = () => {
           )}
 
           <p className="text-[10px] text-muted-foreground text-center">
-            {editMode ?
-          'Clique em uma nota para substituir por seu MP3 • Clique no X para remover' :
-          'Toque para ativar/desativar acordes sustentados'}
+            Toque para ativar/desativar acordes sustentados
           </p>
         </div>
       }
