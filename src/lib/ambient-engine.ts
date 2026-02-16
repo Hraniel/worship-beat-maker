@@ -199,7 +199,7 @@ export async function initAmbientSamples() {
   console.log(`[AmbientEngine] Init done. Loaded: ${decodedBuffers.size}/12`);
 }
 
-const SELF_CROSSFADE = 4; // seconds — overlap between loop iterations
+const SELF_CROSSFADE = 7; // seconds — overlap between loop iterations
 
 function startSampleNote(note: NoteName, buffer: AudioBuffer) {
   const ctx = getAudioContext();
