@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { X, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, HelpCircle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface TutorialStep {
@@ -9,50 +9,135 @@ interface TutorialStep {
   description: string;
 }
 
-const TUTORIAL_STEPS: TutorialStep[] = [
+export interface TutorialSection {
+  id: string;
+  label: string;
+  emoji: string;
+  steps: TutorialStep[];
+}
+
+export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
-    targetSelector: '[data-tutorial="pad-grid"]',
-    title: '🥁 Pads de Bateria',
-    description: 'Toque nos pads para reproduzir sons. Segure um pad para acessar opções como volume, importar som e renomear.',
+    id: 'pads',
+    label: 'Pads de Bateria',
+    emoji: '🥁',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: '🥁 Pads de Bateria',
+        description: 'Toque nos pads para reproduzir sons. Cada pad toca um som diferente de bateria ou percussão.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: '⚙️ Opções do Pad',
+        description: 'Segure um pad para acessar opções como volume individual, pan, renomear, alterar cor e efeitos de áudio.',
+      },
+    ],
   },
   {
-    targetSelector: '[data-tutorial="volume-master"]',
-    title: '🔊 Volume Master',
-    description: 'Controle o volume geral de todos os pads e sons do app.',
+    id: 'repertorio',
+    label: 'Repertório',
+    emoji: '📋',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="setlist"]',
+        title: '📋 Repertório',
+        description: 'Salve configurações completas por música: BPM, volumes, pans, efeitos e sons customizados.',
+      },
+      {
+        targetSelector: '[data-tutorial="setlist"]',
+        title: '🔀 Reordenar',
+        description: 'Arraste as músicas para reordenar. Clique em uma música para carregar suas configurações.',
+      },
+    ],
   },
   {
-    targetSelector: '[data-tutorial="metronome"]',
-    title: '🎵 Metrônomo',
-    description: 'Ajuste o BPM e a fórmula de compasso. Clique para expandir ou minimizar. O áudio continua mesmo minimizado.',
+    id: 'metronomo',
+    label: 'Metrônomo',
+    emoji: '🎵',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="metronome"]',
+        title: '🎵 Metrônomo',
+        description: 'Ajuste o BPM com o slider ou botões +/–. Escolha a fórmula de compasso (4/4, 3/4, 6/8).',
+      },
+      {
+        targetSelector: '[data-tutorial="metronome"]',
+        title: '🔊 Pan do Metrônomo',
+        description: 'Use o knob de pan para direcionar o metrônomo para o lado esquerdo ou direito do áudio.',
+      },
+    ],
   },
   {
-    targetSelector: '[data-tutorial="setlist"]',
-    title: '📋 Setlist',
-    description: 'Salve e organize suas músicas com configurações de BPM e volumes individuais dos pads.',
+    id: 'volume',
+    label: 'Volume Master',
+    emoji: '🔊',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="volume-master"]',
+        title: '🔊 Volume Master',
+        description: 'Controle o volume geral de todos os pads. Use o knob de pan para direcionar o áudio.',
+      },
+    ],
   },
   {
-    targetSelector: '[data-tutorial="pad-size"]',
-    title: '📐 Tamanho dos Pads',
-    description: 'Use os botões – e + para ajustar o tamanho dos pads na tela.',
+    id: 'ambient',
+    label: 'Ambient Pads',
+    emoji: '🎹',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: '🎹 Ambient Pads',
+        description: 'Use os pads ambientes no rodapé para tocar notas sustentadas. Ideal para criar atmosferas de louvor.',
+      },
+    ],
   },
   {
-    targetSelector: '[data-tutorial="focus-mode"]',
-    title: '🎯 Modo Foco',
-    description: 'Oculta o cabeçalho para ter mais espaço para os pads. Ideal para apresentações ao vivo!',
+    id: 'edicao',
+    label: 'Modo Edição',
+    emoji: '✏️',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: '✏️ Modo Edição',
+        description: 'Ative o Modo Edição no menu para acessar rapidamente as configurações de cada pad com um único toque.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: '📐 Tamanho dos Pads',
+        description: 'No modo edição, use os botões – e + no cabeçalho para ajustar o tamanho dos pads.',
+      },
+    ],
+  },
+  {
+    id: 'foco',
+    label: 'Modo Foco',
+    emoji: '🎯',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="focus-mode"]',
+        title: '🎯 Modo Foco',
+        description: 'Oculta o cabeçalho para maximizar o espaço dos pads. Ideal para apresentações ao vivo!',
+      },
+    ],
   },
 ];
 
+// Flatten all steps for the "complete tour" mode
+const ALL_STEPS = TUTORIAL_SECTIONS.flatMap(s => s.steps);
+
 interface TutorialGuideProps {
   externalTrigger?: boolean;
-  onStartRef?: (startFn: () => void) => void;
+  onStartRef?: (startFn: (sectionId?: string) => void) => void;
 }
 
 const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartRef }) => {
   const [active, setActive] = useState(false);
+  const [steps, setSteps] = useState<TutorialStep[]>(ALL_STEPS);
   const [step, setStep] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
-  const currentStep = TUTORIAL_STEPS[step];
+  const currentStep = steps[step];
 
   const updateRect = useCallback(() => {
     if (!active || !currentStep) return;
@@ -74,7 +159,17 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
     };
   }, [updateRect]);
 
-  const start = useCallback(() => {
+  const start = useCallback((sectionId?: string) => {
+    if (sectionId) {
+      const section = TUTORIAL_SECTIONS.find(s => s.id === sectionId);
+      if (section) {
+        setSteps(section.steps);
+      } else {
+        setSteps(ALL_STEPS);
+      }
+    } else {
+      setSteps(ALL_STEPS);
+    }
     setStep(0);
     setActive(true);
   }, []);
@@ -88,9 +183,9 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
   }, []);
 
   const next = useCallback(() => {
-    if (step < TUTORIAL_STEPS.length - 1) setStep(s => s + 1);
+    if (step < steps.length - 1) setStep(s => s + 1);
     else close();
-  }, [step, close]);
+  }, [step, steps.length, close]);
 
   const prev = useCallback(() => {
     if (step > 0) setStep(s => s - 1);
@@ -122,10 +217,7 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
   const overlay = active
     ? createPortal(
         <>
-          {/* Dark backdrop */}
           <div className="fixed inset-0 z-[200] bg-black/60" onClick={close} />
-
-          {/* Highlight */}
           {rect && (
             <div
               className="fixed rounded-lg border-2 border-primary z-[201] pointer-events-none"
@@ -138,8 +230,6 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
               }}
             />
           )}
-
-          {/* Balloon */}
           <div
             className="fixed z-[202] w-[300px] bg-card border border-border rounded-xl shadow-2xl p-4 animate-in fade-in-0 zoom-in-95 duration-200"
             style={getBalloonStyle()}
@@ -150,15 +240,13 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
             >
               <X className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
-
             <h3 className="text-sm font-bold text-foreground mb-1 pr-6">{currentStep?.title}</h3>
             <p className="text-xs text-muted-foreground leading-relaxed mb-3">
               {currentStep?.description}
             </p>
-
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-muted-foreground tabular-nums">
-                {step + 1} / {TUTORIAL_STEPS.length}
+                {step + 1} / {steps.length}
               </span>
               <div className="flex items-center gap-1.5">
                 <Button
@@ -176,8 +264,8 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
                   onClick={next}
                   className="h-7 px-2 text-xs"
                 >
-                  {step === TUTORIAL_STEPS.length - 1 ? 'Concluir' : 'Próximo'}
-                  {step < TUTORIAL_STEPS.length - 1 && <ChevronRight className="h-3 w-3 ml-0.5" />}
+                  {step === steps.length - 1 ? 'Concluir' : 'Próximo'}
+                  {step < steps.length - 1 && <ChevronRight className="h-3 w-3 ml-0.5" />}
                 </Button>
               </div>
             </div>
@@ -191,7 +279,7 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
     <>
       {!externalTrigger && (
         <button
-          onClick={start}
+          onClick={() => start()}
           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           title="Tutorial"
         >
