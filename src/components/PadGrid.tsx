@@ -17,6 +17,7 @@ interface PadGridProps {
   padColors: Record<string, PadColor>;
   editMode?: boolean;
   disabled?: boolean;
+  panDisabled?: boolean;
   isMasterTier?: boolean;
   tier?: TierKey;
   onToggleLoop: (padId: string) => void;
@@ -30,7 +31,7 @@ interface PadGridProps {
 }
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, padColors, editMode, disabled, isMasterTier: isMaster = false, tier = 'free',
+  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free',
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange
 }) => {
   const maxPads = TIERS[tier].maxPads;
@@ -64,6 +65,7 @@ const PadGrid: React.FC<PadGridProps> = ({
           customColor={padColors[pad.id]}
           onColorChange={onPadColorChange}
           editMode={editMode}
+          panDisabled={panDisabled}
         />
       ))}
     </div>

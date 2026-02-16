@@ -24,7 +24,11 @@ import {
 '@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
 
-const AmbientPads: React.FC = () => {
+interface AmbientPadsProps {
+  panDisabled?: boolean;
+}
+
+const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   const { tier } = useSubscription();
   const isMaster = tier === 'master';
   const [expanded, setExpanded] = useState(false);
@@ -60,6 +64,19 @@ const AmbientPads: React.FC = () => {
     const handler = () => setExpanded(true);
     window.addEventListener('tutorial:expand-ambient', handler);
     return () => window.removeEventListener('tutorial:expand-ambient', handler);
+  }, []);
+
+  // Listen for settings pan changes
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) {
+        setPan(detail.pan);
+        setAmbientPan(detail.pan);
+      }
+    };
+    window.addEventListener('settings:ambient-pan', handler);
+    return () => window.removeEventListener('settings:ambient-pan', handler);
   }, []);
 
   const handleToggle = useCallback(async (note: NoteName) => {
@@ -203,7 +220,7 @@ const AmbientPads: React.FC = () => {
 
               {/* Pan knob */}
               {isMaster ? (
-                <PanKnob pan={pan} onChange={handlePanChange} />
+                <PanKnob pan={pan} onChange={handlePanChange} disabled={panDisabled} />
               ) : (
                 <button
                   className="flex flex-col items-center gap-0.5"

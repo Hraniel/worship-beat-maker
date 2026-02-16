@@ -25,6 +25,7 @@ interface DrumPadProps {
   effects?: PadEffects;
   pan?: number;
   editMode?: boolean;
+  panDisabled?: boolean;
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
   onRemoveCustomSound?: (padId: string) => void;
@@ -39,7 +40,7 @@ interface DrumPadProps {
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
-  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor,
+  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled,
   onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange
 }) => {
   const [isActive, setIsActive] = useState(false);
@@ -271,6 +272,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 pan={pan}
                 onPanChange={(p) => onPanChange?.(pad.id, p)}
                 compact
+                disabled={panDisabled}
               />
             ) : (
               <LockedRow label="Pan (L/R)" feature="controle de panorâmica" />

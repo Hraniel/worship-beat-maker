@@ -11,9 +11,10 @@ interface VolumeControlProps {
   label?: string;
   pan?: number;
   onPanChange?: (p: number) => void;
+  panDisabled?: boolean;
 }
 
-const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, label = "Master", pan, onPanChange }) => {
+const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, label = "Master", pan, onPanChange, panDisabled }) => {
   const isMuted = volume === 0;
   const [draggingVolume, setDraggingVolume] = useState(false);
 
@@ -48,7 +49,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, l
       </span>
       {pan !== undefined && onPanChange && (
         <div className="border-l border-border pl-2 ml-1">
-          <PanKnob pan={pan} onChange={onPanChange} />
+          <PanKnob pan={pan} onChange={onPanChange} disabled={panDisabled} />
         </div>
       )}
 
