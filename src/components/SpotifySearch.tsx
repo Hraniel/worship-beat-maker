@@ -193,16 +193,16 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked }) 
     <Sheet open={locked ? false : open} onOpenChange={locked ? undefined : setOpen}>
       <SheetTrigger asChild>
         {locked ? (
-          <Button variant="outline" size="sm" className="gap-1.5 opacity-70" onClick={(e) => { e.preventDefault(); toast('🔒 Spotify disponível no plano Master'); }}>
-            <Lock className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Spotify</span>
-            <span className="text-[10px] text-primary font-medium">MASTER</span>
-          </Button>
+          <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors" onClick={(e) => { e.preventDefault(); toast('🔒 Spotify disponível no plano Master'); }}>
+            <Lock className="h-4 w-4" />
+            Spotify AI
+            <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>
+          </button>
         ) : (
-          <Button variant="outline" size="sm" className="gap-1.5">
-            <Music className="h-4 w-4" />
-            <span className="hidden sm:inline">Spotify</span>
-          </Button>
+          <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+            <Music className="h-4 w-4 text-muted-foreground" />
+            Spotify AI
+          </button>
         )}
       </SheetTrigger>
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
