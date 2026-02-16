@@ -33,8 +33,11 @@ interface SynthVoice {
 
 interface SampleVoice {
   type: 'sample';
-  source: AudioBufferSourceNode;
+  sources: AudioBufferSourceNode[];
+  gains: GainNode[];
   masterGain: GainNode;
+  buffer: AudioBuffer;
+  intervalId: ReturnType<typeof setInterval> | null;
 }
 
 type AmbientVoice = SynthVoice | SampleVoice;
@@ -58,7 +61,7 @@ function getAmbientPanner(): StereoPannerNode {
 }
 
 const ATTACK = 0.5;
-const RELEASE = 8.0;
+const RELEASE = 4.0;
 const MAX_LOOP_DURATION = 30; // seconds — trim decoded buffers to save mobile memory
 const CROSSFADE_DURATION = 4; // seconds — crossfade at loop boundaries for seamless looping
 
@@ -196,24 +199,76 @@ export async function initAmbientSamples() {
   console.log(`[AmbientEngine] Init done. Loaded: ${decodedBuffers.size}/12`);
 }
 
+const SELF_CROSSFADE = 4; // seconds — overlap between loop iterations
+
 function startSampleNote(note: NoteName, buffer: AudioBuffer) {
   const ctx = getAudioContext();
   const panner = getAmbientPanner();
   const t = ctx.currentTime;
 
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  source.loop = true;
-
   const voiceGain = ctx.createGain();
   voiceGain.gain.setValueAtTime(0, t);
   voiceGain.gain.linearRampToValueAtTime(ambientVolume, t + ATTACK);
-
-  source.connect(voiceGain);
   voiceGain.connect(panner);
-  source.start(t);
 
-  activeVoices.set(note, { type: 'sample', source, masterGain: voiceGain });
+  const sources: AudioBufferSourceNode[] = [];
+  const gains: GainNode[] = [];
+
+  // Schedule a single iteration: fade-in over SELF_CROSSFADE, play, fade-out over SELF_CROSSFADE
+  function scheduleIteration(startTime: number) {
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const g = ctx.createGain();
+    const dur = buffer.duration;
+
+    // Fade in
+    g.gain.setValueAtTime(0, startTime);
+    g.gain.linearRampToValueAtTime(1, startTime + SELF_CROSSFADE);
+    // Fade out
+    g.gain.setValueAtTime(1, startTime + dur - SELF_CROSSFADE);
+    g.gain.linearRampToValueAtTime(0, startTime + dur);
+
+    src.connect(g);
+    g.connect(voiceGain);
+    src.start(startTime);
+    src.stop(startTime + dur);
+
+    sources.push(src);
+    gains.push(g);
+
+    // Cleanup old finished sources to prevent memory leak
+    src.onended = () => {
+      const si = sources.indexOf(src);
+      if (si !== -1) sources.splice(si, 1);
+      const gi = gains.indexOf(g);
+      if (gi !== -1) gains.splice(gi, 1);
+      try { src.disconnect(); } catch {}
+      try { g.disconnect(); } catch {}
+    };
+  }
+
+  // The effective loop period: next iteration starts SELF_CROSSFADE before current ends
+  const loopPeriod = buffer.duration - SELF_CROSSFADE;
+
+  // Schedule first two iterations immediately (overlapping)
+  scheduleIteration(t);
+  if (loopPeriod > 0) {
+    scheduleIteration(t + loopPeriod);
+  }
+
+  // Keep scheduling future iterations
+  const intervalId = setInterval(() => {
+    try {
+      const now = ctx.currentTime;
+      // Schedule 2 iterations ahead
+      const nextStart = now + loopPeriod;
+      scheduleIteration(nextStart);
+    } catch (e) {
+      console.warn('[AmbientEngine] Schedule iteration failed:', e);
+    }
+  }, loopPeriod * 1000);
+
+  activeVoices.set(note, { type: 'sample', sources, gains, masterGain: voiceGain, buffer, intervalId });
 }
 
 function startSynthNote(note: NoteName) {
@@ -341,8 +396,9 @@ export function stopAmbientNote(note: NoteName) {
           for (const g of voice.gains) { try { g.disconnect(); } catch {} }
           try { voice.filterNode.disconnect(); } catch {}
         } else {
-          try { voice.source.stop(); } catch {}
-          try { voice.source.disconnect(); } catch {}
+          if (voice.intervalId) clearInterval(voice.intervalId);
+          for (const s of voice.sources) { try { s.stop(); } catch {} try { s.disconnect(); } catch {} }
+          for (const g of voice.gains) { try { g.disconnect(); } catch {} }
         }
         try { voice.masterGain.disconnect(); } catch {}
       } catch {}
@@ -356,7 +412,9 @@ export function stopAmbientNote(note: NoteName) {
         voice.oscillators.forEach(o => { try { o.stop(); o.disconnect(); } catch {} });
         voice.gains.forEach(g => { try { g.disconnect(); } catch {} });
       } else {
-        try { voice.source.stop(); voice.source.disconnect(); } catch {}
+        if (voice.intervalId) clearInterval(voice.intervalId);
+        voice.sources.forEach(s => { try { s.stop(); s.disconnect(); } catch {} });
+        voice.gains.forEach(g => { try { g.disconnect(); } catch {} });
       }
       try { voice.masterGain.disconnect(); } catch {}
     } catch {}
