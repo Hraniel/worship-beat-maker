@@ -29,9 +29,9 @@ interface PadGridProps {
 }
 
 const sizeMaxWidths = {
-  sm: 'max-w-[400px]',
-  md: 'max-w-[560px]',
-  lg: 'max-w-[720px]',
+  sm: 'max-w-[520px]',
+  md: 'max-w-[620px]',
+  lg: 'max-w-[760px]',
 };
 
 const PadGrid: React.FC<PadGridProps> = ({
@@ -44,7 +44,7 @@ const PadGrid: React.FC<PadGridProps> = ({
   const visiblePads = pads.slice(0, 8);
 
   return (
-    <div className={`grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
+    <div className={`grid grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
       {visiblePads.map((pad, index) => (
         <DrumPad
           key={pad.id}
