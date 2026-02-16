@@ -14,7 +14,7 @@ import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,7 @@ const Index = () => {
   const [metronomePan, setMetronomePanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [padColors, setPadColors] = useState<Record<string, PadColor>>(() => {
     try { const d = localStorage.getItem('drum-pads-pad-colors'); return d ? JSON.parse(d) : {}; } catch { return {}; }
@@ -543,7 +544,21 @@ const Index = () => {
                     <button onClick={() => { setEditMode(p => !p); setMobileMenuOpen(false); }} className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? 'text-primary font-medium bg-primary/10' : 'text-foreground hover:bg-muted'}`}>
                       <Settings2 className="h-4 w-4" /> {editMode ? 'Sair do modo edição' : 'Modo Edição'}
                     </button>
-                    <SpotifySearch onApplyConfig={handleApplySpotifyConfig} locked={tier !== 'master'} onSheetOpen={() => setMobileMenuOpen(false)} />
+                    <button
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        if (tier !== 'master') {
+                          toast('🔒 Spotify disponível no plano Master');
+                        } else {
+                          setTimeout(() => setSpotifySheetOpen(true), 150);
+                        }
+                      }}
+                    >
+                      {tier !== 'master' ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Music className="h-4 w-4 text-muted-foreground" />}
+                      Spotify AI
+                      {tier !== 'master' && <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>}
+                    </button>
                     <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Crown className="h-4 w-4 text-muted-foreground" /> Planos
                     </button>
@@ -752,6 +767,14 @@ const Index = () => {
           </div>
         </div>
       )}
+
+      {/* Spotify Search Sheet (outside menu to persist) */}
+      <SpotifySearch
+        onApplyConfig={handleApplySpotifyConfig}
+        locked={tier !== 'master'}
+        externalOpen={spotifySheetOpen}
+        onExternalOpenChange={setSpotifySheetOpen}
+      />
     </div>);
 
 };
