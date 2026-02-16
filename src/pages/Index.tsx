@@ -61,6 +61,7 @@ const Index = () => {
   const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
   const [metronomeOpen, setMetronomeOpen] = useState(true);
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
+  const [spotifyTrackName, setSpotifyTrackName] = useState<string | null>(null);
   const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
   const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
   const [padNames, setPadNames] = useState<Record<string, string>>(() => {
@@ -285,6 +286,8 @@ const Index = () => {
   }, []);
 
   const handleApplySpotifyConfig = useCallback((config: any) => {
+    // Save track name
+    if (config.trackName) setSpotifyTrackName(config.trackName);
     // Apply BPM
     if (config.bpm) setBpm(Math.round(config.bpm));
     // Apply time signature
@@ -639,7 +642,12 @@ const Index = () => {
             <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => setMetronomeOpen((prev) => !prev)}>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                {spotifyTrackName && (
+                  <span className="text-xs font-medium text-primary truncate">♪ {spotifyTrackName}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
                 <span className="text-xs text-muted-foreground">BPM</span>
                 <span className="text-xs text-muted-foreground">· {timeSignature}</span>
