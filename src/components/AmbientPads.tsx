@@ -51,12 +51,12 @@ const AmbientPads: React.FC = () => {
       return;
     }
     const isNowActive = toggleAmbientNote(note);
-    setActiveNotes(prev => {
-      const next = new Set(prev);
-      if (isNowActive) next.add(note);
-      else next.delete(note);
-      return next;
-    });
+    if (isNowActive) {
+      // Only one note active at a time
+      setActiveNotes(new Set([note]));
+    } else {
+      setActiveNotes(new Set());
+    }
   }, [editMode]);
 
   const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,7 +140,7 @@ const AmbientPads: React.FC = () => {
           <span className="text-sm font-semibold text-foreground">🎹 Ambient Pads</span>
           {hasActive && (
             <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
-              {activeNotes.size} ativa{activeNotes.size !== 1 ? 's' : ''}
+              {[...activeNotes][0]} ativa
             </span>
           )}
         </div>
