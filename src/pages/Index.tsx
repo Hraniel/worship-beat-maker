@@ -707,8 +707,8 @@ const Index = () => {
 
       {/* Save to repertoire prompt */}
       {showSavePrompt && (
-        <div className="fixed bottom-24 left-1/2 z-50 animate-fade-in-up w-[90%] max-w-sm">
-          <div className="bg-card border border-border rounded-lg shadow-lg p-4 space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4">
+          <div className="bg-card border border-border rounded-lg shadow-lg p-5 space-y-4 w-full max-w-sm animate-fade-in-up" style={{ transform: 'none' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ListMusic className="h-4 w-4 text-primary" />
