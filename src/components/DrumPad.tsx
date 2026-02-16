@@ -326,39 +326,6 @@ const DrumPad: React.FC<DrumPadProps> = ({
               </button>
             )}
 
-            {/* Color picker - always available */}
-            <button
-              className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
-                showColorPicker ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
-              }`}
-              onClick={() => setShowColorPicker(prev => !prev)}
-            >
-              <Palette className="h-3.5 w-3.5" />
-              Alterar cor
-              {customColor && (
-                <span
-                  className="ml-auto w-3 h-3 rounded-full border border-border"
-                  style={{ backgroundColor: `hsl(${padColorToHsl(customColor)} / ${customColor.opacity})` }}
-                />
-              )}
-            </button>
-            {showColorPicker && (
-              <div className="space-y-2">
-                <PadColorPicker
-                  color={customColor || { hue: 0, saturation: 75, lightness: 55, opacity: 1 }}
-                  onChange={(c) => onColorChange?.(pad.id, c)}
-                />
-                {customColor && (
-                  <button
-                    className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-border"
-                    onClick={() => { onColorChange?.(pad.id, undefined as any); setShowColorPicker(false); }}
-                  >
-                    Voltar ao padrão
-                  </button>
-                )}
-              </div>
-            )}
-
             {/* Import sound - not for loop pads */}
             {!pad.isLoop && (
               <>
@@ -417,6 +384,39 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 <X className="h-3.5 w-3.5" />
                 Remover custom
               </button>
+            )}
+
+            {/* Color picker - always available */}
+            <button
+              className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                showColorPicker ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
+              }`}
+              onClick={() => setShowColorPicker(prev => !prev)}
+            >
+              <Palette className="h-3.5 w-3.5" />
+              Alterar cor
+              {customColor && (
+                <span
+                  className="ml-auto w-3 h-3 rounded-full border border-border"
+                  style={{ backgroundColor: `hsl(${padColorToHsl(customColor)} / ${customColor.opacity})` }}
+                />
+              )}
+            </button>
+            {showColorPicker && (
+              <div className="space-y-2">
+                <PadColorPicker
+                  color={customColor || { hue: 0, saturation: 75, lightness: 55, opacity: 1 }}
+                  onChange={(c) => onColorChange?.(pad.id, c)}
+                />
+                {customColor && (
+                  <button
+                    className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-border"
+                    onClick={() => { onColorChange?.(pad.id, undefined as any); setShowColorPicker(false); }}
+                  >
+                    Voltar ao padrão
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Effects - Master tier */}
