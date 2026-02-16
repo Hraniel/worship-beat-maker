@@ -65,6 +65,7 @@ Também sugira:
 Responda APENAS com JSON válido usando esta estrutura exata:
 {
   "bpm": number,
+  "key": string, // ex: "C", "D#m", "Gb", "Am" - tonalidade da música
   "timeSignature": string,
   "recommendedLoop": string,
   "description": string,

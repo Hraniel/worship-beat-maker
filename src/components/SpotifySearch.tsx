@@ -29,6 +29,7 @@ interface PadConfig {
 
 interface SuggestedConfig {
   bpm: number;
+  key?: string;
   timeSignature: string;
   recommendedLoop: string;
   description: string;
@@ -318,10 +319,14 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked }) 
 
                   <p className="text-xs text-muted-foreground">{suggestion.description}</p>
 
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-4 gap-2">
                     <div className="bg-muted/50 rounded-md p-2 text-center">
                       <span className="text-lg font-bold text-foreground">{suggestion.bpm}</span>
                       <p className="text-[10px] text-muted-foreground">BPM</p>
+                    </div>
+                    <div className="bg-muted/50 rounded-md p-2 text-center">
+                      <span className="text-lg font-bold text-foreground">{suggestion.key || '—'}</span>
+                      <p className="text-[10px] text-muted-foreground">Tom</p>
                     </div>
                     <div className="bg-muted/50 rounded-md p-2 text-center">
                       <span className="text-lg font-bold text-foreground">{suggestion.timeSignature}</span>
