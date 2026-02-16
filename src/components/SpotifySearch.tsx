@@ -51,36 +51,8 @@ const PAD_LABELS: Record<string, string> = {
   'loop-ballad': 'Loop Ballad',
 };
 
-const PatternGrid: React.FC<{ pattern: number[]; label: string }> = ({ pattern, label }) => {
-  if (!pattern || pattern.length === 0) return null;
-  const subdivisions = pattern.length;
-  const beatsPerBar = subdivisions === 12 ? 3 : 4;
-  const subsPerBeat = subdivisions / beatsPerBar;
 
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="text-[10px] font-medium w-16 shrink-0 truncate">{label}</span>
-      <div className="flex gap-px">
-        {pattern.map((val, i) => (
-          <div
-            key={i}
-            className={`h-3 rounded-sm transition-colors ${
-              i % subsPerBeat === 0 ? 'ml-0.5 first:ml-0' : ''
-            }`}
-            style={{
-              width: subdivisions > 12 ? '10px' : '14px',
-              backgroundColor: val >= 0.8
-                ? 'hsl(var(--primary))'
-                : val >= 0.3
-                ? 'hsl(var(--primary) / 0.5)'
-                : 'hsl(var(--muted))',
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
+
 
 const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
   const [open, setOpen] = useState(false);
@@ -170,7 +142,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const hasPatterns = suggestion?.pads && Object.values(suggestion.pads).some(p => p.pattern && p.pattern.length > 0);
+  
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -187,7 +159,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
             Buscar no Spotify
           </SheetTitle>
           <SheetDescription>
-            Busque uma música e a IA analisa o áudio real para sugerir configurações e padrões rítmicos
+            Busque uma música e a IA analisa o áudio real para sugerir efeitos (EQ, reverb, delay, pan) nos pads
           </SheetDescription>
         </SheetHeader>
 
@@ -295,33 +267,8 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
                     </div>
                   </div>
 
-                  {/* Rhythmic Pattern Visualization */}
-                  {hasPatterns && (
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-medium text-muted-foreground uppercase">Padrão Rítmico</span>
-                      <div className="bg-muted/30 rounded-md p-2 space-y-1">
-                        {suggestion.pads && Object.entries(suggestion.pads).map(([padId, cfg]) => (
-                          cfg.pattern && cfg.pattern.length > 0 && cfg.pattern.some(v => v > 0) ? (
-                            <PatternGrid key={padId} pattern={cfg.pattern} label={PAD_LABELS[padId] || padId} />
-                          ) : null
-                        ))}
-                      </div>
-                      <div className="flex items-center gap-3 text-[9px] text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'hsl(var(--primary))' }} />
-                          Forte
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'hsl(var(--primary) / 0.5)' }} />
-                          Ghost
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'hsl(var(--muted))' }} />
-                          Silêncio
-                        </span>
-                      </div>
-                    </div>
-                  )}
+
+
 
                   {/* Pad configs preview */}
                   <div className="space-y-1">
