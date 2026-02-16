@@ -749,7 +749,7 @@ const Index = () => {
       {/* Main content area - side by side on lg+ */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Pad Grid - Main area */}
-      <main className="flex-1 flex items-center justify-center overflow-hidden min-h-0">
+      <main className="flex-1 flex items-center justify-center overflow-hidden min-h-0 min-h-[55vh] md:min-h-[60vh] lg:min-h-0">
         <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
         <PadGrid
           isMasterTier={tier === 'master'}
@@ -777,7 +777,7 @@ const Index = () => {
         </div>
       </main>
 
-      <footer className={`shrink-0 lg:w-[340px] xl:w-[380px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1.5 max-h-[45vh] lg:max-h-none overflow-y-auto focus-footer' : 'p-2 sm:p-3 lg:p-4'}`}>
+      <footer className={`shrink-0 lg:w-[340px] xl:w-[380px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur overflow-y-auto lg:overflow-y-auto ${focusMode ? 'p-1.5 max-h-[35vh] md:max-h-[30vh] lg:max-h-none focus-footer' : 'p-2 sm:p-3 lg:p-4 max-h-[40vh] md:max-h-[35vh] lg:max-h-none'}`}>
         <div className="max-w-[600px] lg:max-w-none mx-auto space-y-2">
           {/* Focus mode: show exit button + song name */}
           {focusMode &&
