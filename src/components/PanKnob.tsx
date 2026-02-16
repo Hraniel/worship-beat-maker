@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import ZoomPopup from './ZoomPopup';
+import { toast } from 'sonner';
 
 interface PanKnobProps {
   pan: number;
   onChange: (p: number) => void;
+  disabled?: boolean;
 }
 
-const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
+const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange, disabled = false }) => {
   const angle = pan * 135;
   const displayValue = pan === 0 ? 'C' : pan < 0 ? `L${Math.round(Math.abs(pan) * 100)}` : `R${Math.round(pan * 100)}`;
   const [dragging, setDragging] = useState(false);
@@ -19,11 +21,20 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
     flashTimer.current = setTimeout(() => setDragging(false), 600);
   };
 
+  const handleDisabledTap = () => {
+    toast('Pan bloqueado no modo Mono. Altere para Stereo nas Configurações.', { duration: 2500 });
+  };
+
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
       <div
-        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border-[1.5px] border-black/60 bg-orange-400/80 cursor-pointer touch-none"
+        className={`relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border-[1.5px] border-black/60 bg-orange-400/80 touch-none ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
         onPointerDown={(e) => {
+          if (disabled) {
+            e.preventDefault();
+            handleDisabledTap();
+            return;
+          }
           e.preventDefault();
           e.stopPropagation();
           const el = e.currentTarget;
@@ -61,8 +72,11 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
           el.addEventListener('pointerup', up);
           el.addEventListener('lostpointercapture', up);
         }}
-        onDoubleClick={() => { onChange(0); flashPopup(); }}
-        title={`Pan: ${displayValue}`}
+        onDoubleClick={() => {
+          if (disabled) { handleDisabledTap(); return; }
+          onChange(0); flashPopup();
+        }}
+        title={disabled ? 'Pan bloqueado (Mono)' : `Pan: ${displayValue}`}
       >
         <div
           className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-black rounded-full origin-bottom"
@@ -76,7 +90,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
       </div>
       <span className="text-[8px] landscape:text-[10px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
 
-      <ZoomPopup visible={dragging}>
+      <ZoomPopup visible={dragging && !disabled}>
         <div className="relative w-20 h-20 rounded-full border-2 border-border bg-muted/50">
           <div
             className="absolute top-2 left-1/2 w-1 h-6 bg-foreground rounded-full origin-bottom"

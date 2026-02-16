@@ -89,7 +89,45 @@ const Index = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [audioSettings, setAudioSettings] = useState<AudioSettings>(loadAudioSettings);
 
-  // PWA update detection
+  // Apply audio settings (auto-pan when side is selected, reset to center on mono)
+  const handleAudioSettingsChange = useCallback((settings: AudioSettings) => {
+    setAudioSettings(settings);
+
+    // Pads: auto-set all pad pans
+    if (settings.padsStereo === 'mono') {
+      // Reset all pad pans to center
+      const resetPans: Record<string, number> = {};
+      Object.keys(padPans).forEach(id => { resetPans[id] = 0; setPadPan(id, 0); });
+      setPadPans(resetPans);
+      localStorage.setItem('drum-pads-pad-pans', JSON.stringify(resetPans));
+    } else if (settings.padsSide) {
+      const panVal = settings.padsSide === 'left' ? -1 : 1;
+      const newPans: Record<string, number> = {};
+      defaultPads.forEach(p => { newPans[p.id] = panVal; setPadPan(p.id, panVal); });
+      setPadPans(newPans);
+      localStorage.setItem('drum-pads-pad-pans', JSON.stringify(newPans));
+    }
+
+    // Metronome
+    if (settings.metronomeStereo === 'mono') {
+      setMetronomePanState(0);
+      setMetronomePan(0);
+    } else if (settings.metronomeSide) {
+      const panVal = settings.metronomeSide === 'left' ? -1 : 1;
+      setMetronomePanState(panVal);
+      setMetronomePan(panVal);
+    }
+
+    // Master pan (for ambient - handled via event)
+    if (settings.ambientStereo === 'mono') {
+      window.dispatchEvent(new CustomEvent('settings:ambient-pan', { detail: { pan: 0, disabled: true } }));
+    } else if (settings.ambientSide) {
+      const panVal = settings.ambientSide === 'left' ? -1 : 1;
+      window.dispatchEvent(new CustomEvent('settings:ambient-pan', { detail: { pan: panVal, disabled: false } }));
+    }
+  }, [padPans, defaultPads]);
+
+
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
@@ -700,6 +738,7 @@ const Index = () => {
           padColors={padColors}
           onPadColorChange={handlePadColorChange}
           editMode={editMode}
+          panDisabled={audioSettings.padsStereo === 'mono'}
           disabled={!currentSongId} />
         </div>
       </main>
@@ -726,7 +765,7 @@ const Index = () => {
 
           {/* Ambient Pads */}
           <div data-tutorial="ambient-pads">
-            <AmbientPads />
+            <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
           </div>
 
           {!focusMode &&
@@ -794,7 +833,8 @@ const Index = () => {
               <PanControl
                 label="Pan Metrônomo"
                 pan={metronomePan}
-                onPanChange={handleMetronomePanChange} />
+                onPanChange={handleMetronomePanChange}
+                disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
 
             </div>
@@ -861,7 +901,7 @@ const Index = () => {
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        onAudioSettingsChange={setAudioSettings}
+        onAudioSettingsChange={handleAudioSettingsChange}
       />
     </div>);
 
