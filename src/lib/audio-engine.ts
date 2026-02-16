@@ -552,6 +552,43 @@ export function playSnareReverb(volume = 0.6, destination?: AudioNode) {
   osc.stop(ctx.currentTime + 0.08);
 }
 
+// Snare without reverb tail – same EQ/body as snare-reverb but dry
+export function playSnareDry(volume = 0.6, destination?: AudioNode) {
+  const ctx = getAudioContext();
+  const dest = destination || getMasterGain();
+  // Noise burst
+  const noiseLen = 0.15;
+  const bufferSize = ctx.sampleRate * noiseLen;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 2000;
+  filter.Q.value = 0.8;
+  const noiseGain = ctx.createGain();
+  noise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(dest);
+  noiseGain.gain.setValueAtTime(volume, ctx.currentTime);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + noiseLen);
+  noise.start(ctx.currentTime);
+  noise.stop(ctx.currentTime + noiseLen);
+  // Tone body
+  const osc = ctx.createOscillator();
+  const oscGain = ctx.createGain();
+  osc.connect(oscGain);
+  oscGain.connect(dest);
+  osc.frequency.setValueAtTime(200, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.06);
+  oscGain.gain.setValueAtTime(volume * 0.5, ctx.currentTime);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.08);
+}
+
 export function playMetronomeClick(accent = false, volume = 0.3) {
   const ctx = getAudioContext();
   const osc = ctx.createOscillator();
@@ -585,6 +622,7 @@ export const soundMap: Record<string, (volume?: number, destination?: AudioNode)
   'finger-snap': playFingerSnap,
   'kick-reverb': playKickReverb,
   'snare-reverb': playSnareReverb,
+  'snare-dry': playSnareDry,
 };
 
 // Custom sound buffer cache
