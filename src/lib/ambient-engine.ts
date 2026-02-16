@@ -43,7 +43,19 @@ const activeVoices = new Map<NoteName, AmbientVoice>();
 const fadingVoices = new Set<AmbientVoice>(); // track voices during fade-out for cleanup
 const decodedBuffers = new Map<NoteName, AudioBuffer>();
 let ambientVolume = 0.4;
+let ambientPan = 0;
+let ambientPanner: StereoPannerNode | null = null;
 let samplesInitialized = false;
+
+function getAmbientPanner(): StereoPannerNode {
+  if (!ambientPanner) {
+    const ctx = getAudioContext();
+    ambientPanner = ctx.createStereoPanner();
+    ambientPanner.pan.value = ambientPan;
+    ambientPanner.connect(getMasterGain());
+  }
+  return ambientPanner;
+}
 
 const ATTACK = 3.0;
 const RELEASE = 4.0;
@@ -57,6 +69,17 @@ export function setAmbientVolume(vol: number) {
 
 export function getAmbientVolume() {
   return ambientVolume;
+}
+
+export function setAmbientPan(pan: number) {
+  ambientPan = pan;
+  if (ambientPanner) {
+    ambientPanner.pan.setValueAtTime(pan, getAudioContext().currentTime);
+  }
+}
+
+export function getAmbientPan() {
+  return ambientPan;
 }
 
 // Pre-decode and cache a sample buffer for a note
@@ -109,7 +132,7 @@ export async function initAmbientSamples() {
 
 function startSampleNote(note: NoteName, buffer: AudioBuffer) {
   const ctx = getAudioContext();
-  const master = getMasterGain();
+  const panner = getAmbientPanner();
   const t = ctx.currentTime;
 
   const source = ctx.createBufferSource();
@@ -121,7 +144,7 @@ function startSampleNote(note: NoteName, buffer: AudioBuffer) {
   voiceGain.gain.linearRampToValueAtTime(ambientVolume, t + ATTACK);
 
   source.connect(voiceGain);
-  voiceGain.connect(master);
+  voiceGain.connect(panner);
   source.start(t);
 
   activeVoices.set(note, { type: 'sample', source, masterGain: voiceGain });
@@ -129,7 +152,7 @@ function startSampleNote(note: NoteName, buffer: AudioBuffer) {
 
 function startSynthNote(note: NoteName) {
   const ctx = getAudioContext();
-  const master = getMasterGain();
+  const panner = getAmbientPanner();
   const freq = BASE_FREQS[note];
   const t = ctx.currentTime;
 
@@ -152,7 +175,7 @@ function startSynthNote(note: NoteName) {
   lfo.start(t);
 
   filter.connect(voiceGain);
-  voiceGain.connect(master);
+  voiceGain.connect(panner);
 
   const oscillators: OscillatorNode[] = [];
   const gains: GainNode[] = [];
