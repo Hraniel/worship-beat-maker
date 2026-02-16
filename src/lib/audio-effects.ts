@@ -1,5 +1,5 @@
 // Per-pad audio effects chain: EQ (3-band), Reverb (convolver), Delay
-import { getAudioContext, getMasterGain } from './audio-engine';
+import { getAudioContext, getPadPanner } from './audio-engine';
 
 export interface PadEffects {
   eqLow: number;   // -12 to 12 dB
@@ -57,7 +57,7 @@ const chains = new Map<string, EffectChain>();
 
 function createChain(padId: string): EffectChain {
   const ctx = getAudioContext();
-  const master = getMasterGain();
+  const dest = getPadPanner(padId); // Route through pad panner for pan to work
 
   // Input
   const input = ctx.createGain();
@@ -88,7 +88,7 @@ function createChain(padId: string): EffectChain {
   const dryGain = ctx.createGain();
   dryGain.gain.value = 1;
   eqHigh.connect(dryGain);
-  dryGain.connect(master);
+  dryGain.connect(dest);
 
   // Reverb send
   const reverbSend = ctx.createGain();
@@ -100,7 +100,7 @@ function createChain(padId: string): EffectChain {
   eqHigh.connect(reverbSend);
   reverbSend.connect(convolver);
   convolver.connect(reverbGain);
-  reverbGain.connect(master);
+  reverbGain.connect(dest);
 
   // Delay send
   const delaySend = ctx.createGain();
@@ -117,7 +117,7 @@ function createChain(padId: string): EffectChain {
   delayNode.connect(delayFeedback);
   delayFeedback.connect(delayNode); // feedback loop
   delayNode.connect(delayGain);
-  delayGain.connect(master);
+  delayGain.connect(dest);
 
   const chain: EffectChain = {
     input, eqLow, eqMid, eqHigh,
