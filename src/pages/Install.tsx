@@ -47,7 +47,7 @@ const Install: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
-      <span className="text-5xl mb-4">🥁</span>
+      <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-14 w-14 mb-4" />
       <h1 className="text-2xl font-bold text-foreground mb-2">Drum Pads Worship</h1>
       <p className="text-muted-foreground mb-8 max-w-sm">
         Instale o app no seu celular para acesso rápido, tela cheia e uso offline.
