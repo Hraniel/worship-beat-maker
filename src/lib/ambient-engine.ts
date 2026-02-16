@@ -58,7 +58,7 @@ function getAmbientPanner(): StereoPannerNode {
 }
 
 const ATTACK = 0.5;
-const RELEASE = 1.5;
+const RELEASE = 4.0;
 const MAX_LOOP_DURATION = 30; // seconds — trim decoded buffers to save mobile memory
 const CROSSFADE_DURATION = 4; // seconds — crossfade at loop boundaries for seamless looping
 
@@ -369,10 +369,13 @@ export async function toggleAmbientNote(note: NoteName): Promise<boolean> {
       stopAmbientNote(note);
       return false;
     } else {
-      for (const activeNote of [...activeVoices.keys()]) {
-        stopAmbientNote(activeNote);
-      }
+      // Start new note FIRST, then fade out old ones (crossfade between pads)
       await startAmbientNote(note);
+      for (const activeNote of [...activeVoices.keys()]) {
+        if (activeNote !== note) {
+          stopAmbientNote(activeNote);
+        }
+      }
       return true;
     }
   } catch (e) {
