@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { playSound, getPadPanner } from '@/lib/audio-engine';
+import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
 import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -103,6 +103,8 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
+    // Unlock audio on mobile (iOS/Android) on every first interaction
+    unlockAudioContext();
     if (editMode) {
       // In edit mode, open context menu directly, no sound
       setShowMenu(true);
