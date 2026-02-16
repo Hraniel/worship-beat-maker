@@ -42,10 +42,11 @@ serve(async (req) => {
     const email = userData.user.email;
     logStep("User authenticated", { email });
 
-    const { priceId } = await req.json();
+    const body = await req.json();
+    const priceId = typeof body.priceId === "string" && /^price_[a-zA-Z0-9]{1,100}$/.test(body.priceId) ? body.priceId : null;
     if (!priceId) {
-      logStep("Missing priceId");
-      throw new Error("priceId is required");
+      logStep("Invalid or missing priceId");
+      throw new Error("A valid priceId is required");
     }
     logStep("Price ID received", { priceId });
 
