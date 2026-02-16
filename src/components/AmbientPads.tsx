@@ -40,6 +40,7 @@ const AmbientPads: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingNoteRef = useRef<NoteName | null>(null);
+  const togglingRef = useRef(false); // guard against concurrent toggles
 
   const samplesLoadedRef = useRef(false);
 
@@ -48,21 +49,17 @@ const AmbientPads: React.FC = () => {
     if (samplesLoadedRef.current) return;
     samplesLoadedRef.current = true;
     try {
-      console.log('[AmbientPads] Background init starting...');
       await initAmbientSamples();
       const notes = await getAllAmbientSoundNotes();
       setCustomNotes(new Set(notes));
-      console.log('[AmbientPads] Background init done');
     } catch (e) {
       console.error('[AmbientPads] Init failed:', e);
       samplesLoadedRef.current = false;
     }
   }, []);
 
-  // Start preload but don't block UI — pads are always interactive
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    console.log('[AmbientPads] Mount — starting background preload');
     ensureSamplesLoaded();
   }, [ensureSamplesLoaded]);
 
@@ -72,6 +69,9 @@ const AmbientPads: React.FC = () => {
       fileInputRef.current?.click();
       return;
     }
+    // Prevent concurrent toggles (rapid taps causing race conditions)
+    if (togglingRef.current) return;
+    togglingRef.current = true;
     setLoading(true);
     try {
       const isNowActive = await toggleAmbientNote(note);
@@ -84,6 +84,7 @@ const AmbientPads: React.FC = () => {
       console.error('[AmbientPads] Toggle error:', e);
     }
     setLoading(false);
+    togglingRef.current = false;
   }, [editMode]);
 
   const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
