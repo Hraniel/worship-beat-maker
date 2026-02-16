@@ -14,7 +14,7 @@ import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2 } from 'lucide-react';
+import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -63,6 +63,8 @@ const Index = () => {
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [spotifyTrackName, setSpotifyTrackName] = useState<string | null>(null);
   const [spotifyKey, setSpotifyKey] = useState<string | null>(null);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [spotifySongName, setSpotifySongName] = useState('');
   const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
   const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
   const [padNames, setPadNames] = useState<Record<string, string>>(() => {
@@ -288,7 +290,13 @@ const Index = () => {
 
   const handleApplySpotifyConfig = useCallback((config: any) => {
     // Save track name and key
-    if (config.trackName) setSpotifyTrackName(config.trackName);
+    if (config.trackName) {
+      setSpotifyTrackName(config.trackName);
+      // Extract just the song name (before " - artist")
+      const songOnly = config.trackName.split(' - ')[0] || config.trackName;
+      setSpotifySongName(songOnly);
+      setShowSavePrompt(true);
+    }
     if (config.key) setSpotifyKey(config.key);
     // Apply BPM
     if (config.bpm) setBpm(Math.round(config.bpm));
@@ -642,9 +650,11 @@ const Index = () => {
             <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => setMetronomeOpen((prev) => !prev)}>
 
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                 {spotifyTrackName && (
-                  <span className="text-xs font-medium text-primary truncate">♪ {spotifyTrackName}</span>
+                  <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">
+                    ♪ {spotifyTrackName}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -694,6 +704,54 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* Save to repertoire prompt */}
+      {showSavePrompt && (
+        <div className="fixed bottom-24 left-1/2 z-50 animate-fade-in-up w-[90%] max-w-sm">
+          <div className="bg-card border border-border rounded-lg shadow-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListMusic className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Salvar no Repertório?</span>
+              </div>
+              <button onClick={() => setShowSavePrompt(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <input
+              type="text"
+              value={spotifySongName}
+              onChange={(e) => setSpotifySongName(e.target.value)}
+              className="w-full px-3 py-2 text-sm rounded-md bg-background border border-input text-foreground"
+              placeholder="Nome da música..."
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="flex-1 gap-1.5"
+                onClick={() => {
+                  if (spotifySongName.trim()) {
+                    handleSaveSong(spotifySongName.trim());
+                    setShowSavePrompt(false);
+                    toast.success('Música salva no repertório!');
+                  }
+                }}
+                disabled={!spotifySongName.trim()}
+              >
+                <Check className="h-3.5 w-3.5" />
+                Salvar
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowSavePrompt(false)}
+              >
+                Depois
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>);
 
 };
