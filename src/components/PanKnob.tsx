@@ -22,7 +22,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
       <div
-        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-border bg-orange-500 cursor-pointer touch-none"
+        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border-2 border-black bg-orange-500 cursor-pointer touch-none"
         onPointerDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -65,7 +65,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
         title={`Pan: ${displayValue}`}
       >
         <div
-          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-foreground rounded-full origin-bottom"
+          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-black rounded-full origin-bottom"
           style={{
             transform: `translateX(-50%) rotate(${angle}deg)`,
             transformOrigin: '50% 100%',
