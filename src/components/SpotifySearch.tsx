@@ -335,64 +335,66 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
 
         {/* Results */}
         <div className="flex-1 overflow-y-auto mt-4 space-y-1">
-          {!selectedTrack && tracks.map((track) => (
-            <div key={track.id} className="rounded-md hover:bg-muted transition-colors">
-              <div className="flex items-center gap-3 w-full p-2 text-left">
-                {/* Preview play button over image */}
-                <div className="relative w-10 h-10 shrink-0">
+          {!selectedTrack && tracks.map((track) => {
+            const isActive = previewTrackId === track.id;
+            return (
+              <div key={track.id} className={`rounded-lg transition-colors ${isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}>
+                <div className="flex items-center gap-3 w-full p-2 text-left">
                   {track.image ? (
-                    <img src={track.image} alt="" className="w-10 h-10 rounded object-cover" />
+                    <img src={track.image} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
                   ) : (
-                    <div className="w-10 h-10 rounded bg-muted flex items-center justify-center">
+                    <div className="w-10 h-10 rounded bg-muted flex items-center justify-center shrink-0">
                       <Music className="h-4 w-4 text-muted-foreground" />
                     </div>
                   )}
-                  {track.preview_url && (
+                  <button
+                    onClick={() => { stopPreview(); handleSelectTrack(track); }}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <p className={`text-sm font-medium truncate ${isActive ? 'text-primary' : ''}`}>{track.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
+                  </button>
+                  <span className="text-[10px] text-muted-foreground shrink-0 mr-1">
+                    {formatDuration(track.duration_ms)}
+                  </span>
+                  {track.preview_url ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); togglePreview(track); }}
-                      className="absolute inset-0 flex items-center justify-center bg-background/60 rounded opacity-0 hover:opacity-100 transition-opacity"
+                      className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isActive && previewPlaying ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/10 text-foreground hover:bg-primary hover:text-primary-foreground'}`}
                     >
-                      {previewTrackId === track.id && previewPlaying ? (
-                        <Pause className="h-4 w-4 text-foreground" />
+                      {isActive && previewPlaying ? (
+                        <Pause className="h-3.5 w-3.5" />
                       ) : (
-                        <Play className="h-4 w-4 text-foreground" />
+                        <Play className="h-3.5 w-3.5 ml-0.5" />
                       )}
                     </button>
+                  ) : (
+                    <div className="shrink-0 w-8 h-8" />
                   )}
                 </div>
-                <button
-                  onClick={() => { stopPreview(); handleSelectTrack(track); }}
-                  className="min-w-0 flex-1 text-left"
-                >
-                  <p className="text-sm font-medium truncate">{track.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
-                </button>
-                <span className="text-[10px] text-muted-foreground shrink-0">
-                  {formatDuration(track.duration_ms)}
-                </span>
-              </div>
-              {/* Mini player bar */}
-              {previewTrackId === track.id && (
-                <div className="flex items-center gap-2 px-2 pb-2">
-                  <button onClick={() => seekPreview(-5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                    <SkipBack className="h-3 w-3" />
-                  </button>
-                  <button onClick={() => togglePreview(track)} className="p-1 text-primary hover:text-primary/80 transition-colors">
-                    {previewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                  </button>
-                  <button onClick={() => seekPreview(5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                    <SkipForward className="h-3 w-3" />
-                  </button>
-                  <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all duration-200"
-                      style={{ width: `${previewProgress}%` }}
-                    />
+                {/* Player bar estilo Spotify */}
+                {isActive && (
+                  <div className="flex items-center gap-2 px-3 pb-2.5">
+                    <button onClick={() => seekPreview(-5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                      <SkipBack className="h-3.5 w-3.5" />
+                    </button>
+                    <button onClick={() => togglePreview(track)} className={`p-1.5 rounded-full transition-colors ${previewPlaying ? 'text-primary' : 'text-foreground'}`}>
+                      {previewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
+                    </button>
+                    <button onClick={() => seekPreview(5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                      <SkipForward className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="flex-1 h-1.5 bg-muted-foreground/20 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-200"
+                        style={{ width: `${previewProgress}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            );
+          })}
 
           {/* Selected track + analysis */}
           {selectedTrack && (
