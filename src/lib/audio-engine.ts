@@ -4,6 +4,8 @@
 let audioCtx: AudioContext | null = null;
 let audioUnlocked = false;
 
+export function isAudioUnlocked() { return audioUnlocked; }
+
 export function getAudioContext(): AudioContext {
   if (!audioCtx) {
     audioCtx = new AudioContext({ latencyHint: 'interactive' });
@@ -21,32 +23,39 @@ export function getAudioContext(): AudioContext {
  */
 export function unlockAudioContext() {
   if (audioUnlocked) return;
-  const ctx = getAudioContext();
-  // Play a silent buffer to unlock
-  const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
-  const source = ctx.createBufferSource();
-  source.buffer = buffer;
-  source.connect(ctx.destination);
-  source.start(0);
-  source.stop(ctx.currentTime + 0.001);
-  // Also resume if suspended
-  if (ctx.state === 'suspended') {
-    ctx.resume();
+  // Create context fresh if needed (must happen inside user gesture on iOS)
+  if (!audioCtx) {
+    audioCtx = new AudioContext({ latencyHint: 'interactive' });
   }
-  audioUnlocked = true;
+  const ctx = audioCtx;
+  // Resume if suspended
+  const resumePromise = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
+  resumePromise.then(() => {
+    // Play a silent buffer to fully unlock on iOS
+    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+    audioUnlocked = true;
+    console.log('[AudioEngine] Context unlocked, state:', ctx.state);
+  });
 }
 
 // Auto-attach unlock listener for mobile
+// iOS requires touchend or pointerup (not pointerdown/touchstart) for user activation
 if (typeof window !== 'undefined') {
   const doUnlock = () => {
     unlockAudioContext();
-    window.removeEventListener('touchstart', doUnlock, true);
     window.removeEventListener('touchend', doUnlock, true);
+    window.removeEventListener('pointerup', doUnlock, true);
     window.removeEventListener('click', doUnlock, true);
+    window.removeEventListener('keydown', doUnlock, true);
   };
-  window.addEventListener('touchstart', doUnlock, true);
   window.addEventListener('touchend', doUnlock, true);
+  window.addEventListener('pointerup', doUnlock, true);
   window.addEventListener('click', doUnlock, true);
+  window.addEventListener('keydown', doUnlock, true);
 }
 
 // Master gain node
