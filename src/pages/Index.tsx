@@ -549,11 +549,9 @@ const Index = () => {
       </main>
 
       {/* Ambient Pads */}
-      {!focusMode && (
-        <div className="shrink-0 px-3 py-2 max-w-[600px] mx-auto w-full">
-          <AmbientPads />
-        </div>
-      )}
+      <div className="shrink-0 px-3 py-2 max-w-[600px] mx-auto w-full">
+        <AmbientPads />
+      </div>
 
       {/* Bottom controls */}
       <footer className="shrink-0 border-t border-border bg-card/50 backdrop-blur p-2 sm:p-3 space-y-2">
