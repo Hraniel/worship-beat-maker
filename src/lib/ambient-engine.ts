@@ -106,6 +106,8 @@ export async function initAmbientSamples() {
   console.log('[AmbientEngine] Starting sample init...');
 
   const ctx = getAudioContext();
+  console.log('[AmbientEngine] AudioContext state:', ctx.state, 'sampleRate:', ctx.sampleRate);
+  
   // Don't block on resume — decodeAudioData works even when suspended
   if (ctx.state === 'suspended') {
     ctx.resume().catch(() => {});
@@ -115,17 +117,20 @@ export async function initAmbientSamples() {
   const results = await Promise.all(
     ALL_NOTES.map(async (note) => {
       try {
+        console.log(`[AmbientEngine] Fetching ${note}...`);
         const resp = await fetch(NATIVE_PAD_FILES[note]);
         if (!resp.ok) {
           console.warn(`[AmbientEngine] Failed to fetch ${note}: ${resp.status}`);
           return { note, ok: false };
         }
         const arrayBuf = await resp.arrayBuffer();
+        console.log(`[AmbientEngine] Decoding ${note} (${arrayBuf.byteLength} bytes)...`);
         const buffer = await ctx.decodeAudioData(arrayBuf);
         decodedBuffers.set(note, buffer);
+        console.log(`[AmbientEngine] ✓ ${note} decoded (${buffer.duration.toFixed(1)}s)`);
         return { note, ok: true };
       } catch (e) {
-        console.warn(`[AmbientEngine] Failed to load pad ${note}`, e);
+        console.error(`[AmbientEngine] ✗ Failed pad ${note}:`, e);
         return { note, ok: false };
       }
     })
@@ -140,6 +145,7 @@ export async function initAmbientSamples() {
   try {
     const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
     const customNotes = await getAllAmbientSoundNotes();
+    console.log('[AmbientEngine] Custom notes from DB:', customNotes);
     await Promise.all(customNotes.map(n => loadAmbientSample(n as NoteName)));
   } catch (e) {
     console.warn('[AmbientEngine] Failed to load custom samples from IndexedDB:', e);

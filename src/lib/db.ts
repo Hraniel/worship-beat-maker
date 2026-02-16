@@ -10,8 +10,10 @@ export function getDB(): Promise<IDBDatabase> {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
       try {
+        console.log('[DB] Opening IndexedDB...', DB_NAME, 'v' + DB_VERSION);
         const req = indexedDB.open(DB_NAME, DB_VERSION);
-        req.onupgradeneeded = () => {
+        req.onupgradeneeded = (event) => {
+          console.log('[DB] Upgrade needed, oldVersion:', (event as any).oldVersion);
           const db = req.result;
           if (!db.objectStoreNames.contains('custom-sounds')) {
             db.createObjectStore('custom-sounds');
@@ -20,8 +22,12 @@ export function getDB(): Promise<IDBDatabase> {
             db.createObjectStore('ambient-pads');
           }
         };
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () => {
+          console.log('[DB] IndexedDB opened OK');
+          resolve(req.result);
+        };
         req.onerror = () => {
+          console.error('[DB] IndexedDB open error:', req.error);
           dbPromise = null;
           reject(req.error);
         };
@@ -31,6 +37,7 @@ export function getDB(): Promise<IDBDatabase> {
           reject(new Error('IndexedDB blocked'));
         };
       } catch (e) {
+        console.error('[DB] IndexedDB open exception:', e);
         dbPromise = null;
         reject(e);
       }
