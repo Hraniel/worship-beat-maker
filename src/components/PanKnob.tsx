@@ -11,6 +11,13 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
   const angle = pan * 135;
   const displayValue = pan === 0 ? 'C' : pan < 0 ? `L${Math.round(Math.abs(pan) * 100)}` : `R${Math.round(pan * 100)}`;
   const [dragging, setDragging] = useState(false);
+  const flashTimer = React.useRef<ReturnType<typeof setTimeout>>();
+
+  const flashPopup = () => {
+    setDragging(true);
+    clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setDragging(false), 600);
+  };
 
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
@@ -26,7 +33,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
           let moved = false;
           const pid = e.pointerId;
           const longPress = window.setTimeout(() => {
-            if (!moved) onChange(0);
+            if (!moved) { onChange(0); flashPopup(); }
           }, 400);
 
           const move = (ev: PointerEvent) => {
@@ -54,7 +61,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
           el.addEventListener('pointerup', up);
           el.addEventListener('lostpointercapture', up);
         }}
-        onDoubleClick={() => onChange(0)}
+        onDoubleClick={() => { onChange(0); flashPopup(); }}
         title={`Pan: ${displayValue}`}
       >
         <div
