@@ -2,6 +2,7 @@
 // Optimized for minimum touch-to-sound latency
 
 let audioCtx: AudioContext | null = null;
+let audioUnlocked = false;
 
 export function getAudioContext(): AudioContext {
   if (!audioCtx) {
@@ -11,6 +12,41 @@ export function getAudioContext(): AudioContext {
     audioCtx.resume();
   }
   return audioCtx;
+}
+
+/**
+ * Unlock AudioContext on mobile (iOS/Android).
+ * Must be called from a user gesture (touch/click).
+ * Plays a silent buffer to unblock audio playback.
+ */
+export function unlockAudioContext() {
+  if (audioUnlocked) return;
+  const ctx = getAudioContext();
+  // Play a silent buffer to unlock
+  const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  source.start(0);
+  source.stop(ctx.currentTime + 0.001);
+  // Also resume if suspended
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+  audioUnlocked = true;
+}
+
+// Auto-attach unlock listener for mobile
+if (typeof window !== 'undefined') {
+  const doUnlock = () => {
+    unlockAudioContext();
+    window.removeEventListener('touchstart', doUnlock, true);
+    window.removeEventListener('touchend', doUnlock, true);
+    window.removeEventListener('click', doUnlock, true);
+  };
+  window.addEventListener('touchstart', doUnlock, true);
+  window.addEventListener('touchend', doUnlock, true);
+  window.addEventListener('click', doUnlock, true);
 }
 
 // Master gain node
