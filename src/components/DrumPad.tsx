@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { playSound } from '@/lib/audio-engine';
+import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
 import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
@@ -71,16 +72,31 @@ const DrumPad: React.FC<DrumPadProps> = ({
       onToggleLoop();
       return;
     }
-    if (isMaster && hasActiveEffects(effects)) {
-      applyEffects(pad.id, effects);
-      const dest = getEffectInput(pad.id);
-      playSound(pad.id, volume, dest);
+
+    const fireSound = () => {
+      if (isMaster && hasActiveEffects(effects)) {
+        applyEffects(pad.id, effects);
+        const dest = getEffectInput(pad.id);
+        playSound(pad.id, volume, dest);
+      } else {
+        playSound(pad.id, volume);
+      }
+      setIsActive(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = window.setTimeout(() => setIsActive(false), 120);
+    };
+
+    // Quantize to nearest subdivision when clock is running
+    if (isLoopEngineRunning()) {
+      const delay = getQuantizeDelay();
+      if (delay > 0) {
+        setTimeout(fireSound, delay * 1000);
+      } else {
+        fireSound();
+      }
     } else {
-      playSound(pad.id, volume);
+      fireSound();
     }
-    setIsActive(true);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => setIsActive(false), 120);
   }, [pad, volume, onToggleLoop, isLocked, goToPricing, isMaster, effects]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
