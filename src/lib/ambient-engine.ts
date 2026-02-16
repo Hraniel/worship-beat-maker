@@ -258,17 +258,21 @@ function startSynthNote(note: NoteName) {
 export async function startAmbientNote(note: NoteName) {
   if (activeVoices.has(note)) return;
 
-  // Ensure sample is loaded on demand (handles mobile lazy loading)
-  if (!decodedBuffers.has(note)) {
-    await ensureNoteLoaded(note);
-  }
+  try {
+    // Ensure sample is loaded on demand
+    if (!decodedBuffers.has(note)) {
+      await ensureNoteLoaded(note);
+    }
 
-  const buffer = decodedBuffers.get(note);
-  if (buffer) {
-    startSampleNote(note, buffer);
-  } else {
-    console.warn(`[AmbientEngine] No buffer for ${note}, using synth fallback`);
-    startSynthNote(note);
+    const buffer = decodedBuffers.get(note);
+    if (buffer) {
+      startSampleNote(note, buffer);
+    } else {
+      console.warn(`[AmbientEngine] No buffer for ${note}, using synth fallback`);
+      startSynthNote(note);
+    }
+  } catch (e) {
+    console.error(`[AmbientEngine] startAmbientNote(${note}) failed:`, e);
   }
 }
 
@@ -276,50 +280,66 @@ export function stopAmbientNote(note: NoteName) {
   const voice = activeVoices.get(note);
   if (!voice) return;
 
-  const ctx = getAudioContext();
-  const t = ctx.currentTime;
-
-  voice.masterGain.gain.cancelScheduledValues(t);
-  voice.masterGain.gain.setValueAtTime(voice.masterGain.gain.value, t);
-  voice.masterGain.gain.linearRampToValueAtTime(0, t + RELEASE);
-
-  // Track for cleanup
-  fadingVoices.add(voice);
   activeVoices.delete(note);
 
-  // Schedule full cleanup after fade-out completes
-  const cleanupMs = (RELEASE + 0.2) * 1000;
-  setTimeout(() => {
+  try {
+    const ctx = getAudioContext();
+    const t = ctx.currentTime;
+
+    voice.masterGain.gain.cancelScheduledValues(t);
+    voice.masterGain.gain.setValueAtTime(voice.masterGain.gain.value, t);
+    voice.masterGain.gain.linearRampToValueAtTime(0, t + RELEASE);
+
+    fadingVoices.add(voice);
+
+    const cleanupMs = (RELEASE + 0.2) * 1000;
+    setTimeout(() => {
+      try {
+        if (voice.type === 'synth') {
+          for (const osc of voice.oscillators) {
+            try { osc.stop(); } catch {}
+            try { osc.disconnect(); } catch {}
+          }
+          for (const g of voice.gains) { try { g.disconnect(); } catch {} }
+          try { voice.filterNode.disconnect(); } catch {}
+        } else {
+          try { voice.source.stop(); } catch {}
+          try { voice.source.disconnect(); } catch {}
+        }
+        try { voice.masterGain.disconnect(); } catch {}
+      } catch {}
+      fadingVoices.delete(voice);
+    }, cleanupMs);
+  } catch (e) {
+    console.error(`[AmbientEngine] stopAmbientNote(${note}) failed:`, e);
+    // Force cleanup on error
     try {
       if (voice.type === 'synth') {
-        for (const osc of voice.oscillators) {
-          osc.stop();
-          osc.disconnect();
-        }
-        for (const g of voice.gains) g.disconnect();
-        voice.filterNode.disconnect();
+        voice.oscillators.forEach(o => { try { o.stop(); o.disconnect(); } catch {} });
+        voice.gains.forEach(g => { try { g.disconnect(); } catch {} });
       } else {
-        voice.source.stop();
-        voice.source.disconnect();
+        try { voice.source.stop(); voice.source.disconnect(); } catch {}
       }
-      voice.masterGain.disconnect();
-    } catch {
-      // Already stopped/disconnected — safe to ignore
-    }
-    fadingVoices.delete(voice);
-  }, cleanupMs);
+      try { voice.masterGain.disconnect(); } catch {}
+    } catch {}
+  }
 }
 
 export async function toggleAmbientNote(note: NoteName): Promise<boolean> {
-  if (activeVoices.has(note)) {
-    stopAmbientNote(note);
-    return false;
-  } else {
-    for (const activeNote of [...activeVoices.keys()]) {
-      stopAmbientNote(activeNote);
+  try {
+    if (activeVoices.has(note)) {
+      stopAmbientNote(note);
+      return false;
+    } else {
+      for (const activeNote of [...activeVoices.keys()]) {
+        stopAmbientNote(activeNote);
+      }
+      await startAmbientNote(note);
+      return true;
     }
-    await startAmbientNote(note);
-    return true;
+  } catch (e) {
+    console.error(`[AmbientEngine] toggleAmbientNote(${note}) failed:`, e);
+    return false;
   }
 }
 
