@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import { Button } from '@/components/ui/button';
 import { Download, Check, Share } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
