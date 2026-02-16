@@ -6,56 +6,65 @@ let audioUnlocked = false;
 
 export function isAudioUnlocked() { return audioUnlocked; }
 
-export function getAudioContext(): AudioContext {
+function ensureContext(): AudioContext {
   if (!audioCtx) {
-    audioCtx = new AudioContext({ latencyHint: 'interactive' });
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
+    // @ts-ignore - webkitAudioContext for older iOS
+    const AC = window.AudioContext || (window as any).webkitAudioContext;
+    audioCtx = new AC({ latencyHint: 'interactive' });
   }
   return audioCtx;
 }
 
+export function getAudioContext(): AudioContext {
+  const ctx = ensureContext();
+  if (ctx.state === 'suspended') {
+    ctx.resume();
+  }
+  return ctx;
+}
+
 /**
  * Unlock AudioContext on mobile (iOS/Android).
- * Must be called from a user gesture (touch/click).
- * Plays a silent buffer to unblock audio playback.
+ * Must be called from a user gesture (touchend/pointerup/click).
  */
 export function unlockAudioContext() {
   if (audioUnlocked) return;
-  // Create context fresh if needed (must happen inside user gesture on iOS)
-  if (!audioCtx) {
-    audioCtx = new AudioContext({ latencyHint: 'interactive' });
+  
+  const ctx = ensureContext();
+  
+  // Resume first, then play silent buffer
+  const doUnlock = () => {
+    try {
+      const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      source.start(0);
+      audioUnlocked = true;
+      console.log('[AudioEngine] Unlocked! state:', ctx.state);
+    } catch (e) {
+      console.error('[AudioEngine] Unlock failed:', e);
+    }
+  };
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(doUnlock).catch(() => doUnlock());
+  } else {
+    doUnlock();
   }
-  const ctx = audioCtx;
-  // Resume if suspended
-  const resumePromise = ctx.state === 'suspended' ? ctx.resume() : Promise.resolve();
-  resumePromise.then(() => {
-    // Play a silent buffer to fully unlock on iOS
-    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    source.start(0);
-    audioUnlocked = true;
-    console.log('[AudioEngine] Context unlocked, state:', ctx.state);
-  });
 }
 
-// Auto-attach unlock listener for mobile
-// iOS requires touchend or pointerup (not pointerdown/touchstart) for user activation
+// Global unlock listeners — use ALL event types to maximize compatibility
 if (typeof window !== 'undefined') {
-  const doUnlock = () => {
+  const events = ['touchstart', 'touchend', 'mousedown', 'mouseup', 'pointerdown', 'pointerup', 'click', 'keydown'];
+  const handler = () => {
     unlockAudioContext();
-    window.removeEventListener('touchend', doUnlock, true);
-    window.removeEventListener('pointerup', doUnlock, true);
-    window.removeEventListener('click', doUnlock, true);
-    window.removeEventListener('keydown', doUnlock, true);
+    // Remove all after first successful unlock
+    if (audioUnlocked) {
+      events.forEach(e => window.removeEventListener(e, handler, true));
+    }
   };
-  window.addEventListener('touchend', doUnlock, true);
-  window.addEventListener('pointerup', doUnlock, true);
-  window.addEventListener('click', doUnlock, true);
-  window.addEventListener('keydown', doUnlock, true);
+  events.forEach(e => window.addEventListener(e, handler, true));
 }
 
 // Master gain node
