@@ -17,12 +17,12 @@ import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, Crown, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, HelpCircle, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders } from 'lucide-react';
+import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import PanControl from '@/components/PanControl';
-import TutorialGuide, { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
+import TutorialGuide from '@/components/TutorialGuide';
 import SettingsDialog, { loadAudioSettings, type AudioSettings } from '@/components/SettingsDialog';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
@@ -92,7 +92,7 @@ const Index = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [tutorialMenuOpen, setTutorialMenuOpen] = useState(false);
+  
   const [padColors, setPadColors] = useState<Record<string, PadColor>>(() => {
     try { const d = localStorage.getItem('drum-pads-pad-colors'); return d ? JSON.parse(d) : {}; } catch { return {}; }
   });
@@ -616,7 +616,7 @@ const Index = () => {
               </button>
               {mobileMenuOpen && (
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => { setMobileMenuOpen(false); setTutorialMenuOpen(false); }} />
+                  <div className="fixed inset-0 z-40" onClick={() => { setMobileMenuOpen(false); }} />
                   <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]" style={{ backgroundColor: 'hsl(var(--card))' }}>
                     {needRefresh && (
                       <button onClick={() => { updateServiceWorker(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-primary font-medium hover:bg-muted transition-colors">
@@ -644,42 +644,9 @@ const Index = () => {
                       Spotify AI
                       {tier !== 'master' && <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>}
                     </button>
-                    <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
-                      <Crown className="h-4 w-4 text-muted-foreground" /> Planos
-                    </button>
                     <button onClick={() => { setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
                     </button>
-                    {/* Guia Prático with sub-menu */}
-                    <div className="relative">
-                      <button
-                        onClick={() => setTutorialMenuOpen(p => !p)}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                      >
-                        <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                        Guia Prático
-                        <ChevronDown className={`h-3 w-3 ml-auto text-muted-foreground transition-transform ${tutorialMenuOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      {tutorialMenuOpen && (
-                        <div className="border-t border-border/50 bg-muted/30">
-                          <button
-                            onClick={() => { if (startTutorialRef.current) startTutorialRef.current(); setMobileMenuOpen(false); setTutorialMenuOpen(false); }}
-                            className="flex items-center gap-2 w-full px-5 py-2 text-xs font-medium text-primary hover:bg-muted transition-colors"
-                          >
-                            Tour Completo
-                          </button>
-                          {TUTORIAL_SECTIONS.map(section => (
-                            <button
-                              key={section.id}
-                              onClick={() => { if (startTutorialRef.current) startTutorialRef.current(section.id); setMobileMenuOpen(false); setTutorialMenuOpen(false); }}
-                              className="flex items-center gap-2 w-full px-5 py-2 text-xs text-foreground hover:bg-muted transition-colors"
-                            >
-                              {section.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
                     <button onClick={async () => {
                       setMobileMenuOpen(false);
                       if ('caches' in window) {
@@ -940,6 +907,7 @@ const Index = () => {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         onAudioSettingsChange={handleAudioSettingsChange}
+        onStartTutorial={(sectionId) => { if (startTutorialRef.current) startTutorialRef.current(sectionId); }}
       />
     </div>);
 
