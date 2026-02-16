@@ -15,9 +15,12 @@ import {
   loadAmbientSample,
   initAmbientSamples,
   stopAmbientNote,
-  startAmbientNote } from
+  startAmbientNote,
+  setAmbientPan,
+  getAmbientPan } from
 '@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
+import PanControl from '@/components/PanControl';
 
 const NOTE_COLORS: Record<NoteName, string> = {
   C: '0 70% 55%', 'C#': '20 65% 50%', D: '35 70% 55%', 'D#': '50 65% 50%',
@@ -29,6 +32,7 @@ const AmbientPads: React.FC = () => {
   const [expanded, setExpanded] = useState(false);
   const [activeNotes, setActiveNotes] = useState<Set<NoteName>>(new Set());
   const [volume, setVolume] = useState(getAmbientVolume);
+  const [pan, setPan] = useState(getAmbientPan);
   const [customNotes, setCustomNotes] = useState<Set<string>>(new Set());
   const [editMode, setEditMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -120,6 +124,11 @@ const AmbientPads: React.FC = () => {
     setAmbientVolume(v);
   }, []);
 
+  const handlePanChange = useCallback((val: number) => {
+    setPan(val);
+    setAmbientPan(val);
+  }, []);
+
   const hasActive = activeNotes.size > 0;
 
   return (
@@ -184,6 +193,8 @@ const AmbientPads: React.FC = () => {
               Toque em uma nota para importar seu arquivo MP3
             </p>
         }
+
+          <PanControl label="Pan Ambient" pan={pan} onPanChange={handlePanChange} />
 
           {/* Note grid */}
           <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-12">
