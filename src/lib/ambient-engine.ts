@@ -60,7 +60,7 @@ function getAmbientPanner(): StereoPannerNode {
 const ATTACK = 2.0;
 const RELEASE = 1.5;
 const MAX_LOOP_DURATION = 30; // seconds — trim decoded buffers to save mobile memory
-const CROSSFADE_DURATION = 2; // seconds — crossfade at loop boundaries for seamless looping
+const CROSSFADE_DURATION = 4; // seconds — crossfade at loop boundaries for seamless looping
 
 export function setAmbientVolume(vol: number) {
   ambientVolume = vol;
