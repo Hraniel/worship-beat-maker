@@ -56,51 +56,63 @@ interface StereoOptionProps {
 }
 
 const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onModeChange, onSideChange }) => (
-  <div className="py-3 border-b border-border/50 last:border-0 space-y-2">
+  <div className="rounded-lg border border-border bg-card p-3 space-y-3">
     <div className="flex items-center justify-between">
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <RadioGroup
-        value={mode}
-        onValueChange={(v) => onModeChange(v as 'stereo' | 'mono')}
-        className="flex items-center gap-4"
-      >
-        <div className="flex items-center gap-1.5">
-          <RadioGroupItem value="stereo" id={`${id}-stereo`} />
-          <Label htmlFor={`${id}-stereo`} className="text-xs text-muted-foreground cursor-pointer">
-            Stereo
-          </Label>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <RadioGroupItem value="mono" id={`${id}-mono`} />
-          <Label htmlFor={`${id}-mono`} className="text-xs text-muted-foreground cursor-pointer">
-            Mono
-          </Label>
-        </div>
-      </RadioGroup>
+      <span className="text-sm font-semibold text-foreground">{label}</span>
+      <div className="flex rounded-md overflow-hidden border border-border">
+        <button
+          onClick={() => onModeChange('stereo')}
+          className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+            mode === 'stereo'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          Stereo
+        </button>
+        <button
+          onClick={() => onModeChange('mono')}
+          className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-border ${
+            mode === 'mono'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          Mono
+        </button>
+      </div>
     </div>
 
     {mode === 'stereo' && (
-      <div className="flex items-center gap-2 pl-1">
-        <span className="text-[10px] text-muted-foreground">Lado:</span>
-        <RadioGroup
-          value={side || ''}
-          onValueChange={(v) => onSideChange(v as 'left' | 'right')}
-          className="flex items-center gap-3"
-        >
-          <div className="flex items-center gap-1">
-            <RadioGroupItem value="left" id={`${id}-left`} className="h-3 w-3" />
-            <Label htmlFor={`${id}-left`} className="text-[10px] text-muted-foreground cursor-pointer">
-              Esquerdo (L)
-            </Label>
-          </div>
-          <div className="flex items-center gap-1">
-            <RadioGroupItem value="right" id={`${id}-right`} className="h-3 w-3" />
-            <Label htmlFor={`${id}-right`} className="text-[10px] text-muted-foreground cursor-pointer">
-              Direito (R)
-            </Label>
-          </div>
-        </RadioGroup>
+      <div className="flex items-center gap-2">
+        <span className="text-[11px] text-muted-foreground shrink-0">Direcionar para:</span>
+        <div className="flex rounded-md overflow-hidden border border-border flex-1">
+          <button
+            onClick={() => onSideChange('left')}
+            className={`flex-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+              side === 'left'
+                ? 'bg-accent text-accent-foreground'
+                : 'bg-muted/30 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            ◀ Esquerdo
+          </button>
+          <button
+            onClick={() => onSideChange('right')}
+            className={`flex-1 px-2 py-1 text-[11px] font-medium transition-colors border-l border-border ${
+              side === 'right'
+                ? 'bg-accent text-accent-foreground'
+                : 'bg-muted/30 text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            Direito ▶
+          </button>
+        </div>
       </div>
+    )}
+
+    {mode === 'mono' && (
+      <p className="text-[10px] text-muted-foreground/70 italic">Pan bloqueado no centro</p>
     )}
   </div>
 );
@@ -145,43 +157,31 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           </TabsList>
 
           <TabsContent value="audio" className="mt-4">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 mb-3">
-                <Volume2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saída de Áudio</span>
-              </div>
-
-              <div className="rounded-lg border border-border bg-muted/20 px-3">
-                <StereoOption
-                  id="pads"
-                  label="Pads"
-                  mode={settings.padsStereo}
-                  side={settings.padsSide}
-                  onModeChange={(v) => update({ padsStereo: v, padsSide: v === 'mono' ? null : settings.padsSide })}
-                  onSideChange={(v) => update({ padsSide: v })}
-                />
-                <StereoOption
-                  id="ambient"
-                  label="Ambient Pads"
-                  mode={settings.ambientStereo}
-                  side={settings.ambientSide}
-                  onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}
-                  onSideChange={(v) => update({ ambientSide: v })}
-                />
-                <StereoOption
-                  id="metronome"
-                  label="Metrônomo"
-                  mode={settings.metronomeStereo}
-                  side={settings.metronomeSide}
-                  onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
-                  onSideChange={(v) => update({ metronomeSide: v })}
-                />
-              </div>
-
-              <p className="text-[10px] text-muted-foreground mt-2 px-1">
-                No modo Stereo, escolha o lado (L/R) para direcionar o áudio. Os controles de Pan serão ajustados automaticamente.
-                No modo Mono, os controles de Pan ficam bloqueados no centro.
-              </p>
+            <div className="space-y-3">
+              <StereoOption
+                id="pads"
+                label="Pads"
+                mode={settings.padsStereo}
+                side={settings.padsSide}
+                onModeChange={(v) => update({ padsStereo: v, padsSide: v === 'mono' ? null : settings.padsSide })}
+                onSideChange={(v) => update({ padsSide: v })}
+              />
+              <StereoOption
+                id="ambient"
+                label="Ambient Pads"
+                mode={settings.ambientStereo}
+                side={settings.ambientSide}
+                onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}
+                onSideChange={(v) => update({ ambientSide: v })}
+              />
+              <StereoOption
+                id="metronome"
+                label="Metrônomo"
+                mode={settings.metronomeStereo}
+                side={settings.metronomeSide}
+                onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
+                onSideChange={(v) => update({ metronomeSide: v })}
+              />
             </div>
           </TabsContent>
 
