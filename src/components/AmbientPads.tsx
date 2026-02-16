@@ -30,7 +30,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
       <div
-        className="relative w-8 h-8 rounded-full border border-border bg-muted/50 cursor-pointer"
+        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-border bg-muted/50 cursor-pointer"
         onPointerDown={(e) => {
           e.preventDefault();
           const el = e.currentTarget;
@@ -65,7 +65,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
         title={`Pan: ${displayValue}`}
       >
         <div
-          className="absolute top-1 left-1/2 w-0.5 h-2.5 bg-foreground rounded-full origin-bottom"
+          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-foreground rounded-full origin-bottom"
           style={{
             transform: `translateX(-50%) rotate(${angle}deg)`,
             transformOrigin: '50% 100%',
@@ -74,7 +74,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
         />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-muted-foreground/40" />
       </div>
-      <span className="text-[8px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
+      <span className="text-[8px] landscape:text-[10px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
     </div>
   );
 };
@@ -182,7 +182,7 @@ const AmbientPads: React.FC = () => {
           {/* Main layout: pads grid left, controls right */}
           <div className="flex gap-2">
             {/* Note grid - 4 columns, 3 rows */}
-            <div className="grid grid-cols-4 gap-1.5 flex-1">
+            <div className="grid grid-cols-4 landscape:grid-cols-6 gap-1.5 flex-1">
               {ALL_NOTES.map((note) => {
                 const isActive = activeNotes.has(note);
                 const isCustom = customNotes.has(note);
@@ -195,7 +195,7 @@ const AmbientPads: React.FC = () => {
                     className={`
                       relative flex items-center justify-center rounded-md
                       border transition-all duration-200 select-none
-                      h-14 sm:h-16 text-xs font-bold text-foreground
+                      h-14 sm:h-16 landscape:h-12 text-xs font-bold text-foreground
                       ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
                       ${isSharp ? 'text-[10px]' : ''}
                     `}
@@ -219,7 +219,7 @@ const AmbientPads: React.FC = () => {
             </div>
 
             {/* Right controls: vertical volume slider + pan knob + stop */}
-            <div className="flex flex-col items-center gap-2 py-1 w-12 shrink-0">
+            <div className="flex flex-col items-center gap-2 landscape:gap-3 py-1 w-12 landscape:w-16 shrink-0">
               <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
               <div className="flex-1 flex items-center justify-center" style={{ minHeight: '80px' }}>
                 <Slider

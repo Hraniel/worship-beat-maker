@@ -20,7 +20,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
       <div
-        className="relative w-8 h-8 rounded-full border border-border bg-muted/50 cursor-pointer"
+        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-border bg-muted/50 cursor-pointer"
         onPointerDown={(e) => {
           e.preventDefault();
           const el = e.currentTarget;
@@ -56,7 +56,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
       >
         {/* Knob indicator line */}
         <div
-          className="absolute top-1 left-1/2 w-0.5 h-2.5 bg-foreground rounded-full origin-bottom"
+          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-foreground rounded-full origin-bottom"
           style={{
             transform: `translateX(-50%) rotate(${angle}deg)`,
             transformOrigin: '50% 100%',
@@ -66,7 +66,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
         {/* Center dot */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-muted-foreground/40" />
       </div>
-      <span className="text-[8px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
+      <span className="text-[8px] landscape:text-[10px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
     </div>
   );
 };
@@ -75,7 +75,7 @@ const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, l
   const isMuted = volume === 0;
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-card rounded-lg border border-border">
+    <div className="flex items-center gap-2 landscape:gap-3 px-3 py-1.5 bg-card rounded-lg border border-border">
       <Button
         variant="ghost"
         size="icon"
