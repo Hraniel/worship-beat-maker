@@ -103,24 +103,38 @@ export function hasCustomSample(note: NoteName): boolean {
 // Load native MP3 pads from public/pads/, then override with user custom samples
 export async function initAmbientSamples() {
   if (samplesInitialized) return;
+  console.log('[AmbientEngine] Starting sample init...');
 
   const ctx = getAudioContext();
-  if (ctx.state === 'suspended') await ctx.resume();
+  // Don't block on resume — decodeAudioData works even when suspended
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
 
   // 1. Load native bundled MP3s
-  await Promise.all(
+  const results = await Promise.all(
     ALL_NOTES.map(async (note) => {
       try {
         const resp = await fetch(NATIVE_PAD_FILES[note]);
-        if (!resp.ok) return;
+        if (!resp.ok) {
+          console.warn(`[AmbientEngine] Failed to fetch ${note}: ${resp.status}`);
+          return { note, ok: false };
+        }
         const arrayBuf = await resp.arrayBuffer();
         const buffer = await ctx.decodeAudioData(arrayBuf);
         decodedBuffers.set(note, buffer);
+        return { note, ok: true };
       } catch (e) {
-        console.warn(`Failed to load native pad for ${note}`, e);
+        console.warn(`[AmbientEngine] Failed to load pad ${note}`, e);
+        return { note, ok: false };
       }
     })
   );
+
+  const loaded = results.filter(r => r.ok).map(r => r.note);
+  const failed = results.filter(r => !r.ok).map(r => r.note);
+  console.log(`[AmbientEngine] Loaded: ${loaded.length}/12`);
+  if (failed.length) console.warn(`[AmbientEngine] Failed: ${failed.join(', ')}`);
 
   // 2. Override with user-imported custom samples (from IndexedDB)
   const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
@@ -128,6 +142,7 @@ export async function initAmbientSamples() {
   await Promise.all(customNotes.map(n => loadAmbientSample(n as NoteName)));
 
   samplesInitialized = true;
+  console.log('[AmbientEngine] Init complete');
 }
 
 function startSampleNote(note: NoteName, buffer: AudioBuffer) {
