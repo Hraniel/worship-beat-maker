@@ -52,13 +52,19 @@ const AmbientPads: React.FC = () => {
     setCustomNotes(new Set(notes));
   }, []);
 
+  const [loading, setLoading] = useState(false);
+
   const handleToggle = useCallback(async (note: NoteName) => {
     if (editMode) {
       pendingNoteRef.current = note;
       fileInputRef.current?.click();
       return;
     }
-    await ensureSamplesLoaded();
+    if (!samplesLoadedRef.current) {
+      setLoading(true);
+      await ensureSamplesLoaded();
+      setLoading(false);
+    }
     const isNowActive = toggleAmbientNote(note);
     if (isNowActive) {
       setActiveNotes(new Set([note]));
@@ -257,6 +263,12 @@ const AmbientPads: React.FC = () => {
 
           })}
           </div>
+
+          {loading && (
+            <p className="text-[10px] text-primary text-center animate-pulse">
+              Carregando samples... aguarde
+            </p>
+          )}
 
           <p className="text-[10px] text-muted-foreground text-center">
             {editMode ?
