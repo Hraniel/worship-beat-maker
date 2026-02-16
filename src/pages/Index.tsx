@@ -150,23 +150,14 @@ const Index = () => {
     return () => stopAllLoops();
   }, []);
 
-  // Init audio on first interaction
-  const initAudio = useCallback(() => {
-    if (!audioReady) {
-      getAudioContext();
-      setAudioReady(true);
-    }
-  }, [audioReady]);
-
-  useEffect(() => {
-    const handler = () => initAudio();
-    document.addEventListener('pointerdown', handler, { once: true });
-    return () => document.removeEventListener('pointerdown', handler);
-  }, [initAudio]);
-
-  // Load custom sounds from IndexedDB on mount
-  useEffect(() => {
-    async function loadAll() {
+  // Load custom sounds from IndexedDB
+  const customSoundsLoadedRef = useRef(false);
+  const loadCustomSounds = useCallback(async () => {
+    if (customSoundsLoadedRef.current) return;
+    customSoundsLoadedRef.current = true;
+    try {
+      const ctx = getAudioContext();
+      if (ctx.state === 'suspended') await ctx.resume();
       const ids = await getAllCustomSoundIds();
       for (const id of ids) {
         const data = await getCustomSound(id);
@@ -178,9 +169,26 @@ const Index = () => {
           }
         }
       }
+    } catch (e) {
+      console.warn('Failed to load custom sounds:', e);
+      customSoundsLoadedRef.current = false; // allow retry
     }
-    loadAll();
   }, []);
+
+  // Init audio on first interaction
+  const initAudio = useCallback(() => {
+    if (!audioReady) {
+      getAudioContext();
+      setAudioReady(true);
+      loadCustomSounds();
+    }
+  }, [audioReady, loadCustomSounds]);
+
+  useEffect(() => {
+    const handler = () => initAudio();
+    document.addEventListener('pointerdown', handler, { once: true });
+    return () => document.removeEventListener('pointerdown', handler);
+  }, [initAudio]);
 
   useEffect(() => {
     setMasterVolume(masterVolume);
