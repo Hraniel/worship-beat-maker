@@ -22,7 +22,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
       <div
-        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-border bg-muted/50 cursor-pointer touch-none"
+        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-orange-500/30 bg-muted/50 cursor-pointer touch-none"
         onPointerDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -65,30 +65,30 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
         title={`Pan: ${displayValue}`}
       >
         <div
-          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-foreground rounded-full origin-bottom"
+          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-orange-500 rounded-full origin-bottom"
           style={{
             transform: `translateX(-50%) rotate(${angle}deg)`,
             transformOrigin: '50% 100%',
             top: '4px',
           }}
         />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-muted-foreground/40" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-orange-400" />
       </div>
       <span className="text-[8px] landscape:text-[10px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
 
       <ZoomPopup visible={dragging}>
-        <div className="relative w-20 h-20 rounded-full border-2 border-border bg-muted/50">
+        <div className="relative w-20 h-20 rounded-full border-2 border-orange-500/40 bg-muted/50">
           <div
-            className="absolute top-2 left-1/2 w-1 h-6 bg-foreground rounded-full origin-bottom"
+            className="absolute top-2 left-1/2 w-1 h-6 bg-orange-500 rounded-full origin-bottom"
             style={{
               transform: `translateX(-50%) rotate(${angle}deg)`,
               transformOrigin: '50% 100%',
               top: '10px',
             }}
           />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-muted-foreground/40" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400" />
         </div>
-        <span className="text-sm font-bold text-foreground tabular-nums">{displayValue}</span>
+        <span className="text-sm font-bold text-orange-400 tabular-nums">{displayValue}</span>
       </ZoomPopup>
     </div>
   );
