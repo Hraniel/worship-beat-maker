@@ -15,7 +15,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
       <div
-        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-border bg-muted/50 cursor-pointer"
+        className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-border bg-muted/50 cursor-pointer touch-none"
         onPointerDown={(e) => {
           e.preventDefault();
           e.stopPropagation();
