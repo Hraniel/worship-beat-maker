@@ -114,3 +114,22 @@ html {
 .animate-loop-border {
   animation: loop-border 1.2s ease-in-out infinite;
 }
+
+/* Landscape mobile: compact footer in focus mode */
+@media (orientation: landscape) and (max-height: 500px) {
+  .focus-footer {
+    max-height: 55vh;
+    padding: 4px 8px;
+  }
+  .focus-footer .space-y-2 > * + * {
+    margin-top: 4px;
+  }
+  .ambient-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .ambient-grid button {
+    height: 2rem;
+    font-size: 10px;
+  }
+}
