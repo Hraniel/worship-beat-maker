@@ -39,17 +39,78 @@ serve(async (req) => {
     const token = await getSpotifyToken();
     const headers = { Authorization: `Bearer ${token}` };
 
-    // If trackId provided, get audio features
+    // If trackId provided, get audio features + audio analysis
     if (trackId) {
-      const [featuresResp, trackResp] = await Promise.all([
+      const [featuresResp, trackResp, analysisResp] = await Promise.all([
         fetch(`https://api.spotify.com/v1/audio-features/${trackId}`, { headers }),
         fetch(`https://api.spotify.com/v1/tracks/${trackId}`, { headers }),
+        fetch(`https://api.spotify.com/v1/audio-analysis/${trackId}`, { headers }),
       ]);
 
       const features = featuresResp.ok ? await featuresResp.json() : null;
       const track = trackResp.ok ? await trackResp.json() : null;
+      
+      // Extract relevant analysis data (summarized to avoid huge payloads)
+      let analysis = null;
+      if (analysisResp.ok) {
+        const fullAnalysis = await analysisResp.json();
+        
+        // Summarize sections (intro, verse, chorus, etc.)
+        const sections = (fullAnalysis.sections || []).map((s: any) => ({
+          start: Math.round(s.start * 10) / 10,
+          duration: Math.round(s.duration * 10) / 10,
+          loudness: Math.round(s.loudness * 10) / 10,
+          tempo: Math.round(s.tempo * 10) / 10,
+          key: s.key,
+          mode: s.mode,
+          time_signature: s.time_signature,
+        }));
+        
+        // Summarize beats (first 32 beats for pattern detection)
+        const beats = (fullAnalysis.beats || []).slice(0, 32).map((b: any) => ({
+          start: Math.round(b.start * 1000) / 1000,
+          duration: Math.round(b.duration * 1000) / 1000,
+          confidence: Math.round(b.confidence * 100) / 100,
+        }));
+        
+        // Summarize segments (first 50 for timbre/loudness analysis)
+        const segments = (fullAnalysis.segments || []).slice(0, 50).map((s: any) => ({
+          start: Math.round(s.start * 100) / 100,
+          duration: Math.round(s.duration * 100) / 100,
+          loudness_start: Math.round(s.loudness_start * 10) / 10,
+          loudness_max: Math.round(s.loudness_max * 10) / 10,
+          timbre: (s.timbre || []).slice(0, 6).map((t: number) => Math.round(t * 10) / 10),
+          pitches: s.pitches,
+        }));
 
-      return new Response(JSON.stringify({ features, track }), {
+        // Bars (first 16)
+        const bars = (fullAnalysis.bars || []).slice(0, 16).map((b: any) => ({
+          start: Math.round(b.start * 1000) / 1000,
+          duration: Math.round(b.duration * 1000) / 1000,
+          confidence: Math.round(b.confidence * 100) / 100,
+        }));
+
+        analysis = {
+          sections,
+          beats,
+          segments,
+          bars,
+          track: fullAnalysis.track ? {
+            duration: fullAnalysis.track.duration,
+            tempo: fullAnalysis.track.tempo,
+            tempo_confidence: fullAnalysis.track.tempo_confidence,
+            time_signature: fullAnalysis.track.time_signature,
+            time_signature_confidence: fullAnalysis.track.time_signature_confidence,
+            key: fullAnalysis.track.key,
+            key_confidence: fullAnalysis.track.key_confidence,
+            mode: fullAnalysis.track.mode,
+            mode_confidence: fullAnalysis.track.mode_confidence,
+            loudness: fullAnalysis.track.loudness,
+          } : null,
+        };
+      }
+
+      return new Response(JSON.stringify({ features, track, analysis }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
