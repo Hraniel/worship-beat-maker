@@ -26,11 +26,16 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
           const el = e.currentTarget;
           const rect = el.getBoundingClientRect();
           const cx = rect.left + rect.width / 2;
+          let moved = false;
+          const longPress = window.setTimeout(() => {
+            if (!moved) onChange(0);
+          }, 400);
 
           const move = (ev: PointerEvent) => {
+            moved = true;
+            clearTimeout(longPress);
             const dx = ev.clientX - cx;
             const raw = Math.max(-1, Math.min(1, dx / 16));
-            // Snap to center if near zero, snap to ±1 at extremes
             let snapped: number;
             if (Math.abs(raw) < 0.06) snapped = 0;
             else if (raw > 0.92) snapped = 1;
@@ -39,6 +44,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
             onChange(snapped);
           };
           const up = () => {
+            clearTimeout(longPress);
             window.removeEventListener('pointermove', move);
             window.removeEventListener('pointerup', up);
           };
