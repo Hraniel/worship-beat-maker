@@ -25,8 +25,8 @@ interface AmbientVoice {
 const activeVoices = new Map<NoteName, AmbientVoice>();
 let ambientVolume = 0.4;
 
-const ATTACK = 1.5;  // seconds fade in
-const RELEASE = 2.0; // seconds fade out
+const ATTACK = 3.0;  // seconds fade in (slow, meditative)
+const RELEASE = 4.0; // seconds fade out (long, gentle)
 
 export function setAmbientVolume(vol: number) {
   ambientVolume = vol;
@@ -52,56 +52,67 @@ export function startAmbientNote(note: NoteName) {
   voiceGain.gain.setValueAtTime(0, t);
   voiceGain.gain.linearRampToValueAtTime(ambientVolume, t + ATTACK);
 
-  // Low-pass filter for warmth
+  // Low-pass filter — very warm, muffled, ancestral
   const filter = ctx.createBiquadFilter();
   filter.type = 'lowpass';
-  filter.frequency.value = 2000;
-  filter.Q.value = 0.5;
+  filter.frequency.value = 800;
+  filter.Q.value = 0.3;
+
+  // Slow LFO on filter for organic breathing
+  const lfo = ctx.createOscillator();
+  lfo.type = 'sine';
+  lfo.frequency.value = 0.08; // very slow wobble
+  const lfoGain = ctx.createGain();
+  lfoGain.gain.value = 300; // subtle sweep range
+  lfo.connect(lfoGain);
+  lfoGain.connect(filter.frequency);
+  lfo.start(t);
+
   filter.connect(voiceGain);
   voiceGain.connect(master);
 
   const oscillators: OscillatorNode[] = [];
   const gains: GainNode[] = [];
 
-  // Layer 1: Root (sub octave) — sine
+  // Layer 1: Deep root — sine, sub-bass warmth
   const osc1 = ctx.createOscillator();
   osc1.type = 'sine';
-  osc1.frequency.value = freq;
+  osc1.frequency.value = freq * 0.5; // one octave below
   const g1 = ctx.createGain();
-  g1.gain.value = 0.4;
+  g1.gain.value = 0.3;
   osc1.connect(g1);
   g1.connect(filter);
   oscillators.push(osc1);
   gains.push(g1);
 
-  // Layer 2: Root + octave — triangle (warmth)
+  // Layer 2: Root — sine, gentle presence
   const osc2 = ctx.createOscillator();
-  osc2.type = 'triangle';
-  osc2.frequency.value = freq * 2;
+  osc2.type = 'sine';
+  osc2.frequency.value = freq;
   const g2 = ctx.createGain();
-  g2.gain.value = 0.25;
+  g2.gain.value = 0.35;
   osc2.connect(g2);
   g2.connect(filter);
   oscillators.push(osc2);
   gains.push(g2);
 
-  // Layer 3: Fifth — sine (adds richness)
+  // Layer 3: Fifth — triangle, soft harmonic
   const osc3 = ctx.createOscillator();
-  osc3.type = 'sine';
-  osc3.frequency.value = freq * 1.5;
+  osc3.type = 'triangle';
+  osc3.frequency.value = freq * 1.498; // slightly detuned fifth
   const g3 = ctx.createGain();
-  g3.gain.value = 0.15;
+  g3.gain.value = 0.12;
   osc3.connect(g3);
   g3.connect(filter);
   oscillators.push(osc3);
   gains.push(g3);
 
-  // Layer 4: Slight detune for chorus effect
+  // Layer 4: Octave — sine, very quiet, with slow detune drift
   const osc4 = ctx.createOscillator();
   osc4.type = 'sine';
-  osc4.frequency.value = freq * 2.005; // slight detune
+  osc4.frequency.value = freq * 2.002;
   const g4 = ctx.createGain();
-  g4.gain.value = 0.15;
+  g4.gain.value = 0.08;
   osc4.connect(g4);
   g4.connect(filter);
   oscillators.push(osc4);
