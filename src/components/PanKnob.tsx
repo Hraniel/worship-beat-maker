@@ -10,7 +10,6 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
   const angle = pan * 135;
   const displayValue = pan === 0 ? 'C' : pan < 0 ? `L${Math.round(Math.abs(pan) * 100)}` : `R${Math.round(pan * 100)}`;
   const [dragging, setDragging] = useState(false);
-  const [popupPos, setPopupPos] = useState<{ x: number; y: number } | null>(null);
 
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
@@ -23,7 +22,6 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
           el.setPointerCapture(e.pointerId);
           const rect = el.getBoundingClientRect();
           const cx = rect.left + rect.width / 2;
-          const cy = rect.top;
           let moved = false;
           const pid = e.pointerId;
           const longPress = window.setTimeout(() => {
@@ -34,7 +32,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
             moved = true;
             clearTimeout(longPress);
             if (!dragging) setDragging(true);
-            setPopupPos({ x: cx, y: cy });
+            
             const dx = ev.clientX - cx;
             const raw = Math.max(-1, Math.min(1, dx / 16));
             let snapped: number;
@@ -47,7 +45,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
           const up = () => {
             clearTimeout(longPress);
             setDragging(false);
-            setPopupPos(null);
+            
             el.removeEventListener('pointermove', move);
             el.removeEventListener('pointerup', up);
             el.removeEventListener('lostpointercapture', up);
@@ -74,30 +72,25 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
       </div>
       <span className="text-[8px] landscape:text-[10px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
 
-      {/* Zoom popup portal */}
-      {dragging && popupPos && createPortal(
+      {/* Zoom popup portal - centered on screen */}
+      {dragging && createPortal(
         <div
-          className="fixed z-[200] pointer-events-none animate-scale-in"
-          style={{
-            left: popupPos.x,
-            top: popupPos.y - 80,
-            transform: 'translateX(-50%)',
-          }}
+          className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center"
         >
-          <div className="flex flex-col items-center gap-1 bg-card border border-border rounded-xl shadow-2xl p-3">
+          <div className="flex flex-col items-center gap-1 bg-card border border-border rounded-xl shadow-2xl p-4 animate-scale-in">
             {/* Zoomed knob */}
-            <div className="relative w-16 h-16 rounded-full border-2 border-border bg-muted/50">
+            <div className="relative w-20 h-20 rounded-full border-2 border-border bg-muted/50">
               <div
-                className="absolute top-2 left-1/2 w-1 h-5 bg-foreground rounded-full origin-bottom"
+                className="absolute top-2 left-1/2 w-1 h-6 bg-foreground rounded-full origin-bottom"
                 style={{
                   transform: `translateX(-50%) rotate(${angle}deg)`,
                   transformOrigin: '50% 100%',
-                  top: '8px',
+                  top: '10px',
                 }}
               />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-muted-foreground/40" />
             </div>
-            <span className="text-xs font-bold text-foreground tabular-nums">{displayValue}</span>
+            <span className="text-sm font-bold text-foreground tabular-nums">{displayValue}</span>
           </div>
         </div>,
         document.body

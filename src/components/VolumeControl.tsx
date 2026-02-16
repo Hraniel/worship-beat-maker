@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ interface VolumeControlProps {
 
 const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, label = "Master", pan, onPanChange }) => {
   const isMuted = volume === 0;
+  const [draggingVolume, setDraggingVolume] = useState(false);
 
   return (
     <div className="flex items-center gap-2 landscape:gap-3 px-3 py-1.5 bg-card rounded-lg border border-border">
@@ -25,15 +27,22 @@ const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, l
       >
         {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
       </Button>
-      <Slider
-        value={[volume * 100]}
-        onValueChange={([v]) => onVolumeChange(v / 100)}
-        onReset={() => onVolumeChange(0.7)}
-        min={0}
-        max={100}
-        step={1}
+      <div
         className="flex-1"
-      />
+        onPointerDown={() => setDraggingVolume(true)}
+        onPointerUp={() => setDraggingVolume(false)}
+        onPointerLeave={() => setDraggingVolume(false)}
+      >
+        <Slider
+          value={[volume * 100]}
+          onValueChange={([v]) => onVolumeChange(v / 100)}
+          onReset={() => onVolumeChange(0.7)}
+          min={0}
+          max={100}
+          step={1}
+          className="w-full"
+        />
+      </div>
       <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums shrink-0">
         {Math.round(volume * 100)}%
       </span>
@@ -41,6 +50,23 @@ const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, l
         <div className="border-l border-border pl-2 ml-1">
           <PanKnob pan={pan} onChange={onPanChange} />
         </div>
+      )}
+
+      {/* Volume zoom popup - centered on screen */}
+      {draggingVolume && createPortal(
+        <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2 bg-card border border-border rounded-xl shadow-2xl p-4 animate-scale-in min-w-[120px]">
+            {isMuted ? <VolumeX className="h-6 w-6 text-muted-foreground" /> : <Volume2 className="h-6 w-6 text-foreground" />}
+            <span className="text-2xl font-bold text-foreground tabular-nums">{Math.round(volume * 100)}%</span>
+            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-75"
+                style={{ width: `${volume * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );
