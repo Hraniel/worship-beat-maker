@@ -232,9 +232,14 @@ export function stopAmbientNote(note: NoteName) {
 
 export function toggleAmbientNote(note: NoteName): boolean {
   if (activeVoices.has(note)) {
+    // Same note → stop it
     stopAmbientNote(note);
     return false;
   } else {
+    // Different note → stop all others first, then start this one
+    for (const activeNote of [...activeVoices.keys()]) {
+      stopAmbientNote(activeNote);
+    }
     startAmbientNote(note);
     return true;
   }
