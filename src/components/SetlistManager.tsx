@@ -110,12 +110,12 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
           <ListMusic className="h-4 w-4" />
-          Setlist
+          Repertório
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="bg-card border-border">
         <SheetHeader>
-          <SheetTitle className="text-foreground">Setlist</SheetTitle>
+          <SheetTitle className="text-foreground">Repertório</SheetTitle>
           <SheetDescription className="text-muted-foreground">
             Salve e organize configurações por música
           </SheetDescription>
