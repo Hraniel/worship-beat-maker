@@ -304,16 +304,7 @@ const Index = () => {
       saveAllEffects(newEffects);
     }
 
-    // Auto-start recommended loop
-    if (config.recommendedLoop) {
-      const loopPad = defaultPads.find(p => p.id === config.recommendedLoop);
-      if (loopPad && !activeLoops.has(loopPad.id)) {
-        const vol = config.pads?.[loopPad.id]?.volume ?? 0.7;
-        setActiveLoops(prev => new Set(prev).add(loopPad.id));
-        addLoop(loopPad, vol);
-      }
-    }
-  }, [padVolumes, padPans, padEffects, activeLoops]);
+  }, [padVolumes, padPans, padEffects]);
 
   const handleMetronomePanChange = useCallback((pan: number) => {
     setMetronomePanState(pan);
