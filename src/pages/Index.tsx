@@ -494,6 +494,7 @@ const Index = () => {
 
             
 
+            {!editMode && (
             <button
             onClick={toggleFocusMode}
             className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -501,6 +502,7 @@ const Index = () => {
             data-tutorial="focus-mode">
               <Maximize className="h-4 w-4" />
             </button>
+            )}
 
             {/* Unified menu */}
             <div className="relative">
