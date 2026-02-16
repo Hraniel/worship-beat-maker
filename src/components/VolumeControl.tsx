@@ -29,8 +29,8 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
 
           const move = (ev: PointerEvent) => {
             const dx = ev.clientX - cx;
-            const clamped = Math.max(-1, Math.min(1, dx / 40));
-            const snapped = Math.abs(clamped) < 0.08 ? 0 : Math.round(clamped * 20) / 20;
+            const clamped = Math.max(-1, Math.min(1, dx / 16));
+            const snapped = Math.abs(clamped) < 0.06 ? 0 : Math.round(clamped * 20) / 20;
             onChange(snapped);
           };
           const up = () => {
