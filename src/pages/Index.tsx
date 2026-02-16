@@ -212,7 +212,13 @@ const Index = () => {
       const updated = { ...customSounds, [padId]: file.name };
       setCustomSounds(updated);
       saveCustomNames(updated);
-      toast.success(`Som "${file.name}" importado!`);
+
+      // Reset pad settings to defaults
+      setPadVolumes((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-volumes', JSON.stringify(next)); return next; });
+      setPadPans((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-pad-pans', JSON.stringify(next)); setPadPan(padId, 0); return next; });
+      setPadEffects((prev) => { const next = { ...prev }; delete next[padId]; saveAllEffects(next); return next; });
+
+      toast.success(`Som "${file.name}" importado! Configurações resetadas.`);
     } catch (e) {
       console.error('Error importing sound:', e);
       toast.error('Erro ao importar som. Verifique o formato do arquivo.');
