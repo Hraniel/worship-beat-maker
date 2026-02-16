@@ -629,7 +629,7 @@ const Index = () => {
       </main>
 
       {/* Bottom controls */}
-      <footer className="shrink-0 border-t border-border bg-card/50 backdrop-blur p-2 sm:p-3 space-y-2">
+      <footer className={`shrink-0 border-t border-border bg-card/50 backdrop-blur space-y-1.5 ${focusMode ? 'p-1.5 max-h-[45vh] overflow-y-auto focus-footer' : 'p-2 sm:p-3 space-y-2'}`}>
         <div className="max-w-[600px] mx-auto space-y-2">
           {/* Focus mode: show exit button + song name */}
           {focusMode &&

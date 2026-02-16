@@ -221,7 +221,7 @@ const AmbientPads: React.FC = () => {
           )}
 
           {/* Note grid */}
-          <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-12">
+          <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-12 ambient-grid">
             {ALL_NOTES.map((note) => {
             const isActive = activeNotes.has(note);
             const isCustom = customNotes.has(note);
