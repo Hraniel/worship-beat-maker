@@ -101,58 +101,61 @@ export function hasCustomSample(note: NoteName): boolean {
 }
 
 // Load native MP3 pads from public/pads/, then override with user custom samples
+// Load a single native MP3 pad on demand
+async function ensureNoteLoaded(note: NoteName): Promise<boolean> {
+  if (decodedBuffers.has(note)) return true;
+  try {
+    const ctx = getAudioContext();
+    console.log(`[AmbientEngine] Loading ${note}...`);
+    const resp = await fetch(NATIVE_PAD_FILES[note]);
+    if (!resp.ok) {
+      console.warn(`[AmbientEngine] Fetch failed ${note}: ${resp.status}`);
+      return false;
+    }
+    const arrayBuf = await resp.arrayBuffer();
+    const buffer = await ctx.decodeAudioData(arrayBuf);
+    decodedBuffers.set(note, buffer);
+    console.log(`[AmbientEngine] ✓ ${note} loaded (${buffer.duration.toFixed(1)}s)`);
+    return true;
+  } catch (e) {
+    console.error(`[AmbientEngine] ✗ Failed ${note}:`, e);
+    return false;
+  }
+}
+
+// Pre-load all samples (best-effort, non-blocking)
 export async function initAmbientSamples() {
   if (samplesInitialized) return;
-  console.log('[AmbientEngine] Starting sample init...');
+  samplesInitialized = true;
+  console.log('[AmbientEngine] Init starting...');
 
   const ctx = getAudioContext();
-  console.log('[AmbientEngine] AudioContext state:', ctx.state, 'sampleRate:', ctx.sampleRate);
-  
-  // Don't block on resume — decodeAudioData works even when suspended
+  console.log('[AmbientEngine] AudioContext state:', ctx.state);
   if (ctx.state === 'suspended') {
     ctx.resume().catch(() => {});
   }
 
-  // 1. Load native bundled MP3s
-  const results = await Promise.all(
-    ALL_NOTES.map(async (note) => {
-      try {
-        console.log(`[AmbientEngine] Fetching ${note}...`);
-        const resp = await fetch(NATIVE_PAD_FILES[note]);
-        if (!resp.ok) {
-          console.warn(`[AmbientEngine] Failed to fetch ${note}: ${resp.status}`);
-          return { note, ok: false };
-        }
-        const arrayBuf = await resp.arrayBuffer();
-        console.log(`[AmbientEngine] Decoding ${note} (${arrayBuf.byteLength} bytes)...`);
-        const buffer = await ctx.decodeAudioData(arrayBuf);
-        decodedBuffers.set(note, buffer);
-        console.log(`[AmbientEngine] ✓ ${note} decoded (${buffer.duration.toFixed(1)}s)`);
-        return { note, ok: true };
-      } catch (e) {
-        console.error(`[AmbientEngine] ✗ Failed pad ${note}:`, e);
-        return { note, ok: false };
-      }
-    })
-  );
+  // Load sequentially to avoid memory pressure on mobile
+  for (const note of ALL_NOTES) {
+    try {
+      await ensureNoteLoaded(note);
+    } catch (e) {
+      console.warn(`[AmbientEngine] Skip ${note}:`, e);
+    }
+  }
 
-  const loaded = results.filter(r => r.ok).map(r => r.note);
-  const failed = results.filter(r => !r.ok).map(r => r.note);
-  console.log(`[AmbientEngine] Loaded: ${loaded.length}/12`);
-  if (failed.length) console.warn(`[AmbientEngine] Failed: ${failed.join(', ')}`);
-
-  // 2. Override with user-imported custom samples (from IndexedDB)
+  // Override with user custom samples
   try {
     const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
     const customNotes = await getAllAmbientSoundNotes();
-    console.log('[AmbientEngine] Custom notes from DB:', customNotes);
-    await Promise.all(customNotes.map(n => loadAmbientSample(n as NoteName)));
+    for (const n of customNotes) {
+      await loadAmbientSample(n as NoteName);
+    }
   } catch (e) {
-    console.warn('[AmbientEngine] Failed to load custom samples from IndexedDB:', e);
+    console.warn('[AmbientEngine] Custom samples failed:', e);
   }
 
-  samplesInitialized = true;
-  console.log('[AmbientEngine] Init complete');
+  console.log(`[AmbientEngine] Init done. Loaded: ${decodedBuffers.size}/12`);
 }
 
 function startSampleNote(note: NoteName, buffer: AudioBuffer) {
@@ -252,13 +255,19 @@ function startSynthNote(note: NoteName) {
   });
 }
 
-export function startAmbientNote(note: NoteName) {
+export async function startAmbientNote(note: NoteName) {
   if (activeVoices.has(note)) return;
+
+  // Ensure sample is loaded on demand (handles mobile lazy loading)
+  if (!decodedBuffers.has(note)) {
+    await ensureNoteLoaded(note);
+  }
 
   const buffer = decodedBuffers.get(note);
   if (buffer) {
     startSampleNote(note, buffer);
   } else {
+    console.warn(`[AmbientEngine] No buffer for ${note}, using synth fallback`);
     startSynthNote(note);
   }
 }
@@ -301,17 +310,15 @@ export function stopAmbientNote(note: NoteName) {
   }, cleanupMs);
 }
 
-export function toggleAmbientNote(note: NoteName): boolean {
+export async function toggleAmbientNote(note: NoteName): Promise<boolean> {
   if (activeVoices.has(note)) {
-    // Same note → stop it
     stopAmbientNote(note);
     return false;
   } else {
-    // Different note → stop all others first, then start this one
     for (const activeNote of [...activeVoices.keys()]) {
       stopAmbientNote(activeNote);
     }
-    startAmbientNote(note);
+    await startAmbientNote(note);
     return true;
   }
 }

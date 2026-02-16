@@ -43,35 +43,27 @@ const AmbientPads: React.FC = () => {
 
   const samplesLoadedRef = useRef(false);
 
-  // Lazy-load samples on first user interaction (ensures AudioContext is allowed)
+  // Background preload (non-blocking, sequential to save memory)
   const ensureSamplesLoaded = useCallback(async () => {
     if (samplesLoadedRef.current) return;
     samplesLoadedRef.current = true;
     try {
-      console.log('[AmbientPads] Starting ensureSamplesLoaded...');
+      console.log('[AmbientPads] Background init starting...');
       await initAmbientSamples();
       const notes = await getAllAmbientSoundNotes();
       setCustomNotes(new Set(notes));
-      console.log('[AmbientPads] Samples loaded OK');
+      console.log('[AmbientPads] Background init done');
     } catch (e) {
-      console.error('[AmbientPads] Failed to init samples:', e);
-      samplesLoadedRef.current = false; // allow retry
+      console.error('[AmbientPads] Init failed:', e);
+      samplesLoadedRef.current = false;
     }
   }, []);
 
-  // Eagerly preload samples in background on mount
-  const [loading, setLoading] = useState(true);
+  // Start preload but don't block UI — pads are always interactive
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
-    console.log('[AmbientPads] Mount — starting preload');
-    ensureSamplesLoaded()
-      .then(() => {
-        console.log('[AmbientPads] Preload complete, setting loading=false');
-        setLoading(false);
-      })
-      .catch((e) => {
-        console.error('[AmbientPads] Preload failed:', e);
-        setLoading(false); // unblock UI even on failure
-      });
+    console.log('[AmbientPads] Mount — starting background preload');
+    ensureSamplesLoaded();
   }, [ensureSamplesLoaded]);
 
   const handleToggle = useCallback(async (note: NoteName) => {
@@ -80,18 +72,19 @@ const AmbientPads: React.FC = () => {
       fileInputRef.current?.click();
       return;
     }
-    if (!samplesLoadedRef.current) {
-      setLoading(true);
-      await ensureSamplesLoaded();
-      setLoading(false);
+    setLoading(true);
+    try {
+      const isNowActive = await toggleAmbientNote(note);
+      if (isNowActive) {
+        setActiveNotes(new Set([note]));
+      } else {
+        setActiveNotes(new Set());
+      }
+    } catch (e) {
+      console.error('[AmbientPads] Toggle error:', e);
     }
-    const isNowActive = toggleAmbientNote(note);
-    if (isNowActive) {
-      setActiveNotes(new Set([note]));
-    } else {
-      setActiveNotes(new Set());
-    }
-  }, [editMode, ensureSamplesLoaded]);
+    setLoading(false);
+  }, [editMode]);
 
   const handleFileImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
