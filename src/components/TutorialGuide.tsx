@@ -7,12 +7,13 @@ interface TutorialStep {
   targetSelector: string;
   title: string;
   description: string;
+  /** Custom event name to dispatch before showing this step (e.g. to expand a collapsed section) */
+  prepareEvent?: string;
 }
 
 export interface TutorialSection {
   id: string;
   label: string;
-  emoji: string;
   steps: TutorialStep[];
 }
 
@@ -20,7 +21,6 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   {
     id: 'pads',
     label: 'Pads de Bateria',
-    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
@@ -30,14 +30,13 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
         title: 'Opções do Pad',
-        description: 'Segure um pad para acessar opções como volume individual, pan, renomear, alterar cor e efeitos de áudio.',
+        description: 'Segure um pad para acessar opções como volume individual, pan (panorâmica L/R), renomear, alterar cor e efeitos de áudio.',
       },
     ],
   },
   {
     id: 'repertorio',
     label: 'Repertório',
-    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="setlist"]',
@@ -46,78 +45,120 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       },
       {
         targetSelector: '[data-tutorial="setlist"]',
-        title: 'Reordenar',
+        title: 'Reordenar Músicas',
         description: 'Arraste as músicas para reordenar. Clique em uma música para carregar suas configurações.',
-      },
-    ],
-  },
-  {
-    id: 'metronomo',
-    label: 'Metrônomo',
-    emoji: '',
-    steps: [
-      {
-        targetSelector: '[data-tutorial="metronome"]',
-        title: 'Metrônomo',
-        description: 'Ajuste o BPM com o slider ou botões +/–. Escolha a fórmula de compasso (4/4, 3/4, 6/8).',
-      },
-      {
-        targetSelector: '[data-tutorial="metronome"]',
-        title: 'Pan do Metrônomo',
-        description: 'Use o knob de pan para direcionar o metrônomo para o lado esquerdo ou direito do áudio.',
-      },
-    ],
-  },
-  {
-    id: 'volume',
-    label: 'Volume Master',
-    emoji: '',
-    steps: [
-      {
-        targetSelector: '[data-tutorial="volume-master"]',
-        title: 'Volume Master',
-        description: 'Controle o volume geral de todos os pads. Use o knob de pan para direcionar o áudio.',
       },
     ],
   },
   {
     id: 'ambient',
     label: 'Ambient Pads',
-    emoji: '',
     steps: [
       {
-        targetSelector: '[data-tutorial="pad-grid"]',
+        targetSelector: '[data-tutorial="ambient-pads"]',
         title: 'Ambient Pads',
-        description: 'Use os pads ambientes no rodapé para tocar notas sustentadas. Ideal para criar atmosferas de louvor.',
+        description: 'Pads de notas sustentadas para criar atmosferas de louvor. Toque para ativar/desativar.',
+        prepareEvent: 'tutorial:expand-ambient',
+      },
+      {
+        targetSelector: '[data-tutorial="ambient-pads"]',
+        title: 'Controles do Ambient',
+        description: 'Use o slider vertical para ajustar o volume e o knob laranja para controlar o pan (panorâmica esquerda/direita).',
+        prepareEvent: 'tutorial:expand-ambient',
+      },
+    ],
+  },
+  {
+    id: 'volume',
+    label: 'Volume e Pan Master',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="volume-master"]',
+        title: 'Volume Master',
+        description: 'Controle o volume geral de todos os pads e sons do app com o slider principal.',
+      },
+      {
+        targetSelector: '[data-tutorial="volume-master"]',
+        title: 'Pan Master',
+        description: 'O knob laranja ao lado do volume master direciona todo o áudio para esquerda (L) ou direita (R). Gire para ajustar a panorâmica geral.',
+      },
+    ],
+  },
+  {
+    id: 'metronomo',
+    label: 'Metrônomo',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="metronome"]',
+        title: 'Metrônomo',
+        description: 'Ajuste o BPM com o slider ou botões +/–. Escolha a fórmula de compasso (4/4, 3/4, 6/8). Clique para expandir ou minimizar.',
+        prepareEvent: 'tutorial:expand-metronome',
+      },
+      {
+        targetSelector: '[data-tutorial="pan-metronome"]',
+        title: 'Pan do Metrônomo',
+        description: 'O knob laranja direciona o clique do metrônomo para esquerda (L) ou direita (R). Útil para ouvir o metrônomo separado da banda no retorno.',
+        prepareEvent: 'tutorial:expand-metronome',
+      },
+    ],
+  },
+  {
+    id: 'pan',
+    label: 'Pan (Panorâmica)',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="volume-master"]',
+        title: 'O que é Pan?',
+        description: 'Pan (panorâmica) controla a direção do som entre os lados esquerdo (L) e direito (R) do áudio. Útil para separar instrumentos no retorno.',
+      },
+      {
+        targetSelector: '[data-tutorial="volume-master"]',
+        title: 'Pan Master',
+        description: 'O knob laranja ao lado do volume master move TODO o áudio do app para L ou R. Dê um duplo clique ou segure para resetar ao centro.',
+      },
+      {
+        targetSelector: '[data-tutorial="pan-metronome"]',
+        title: 'Pan do Metrônomo',
+        description: 'Mova o clique do metrônomo para um lado só. Ex: metrônomo no ouvido esquerdo, música no direito.',
+        prepareEvent: 'tutorial:expand-metronome',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Pan Individual dos Pads',
+        description: 'Segure um pad para abrir o menu. O controle de pan individual direciona apenas aquele pad para L ou R. Recurso PRO.',
+      },
+      {
+        targetSelector: '[data-tutorial="ambient-pads"]',
+        title: 'Pan do Ambient',
+        description: 'O knob de pan nos Ambient Pads direciona as notas sustentadas para L ou R independentemente dos outros sons. Recurso MASTER.',
+        prepareEvent: 'tutorial:expand-ambient',
       },
     ],
   },
   {
     id: 'edicao',
     label: 'Modo Edição',
-    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
         title: 'Modo Edição',
-        description: 'Ative o Modo Edição no menu para acessar rapidamente as configurações de cada pad com um único toque.',
+        description: 'Ative o Modo Edição no menu (ícone de engrenagem) para acessar as configurações de cada pad com um único toque, sem precisar segurar.',
       },
       {
         targetSelector: '[data-tutorial="pad-grid"]',
         title: 'Tamanho dos Pads',
-        description: 'No modo edição, use os botões – e + no cabeçalho para ajustar o tamanho dos pads.',
+        description: 'No modo edição, use os botões – e + no cabeçalho para ajustar o tamanho dos pads na tela.',
       },
     ],
   },
   {
     id: 'foco',
     label: 'Modo Foco',
-    emoji: '',
     steps: [
       {
         targetSelector: '[data-tutorial="focus-mode"]',
         title: 'Modo Foco',
-        description: 'Oculta o cabeçalho para maximizar o espaço dos pads. Ideal para apresentações ao vivo!',
+        description: 'Oculta o cabeçalho para maximizar o espaço dos pads. Ideal para apresentações ao vivo! Os Ambient Pads continuam acessíveis.',
       },
     ],
   },
@@ -139,6 +180,13 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
 
   const currentStep = steps[step];
 
+  // Dispatch prepare event and wait a tick for DOM to update
+  const prepareStep = useCallback((s: TutorialStep) => {
+    if (s.prepareEvent) {
+      window.dispatchEvent(new CustomEvent(s.prepareEvent));
+    }
+  }, []);
+
   const updateRect = useCallback(() => {
     if (!active || !currentStep) return;
     const el = document.querySelector(currentStep.targetSelector);
@@ -149,8 +197,16 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
     }
   }, [active, step, currentStep]);
 
+  // When step changes, prepare and then update rect
   useEffect(() => {
-    updateRect();
+    if (!active || !currentStep) return;
+    prepareStep(currentStep);
+    // Wait for DOM to update after prepare event
+    const timer = setTimeout(updateRect, 150);
+    return () => clearTimeout(timer);
+  }, [active, step, currentStep, prepareStep, updateRect]);
+
+  useEffect(() => {
     window.addEventListener('resize', updateRect);
     window.addEventListener('scroll', updateRect);
     return () => {
