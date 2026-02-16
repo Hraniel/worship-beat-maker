@@ -59,6 +59,7 @@ function getAmbientPanner(): StereoPannerNode {
 
 const ATTACK = 2.0;
 const RELEASE = 1.5;
+const MAX_LOOP_DURATION = 15; // seconds — trim decoded buffers to save mobile memory
 
 export function setAmbientVolume(vol: number) {
   ambientVolume = vol;
@@ -82,6 +83,17 @@ export function getAmbientPan() {
   return ambientPan;
 }
 
+// Trim an AudioBuffer to a max duration to save memory on mobile
+function trimBuffer(ctx: AudioContext, buffer: AudioBuffer, maxSeconds: number): AudioBuffer {
+  const maxSamples = Math.min(buffer.length, Math.ceil(maxSeconds * buffer.sampleRate));
+  if (maxSamples >= buffer.length) return buffer; // already short enough
+  const trimmed = ctx.createBuffer(buffer.numberOfChannels, maxSamples, buffer.sampleRate);
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+    trimmed.copyToChannel(buffer.getChannelData(ch).subarray(0, maxSamples), ch);
+  }
+  return trimmed;
+}
+
 // Pre-decode and cache a sample buffer for a note
 export async function loadAmbientSample(note: NoteName): Promise<boolean> {
   const data = await getAmbientSound(note);
@@ -90,8 +102,8 @@ export async function loadAmbientSample(note: NoteName): Promise<boolean> {
     return false;
   }
   const ctx = getAudioContext();
-  const buffer = await ctx.decodeAudioData(data.buffer.slice(0));
-  decodedBuffers.set(note, buffer);
+  const fullBuffer = await ctx.decodeAudioData(data.buffer.slice(0));
+  decodedBuffers.set(note, trimBuffer(ctx, fullBuffer, MAX_LOOP_DURATION));
   return true;
 }
 
@@ -113,9 +125,10 @@ async function ensureNoteLoaded(note: NoteName): Promise<boolean> {
       return false;
     }
     const arrayBuf = await resp.arrayBuffer();
-    const buffer = await ctx.decodeAudioData(arrayBuf);
+    const fullBuffer = await ctx.decodeAudioData(arrayBuf);
+    const buffer = trimBuffer(ctx, fullBuffer, MAX_LOOP_DURATION);
     decodedBuffers.set(note, buffer);
-    console.log(`[AmbientEngine] ✓ ${note} loaded (${buffer.duration.toFixed(1)}s)`);
+    console.log(`[AmbientEngine] ✓ ${note} loaded (${fullBuffer.duration.toFixed(1)}s → trimmed to ${buffer.duration.toFixed(1)}s)`);
     return true;
   } catch (e) {
     console.error(`[AmbientEngine] ✗ Failed ${note}:`, e);
