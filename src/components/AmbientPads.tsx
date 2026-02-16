@@ -47,9 +47,14 @@ const AmbientPads: React.FC = () => {
   const ensureSamplesLoaded = useCallback(async () => {
     if (samplesLoadedRef.current) return;
     samplesLoadedRef.current = true;
-    await initAmbientSamples();
-    const notes = await getAllAmbientSoundNotes();
-    setCustomNotes(new Set(notes));
+    try {
+      await initAmbientSamples();
+      const notes = await getAllAmbientSoundNotes();
+      setCustomNotes(new Set(notes));
+    } catch (e) {
+      console.warn('[AmbientPads] Failed to init samples:', e);
+      samplesLoadedRef.current = false; // allow retry
+    }
   }, []);
 
   // Eagerly preload samples in background on mount
