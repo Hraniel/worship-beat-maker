@@ -80,8 +80,9 @@ const AmbientPads: React.FC = () => {
       } else {
         setActiveNotes(new Set());
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('[AmbientPads] Toggle error:', e);
+      toast.error(`Erro no pad: ${e?.message || 'desconhecido'}`);
     }
     setLoading(false);
     togglingRef.current = false;
