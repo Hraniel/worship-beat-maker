@@ -40,8 +40,10 @@ interface SampleVoice {
 type AmbientVoice = SynthVoice | SampleVoice;
 
 const activeVoices = new Map<NoteName, AmbientVoice>();
+const fadingVoices = new Set<AmbientVoice>(); // track voices during fade-out for cleanup
 const decodedBuffers = new Map<NoteName, AudioBuffer>();
 let ambientVolume = 0.4;
+let samplesInitialized = false;
 
 const ATTACK = 3.0;
 const RELEASE = 4.0;
@@ -77,7 +79,10 @@ export function hasCustomSample(note: NoteName): boolean {
 
 // Load native MP3 pads from public/pads/, then override with user custom samples
 export async function initAmbientSamples() {
+  if (samplesInitialized) return;
+
   const ctx = getAudioContext();
+  if (ctx.state === 'suspended') await ctx.resume();
 
   // 1. Load native bundled MP3s
   await Promise.all(
@@ -98,6 +103,8 @@ export async function initAmbientSamples() {
   const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
   const customNotes = await getAllAmbientSoundNotes();
   await Promise.all(customNotes.map(n => loadAmbientSample(n as NoteName)));
+
+  samplesInitialized = true;
 }
 
 function startSampleNote(note: NoteName, buffer: AudioBuffer) {
@@ -219,15 +226,31 @@ export function stopAmbientNote(note: NoteName) {
   voice.masterGain.gain.setValueAtTime(voice.masterGain.gain.value, t);
   voice.masterGain.gain.linearRampToValueAtTime(0, t + RELEASE);
 
-  if (voice.type === 'synth') {
-    for (const osc of voice.oscillators) {
-      osc.stop(t + RELEASE + 0.1);
-    }
-  } else {
-    voice.source.stop(t + RELEASE + 0.1);
-  }
-
+  // Track for cleanup
+  fadingVoices.add(voice);
   activeVoices.delete(note);
+
+  // Schedule full cleanup after fade-out completes
+  const cleanupMs = (RELEASE + 0.2) * 1000;
+  setTimeout(() => {
+    try {
+      if (voice.type === 'synth') {
+        for (const osc of voice.oscillators) {
+          osc.stop();
+          osc.disconnect();
+        }
+        for (const g of voice.gains) g.disconnect();
+        voice.filterNode.disconnect();
+      } else {
+        voice.source.stop();
+        voice.source.disconnect();
+      }
+      voice.masterGain.disconnect();
+    } catch {
+      // Already stopped/disconnected — safe to ignore
+    }
+    fadingVoices.delete(voice);
+  }, cleanupMs);
 }
 
 export function toggleAmbientNote(note: NoteName): boolean {
