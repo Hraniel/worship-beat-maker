@@ -1,7 +1,7 @@
 // IndexedDB storage for custom audio samples
 
 const DB_NAME = 'drum-pads-worship';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'custom-sounds';
 
 function openDB(): Promise<IDBDatabase> {
@@ -11,6 +11,9 @@ function openDB(): Promise<IDBDatabase> {
       const db = req.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME);
+      }
+      if (!db.objectStoreNames.contains('ambient-pads')) {
+        db.createObjectStore('ambient-pads');
       }
     };
     req.onsuccess = () => resolve(req.result);
