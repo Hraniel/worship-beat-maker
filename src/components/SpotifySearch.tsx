@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Search, Music, Loader2, Sparkles, Check, X } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Search, Music, Loader2, Sparkles, Check, X, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
@@ -55,7 +55,30 @@ const PAD_LABELS: Record<string, string> = {
 // In-memory cache for AI suggestions keyed by track ID
 const suggestionCache = new Map<string, SuggestedConfig>();
 
+const USAGE_KEY = 'spotify-ai-usage';
 
+function getUsageStats() {
+  try {
+    const raw = localStorage.getItem(USAGE_KEY);
+    if (raw) return JSON.parse(raw) as { total: number; cached: number; lastReset: string };
+  } catch {}
+  return { total: 0, cached: 0, lastReset: new Date().toISOString().slice(0, 10) };
+}
+
+function incrementUsage(fromCache: boolean) {
+  const stats = getUsageStats();
+  // Reset daily
+  const today = new Date().toISOString().slice(0, 10);
+  if (stats.lastReset !== today) {
+    stats.total = 0;
+    stats.cached = 0;
+    stats.lastReset = today;
+  }
+  stats.total++;
+  if (fromCache) stats.cached++;
+  localStorage.setItem(USAGE_KEY, JSON.stringify(stats));
+  return stats;
+}
 
 
 const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
@@ -67,6 +90,12 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [suggestion, setSuggestion] = useState<SuggestedConfig | null>(null);
   const [analysisStep, setAnalysisStep] = useState('');
+  const [usage, setUsage] = useState(getUsageStats);
+
+  // Refresh usage on open
+  useEffect(() => {
+    if (open) setUsage(getUsageStats());
+  }, [open]);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
@@ -100,6 +129,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
     const cached = suggestionCache.get(track.id);
     if (cached) {
       setSuggestion(cached);
+      setUsage(incrementUsage(true));
       toast.info('Sugestão carregada do cache');
       return;
     }
@@ -128,6 +158,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
       // Cache the result
       suggestionCache.set(track.id, aiData.config);
       setSuggestion(aiData.config);
+      setUsage(incrementUsage(false));
     } catch (e) {
       console.error('Analysis error:', e);
       toast.error('Erro ao analisar música. Tente novamente.');
@@ -175,6 +206,19 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
             Busque uma música e a IA analisa o áudio real para sugerir efeitos (EQ, reverb, delay, pan) nos pads
           </SheetDescription>
         </SheetHeader>
+
+        {/* Usage counter */}
+        <div className="flex items-center gap-2 mt-2 px-1 py-1.5 rounded-md bg-muted/50 text-[11px] text-muted-foreground">
+          <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
+          <span>
+            Hoje: <strong className="text-foreground">{usage.total}</strong> consulta{usage.total !== 1 ? 's' : ''}
+            {usage.cached > 0 && (
+              <span className="ml-1">
+                ({usage.cached} do cache — <span className="text-primary">sem custo</span>)
+              </span>
+            )}
+          </span>
+        </div>
 
         {/* Search */}
         <div className="flex gap-2 mt-4">
