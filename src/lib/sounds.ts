@@ -24,7 +24,7 @@ export const defaultPads: PadSound[] = [
     id: 'loop-worship-1', name: 'Worship Snap', shortName: 'WSP', category: 'loops', colorVar: '--pad-loops',
     isLoop: true,
     loopSteps: [
-      [0, 'kick-reverb'], [4, 'kick-reverb'], [12, 'kick-reverb'],
+      [0, 'kick-reverb'], [6, 'kick-reverb'], [12, 'kick-reverb'],
       [8, 'snare-dry'],
     ],
   },
