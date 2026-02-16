@@ -48,11 +48,13 @@ const AmbientPads: React.FC = () => {
     if (samplesLoadedRef.current) return;
     samplesLoadedRef.current = true;
     try {
+      console.log('[AmbientPads] Starting ensureSamplesLoaded...');
       await initAmbientSamples();
       const notes = await getAllAmbientSoundNotes();
       setCustomNotes(new Set(notes));
+      console.log('[AmbientPads] Samples loaded OK');
     } catch (e) {
-      console.warn('[AmbientPads] Failed to init samples:', e);
+      console.error('[AmbientPads] Failed to init samples:', e);
       samplesLoadedRef.current = false; // allow retry
     }
   }, []);
@@ -60,7 +62,16 @@ const AmbientPads: React.FC = () => {
   // Eagerly preload samples in background on mount
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    ensureSamplesLoaded().then(() => setLoading(false));
+    console.log('[AmbientPads] Mount — starting preload');
+    ensureSamplesLoaded()
+      .then(() => {
+        console.log('[AmbientPads] Preload complete, setting loading=false');
+        setLoading(false);
+      })
+      .catch((e) => {
+        console.error('[AmbientPads] Preload failed:', e);
+        setLoading(false); // unblock UI even on failure
+      });
   }, [ensureSamplesLoaded]);
 
   const handleToggle = useCallback(async (note: NoteName) => {
