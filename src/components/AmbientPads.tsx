@@ -52,7 +52,11 @@ const AmbientPads: React.FC = () => {
     setCustomNotes(new Set(notes));
   }, []);
 
-  const [loading, setLoading] = useState(false);
+  // Eagerly preload samples in background on mount
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    ensureSamplesLoaded().then(() => setLoading(false));
+  }, [ensureSamplesLoaded]);
 
   const handleToggle = useCallback(async (note: NoteName) => {
     if (editMode) {
