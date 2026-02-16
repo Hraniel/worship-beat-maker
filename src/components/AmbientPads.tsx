@@ -36,10 +36,14 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
           const el = e.currentTarget;
           const rect = el.getBoundingClientRect();
           const cx = rect.left + rect.width / 2;
-          const move = (ev: PointerEvent) => {
+            const move = (ev: PointerEvent) => {
             const dx = ev.clientX - cx;
-            const clamped = Math.max(-1, Math.min(1, dx / 16));
-            const snapped = Math.abs(clamped) < 0.06 ? 0 : Math.round(clamped * 20) / 20;
+            const raw = Math.max(-1, Math.min(1, dx / 16));
+            let snapped: number;
+            if (Math.abs(raw) < 0.06) snapped = 0;
+            else if (raw > 0.92) snapped = 1;
+            else if (raw < -0.92) snapped = -1;
+            else snapped = Math.round(raw * 20) / 20;
             onChange(snapped);
           };
           const up = () => {
