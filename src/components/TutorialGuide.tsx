@@ -170,9 +170,10 @@ const ALL_STEPS = TUTORIAL_SECTIONS.flatMap(s => s.steps);
 interface TutorialGuideProps {
   externalTrigger?: boolean;
   onStartRef?: (startFn: (sectionId?: string) => void) => void;
+  onClose?: () => void;
 }
 
-const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartRef }) => {
+const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartRef, onClose }) => {
   const [active, setActive] = useState(false);
   const [steps, setSteps] = useState<TutorialStep[]>(ALL_STEPS);
   const [step, setStep] = useState(0);
@@ -236,7 +237,8 @@ const TutorialGuide: React.FC<TutorialGuideProps> = ({ externalTrigger, onStartR
 
   const close = useCallback(() => {
     setActive(false);
-  }, []);
+    onClose?.();
+  }, [onClose]);
 
   const next = useCallback(() => {
     if (step < steps.length - 1) setStep(s => s + 1);
