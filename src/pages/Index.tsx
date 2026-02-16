@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import logoDark from '@/assets/logo-dark.png';
+import logoLight from '@/assets/logo-light.png';
 import { Slider } from '@/components/ui/slider';
 import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
