@@ -230,11 +230,13 @@ const AmbientPads: React.FC = () => {
             return (
               <button
                 key={note}
-                onClick={() => handleToggle(note)}
+                onClick={() => !loading && handleToggle(note)}
+                disabled={loading}
                 className={`
                     relative flex items-center justify-center rounded-md
-                    border transition-all duration-200 select-none cursor-pointer
+                    border transition-all duration-200 select-none
                     h-10 sm:h-12 text-xs font-bold text-foreground
+                    ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
                     ${isSharp ? 'text-[10px]' : ''}
                     ${editMode ? 'ring-2 ring-primary/30 animate-pulse' : ''}
                   `}
