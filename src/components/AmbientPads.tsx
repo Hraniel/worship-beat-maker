@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import PanKnob from './PanKnob';
+import ZoomPopup from './ZoomPopup';
 import {
   ALL_NOTES,
   type NoteName,
@@ -32,6 +33,7 @@ const AmbientPads: React.FC = () => {
   const [pan, setPan] = useState(getAmbientPan);
   const [customNotes, setCustomNotes] = useState<Set<string>>(new Set());
   const togglingRef = useRef(false);
+  const [draggingVolume, setDraggingVolume] = useState(false);
 
   const samplesLoadedRef = useRef(false);
 
@@ -165,7 +167,13 @@ const AmbientPads: React.FC = () => {
             {/* Right controls: vertical volume slider + pan knob + stop */}
             <div className="flex flex-col items-center gap-2 landscape:gap-3 py-1 w-12 landscape:w-16 shrink-0">
               <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
-              <div className="flex-1 flex items-center justify-center" style={{ minHeight: '80px' }}>
+              <div
+                className="flex-1 flex items-center justify-center"
+                style={{ minHeight: '80px' }}
+                onPointerDown={() => setDraggingVolume(true)}
+                onPointerUp={() => setDraggingVolume(false)}
+                onPointerLeave={() => setDraggingVolume(false)}
+              >
                 <Slider
                   value={[volume * 100]}
                   onValueChange={handleVolumeChange}
@@ -177,6 +185,14 @@ const AmbientPads: React.FC = () => {
                 />
               </div>
               <span className="text-[8px] text-muted-foreground tabular-nums">{Math.round(volume * 100)}%</span>
+
+              <ZoomPopup visible={draggingVolume}>
+                <Volume2 className="h-6 w-6 text-foreground" />
+                <span className="text-2xl font-bold text-foreground tabular-nums">{Math.round(volume * 100)}%</span>
+                <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all duration-75" style={{ width: `${volume * 100}%` }} />
+                </div>
+              </ZoomPopup>
 
               {/* Pan knob */}
               {isMaster ? (

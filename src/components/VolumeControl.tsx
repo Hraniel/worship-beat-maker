@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import PanKnob from './PanKnob';
+import ZoomPopup from './ZoomPopup';
 
 interface VolumeControlProps {
   volume: number;
@@ -52,22 +52,13 @@ const VolumeControl: React.FC<VolumeControlProps> = ({ volume, onVolumeChange, l
         </div>
       )}
 
-      {/* Volume zoom popup - centered on screen */}
-      {draggingVolume && createPortal(
-        <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center">
-          <div className="flex flex-col items-center gap-2 bg-card border border-border rounded-xl shadow-2xl p-4 animate-scale-in min-w-[120px]">
-            {isMuted ? <VolumeX className="h-6 w-6 text-muted-foreground" /> : <Volume2 className="h-6 w-6 text-foreground" />}
-            <span className="text-2xl font-bold text-foreground tabular-nums">{Math.round(volume * 100)}%</span>
-            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-75"
-                style={{ width: `${volume * 100}%` }}
-              />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ZoomPopup visible={draggingVolume}>
+        {isMuted ? <VolumeX className="h-6 w-6 text-muted-foreground" /> : <Volume2 className="h-6 w-6 text-foreground" />}
+        <span className="text-2xl font-bold text-foreground tabular-nums">{Math.round(volume * 100)}%</span>
+        <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
+          <div className="h-full bg-primary rounded-full transition-all duration-75" style={{ width: `${volume * 100}%` }} />
+        </div>
+      </ZoomPopup>
     </div>
   );
 };
