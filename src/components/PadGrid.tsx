@@ -28,23 +28,17 @@ interface PadGridProps {
   onPadColorChange: (padId: string, color: PadColor) => void;
 }
 
-const sizeMaxWidths = {
-  sm: 'max-w-[520px]',
-  md: 'max-w-[620px]',
-  lg: 'max-w-[760px]',
-};
-
 const PadGrid: React.FC<PadGridProps> = ({
   pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, padColors, editMode, isMasterTier: isMaster = false, tier = 'free',
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange
 }) => {
   const maxPads = TIERS[tier].maxPads;
 
-  // Show all 8 pads — no pads are hidden
-  const visiblePads = pads.slice(0, 8);
+  // Show 9 pads for 3x3 grid
+  const visiblePads = pads.slice(0, 9);
 
   return (
-    <div className={`grid grid-cols-4 gap-2 sm:gap-3 p-2 sm:p-4 ${sizeMaxWidths[padSize]} mx-auto w-full transition-all duration-200`}>
+    <div className="grid grid-cols-3 gap-2 sm:gap-3 p-2 sm:p-4 w-full mx-auto transition-all duration-200">
       {visiblePads.map((pad, index) => (
         <DrumPad
           key={pad.id}
