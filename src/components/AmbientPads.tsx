@@ -127,6 +127,20 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   const handlePanChange = useCallback((val: number) => {
     setPan(val);
     setAmbientPan(val);
+    // Clear side selection in settings if pan moved to center
+    if (val === 0) {
+      try {
+        const raw = localStorage.getItem('drum-pads-audio-settings');
+        if (raw) {
+          const settings = JSON.parse(raw);
+          if (settings.ambientSide) {
+            settings.ambientSide = null;
+            localStorage.setItem('drum-pads-audio-settings', JSON.stringify(settings));
+            window.dispatchEvent(new CustomEvent('settings:audio-changed', { detail: settings }));
+          }
+        }
+      } catch {}
+    }
   }, []);
 
   const hasActive = activeNotes.size > 0;
