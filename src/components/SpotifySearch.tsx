@@ -33,6 +33,7 @@ interface SuggestedConfig {
   recommendedLoop: string;
   description: string;
   patternName?: string;
+  trackName?: string;
   pads: Record<string, PadConfig>;
 }
 
@@ -172,7 +173,8 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked }) 
 
   const handleApply = useCallback(() => {
     if (!suggestion) return;
-    onApplyConfig(suggestion);
+    const configWithTrack = { ...suggestion, trackName: selectedTrack ? `${selectedTrack.name} - ${selectedTrack.artist}` : undefined };
+    onApplyConfig(configWithTrack);
     toast.success('Configuração aplicada nos pads!');
     setOpen(false);
     setQuery('');
