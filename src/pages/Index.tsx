@@ -533,9 +533,7 @@ const Index = () => {
                     <button onClick={() => { setEditMode(p => !p); setMobileMenuOpen(false); }} className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? 'text-primary font-medium bg-primary/10' : 'text-foreground hover:bg-muted'}`}>
                       <Settings2 className="h-4 w-4" /> {editMode ? 'Sair do modo edição' : 'Modo Edição'}
                     </button>
-                    <div onClick={() => setMobileMenuOpen(false)}>
-                      <SpotifySearch onApplyConfig={handleApplySpotifyConfig} locked={tier !== 'master'} />
-                    </div>
+                    <SpotifySearch onApplyConfig={handleApplySpotifyConfig} locked={tier !== 'master'} />
                     <button onClick={() => { navigate('/pricing'); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Crown className="h-4 w-4 text-muted-foreground" /> Planos
                     </button>
