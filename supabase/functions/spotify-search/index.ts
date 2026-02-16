@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,9 +36,36 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { query, trackId } = await req.json();
-    const token = await getSpotifyToken();
-    const headers = { Authorization: `Bearer ${token}` };
+    // Auth check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+    const { error: userError } = await supabaseClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (userError) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Input validation
+    const body = await req.json();
+    const query = typeof body.query === "string" ? body.query.trim().slice(0, 200) : undefined;
+    const trackId = typeof body.trackId === "string" && /^[a-zA-Z0-9]{1,50}$/.test(body.trackId) ? body.trackId : undefined;
+    if (!query && !trackId) {
+      return new Response(JSON.stringify({ error: "query or trackId required" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const spotifyToken = await getSpotifyToken();
+    const headers = { Authorization: `Bearer ${spotifyToken}` };
 
     // If trackId provided, get audio features + audio analysis
     if (trackId) {
@@ -115,12 +143,7 @@ serve(async (req) => {
       });
     }
 
-    // Search tracks
-    if (!query) {
-      return new Response(JSON.stringify({ error: "query or trackId required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Search tracks (query already validated above)
 
     const searchResp = await fetch(
       `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=8`,
