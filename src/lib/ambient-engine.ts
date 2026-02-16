@@ -16,6 +16,13 @@ const BASE_FREQS: Record<NoteName, number> = {
   'G#': 415.30, A: 440.0, 'A#': 466.16, B: 493.88,
 };
 
+// Native MP3 pad file paths (bundled in public/pads/)
+const NATIVE_PAD_FILES: Record<NoteName, string> = {
+  C: '/pads/C.mp3', 'C#': '/pads/Cs.mp3', D: '/pads/D.mp3', 'D#': '/pads/Ds.mp3',
+  E: '/pads/E.mp3', F: '/pads/F.mp3', 'F#': '/pads/Fs.mp3', G: '/pads/G.mp3',
+  'G#': '/pads/Gs.mp3', A: '/pads/A.mp3', 'A#': '/pads/As.mp3', B: '/pads/B.mp3',
+};
+
 interface SynthVoice {
   type: 'synth';
   oscillators: OscillatorNode[];
@@ -68,11 +75,29 @@ export function hasCustomSample(note: NoteName): boolean {
   return decodedBuffers.has(note);
 }
 
-// Load all saved samples on init
+// Load native MP3 pads from public/pads/, then override with user custom samples
 export async function initAmbientSamples() {
+  const ctx = getAudioContext();
+
+  // 1. Load native bundled MP3s
+  await Promise.all(
+    ALL_NOTES.map(async (note) => {
+      try {
+        const resp = await fetch(NATIVE_PAD_FILES[note]);
+        if (!resp.ok) return;
+        const arrayBuf = await resp.arrayBuffer();
+        const buffer = await ctx.decodeAudioData(arrayBuf);
+        decodedBuffers.set(note, buffer);
+      } catch (e) {
+        console.warn(`Failed to load native pad for ${note}`, e);
+      }
+    })
+  );
+
+  // 2. Override with user-imported custom samples (from IndexedDB)
   const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
-  const notes = await getAllAmbientSoundNotes();
-  await Promise.all(notes.map(n => loadAmbientSample(n as NoteName)));
+  const customNotes = await getAllAmbientSoundNotes();
+  await Promise.all(customNotes.map(n => loadAmbientSample(n as NoteName)));
 }
 
 function startSampleNote(note: NoteName, buffer: AudioBuffer) {
