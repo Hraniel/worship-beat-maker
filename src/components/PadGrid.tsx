@@ -40,6 +40,9 @@ const PadGrid: React.FC<PadGridProps> = ({
   // Show 9 pads for 3x3 grid
   const visiblePads = pads.slice(0, 9);
 
+  // Count current custom sounds for import limit
+  const customSoundsCount = Object.keys(customSounds).length;
+
   // Map padScale (30-100) to max-width in px (240-700)
   const gridMaxWidth = Math.round(240 + ((padScale - 30) / 70) * 460);
 
@@ -73,6 +76,7 @@ const PadGrid: React.FC<PadGridProps> = ({
           onColorChange={onPadColorChange}
           editMode={editMode}
           panDisabled={panDisabled}
+          customSoundsCount={customSoundsCount}
         />
       ))}
     </div>
