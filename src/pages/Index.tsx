@@ -98,7 +98,18 @@ const Index = () => {
   });
   const startTutorialRef = useRef<((sectionId?: string) => void) | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<string>('audio');
   const [audioSettings, setAudioSettings] = useState<AudioSettings>(loadAudioSettings);
+
+  // Reopen settings on "plans" tab when returning from /pricing
+  useEffect(() => {
+    const flag = sessionStorage.getItem('settings-return-tab');
+    if (flag) {
+      sessionStorage.removeItem('settings-return-tab');
+      setSettingsTab(flag);
+      setSettingsOpen(true);
+    }
+  }, []);
 
   // Apply audio settings (auto-pan when side is selected, reset to center on mono)
   const handleAudioSettingsChange = useCallback((settings: AudioSettings) => {
@@ -644,7 +655,7 @@ const Index = () => {
                       Spotify AI
                       {tier !== 'master' && <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>}
                     </button>
-                    <button onClick={() => { setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                    <button onClick={() => { setSettingsTab('audio'); setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
                     </button>
                     <button onClick={async () => {
@@ -671,7 +682,7 @@ const Index = () => {
               )}
             </div>
 
-            <TutorialGuide externalTrigger onStartRef={(fn) => { startTutorialRef.current = fn; }} />
+            <TutorialGuide externalTrigger onStartRef={(fn) => { startTutorialRef.current = fn; }} onClose={() => { setSettingsTab('guide'); setSettingsOpen(true); }} />
           </div>
         </header>
       }
@@ -908,6 +919,7 @@ const Index = () => {
         onOpenChange={setSettingsOpen}
         onAudioSettingsChange={handleAudioSettingsChange}
         onStartTutorial={(sectionId) => { if (startTutorialRef.current) startTutorialRef.current(sectionId); }}
+        initialTab={settingsTab}
       />
     </div>);
 

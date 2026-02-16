@@ -44,6 +44,7 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   onAudioSettingsChange?: (settings: AudioSettings) => void;
   onStartTutorial?: (sectionId?: string) => void;
+  initialTab?: string;
 }
 
 interface StereoOptionProps {
@@ -117,14 +118,17 @@ const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onMo
   </div>
 );
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState('audio');
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (open) setSettings(loadAudioSettings());
-  }, [open]);
+    if (open) {
+      setSettings(loadAudioSettings());
+      if (initialTab) setActiveTab(initialTab);
+    }
+  }, [open, initialTab]);
 
   const update = (partial: Partial<AudioSettings>) => {
     const next = { ...settings, ...partial };
@@ -195,7 +199,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                 Gerencie sua assinatura e desbloqueie recursos avançados.
               </p>
               <button
-                onClick={() => { onOpenChange(false); navigate('/pricing'); }}
+                onClick={() => { sessionStorage.setItem('settings-return-tab', 'plans'); onOpenChange(false); navigate('/pricing'); }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 <Crown className="h-4 w-4" />
