@@ -7,7 +7,7 @@ import SpotifySearch from '@/components/SpotifySearch';
 import AmbientPads from '@/components/AmbientPads';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer, setMasterPan, setMetronomePan, setPadPan } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
-import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
+import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds, saveCustomSoundsForSong, loadCustomSoundsForSong, deleteCustomSoundsForSong } from '@/lib/custom-sound-store';
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { type PadColor } from '@/components/PadColorPicker';
@@ -352,6 +352,11 @@ const Index = () => {
       padEffects: { ...padEffects },
       customSounds: { ...customSounds },
     };
+    // Save audio buffers for this song
+    const customPadIds = Object.keys(customSounds);
+    if (customPadIds.length > 0) {
+      await saveCustomSoundsForSong(currentSongId, customPadIds);
+    }
     await updateSetlist(currentSongId, [updatedSong]);
   }, [currentSongId, bpm, timeSignature, padVolumes, padNames, padPans, padEffects, customSounds, setlists, updateSetlist]);
 
@@ -369,7 +374,14 @@ const Index = () => {
       customSounds: { ...customSounds },
     };
     const result = await createSetlist(name, [song]);
-    if (result) setCurrentSongId(result.id);
+    if (result) {
+      // Save audio buffers for this song
+      const customPadIds = Object.keys(customSounds);
+      if (customPadIds.length > 0) {
+        await saveCustomSoundsForSong(result.id, customPadIds);
+      }
+      setCurrentSongId(result.id);
+    }
   }, [bpm, timeSignature, padVolumes, padNames, padPans, padEffects, customSounds, createSetlist]);
 
   const handleLoadSong = useCallback(async (song: SetlistSong) => {
@@ -377,24 +389,48 @@ const Index = () => {
     await autoSaveCurrentSong();
     // Stop metronome when switching songs
     setMetronomeIsPlaying(false);
+    const songSetlistId = (song as any)._setlistId || song.id;
     // Load the new song
     setBpm(song.bpm);
     setTimeSignature(song.timeSignature);
     setPadVolumes(song.padVolumes || {});
-    setCurrentSongId((song as any)._setlistId || song.id);
+    setCurrentSongId(songSetlistId);
     stopAllLoops();
     setActiveLoops(new Set());
     // Restore per-pad customizations from the song
     setPadNames(song.padNames || {});
     setPadPans(song.padPans || {});
     setPadEffects(song.padEffects || {});
-    setCustomSounds(song.customSounds || {});
+
+    // Remove all current custom buffers first
+    const currentCustomIds = Object.keys(customSounds);
+    for (const id of currentCustomIds) {
+      removeCustomBuffer(id);
+    }
+
+    // Restore song-specific custom sounds from IndexedDB
+    const songCustomSounds = song.customSounds || {};
+    const songCustomPadIds = Object.keys(songCustomSounds);
+    if (songCustomPadIds.length > 0) {
+      const loaded = await loadCustomSoundsForSong(songSetlistId, songCustomPadIds);
+      // Load audio buffers into engine
+      for (const [padId, data] of Object.entries(loaded)) {
+        try {
+          await loadCustomBuffer(padId, data.buffer);
+        } catch (e) {
+          console.warn('Failed to load custom sound for pad:', padId, e);
+        }
+      }
+    }
+    setCustomSounds(songCustomSounds);
+
     // Apply restored pan and effects to audio engine
     Object.entries(song.padPans || {}).forEach(([id, pan]) => setPadPan(id, pan));
     Object.entries(song.padEffects || {}).forEach(([id, fx]) => applyEffects(id, fx));
-  }, [autoSaveCurrentSong]);
+  }, [autoSaveCurrentSong, customSounds]);
 
   const handleDeleteSong = useCallback(async (id: string) => {
+    await deleteCustomSoundsForSong(id);
     await deleteSetlist(id);
     if (currentSongId === id) setCurrentSongId(null);
   }, [deleteSetlist, currentSongId]);
