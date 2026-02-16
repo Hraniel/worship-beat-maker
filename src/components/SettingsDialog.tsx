@@ -107,6 +107,7 @@ const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onMo
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
+  const [activeTab, setActiveTab] = useState('audio');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -127,7 +128,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           <DialogTitle className="text-base">Configurações</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="audio" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full">
             <TabsTrigger value="audio" className="flex-1 gap-1.5 text-xs">
               <Headphones className="h-3.5 w-3.5" />
