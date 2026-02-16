@@ -595,10 +595,44 @@ const Index = () => {
         </header>
       }
 
-      {/* Info bar - hidden in focus mode */}
-      {!focusMode &&
-      <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">Segure um pad para ajustar volume e importar som.
+      {/* Song selection banner - shown when no song is active */}
+      {!focusMode && !currentSongId && (
+        <div className="px-3 py-2.5 bg-primary/10 border-b border-primary/20 flex items-center justify-center gap-2">
+          <Music className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-xs font-medium text-primary">
+            {songs.length === 0 ? 'Crie uma música para começar' : 'Selecione uma música do repertório'}
+          </span>
+          {songs.length === 0 ? (
+            <Button
+              size="sm"
+              variant="default"
+              className="h-7 text-xs gap-1 ml-1"
+              onClick={() => {
+                const name = prompt('Nome da música:');
+                if (name?.trim()) handleSaveSong(name.trim());
+              }}
+            >
+              <Plus className="h-3 w-3" />
+              Criar
+            </Button>
+          ) : (
+            <div className="ml-1">
+              <SetlistManager
+                songs={songs}
+                currentSongId={currentSongId}
+                onSaveSong={handleSaveSong}
+                onLoadSong={handleLoadSong}
+                onDeleteSong={handleDeleteSong}
+                onReorder={reorderSetlists}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
+      {/* Info bar - hidden in focus mode */}
+      {!focusMode && currentSongId &&
+      <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">Segure um pad para ajustar volume e importar som.
       </div>
       }
 
