@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
+import ZoomPopup from './ZoomPopup';
 import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
 import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
@@ -46,6 +47,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const [showEffects, setShowEffects] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [draggingPadVol, setDraggingPadVol] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const timeoutRef = useRef<number | null>(null);
   const longPressRef = useRef<number | null>(null);
@@ -233,16 +235,30 @@ const DrumPad: React.FC<DrumPadProps> = ({
             {isPro ? (
               <div className="flex items-center gap-2 px-1 py-1">
                 <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <Slider
-                  value={[volume * 100]}
-                  onValueChange={([v]) => onVolumeChange?.(pad.id, v / 100)}
-                  onReset={() => onVolumeChange?.(pad.id, 0.7)}
-                  min={0}
-                  max={100}
-                  step={1}
+                <div
                   className="flex-1"
-                />
+                  onPointerDown={() => setDraggingPadVol(true)}
+                  onPointerUp={() => setDraggingPadVol(false)}
+                  onPointerLeave={() => setDraggingPadVol(false)}
+                >
+                  <Slider
+                    value={[volume * 100]}
+                    onValueChange={([v]) => onVolumeChange?.(pad.id, v / 100)}
+                    onReset={() => onVolumeChange?.(pad.id, 0.7)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
                 <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{volumePercent}%</span>
+                <ZoomPopup visible={draggingPadVol}>
+                  <Volume2 className="h-6 w-6 text-foreground" />
+                  <span className="text-2xl font-bold text-foreground tabular-nums">{volumePercent}%</span>
+                  <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all duration-75" style={{ width: `${volume * 100}%` }} />
+                  </div>
+                </ZoomPopup>
               </div>
             ) : (
               <LockedRow label="Volume individual" feature="volume individual" />

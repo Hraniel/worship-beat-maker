@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
+import ZoomPopup from './ZoomPopup';
 
 interface PanKnobProps {
   pan: number;
@@ -32,7 +33,6 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
             moved = true;
             clearTimeout(longPress);
             if (!dragging) setDragging(true);
-            
             const dx = ev.clientX - cx;
             const raw = Math.max(-1, Math.min(1, dx / 16));
             let snapped: number;
@@ -45,7 +45,6 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
           const up = () => {
             clearTimeout(longPress);
             setDragging(false);
-            
             el.removeEventListener('pointermove', move);
             el.removeEventListener('pointerup', up);
             el.removeEventListener('lostpointercapture', up);
@@ -58,7 +57,6 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
         onDoubleClick={() => onChange(0)}
         title={`Pan: ${displayValue}`}
       >
-        {/* Knob indicator line */}
         <div
           className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-foreground rounded-full origin-bottom"
           style={{
@@ -67,34 +65,24 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange }) => {
             top: '4px',
           }}
         />
-        {/* Center dot */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-muted-foreground/40" />
       </div>
       <span className="text-[8px] landscape:text-[10px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
 
-      {/* Zoom popup portal - centered on screen */}
-      {dragging && createPortal(
-        <div
-          className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center"
-        >
-          <div className="flex flex-col items-center gap-1 bg-card border border-border rounded-xl shadow-2xl p-4 animate-scale-in">
-            {/* Zoomed knob */}
-            <div className="relative w-20 h-20 rounded-full border-2 border-border bg-muted/50">
-              <div
-                className="absolute top-2 left-1/2 w-1 h-6 bg-foreground rounded-full origin-bottom"
-                style={{
-                  transform: `translateX(-50%) rotate(${angle}deg)`,
-                  transformOrigin: '50% 100%',
-                  top: '10px',
-                }}
-              />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-muted-foreground/40" />
-            </div>
-            <span className="text-sm font-bold text-foreground tabular-nums">{displayValue}</span>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ZoomPopup visible={dragging}>
+        <div className="relative w-20 h-20 rounded-full border-2 border-border bg-muted/50">
+          <div
+            className="absolute top-2 left-1/2 w-1 h-6 bg-foreground rounded-full origin-bottom"
+            style={{
+              transform: `translateX(-50%) rotate(${angle}deg)`,
+              transformOrigin: '50% 100%',
+              top: '10px',
+            }}
+          />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-muted-foreground/40" />
+        </div>
+        <span className="text-sm font-bold text-foreground tabular-nums">{displayValue}</span>
+      </ZoomPopup>
     </div>
   );
 };
