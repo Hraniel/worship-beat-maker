@@ -188,12 +188,12 @@ const DrumPad: React.FC<DrumPadProps> = ({
           ${isLooping ? 'animate-loop-border' : ''}
         `}
         style={{
-          backgroundColor: colorRef(isActive ? 0.6 : isLooping ? 0.35 : 0.2),
-          borderColor: colorRef(isActive ? 0.9 : isLooping ? 0.7 : 0.3),
+          backgroundColor: isActive ? 'hsl(0 0% 20%)' : isLooping ? 'hsl(0 0% 15%)' : 'hsl(0 0% 8%)',
+          borderColor: isActive ? 'hsl(0 0% 40%)' : isLooping ? 'hsl(0 0% 30%)' : 'hsl(0 0% 18%)',
           boxShadow: isActive
-            ? `0 0 20px ${colorRef(0.4)}, inset 0 0 15px ${colorRef(0.2)}`
+            ? '0 0 20px hsl(0 0% 30% / 0.4), inset 0 0 15px hsl(0 0% 20% / 0.3)'
             : isLooping
-            ? `0 0 12px ${colorRef(0.25)}`
+            ? '0 0 12px hsl(0 0% 25% / 0.3)'
             : 'none',
         }}
       >
@@ -205,8 +205,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
         )}
 
         <span
-          className={`${sizes.label} font-bold tracking-wider opacity-90 max-w-full truncate px-1 text-center`}
-          style={{ color: colorSolid }}
+          className={`${sizes.label} font-bold tracking-wider opacity-90 max-w-full truncate px-1 text-center text-foreground`}
         >
           {customName || pad.name}
         </span>
@@ -214,16 +213,10 @@ const DrumPad: React.FC<DrumPadProps> = ({
         {pad.isLoop && (
           <div className="absolute top-1 right-1 flex items-center gap-0.5">
             <Repeat
-              className={sizes.loop}
-              style={{
-                color: isLooping ? colorSolid : colorRef(0.4),
-              }}
+              className={`${sizes.loop} ${isLooping ? 'text-foreground' : 'text-muted-foreground/40'}`}
             />
             <div
-              className={`w-1.5 h-1.5 rounded-full ${isLooping ? 'animate-pulse' : ''}`}
-              style={{
-                backgroundColor: isLooping ? colorSolid : colorRef(0.3),
-              }}
+              className={`w-1.5 h-1.5 rounded-full ${isLooping ? 'animate-pulse bg-foreground' : 'bg-muted-foreground/30'}`}
             />
           </div>
         )}
