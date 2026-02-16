@@ -210,15 +210,14 @@ const AmbientPads: React.FC = () => {
                 className={`
                     relative flex items-center justify-center rounded-md
                     border transition-all duration-200 select-none cursor-pointer
-                    h-10 sm:h-12 text-xs font-bold
+                    h-10 sm:h-12 text-xs font-bold text-foreground
                     ${isSharp ? 'text-[10px]' : ''}
                     ${editMode ? 'ring-2 ring-primary/30 animate-pulse' : ''}
                   `}
                 style={{
-                  backgroundColor: `hsl(${color} / ${isActive ? 0.5 : 0.15})`,
-                  borderColor: `hsl(${color} / ${isActive ? 0.8 : 0.25})`,
-                  boxShadow: isActive ? `0 0 12px hsl(${color} / 0.3)` : 'none',
-                  color: `hsl(${color})`
+                  backgroundColor: isActive ? 'hsl(0 0% 20%)' : 'hsl(0 0% 8%)',
+                  borderColor: isActive ? 'hsl(0 0% 40%)' : 'hsl(0 0% 18%)',
+                  boxShadow: isActive ? '0 0 12px hsl(0 0% 30% / 0.4)' : 'none',
                 }}>
 
                   {note}
@@ -229,8 +228,7 @@ const AmbientPads: React.FC = () => {
                 }
                   {isActive &&
                 <span
-                  className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse"
-                  style={{ backgroundColor: `hsl(${color})` }} />
+                  className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse bg-foreground" />
 
                 }
                   {editMode && isCustom &&
