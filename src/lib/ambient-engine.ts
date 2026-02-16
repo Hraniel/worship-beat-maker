@@ -8,11 +8,11 @@ const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] 
 export type NoteName = typeof NOTES[number];
 export const ALL_NOTES = [...NOTES];
 
-// Base frequencies for octave 3 (middle range for pads)
+// Base frequencies for octave 4 (higher, brighter pads)
 const BASE_FREQS: Record<NoteName, number> = {
-  C: 130.81, 'C#': 138.59, D: 146.83, 'D#': 155.56,
-  E: 164.81, F: 174.61, 'F#': 185.0, G: 196.0,
-  'G#': 207.65, A: 220.0, 'A#': 233.08, B: 246.94,
+  C: 261.63, 'C#': 277.18, D: 293.66, 'D#': 311.13,
+  E: 329.63, F: 349.23, 'F#': 369.99, G: 392.0,
+  'G#': 415.30, A: 440.0, 'A#': 466.16, B: 493.88,
 };
 
 interface AmbientVoice {
