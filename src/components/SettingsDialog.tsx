@@ -3,7 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Volume2, Headphones } from 'lucide-react';
+import { Volume2, Headphones, Crown, HelpCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
 
 const SETTINGS_KEY = 'drum-pads-audio-settings';
 
@@ -41,6 +43,7 @@ interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAudioSettingsChange?: (settings: AudioSettings) => void;
+  onStartTutorial?: (sectionId?: string) => void;
 }
 
 interface StereoOptionProps {
@@ -102,8 +105,9 @@ const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onMo
   </div>
 );
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (open) setSettings(loadAudioSettings());
@@ -128,6 +132,14 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             <TabsTrigger value="audio" className="flex-1 gap-1.5 text-xs">
               <Headphones className="h-3.5 w-3.5" />
               Áudio
+            </TabsTrigger>
+            <TabsTrigger value="plans" className="flex-1 gap-1.5 text-xs">
+              <Crown className="h-3.5 w-3.5" />
+              Planos
+            </TabsTrigger>
+            <TabsTrigger value="guide" className="flex-1 gap-1.5 text-xs">
+              <HelpCircle className="h-3.5 w-3.5" />
+              Guia
             </TabsTrigger>
           </TabsList>
 
@@ -169,6 +181,51 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                 No modo Stereo, escolha o lado (L/R) para direcionar o áudio. Os controles de Pan serão ajustados automaticamente.
                 No modo Mono, os controles de Pan ficam bloqueados no centro.
               </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="plans" className="mt-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Planos e Assinatura</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Gerencie sua assinatura e desbloqueie recursos avançados.
+              </p>
+              <button
+                onClick={() => { onOpenChange(false); navigate('/pricing'); }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                <Crown className="h-4 w-4" />
+                Ver Planos
+              </button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="guide" className="mt-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-2">
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Guia Prático</span>
+              </div>
+              <button
+                onClick={() => { onOpenChange(false); onStartTutorial?.(); }}
+                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-primary hover:bg-muted rounded-md transition-colors"
+              >
+                Tour Completo
+              </button>
+              <div className="rounded-lg border border-border bg-muted/20">
+                {TUTORIAL_SECTIONS.map(section => (
+                  <button
+                    key={section.id}
+                    onClick={() => { onOpenChange(false); onStartTutorial?.(section.id); }}
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors border-b border-border/50 last:border-0"
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </TabsContent>
         </Tabs>
