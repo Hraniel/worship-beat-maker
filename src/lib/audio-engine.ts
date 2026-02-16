@@ -421,6 +421,137 @@ export function playReverseCymbal(volume = 0.5, destination?: AudioNode) {
   noise.stop(ctx.currentTime + len);
 }
 
+// --- WORSHIP-STYLE SOUNDS ---
+
+export function playFingerSnap(volume = 0.5, destination?: AudioNode) {
+  const ctx = getAudioContext();
+  const dest = destination || getMasterGain();
+  // Short, bright transient click
+  const len = 0.06;
+  const bufferSize = ctx.sampleRate * len;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 3500;
+  filter.Q.value = 3;
+  const gain = ctx.createGain();
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(dest);
+  gain.gain.setValueAtTime(volume * 0.9, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + len);
+  noise.start(ctx.currentTime);
+  noise.stop(ctx.currentTime + len);
+  // Add a subtle tone body for the "snap" character
+  const osc = ctx.createOscillator();
+  const oscGain = ctx.createGain();
+  osc.connect(oscGain);
+  oscGain.connect(dest);
+  osc.frequency.setValueAtTime(1800, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.02);
+  oscGain.gain.setValueAtTime(volume * 0.4, ctx.currentTime);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.03);
+}
+
+export function playKickReverb(volume = 0.7, destination?: AudioNode) {
+  const ctx = getAudioContext();
+  const dest = destination || getMasterGain();
+  // Deep kick with long reverb tail
+  const convLen = 2.5;
+  const convSize = ctx.sampleRate * convLen;
+  const convBuffer = ctx.createBuffer(2, convSize, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = convBuffer.getChannelData(ch);
+    for (let i = 0; i < convSize; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / convSize, 2.5);
+    }
+  }
+  const convolver = ctx.createConvolver();
+  convolver.buffer = convBuffer;
+  const dryGain = ctx.createGain();
+  const wetGain = ctx.createGain();
+  dryGain.gain.value = 0.5;
+  wetGain.gain.value = 0.6;
+  dryGain.connect(dest);
+  convolver.connect(wetGain);
+  wetGain.connect(dest);
+  // Kick oscillator
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(dryGain);
+  gain.connect(convolver);
+  osc.frequency.setValueAtTime(80, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + 0.25);
+  gain.gain.setValueAtTime(volume, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.5);
+}
+
+export function playSnareReverb(volume = 0.6, destination?: AudioNode) {
+  const ctx = getAudioContext();
+  const dest = destination || getMasterGain();
+  // Snare with worship-style reverb tail
+  const convLen = 2;
+  const convSize = ctx.sampleRate * convLen;
+  const convBuffer = ctx.createBuffer(2, convSize, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = convBuffer.getChannelData(ch);
+    for (let i = 0; i < convSize; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / convSize, 2);
+    }
+  }
+  const convolver = ctx.createConvolver();
+  convolver.buffer = convBuffer;
+  const dryGain = ctx.createGain();
+  const wetGain = ctx.createGain();
+  dryGain.gain.value = 0.4;
+  wetGain.gain.value = 0.7;
+  dryGain.connect(dest);
+  convolver.connect(wetGain);
+  wetGain.connect(dest);
+  // Noise burst
+  const noiseLen = 0.15;
+  const bufferSize = ctx.sampleRate * noiseLen;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = 2000;
+  filter.Q.value = 0.8;
+  const noiseGain = ctx.createGain();
+  noise.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(dryGain);
+  noiseGain.connect(convolver);
+  noiseGain.gain.setValueAtTime(volume, ctx.currentTime);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + noiseLen);
+  noise.start(ctx.currentTime);
+  noise.stop(ctx.currentTime + noiseLen);
+  // Tone body
+  const osc = ctx.createOscillator();
+  const oscGain = ctx.createGain();
+  osc.connect(oscGain);
+  oscGain.connect(dryGain);
+  oscGain.connect(convolver);
+  osc.frequency.setValueAtTime(200, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.06);
+  oscGain.gain.setValueAtTime(volume * 0.5, ctx.currentTime);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+  osc.start(ctx.currentTime);
+  osc.stop(ctx.currentTime + 0.08);
+}
+
 export function playMetronomeClick(accent = false, volume = 0.3) {
   const ctx = getAudioContext();
   const osc = ctx.createOscillator();
@@ -451,6 +582,9 @@ export const soundMap: Record<string, (volume?: number, destination?: AudioNode)
   riser: playRiser,
   swell: playSwell,
   'reverse-cymbal': playReverseCymbal,
+  'finger-snap': playFingerSnap,
+  'kick-reverb': playKickReverb,
+  'snare-reverb': playSnareReverb,
 };
 
 // Custom sound buffer cache
