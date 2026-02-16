@@ -1,7 +1,7 @@
 // Unified clock engine: single timing source for loops AND metronome
 // Both sync to the same 16th-note subdivision grid
 
-import { getAudioContext, playSound, playMetronomeClick } from './audio-engine';
+import { getAudioContext, playSound, playMetronomeClick, getPadPanner } from './audio-engine';
 import type { PadSound } from './sounds';
 
 const SUBDIVISIONS_PER_BAR = 16; // 16th-note grid
@@ -113,7 +113,8 @@ function tick() {
     if (!loop.pad.loopSteps) continue;
     for (const [sub, soundId] of loop.pad.loopSteps) {
       if (sub === currentSubdivision) {
-        playSound(soundId, loop.volume);
+        const panner = getPadPanner(loop.pad.id);
+        playSound(soundId, loop.volume, panner);
       }
     }
   }

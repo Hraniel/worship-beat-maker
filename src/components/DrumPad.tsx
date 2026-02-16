@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { playSound } from '@/lib/audio-engine';
+import { playSound, getPadPanner } from '@/lib/audio-engine';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
 import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -79,7 +79,9 @@ const DrumPad: React.FC<DrumPadProps> = ({
         const dest = getEffectInput(pad.id);
         playSound(pad.id, volume, dest);
       } else {
-        playSound(pad.id, volume);
+        // Route through pad panner for pan to work
+        const panner = getPadPanner(pad.id);
+        playSound(pad.id, volume, panner);
       }
       setIsActive(true);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
