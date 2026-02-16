@@ -1,32 +1,43 @@
-// Ambient Pad Synth Engine
-// Generates sustained pad chords for each of the 12 chromatic notes
-// Uses layered oscillators with slow attack/release for smooth ambient textures
+// Ambient Pad Engine
+// Supports both synthesized pads and imported audio samples per note
+// Uses layered oscillators OR looping AudioBufferSource for smooth ambient textures
 
 import { getAudioContext, getMasterGain } from './audio-engine';
+import { getAmbientSound } from './ambient-sound-store';
 
 const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
 export type NoteName = typeof NOTES[number];
 export const ALL_NOTES = [...NOTES];
 
-// Base frequencies for octave 4 (higher, brighter pads)
+// Base frequencies for octave 4
 const BASE_FREQS: Record<NoteName, number> = {
   C: 261.63, 'C#': 277.18, D: 293.66, 'D#': 311.13,
   E: 329.63, F: 349.23, 'F#': 369.99, G: 392.0,
   'G#': 415.30, A: 440.0, 'A#': 466.16, B: 493.88,
 };
 
-interface AmbientVoice {
+interface SynthVoice {
+  type: 'synth';
   oscillators: OscillatorNode[];
   gains: GainNode[];
   masterGain: GainNode;
   filterNode: BiquadFilterNode;
 }
 
+interface SampleVoice {
+  type: 'sample';
+  source: AudioBufferSourceNode;
+  masterGain: GainNode;
+}
+
+type AmbientVoice = SynthVoice | SampleVoice;
+
 const activeVoices = new Map<NoteName, AmbientVoice>();
+const decodedBuffers = new Map<NoteName, AudioBuffer>();
 let ambientVolume = 0.4;
 
-const ATTACK = 3.0;  // seconds fade in (slow, meditative)
-const RELEASE = 4.0; // seconds fade out (long, gentle)
+const ATTACK = 3.0;
+const RELEASE = 4.0;
 
 export function setAmbientVolume(vol: number) {
   ambientVolume = vol;
@@ -39,31 +50,71 @@ export function getAmbientVolume() {
   return ambientVolume;
 }
 
-export function startAmbientNote(note: NoteName) {
-  if (activeVoices.has(note)) return; // already playing
+// Pre-decode and cache a sample buffer for a note
+export async function loadAmbientSample(note: NoteName): Promise<boolean> {
+  const data = await getAmbientSound(note);
+  if (!data) {
+    decodedBuffers.delete(note);
+    return false;
+  }
+  const ctx = getAudioContext();
+  const buffer = await ctx.decodeAudioData(data.buffer.slice(0));
+  decodedBuffers.set(note, buffer);
+  return true;
+}
 
+// Check if a note has a custom sample loaded
+export function hasCustomSample(note: NoteName): boolean {
+  return decodedBuffers.has(note);
+}
+
+// Load all saved samples on init
+export async function initAmbientSamples() {
+  const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
+  const notes = await getAllAmbientSoundNotes();
+  await Promise.all(notes.map(n => loadAmbientSample(n as NoteName)));
+}
+
+function startSampleNote(note: NoteName, buffer: AudioBuffer) {
+  const ctx = getAudioContext();
+  const master = getMasterGain();
+  const t = ctx.currentTime;
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+
+  const voiceGain = ctx.createGain();
+  voiceGain.gain.setValueAtTime(0, t);
+  voiceGain.gain.linearRampToValueAtTime(ambientVolume, t + ATTACK);
+
+  source.connect(voiceGain);
+  voiceGain.connect(master);
+  source.start(t);
+
+  activeVoices.set(note, { type: 'sample', source, masterGain: voiceGain });
+}
+
+function startSynthNote(note: NoteName) {
   const ctx = getAudioContext();
   const master = getMasterGain();
   const freq = BASE_FREQS[note];
   const t = ctx.currentTime;
 
-  // Master gain for this voice
   const voiceGain = ctx.createGain();
   voiceGain.gain.setValueAtTime(0, t);
   voiceGain.gain.linearRampToValueAtTime(ambientVolume, t + ATTACK);
 
-  // Low-pass filter — very warm, muffled, ancestral
   const filter = ctx.createBiquadFilter();
   filter.type = 'lowpass';
   filter.frequency.value = 800;
   filter.Q.value = 0.3;
 
-  // Slow LFO on filter for organic breathing
   const lfo = ctx.createOscillator();
   lfo.type = 'sine';
-  lfo.frequency.value = 0.08; // very slow wobble
+  lfo.frequency.value = 0.08;
   const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 300; // subtle sweep range
+  lfoGain.gain.value = 300;
   lfo.connect(lfoGain);
   lfoGain.connect(filter.frequency);
   lfo.start(t);
@@ -74,59 +125,62 @@ export function startAmbientNote(note: NoteName) {
   const oscillators: OscillatorNode[] = [];
   const gains: GainNode[] = [];
 
-  // Layer 1: Deep root — sine, sub-bass warmth
+  // Layer 1: Deep root
   const osc1 = ctx.createOscillator();
   osc1.type = 'sine';
-  osc1.frequency.value = freq * 0.5; // one octave below
+  osc1.frequency.value = freq * 0.5;
   const g1 = ctx.createGain();
   g1.gain.value = 0.3;
-  osc1.connect(g1);
-  g1.connect(filter);
-  oscillators.push(osc1);
-  gains.push(g1);
+  osc1.connect(g1); g1.connect(filter);
+  oscillators.push(osc1); gains.push(g1);
 
-  // Layer 2: Root — sine, gentle presence
+  // Layer 2: Root
   const osc2 = ctx.createOscillator();
   osc2.type = 'sine';
   osc2.frequency.value = freq;
   const g2 = ctx.createGain();
   g2.gain.value = 0.35;
-  osc2.connect(g2);
-  g2.connect(filter);
-  oscillators.push(osc2);
-  gains.push(g2);
+  osc2.connect(g2); g2.connect(filter);
+  oscillators.push(osc2); gains.push(g2);
 
-  // Layer 3: Fifth — triangle, soft harmonic
+  // Layer 3: Fifth
   const osc3 = ctx.createOscillator();
   osc3.type = 'triangle';
-  osc3.frequency.value = freq * 1.498; // slightly detuned fifth
+  osc3.frequency.value = freq * 1.498;
   const g3 = ctx.createGain();
   g3.gain.value = 0.12;
-  osc3.connect(g3);
-  g3.connect(filter);
-  oscillators.push(osc3);
-  gains.push(g3);
+  osc3.connect(g3); g3.connect(filter);
+  oscillators.push(osc3); gains.push(g3);
 
-  // Layer 4: Octave — sine, very quiet, with slow detune drift
+  // Layer 4: Octave detuned
   const osc4 = ctx.createOscillator();
   osc4.type = 'sine';
   osc4.frequency.value = freq * 2.002;
   const g4 = ctx.createGain();
   g4.gain.value = 0.08;
-  osc4.connect(g4);
-  g4.connect(filter);
-  oscillators.push(osc4);
-  gains.push(g4);
+  osc4.connect(g4); g4.connect(filter);
+  oscillators.push(osc4); gains.push(g4);
 
-  // Start all
   for (const osc of oscillators) osc.start(t);
 
   activeVoices.set(note, {
+    type: 'synth',
     oscillators,
     gains,
     masterGain: voiceGain,
     filterNode: filter,
   });
+}
+
+export function startAmbientNote(note: NoteName) {
+  if (activeVoices.has(note)) return;
+
+  const buffer = decodedBuffers.get(note);
+  if (buffer) {
+    startSampleNote(note, buffer);
+  } else {
+    startSynthNote(note);
+  }
 }
 
 export function stopAmbientNote(note: NoteName) {
@@ -136,14 +190,16 @@ export function stopAmbientNote(note: NoteName) {
   const ctx = getAudioContext();
   const t = ctx.currentTime;
 
-  // Fade out
   voice.masterGain.gain.cancelScheduledValues(t);
   voice.masterGain.gain.setValueAtTime(voice.masterGain.gain.value, t);
   voice.masterGain.gain.linearRampToValueAtTime(0, t + RELEASE);
 
-  // Stop oscillators after release
-  for (const osc of voice.oscillators) {
-    osc.stop(t + RELEASE + 0.1);
+  if (voice.type === 'synth') {
+    for (const osc of voice.oscillators) {
+      osc.stop(t + RELEASE + 0.1);
+    }
+  } else {
+    voice.source.stop(t + RELEASE + 0.1);
   }
 
   activeVoices.delete(note);
