@@ -4,6 +4,7 @@ import Metronome from '@/components/Metronome';
 import VolumeControl from '@/components/VolumeControl';
 import SetlistManager from '@/components/SetlistManager';
 import SpotifySearch from '@/components/SpotifySearch';
+import AmbientPads from '@/components/AmbientPads';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer, setMasterPan, setMetronomePan, setPadPan } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds } from '@/lib/custom-sound-store';
@@ -546,6 +547,13 @@ const Index = () => {
           editMode={editMode} />
         </div>
       </main>
+
+      {/* Ambient Pads */}
+      {!focusMode && (
+        <div className="shrink-0 px-3 py-2 max-w-[600px] mx-auto w-full">
+          <AmbientPads />
+        </div>
+      )}
 
       {/* Bottom controls */}
       <footer className="shrink-0 border-t border-border bg-card/50 backdrop-blur p-2 sm:p-3 space-y-2">
