@@ -143,6 +143,7 @@ serve(async (req) => {
       album: t.album.name,
       image: t.album.images?.[2]?.url || t.album.images?.[0]?.url,
       duration_ms: t.duration_ms,
+      preview_url: t.preview_url || null,
     }));
 
     return new Response(JSON.stringify({ tracks }), {
