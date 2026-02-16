@@ -41,6 +41,7 @@ interface SuggestedConfig {
 interface SpotifySearchProps {
   onApplyConfig: (config: SuggestedConfig) => void;
   locked?: boolean;
+  onSheetOpen?: () => void;
 }
 
 const PAD_LABELS: Record<string, string> = {
@@ -84,7 +85,7 @@ function incrementUsage(fromCache: boolean) {
 }
 
 
-const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked }) => {
+const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, onSheetOpen }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
@@ -193,7 +194,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked }) 
   
 
   return (
-    <Sheet open={locked ? false : open} onOpenChange={locked ? undefined : setOpen}>
+    <Sheet open={locked ? false : open} onOpenChange={(v) => { if (!locked) { setOpen(v); if (v) onSheetOpen?.(); } }}>
       <SheetTrigger asChild>
         {locked ? (
           <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors" onClick={(e) => { e.preventDefault(); toast('🔒 Spotify disponível no plano Master'); }}>
