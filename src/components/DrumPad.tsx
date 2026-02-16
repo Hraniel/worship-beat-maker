@@ -181,12 +181,16 @@ const DrumPad: React.FC<DrumPadProps> = ({
           ${isLooping ? 'animate-loop-border' : ''}
         `}
         style={{
-          backgroundColor: isActive ? 'hsl(0 0% 20%)' : isLooping ? 'hsl(0 0% 15%)' : 'hsl(0 0% 8%)',
-          borderColor: isActive ? 'hsl(0 0% 40%)' : isLooping ? 'hsl(0 0% 30%)' : 'hsl(0 0% 18%)',
+          backgroundColor: customColor
+            ? (isActive ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.5 * colorOpacity})` : `hsl(${colorHsl} / ${0.3 * colorOpacity})`)
+            : (isActive ? 'hsl(0 0% 20%)' : isLooping ? 'hsl(0 0% 15%)' : 'hsl(0 0% 8%)'),
+          borderColor: customColor
+            ? (isActive ? `hsl(${colorHsl} / ${0.9 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : `hsl(${colorHsl} / ${0.4 * colorOpacity})`)
+            : (isActive ? 'hsl(0 0% 40%)' : isLooping ? 'hsl(0 0% 30%)' : 'hsl(0 0% 18%)'),
           boxShadow: isActive
-            ? '0 0 20px hsl(0 0% 30% / 0.4), inset 0 0 15px hsl(0 0% 20% / 0.3)'
+            ? customColor ? `0 0 20px hsl(${colorHsl} / 0.4), inset 0 0 15px hsl(${colorHsl} / 0.2)` : '0 0 20px hsl(0 0% 30% / 0.4), inset 0 0 15px hsl(0 0% 20% / 0.3)'
             : isLooping
-            ? '0 0 12px hsl(0 0% 25% / 0.3)'
+            ? customColor ? `0 0 12px hsl(${colorHsl} / 0.3)` : '0 0 12px hsl(0 0% 25% / 0.3)'
             : 'none',
         }}
       >
@@ -339,10 +343,20 @@ const DrumPad: React.FC<DrumPadProps> = ({
               )}
             </button>
             {showColorPicker && (
-              <PadColorPicker
-                color={customColor || { hue: 0, saturation: 75, lightness: 55, opacity: 1 }}
-                onChange={(c) => onColorChange?.(pad.id, c)}
-              />
+              <div className="space-y-2">
+                <PadColorPicker
+                  color={customColor || { hue: 0, saturation: 75, lightness: 55, opacity: 1 }}
+                  onChange={(c) => onColorChange?.(pad.id, c)}
+                />
+                {customColor && (
+                  <button
+                    className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-border"
+                    onClick={() => { onColorChange?.(pad.id, undefined as any); setShowColorPicker(false); }}
+                  >
+                    Voltar ao padrão
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Import sound - not for loop pads */}

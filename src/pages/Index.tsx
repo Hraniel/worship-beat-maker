@@ -353,7 +353,12 @@ const Index = () => {
 
   const handlePadColorChange = useCallback((padId: string, color: PadColor) => {
     setPadColors((prev) => {
-      const next = { ...prev, [padId]: color };
+      const next = { ...prev };
+      if (color) {
+        next[padId] = color;
+      } else {
+        delete next[padId];
+      }
       localStorage.setItem('drum-pads-pad-colors', JSON.stringify(next));
       return next;
     });
