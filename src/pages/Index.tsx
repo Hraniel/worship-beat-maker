@@ -156,6 +156,16 @@ const Index = () => {
     return () => window.removeEventListener('tutorial:expand-metronome', expandMetronome);
   }, []);
 
+  // Sync audio settings from external changes (e.g. ambient pan reset)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail) setAudioSettings(detail);
+    };
+    window.addEventListener('settings:audio-changed', handler);
+    return () => window.removeEventListener('settings:audio-changed', handler);
+  }, []);
+
   const handleInstallClick = async () => {
     if (installPrompt) {
       await installPrompt.prompt();
@@ -337,6 +347,17 @@ const Index = () => {
       return next;
     });
     setPadPan(padId, pan);
+    // Clear side selection if pan moved to center
+    if (pan === 0) {
+      setAudioSettings(prev => {
+        if (prev.padsSide) {
+          const next = { ...prev, padsSide: null as 'left' | 'right' | null };
+          localStorage.setItem('drum-pads-audio-settings', JSON.stringify(next));
+          return next;
+        }
+        return prev;
+      });
+    }
   }, []);
 
   const handleApplySpotifyConfig = useCallback((config: any) => {
@@ -388,6 +409,17 @@ const Index = () => {
   const handleMetronomePanChange = useCallback((pan: number) => {
     setMetronomePanState(pan);
     setMetronomePan(pan);
+    // Clear side selection if pan moved to center
+    if (pan === 0) {
+      setAudioSettings(prev => {
+        if (prev.metronomeSide) {
+          const next = { ...prev, metronomeSide: null as 'left' | 'right' | null };
+          localStorage.setItem('drum-pads-audio-settings', JSON.stringify(next));
+          return next;
+        }
+        return prev;
+      });
+    }
   }, []);
 
   // Setlist management — now backed by database
