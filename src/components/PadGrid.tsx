@@ -11,6 +11,7 @@ interface PadGridProps {
   activeLoops: Set<string>;
   customSounds: Record<string, string>;
   padSize: 'sm' | 'md' | 'lg';
+  padScale?: number;
   padEffects: Record<string, PadEffects>;
   padNames: Record<string, string>;
   padPans: Record<string, number>;
@@ -31,7 +32,7 @@ interface PadGridProps {
 }
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free',
+  pads, padVolumes, activeLoops, customSounds, padSize, padScale = 65, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free',
   onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange
 }) => {
   const maxPads = TIERS[tier].maxPads;
@@ -39,8 +40,14 @@ const PadGrid: React.FC<PadGridProps> = ({
   // Show 9 pads for 3x3 grid
   const visiblePads = pads.slice(0, 9);
 
+  // Map padScale (30-100) to max-width in px (240-700)
+  const gridMaxWidth = Math.round(240 + ((padScale - 30) / 70) * 460);
+
   return (
-    <div className={`grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 p-2 sm:p-4 w-full max-w-[600px] lg:max-w-[700px] mx-auto transition-all duration-200 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}>
+    <div
+      className={`grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 p-2 sm:p-4 w-full mx-auto transition-all duration-200 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
+      style={{ maxWidth: `${gridMaxWidth}px` }}
+    >
       {visiblePads.map((pad, index) => (
         <DrumPad
           key={pad.id}

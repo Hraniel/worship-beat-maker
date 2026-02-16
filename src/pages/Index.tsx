@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Slider } from '@/components/ui/slider';
 import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
 import VolumeControl from '@/components/VolumeControl';
@@ -38,13 +39,21 @@ function saveCustomNames(names: Record<string, string>) {
   localStorage.setItem(CUSTOM_NAMES_KEY, JSON.stringify(names));
 }
 
-type PadSize = 'sm' | 'md' | 'lg';
-const PAD_SIZES: PadSize[] = ['sm', 'md', 'lg'];
+// Pad size: numeric scale 30–100 (percentage of max grid width)
+const PAD_SIZE_MIN = 30;
+const PAD_SIZE_MAX = 100;
+const PAD_SIZE_DEFAULT = 65;
 
-function loadPadSize(): PadSize {
-  const v = localStorage.getItem(PAD_SIZE_KEY);
-  if (v === 'sm' || v === 'md' || v === 'lg') return v;
-  return 'md';
+function loadPadSize(): number {
+  const v = Number(localStorage.getItem(PAD_SIZE_KEY));
+  if (v >= PAD_SIZE_MIN && v <= PAD_SIZE_MAX) return v;
+  return PAD_SIZE_DEFAULT;
+}
+
+function padSizeToTextSize(size: number): 'sm' | 'md' | 'lg' {
+  if (size < 45) return 'sm';
+  if (size < 75) return 'md';
+  return 'lg';
 }
 
 const Index = () => {
@@ -66,7 +75,7 @@ const Index = () => {
   const [spotifyKey, setSpotifyKey] = useState<string | null>(null);
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [spotifySongName, setSpotifySongName] = useState('');
-  const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
+  const [padSize, setPadSize] = useState<number>(loadPadSize);
   const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
   const [padNames, setPadNames] = useState<Record<string, string>>(() => {
     try {const d = localStorage.getItem('drum-pads-pad-names');return d ? JSON.parse(d) : {};} catch {return {};}
@@ -179,13 +188,10 @@ const Index = () => {
     }
   };
 
-  const changePadSize = useCallback((dir: 1 | -1) => {
-    setPadSize((prev) => {
-      const idx = PAD_SIZES.indexOf(prev);
-      const next = PAD_SIZES[Math.max(0, Math.min(PAD_SIZES.length - 1, idx + dir))];
-      localStorage.setItem(PAD_SIZE_KEY, next);
-      return next;
-    });
+  const handlePadSizeChange = useCallback((value: number) => {
+    const clamped = Math.max(PAD_SIZE_MIN, Math.min(PAD_SIZE_MAX, value));
+    setPadSize(clamped);
+    localStorage.setItem(PAD_SIZE_KEY, String(clamped));
   }, []);
 
   const toggleFocusMode = useCallback(() => {
@@ -556,22 +562,18 @@ const Index = () => {
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Pad size controls - only in edit mode */}
             {editMode && (
-            <div className="flex items-center gap-0.5 mr-1 border border-border rounded-md" data-tutorial="pad-size">
-              <button
-              onClick={() => changePadSize(-1)}
-              disabled={padSize === 'sm'}
-              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-              title="Diminuir pads">
-                <Minus className="h-3 w-3" />
-              </button>
-              <span className="text-[10px] text-muted-foreground w-5 text-center uppercase tabular-nums">{padSize}</span>
-              <button
-              onClick={() => changePadSize(1)}
-              disabled={padSize === 'lg'}
-              className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-              title="Aumentar pads">
-                <Plus className="h-3 w-3" />
-              </button>
+            <div className="flex items-center gap-1 mr-1 border border-border rounded-md px-1.5 py-0.5" data-tutorial="pad-size">
+              <Minus className="h-3 w-3 text-muted-foreground shrink-0" />
+              <Slider
+                value={[padSize]}
+                onValueChange={([v]) => handlePadSizeChange(v)}
+                min={PAD_SIZE_MIN}
+                max={PAD_SIZE_MAX}
+                step={5}
+                className="w-16 sm:w-20"
+              />
+              <Plus className="h-3 w-3 text-muted-foreground shrink-0" />
+              <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">{padSize}%</span>
             </div>
             )}
 
@@ -758,7 +760,8 @@ const Index = () => {
           padVolumes={padVolumes}
           activeLoops={activeLoops}
           customSounds={customSounds}
-          padSize={padSize}
+          padSize={padSizeToTextSize(padSize)}
+          padScale={padSize}
           padEffects={padEffects}
           padPans={padPans}
           onToggleLoop={toggleLoop}
