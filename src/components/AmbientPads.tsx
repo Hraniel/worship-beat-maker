@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Volume2, StopCircle, X, Lock } from 'lucide-react';
+import { ChevronDown, ChevronUp, Volume2, StopCircle, Lock } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -21,12 +21,50 @@ import {
   getAmbientPan } from
 '@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
-import PanControl from '@/components/PanControl';
 
-const NOTE_COLORS: Record<NoteName, string> = {
-  C: '0 70% 55%', 'C#': '20 65% 50%', D: '35 70% 55%', 'D#': '50 65% 50%',
-  E: '80 60% 50%', F: '140 55% 45%', 'F#': '170 60% 45%', G: '200 65% 50%',
-  'G#': '230 60% 55%', A: '260 65% 55%', 'A#': '290 60% 50%', B: '320 65% 50%'
+/** Tiny knob visual for pan */
+const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan, onChange }) => {
+  const angle = pan * 135;
+  const displayValue = pan === 0 ? 'C' : pan < 0 ? `L${Math.round(Math.abs(pan) * 100)}` : `R${Math.round(pan * 100)}`;
+
+  return (
+    <div className="flex flex-col items-center gap-0.5 select-none">
+      <div
+        className="relative w-8 h-8 rounded-full border border-border bg-muted/50 cursor-pointer"
+        onPointerDown={(e) => {
+          e.preventDefault();
+          const el = e.currentTarget;
+          const rect = el.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const move = (ev: PointerEvent) => {
+            const dx = ev.clientX - cx;
+            const clamped = Math.max(-1, Math.min(1, dx / 40));
+            const snapped = Math.abs(clamped) < 0.08 ? 0 : Math.round(clamped * 20) / 20;
+            onChange(snapped);
+          };
+          const up = () => {
+            window.removeEventListener('pointermove', move);
+            window.removeEventListener('pointerup', up);
+          };
+          window.addEventListener('pointermove', move);
+          window.addEventListener('pointerup', up);
+        }}
+        onDoubleClick={() => onChange(0)}
+        title={`Pan: ${displayValue}`}
+      >
+        <div
+          className="absolute top-1 left-1/2 w-0.5 h-2.5 bg-foreground rounded-full origin-bottom"
+          style={{
+            transform: `translateX(-50%) rotate(${angle}deg)`,
+            transformOrigin: '50% 100%',
+            top: '4px',
+          }}
+        />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-muted-foreground/40" />
+      </div>
+      <span className="text-[8px] text-muted-foreground tabular-nums leading-none">{displayValue}</span>
+    </div>
+  );
 };
 
 const AmbientPads: React.FC = () => {
@@ -41,7 +79,6 @@ const AmbientPads: React.FC = () => {
 
   const samplesLoadedRef = useRef(false);
 
-  // Background preload (non-blocking, sequential to save memory)
   const ensureSamplesLoaded = useCallback(async () => {
     if (samplesLoadedRef.current) return;
     samplesLoadedRef.current = true;
@@ -61,7 +98,6 @@ const AmbientPads: React.FC = () => {
   }, [ensureSamplesLoaded]);
 
   const handleToggle = useCallback(async (note: NoteName) => {
-    // Prevent concurrent toggles (rapid taps causing race conditions)
     if (togglingRef.current) return;
     togglingRef.current = true;
     setLoading(true);
@@ -84,11 +120,9 @@ const AmbientPads: React.FC = () => {
     e.stopPropagation();
     const wasActive = isAmbientNoteActive(note);
     if (wasActive) stopAmbientNote(note);
-
     await deleteAmbientSound(note);
-    await loadAmbientSample(note); // clears the buffer
-
-    if (wasActive) startAmbientNote(note); // restart with synth
+    await loadAmbientSample(note);
+    if (wasActive) startAmbientNote(note);
     setCustomNotes((prev) => {
       const next = new Set(prev);
       next.delete(note);
@@ -117,16 +151,13 @@ const AmbientPads: React.FC = () => {
 
   return (
     <div className="w-full">
-
-
       <button
         onClick={() => setExpanded((p) => !p)}
         className="flex items-center justify-between w-full px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground"> Ambient Pads</span>
+          <span className="text-sm font-semibold text-foreground">Ambient Pads</span>
           {hasActive &&
-          <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
+            <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
               {[...activeNotes][0]} ativa
             </span>
           }
@@ -135,93 +166,97 @@ const AmbientPads: React.FC = () => {
       </button>
 
       {expanded &&
-      <div className="mt-2 space-y-3">
-          {/* Volume + controls */}
-          <div className="flex items-center gap-2 px-1">
-            <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <Slider
-            value={[volume * 100]}
-            onValueChange={handleVolumeChange}
-            min={0}
-            max={100}
-            step={1}
-            className="flex-1" />
+        <div className="mt-2">
+          {/* Main layout: pads grid left, controls right */}
+          <div className="flex gap-2">
+            {/* Note grid - 4 columns, 3 rows */}
+            <div className="grid grid-cols-4 gap-1.5 flex-1">
+              {ALL_NOTES.map((note) => {
+                const isActive = activeNotes.has(note);
+                const isCustom = customNotes.has(note);
+                const isSharp = note.includes('#');
+                return (
+                  <button
+                    key={note}
+                    onClick={() => !loading && handleToggle(note)}
+                    disabled={loading}
+                    className={`
+                      relative flex items-center justify-center rounded-md
+                      border transition-all duration-200 select-none
+                      h-14 sm:h-16 text-xs font-bold text-foreground
+                      ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+                      ${isSharp ? 'text-[10px]' : ''}
+                    `}
+                    style={{
+                      backgroundColor: isActive ? 'hsl(0 0% 20%)' : 'hsl(0 0% 8%)',
+                      borderColor: isActive ? 'hsl(0 0% 40%)' : 'hsl(0 0% 18%)',
+                      boxShadow: isActive ? '0 0 12px hsl(0 0% 30% / 0.4)' : 'none',
+                    }}>
+                    {note}
+                    {isCustom &&
+                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] opacity-60">
+                        MP3
+                      </span>
+                    }
+                    {isActive &&
+                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse bg-foreground" />
+                    }
+                  </button>
+                );
+              })}
+            </div>
 
-            <span className="text-xs text-muted-foreground w-8 text-right tabular-nums">{Math.round(volume * 100)}%</span>
-            {hasActive &&
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={handleStopAll}>
-                <StopCircle className="h-3 w-3" />
-                Parar
-              </Button>
-          }
-          </div>
-          {isMaster ? (
-            <PanControl label="Pan Ambient" pan={pan} onPanChange={handlePanChange} />
-          ) : (
-            <button
-              className="flex items-center gap-2 w-full px-1 py-1.5 text-xs text-muted-foreground hover:bg-muted rounded-md transition-colors"
-              onClick={() => toast('🔒 Pan disponível no plano Master')}
-            >
-              <Lock className="h-3 w-3" />
-              Pan Ambient
-              <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>
-            </button>
-          )}
+            {/* Right controls: vertical volume slider + pan knob + stop */}
+            <div className="flex flex-col items-center gap-2 py-1 w-12 shrink-0">
+              <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
+              <div className="flex-1 flex items-center justify-center" style={{ minHeight: '80px' }}>
+                <Slider
+                  value={[volume * 100]}
+                  onValueChange={handleVolumeChange}
+                  min={0}
+                  max={100}
+                  step={1}
+                  orientation="vertical"
+                  className="h-full"
+                />
+              </div>
+              <span className="text-[8px] text-muted-foreground tabular-nums">{Math.round(volume * 100)}%</span>
 
-          {/* Note grid */}
-          <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-12 ambient-grid">
-            {ALL_NOTES.map((note) => {
-            const isActive = activeNotes.has(note);
-            const isCustom = customNotes.has(note);
-            const color = NOTE_COLORS[note];
-            const isSharp = note.includes('#');
-            return (
-              <button
-                key={note}
-                onClick={() => !loading && handleToggle(note)}
-                disabled={loading}
-                className={`
-                    relative flex items-center justify-center rounded-md
-                    border transition-all duration-200 select-none
-                    h-10 sm:h-12 text-xs font-bold text-foreground
-                    ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-                    ${isSharp ? 'text-[10px]' : ''}
-                  `}
-                style={{
-                  backgroundColor: isActive ? 'hsl(0 0% 20%)' : 'hsl(0 0% 8%)',
-                  borderColor: isActive ? 'hsl(0 0% 40%)' : 'hsl(0 0% 18%)',
-                  boxShadow: isActive ? '0 0 12px hsl(0 0% 30% / 0.4)' : 'none',
-                }}>
+              {/* Pan knob */}
+              {isMaster ? (
+                <PanKnob pan={pan} onChange={handlePanChange} />
+              ) : (
+                <button
+                  className="flex flex-col items-center gap-0.5"
+                  onClick={() => toast('🔒 Pan disponível no plano Master')}
+                  title="Pan (Master)"
+                >
+                  <Lock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-[7px] text-primary font-medium">PAN</span>
+                </button>
+              )}
 
-                  {note}
-                  {isCustom &&
-                <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] opacity-60">
-                      MP3
-                    </span>
-                }
-                  {isActive &&
-                <span
-                  className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse bg-foreground" />
-
-                }
-                </button>);
-
-          })}
+              {hasActive && (
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleStopAll} title="Parar">
+                  <StopCircle className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {loading && (
-            <p className="text-[10px] text-primary text-center animate-pulse">
+            <p className="text-[10px] text-primary text-center animate-pulse mt-2">
               Carregando samples... aguarde
             </p>
           )}
 
-          <p className="text-[10px] text-muted-foreground text-center">
+          <p className="text-[10px] text-muted-foreground text-center mt-2">
             Toque para ativar/desativar acordes sustentados
           </p>
         </div>
       }
-    </div>);
-
+    </div>
+  );
 };
 
 export default AmbientPads;
