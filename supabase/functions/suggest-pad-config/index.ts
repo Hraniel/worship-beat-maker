@@ -9,12 +9,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { trackName, artist, features } = await req.json();
+    const { trackName, artist, features, analysis } = await req.json();
     const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
     if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
 
     const systemPrompt = `Você é um especialista em produção musical e bateria para worship/louvor.
-Dado os dados de uma música do Spotify, sugira configurações para 8 pads de bateria.
+Dado os dados de uma música do Spotify (incluindo análise de áudio real), sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
 
 Os 8 pads disponíveis são (nesta ordem):
 1. kick - Bumbo
@@ -28,19 +28,39 @@ Os 8 pads disponíveis são (nesta ordem):
 
 Para cada pad, sugira:
 - volume: 0-1 (ex: 0.7)
-- eqLow: -12 a 12 dB
-- eqMid: -12 a 12 dB  
+- eqLow: -12 a 12 dB (baseado nos timbres reais detectados)
+- eqMid: -12 a 12 dB
 - eqHigh: -12 a 12 dB
-- reverb: 0-1
+- reverb: 0-1 (baseado na reverberação detectada na análise)
 - delay: 0-1
-- delayTime: 0.1-1.0 segundos
+- delayTime: 0.1-1.0 segundos (sincronize com o BPM quando possível)
 - pan: -1 (esquerda) a 1 (direita), 0 = centro
 
+IMPORTANTE - Padrão Rítmico:
+Para cada pad, inclua também um campo "pattern" que é um array de 0s e 1s representando quais subdivisões do compasso o instrumento deve tocar.
+- Para 4/4: use 16 subdivisões (semicolcheias). Ex: kick típico = [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0]
+- Para 3/4: use 12 subdivisões. 
+- Para 6/8: use 12 subdivisões.
+- Use valores entre 0 e 1 (0 = silêncio, 1 = toque forte, 0.5 = ghost note/toque suave)
+
+Exemplos de padrões comuns em worship:
+- Kick 4/4 básico: [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0]
+- Snare em 2 e 4: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]
+- Hi-hat em colcheias: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
+- Hi-hat aberto no "e" do 4: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0]
+
+Analise os dados de áudio reais (seções, segmentos com timbre, batidas) para:
+1. Detectar a intensidade e tipo de reverberação
+2. Identificar a panoramização dos instrumentos
+3. Replicar a equalização baseada nos timbres
+4. Criar padrões rítmicos que se aproximem da bateria original
+
 Também sugira:
-- bpm: o BPM ideal
+- bpm: o BPM ideal (use o valor detectado na análise se disponível)
 - timeSignature: "4/4", "3/4" ou "6/8"
 - recommendedLoop: "loop-rock" ou "loop-ballad" (qual loop usar)
 - description: breve descrição do estilo rítmico sugerido (max 2 frases)
+- patternName: nome curto do padrão rítmico (ex: "Rock Worship", "Ballad Suave", "Driving 8ths")
 
 Responda APENAS com JSON válido usando esta estrutura exata:
 {
@@ -48,15 +68,22 @@ Responda APENAS com JSON válido usando esta estrutura exata:
   "timeSignature": string,
   "recommendedLoop": string,
   "description": string,
+  "patternName": string,
   "pads": {
-    "kick": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number },
-    ...para cada pad
+    "kick": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number, "pattern": number[] },
+    "snare": { ... },
+    "hihat-closed": { ... },
+    "hihat-open": { ... },
+    "crash": { ... },
+    "clap": { ... },
+    "loop-rock": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number, "pattern": [] },
+    "loop-ballad": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number, "pattern": [] }
   }
 }`;
 
-    const userPrompt = `Música: "${trackName}" de ${artist}
+    let userPrompt = `Música: "${trackName}" de ${artist}
 
-Dados do Spotify:
+Dados do Spotify Audio Features:
 - Tempo/BPM: ${features?.tempo || "desconhecido"}
 - Energia: ${features?.energy || "desconhecida"} (0-1)
 - Danceability: ${features?.danceability || "desconhecida"} (0-1)
@@ -66,9 +93,69 @@ Dados do Spotify:
 - Loudness: ${features?.loudness || "desconhecida"} dB
 - Key: ${features?.key ?? "desconhecida"}
 - Mode: ${features?.mode === 1 ? "maior" : features?.mode === 0 ? "menor" : "desconhecido"}
-- Time Signature: ${features?.time_signature || "desconhecido"}
+- Time Signature: ${features?.time_signature || "desconhecido"}`;
 
-Sugira as configurações ideais dos pads para reproduzir um acompanhamento rítmico similar a esta música.`;
+    // Add real audio analysis data if available
+    if (analysis) {
+      if (analysis.track) {
+        userPrompt += `\n\nAnálise de Áudio Real (Track):
+- Tempo real: ${analysis.track.tempo} BPM (confiança: ${analysis.track.tempo_confidence})
+- Compasso real: ${analysis.track.time_signature} (confiança: ${analysis.track.time_signature_confidence})
+- Tonalidade: ${analysis.track.key} (confiança: ${analysis.track.key_confidence})
+- Modo: ${analysis.track.mode === 1 ? "maior" : "menor"} (confiança: ${analysis.track.mode_confidence})
+- Loudness geral: ${analysis.track.loudness} dB`;
+      }
+
+      if (analysis.sections?.length) {
+        userPrompt += `\n\nSeções da Música (${analysis.sections.length} seções):`;
+        for (const s of analysis.sections.slice(0, 8)) {
+          userPrompt += `\n- ${s.start}s (${s.duration}s): loudness=${s.loudness}dB, tempo=${s.tempo}, key=${s.key}, sig=${s.time_signature}`;
+        }
+      }
+
+      if (analysis.segments?.length) {
+        // Compute average timbre values for the first segments
+        const avgTimbre = [0, 0, 0, 0, 0, 0];
+        let count = 0;
+        for (const seg of analysis.segments) {
+          if (seg.timbre) {
+            for (let i = 0; i < 6; i++) avgTimbre[i] += seg.timbre[i] || 0;
+            count++;
+          }
+        }
+        if (count > 0) {
+          for (let i = 0; i < 6; i++) avgTimbre[i] = Math.round(avgTimbre[i] / count * 10) / 10;
+          userPrompt += `\n\nAnálise de Timbre (média dos primeiros ${count} segmentos):
+- Timbre[0] (loudness/brilho): ${avgTimbre[0]}
+- Timbre[1] (brilho/escuridão): ${avgTimbre[1]}
+- Timbre[2] (flatness): ${avgTimbre[2]}
+- Timbre[3] (ataque forte/suave): ${avgTimbre[3]}
+- Timbre[4] (5th MFCC): ${avgTimbre[4]}
+- Timbre[5] (6th MFCC): ${avgTimbre[5]}
+Use estes valores para calibrar EQ e reverb dos pads.`;
+        }
+
+        // Loudness dynamics
+        const loudnesses = analysis.segments.map((s: any) => s.loudness_max);
+        const maxLoud = Math.max(...loudnesses);
+        const minLoud = Math.min(...loudnesses);
+        userPrompt += `\n- Dinâmica: ${minLoud}dB a ${maxLoud}dB (range: ${Math.round((maxLoud - minLoud) * 10) / 10}dB)`;
+      }
+
+      if (analysis.beats?.length) {
+        const avgBeatDuration = analysis.beats.reduce((sum: number, b: any) => sum + b.duration, 0) / analysis.beats.length;
+        userPrompt += `\n\nBatidas detectadas: ${analysis.beats.length} primeiras
+- Duração média entre batidas: ${Math.round(avgBeatDuration * 1000)}ms
+- BPM calculado pelas batidas: ${Math.round(60 / avgBeatDuration)}`;
+      }
+
+      if (analysis.bars?.length) {
+        const avgBarDuration = analysis.bars.reduce((sum: number, b: any) => sum + b.duration, 0) / analysis.bars.length;
+        userPrompt += `\n- Duração média do compasso: ${Math.round(avgBarDuration * 1000)}ms`;
+      }
+    }
+
+    userPrompt += `\n\nCom base em TODOS estes dados reais, sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música.`;
 
     // Try with retry and backoff
     const models = ["gemini-2.0-flash", "gemini-2.0-flash-lite"];

@@ -24,6 +24,7 @@ interface PadConfig {
   delay: number;
   delayTime: number;
   pan: number;
+  pattern?: number[];
 }
 
 interface SuggestedConfig {
@@ -31,12 +32,55 @@ interface SuggestedConfig {
   timeSignature: string;
   recommendedLoop: string;
   description: string;
+  patternName?: string;
   pads: Record<string, PadConfig>;
 }
 
 interface SpotifySearchProps {
   onApplyConfig: (config: SuggestedConfig) => void;
 }
+
+const PAD_LABELS: Record<string, string> = {
+  kick: 'Kick',
+  snare: 'Snare',
+  'hihat-closed': 'HH Closed',
+  'hihat-open': 'HH Open',
+  crash: 'Crash',
+  clap: 'Clap',
+  'loop-rock': 'Loop Rock',
+  'loop-ballad': 'Loop Ballad',
+};
+
+const PatternGrid: React.FC<{ pattern: number[]; label: string }> = ({ pattern, label }) => {
+  if (!pattern || pattern.length === 0) return null;
+  const subdivisions = pattern.length;
+  const beatsPerBar = subdivisions === 12 ? 3 : 4;
+  const subsPerBeat = subdivisions / beatsPerBar;
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] font-medium w-16 shrink-0 truncate">{label}</span>
+      <div className="flex gap-px">
+        {pattern.map((val, i) => (
+          <div
+            key={i}
+            className={`h-3 rounded-sm transition-colors ${
+              i % subsPerBeat === 0 ? 'ml-0.5 first:ml-0' : ''
+            }`}
+            style={{
+              width: subdivisions > 12 ? '10px' : '14px',
+              backgroundColor: val >= 0.8
+                ? 'hsl(var(--primary))'
+                : val >= 0.3
+                ? 'hsl(var(--primary) / 0.5)'
+                : 'hsl(var(--muted))',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
   const [open, setOpen] = useState(false);
@@ -46,6 +90,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [suggestion, setSuggestion] = useState<SuggestedConfig | null>(null);
+  const [analysisStep, setAnalysisStep] = useState('');
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
@@ -77,18 +122,21 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
     setSuggestion(null);
 
     try {
-      // Get audio features
+      // Step 1: Get audio features + analysis
+      setAnalysisStep('Obtendo dados de áudio...');
       const { data: featuresData, error: featuresError } = await supabase.functions.invoke('spotify-search', {
         body: { trackId: track.id },
       });
       if (featuresError) throw featuresError;
 
-      // Get AI suggestion
+      // Step 2: Get AI suggestion with real analysis data
+      setAnalysisStep('IA analisando timbres e padrões...');
       const { data: aiData, error: aiError } = await supabase.functions.invoke('suggest-pad-config', {
         body: {
           trackName: track.name,
           artist: track.artist,
           features: featuresData?.features,
+          analysis: featuresData?.analysis,
         },
       });
       if (aiError) throw aiError;
@@ -101,6 +149,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
       setSelectedTrack(null);
     } finally {
       setAnalyzing(false);
+      setAnalysisStep('');
     }
   }, []);
 
@@ -109,7 +158,6 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
     onApplyConfig(suggestion);
     toast.success('Configuração aplicada nos pads!');
     setOpen(false);
-    // Reset
     setQuery('');
     setTracks([]);
     setSelectedTrack(null);
@@ -121,6 +169,8 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
     const s = Math.floor((ms % 60000) / 1000);
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
+
+  const hasPatterns = suggestion?.pads && Object.values(suggestion.pads).some(p => p.pattern && p.pattern.length > 0);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -137,7 +187,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
             Buscar no Spotify
           </SheetTitle>
           <SheetDescription>
-            Busque uma música e a IA sugere configurações para seus pads
+            Busque uma música e a IA analisa o áudio real para sugerir configurações e padrões rítmicos
           </SheetDescription>
         </SheetHeader>
 
@@ -209,7 +259,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <div className="text-center">
                     <p className="text-sm font-medium">Analisando música...</p>
-                    <p className="text-xs text-muted-foreground">A IA está criando configurações personalizadas</p>
+                    <p className="text-xs text-muted-foreground">{analysisStep || 'Processando...'}</p>
                   </div>
                 </div>
               )}
@@ -219,6 +269,11 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold">Sugestão da IA</span>
+                    {suggestion.patternName && (
+                      <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                        {suggestion.patternName}
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-xs text-muted-foreground">{suggestion.description}</p>
@@ -240,12 +295,40 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig }) => {
                     </div>
                   </div>
 
+                  {/* Rhythmic Pattern Visualization */}
+                  {hasPatterns && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase">Padrão Rítmico</span>
+                      <div className="bg-muted/30 rounded-md p-2 space-y-1">
+                        {suggestion.pads && Object.entries(suggestion.pads).map(([padId, cfg]) => (
+                          cfg.pattern && cfg.pattern.length > 0 && cfg.pattern.some(v => v > 0) ? (
+                            <PatternGrid key={padId} pattern={cfg.pattern} label={PAD_LABELS[padId] || padId} />
+                          ) : null
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-3 text-[9px] text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'hsl(var(--primary))' }} />
+                          Forte
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'hsl(var(--primary) / 0.5)' }} />
+                          Ghost
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'hsl(var(--muted))' }} />
+                          Silêncio
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Pad configs preview */}
                   <div className="space-y-1">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase">Configuração dos Pads</span>
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase">Efeitos dos Pads</span>
                     {suggestion.pads && Object.entries(suggestion.pads).map(([padId, cfg]) => (
                       <div key={padId} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
-                        <span className="font-medium capitalize">{padId.replace('-', ' ')}</span>
+                        <span className="font-medium">{PAD_LABELS[padId] || padId}</span>
                         <div className="flex gap-2 text-muted-foreground text-[10px]">
                           <span>Vol {Math.round(cfg.volume * 100)}%</span>
                           {cfg.reverb > 0 && <span>Rev {Math.round(cfg.reverb * 100)}%</span>}
