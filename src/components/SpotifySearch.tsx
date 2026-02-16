@@ -41,7 +41,8 @@ interface SuggestedConfig {
 interface SpotifySearchProps {
   onApplyConfig: (config: SuggestedConfig) => void;
   locked?: boolean;
-  onSheetOpen?: () => void;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 const PAD_LABELS: Record<string, string> = {
@@ -85,8 +86,10 @@ function incrementUsage(fromCache: boolean) {
 }
 
 
-const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, onSheetOpen }) => {
-  const [open, setOpen] = useState(false);
+const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, externalOpen, onExternalOpenChange }) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen ?? internalOpen;
+  const setOpen = (v: boolean) => { onExternalOpenChange ? onExternalOpenChange(v) : setInternalOpen(v); };
   const [query, setQuery] = useState('');
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
   const [searching, setSearching] = useState(false);
@@ -194,21 +197,23 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, on
   
 
   return (
-    <Sheet open={locked ? false : open} onOpenChange={(v) => { if (!locked) { setOpen(v); if (v) onSheetOpen?.(); } }}>
-      <SheetTrigger asChild>
-        {locked ? (
-          <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors" onClick={(e) => { e.preventDefault(); toast('🔒 Spotify disponível no plano Master'); }}>
-            <Lock className="h-4 w-4" />
-            Spotify AI
-            <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>
-          </button>
-        ) : (
-          <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
-            <Music className="h-4 w-4 text-muted-foreground" />
-            Spotify AI
-          </button>
-        )}
-      </SheetTrigger>
+    <Sheet open={locked ? false : open} onOpenChange={(v) => { if (!locked) setOpen(v); }}>
+      {!externalOpen && externalOpen === undefined && (
+        <SheetTrigger asChild>
+          {locked ? (
+            <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors" onClick={(e) => { e.preventDefault(); toast('🔒 Spotify disponível no plano Master'); }}>
+              <Lock className="h-4 w-4" />
+              Spotify AI
+              <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>
+            </button>
+          ) : (
+            <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+              <Music className="h-4 w-4 text-muted-foreground" />
+              Spotify AI
+            </button>
+          )}
+        </SheetTrigger>
+      )}
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
