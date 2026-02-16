@@ -33,10 +33,13 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
         className="relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border border-border bg-muted/50 cursor-pointer"
         onPointerDown={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           const el = e.currentTarget;
+          el.setPointerCapture(e.pointerId);
           const rect = el.getBoundingClientRect();
           const cx = rect.left + rect.width / 2;
           let moved = false;
+          const pid = e.pointerId;
           const longPress = window.setTimeout(() => {
             if (!moved) onChange(0);
           }, 400);
@@ -55,11 +58,14 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
           };
           const up = () => {
             clearTimeout(longPress);
-            window.removeEventListener('pointermove', move);
-            window.removeEventListener('pointerup', up);
+            el.removeEventListener('pointermove', move);
+            el.removeEventListener('pointerup', up);
+            el.removeEventListener('lostpointercapture', up);
+            el.releasePointerCapture(pid);
           };
-          window.addEventListener('pointermove', move);
-          window.addEventListener('pointerup', up);
+          el.addEventListener('pointermove', move);
+          el.addEventListener('pointerup', up);
+          el.addEventListener('lostpointercapture', up);
         }}
         onDoubleClick={() => onChange(0)}
         title={`Pan: ${displayValue}`}
