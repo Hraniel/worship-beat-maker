@@ -458,7 +458,8 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            {/* Pad size controls */}
+            {/* Pad size controls - only in edit mode */}
+            {editMode && (
             <div className="flex items-center gap-0.5 mr-1 border border-border rounded-md" data-tutorial="pad-size">
               <button
               onClick={() => changePadSize(-1)}
@@ -476,7 +477,10 @@ const Index = () => {
                 <Plus className="h-3 w-3" />
               </button>
             </div>
+            )}
 
+            {/* Repertório - hidden in edit mode */}
+            {!editMode && (
             <div data-tutorial="setlist">
             <SetlistManager
             songs={songs}
@@ -486,6 +490,7 @@ const Index = () => {
             onDeleteSong={handleDeleteSong}
             onReorder={reorderSetlists} />
             </div>
+            )}
 
             
 
