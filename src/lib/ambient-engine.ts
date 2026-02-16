@@ -137,9 +137,13 @@ export async function initAmbientSamples() {
   if (failed.length) console.warn(`[AmbientEngine] Failed: ${failed.join(', ')}`);
 
   // 2. Override with user-imported custom samples (from IndexedDB)
-  const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
-  const customNotes = await getAllAmbientSoundNotes();
-  await Promise.all(customNotes.map(n => loadAmbientSample(n as NoteName)));
+  try {
+    const { getAllAmbientSoundNotes } = await import('./ambient-sound-store');
+    const customNotes = await getAllAmbientSoundNotes();
+    await Promise.all(customNotes.map(n => loadAmbientSample(n as NoteName)));
+  } catch (e) {
+    console.warn('[AmbientEngine] Failed to load custom samples from IndexedDB:', e);
+  }
 
   samplesInitialized = true;
   console.log('[AmbientEngine] Init complete');
