@@ -10,124 +10,46 @@ serve(async (req) => {
 
   try {
     const { trackName, artist, features } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `Você é um especialista em produção musical e bateria para worship/louvor.
-Dado os dados de uma música do Spotify, sugira configurações para 8 pads de bateria.
+    console.log("Calling Lovable AI Gateway...");
+    const response = await fetch("https://ai-gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+      }),
+    });
 
-Os 8 pads disponíveis são (nesta ordem):
-1. kick - Bumbo
-2. snare - Caixa  
-3. hihat-closed - Hi-Hat Fechado
-4. hihat-open - Hi-Hat Aberto
-5. crash - Crash/Prato
-6. clap - Palma
-7. loop-rock - Loop Rock Beat (pad de loop)
-8. loop-ballad - Loop Ballad (pad de loop)
-
-Para cada pad, sugira:
-- volume: 0-1 (ex: 0.7)
-- eqLow: -12 a 12 dB
-- eqMid: -12 a 12 dB  
-- eqHigh: -12 a 12 dB
-- reverb: 0-1
-- delay: 0-1
-- delayTime: 0.1-1.0 segundos
-- pan: -1 (esquerda) a 1 (direita), 0 = centro
-
-Também sugira:
-- bpm: o BPM ideal
-- timeSignature: "4/4", "3/4" ou "6/8"
-- recommendedLoop: "loop-rock" ou "loop-ballad" (qual loop usar)
-- description: breve descrição do estilo rítmico sugerido (max 2 frases)
-
-Responda APENAS com JSON válido usando esta estrutura exata:
-{
-  "bpm": number,
-  "timeSignature": string,
-  "recommendedLoop": string,
-  "description": string,
-  "pads": {
-    "kick": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number },
-    ...para cada pad
-  }
-}`;
-
-    const userPrompt = `Música: "${trackName}" de ${artist}
-
-Dados do Spotify:
-- Tempo/BPM: ${features?.tempo || "desconhecido"}
-- Energia: ${features?.energy || "desconhecida"} (0-1)
-- Danceability: ${features?.danceability || "desconhecida"} (0-1)
-- Valence (positividade): ${features?.valence || "desconhecida"} (0-1)
-- Acousticness: ${features?.acousticness || "desconhecida"} (0-1)
-- Instrumentalness: ${features?.instrumentalness || "desconhecida"} (0-1)
-- Loudness: ${features?.loudness || "desconhecida"} dB
-- Key: ${features?.key ?? "desconhecida"}
-- Mode: ${features?.mode === 1 ? "maior" : features?.mode === 0 ? "menor" : "desconhecido"}
-- Time Signature: ${features?.time_signature || "desconhecido"}
-
-Sugira as configurações ideais dos pads para reproduzir um acompanhamento rítmico similar a esta música.`;
-
-    // Try with retry and backoff
-    const models = ["gemini-2.0-flash", "gemini-2.0-flash-lite"];
-    let lastError = "";
-
-    for (const model of models) {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
-
-        console.log(`Trying model ${model}, attempt ${attempt + 1}`);
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
-              ],
-              generationConfig: { temperature: 0.7 },
-            }),
-          }
-        );
-
-        if (response.status === 429) {
-          lastError = "Rate limit";
-          console.log(`Rate limited on ${model}, attempt ${attempt + 1}`);
-          const body = await response.text();
-          console.log("429 body:", body);
-          continue;
-        }
-
-        if (!response.ok) {
-          lastError = `API error ${response.status}`;
-          const body = await response.text();
-          console.error(`Gemini error (${model}):`, response.status, body);
-          continue;
-        }
-
-        const aiData = await response.json();
-        const content = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          console.error("No JSON found in AI response:", content);
-          lastError = "Invalid AI response";
-          continue;
-        }
-
-        const config = JSON.parse(jsonMatch[0]);
-        return new Response(JSON.stringify({ config }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (!response.ok) {
+      const body = await response.text();
+      console.error("AI Gateway error:", response.status, body);
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
-    // All attempts failed
-    return new Response(JSON.stringify({ error: `Não foi possível gerar sugestão: ${lastError}. Tente novamente em instantes.` }), {
-      status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const aiData = await response.json();
+    const content = aiData.choices?.[0]?.message?.content || "";
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("No JSON found in AI response:", content);
+      throw new Error("Invalid AI response format");
+    }
+
+    const config = JSON.parse(jsonMatch[0]);
+    console.log("Successfully generated pad config");
+
+    return new Response(JSON.stringify({ config }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("suggest-pad-config error:", e);
