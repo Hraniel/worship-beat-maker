@@ -42,9 +42,9 @@ const PanControl: React.FC<PanControlProps> = ({ label = 'Pan', pan, onPanChange
       </span>
 
       <ZoomPopup visible={dragging}>
-        <div className="relative w-20 h-20 rounded-full border-2 border-orange-500/40 bg-muted/50">
+        <div className="relative w-20 h-20 rounded-full border-2 border-border bg-muted/50">
           <div
-            className="absolute top-2 left-1/2 w-1 h-6 bg-orange-500 rounded-full origin-bottom"
+            className="absolute top-2 left-1/2 w-1 h-6 bg-foreground rounded-full origin-bottom"
             style={{
               transform: `translateX(-50%) rotate(${angle}deg)`,
               transformOrigin: '50% 100%',
