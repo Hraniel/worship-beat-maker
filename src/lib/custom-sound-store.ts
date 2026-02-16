@@ -1,28 +1,11 @@
 // IndexedDB storage for custom audio samples
 
-const DB_NAME = 'drum-pads-worship';
-const DB_VERSION = 2;
+import { getDB } from './db';
+
 const STORE_NAME = 'custom-sounds';
 
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-      if (!db.objectStoreNames.contains('ambient-pads')) {
-        db.createObjectStore('ambient-pads');
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
 export async function saveCustomSound(padId: string, arrayBuffer: ArrayBuffer, fileName: string): Promise<void> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).put({ buffer: arrayBuffer, fileName }, padId);
@@ -32,7 +15,7 @@ export async function saveCustomSound(padId: string, arrayBuffer: ArrayBuffer, f
 }
 
 export async function getCustomSound(padId: string): Promise<{ buffer: ArrayBuffer; fileName: string } | null> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get(padId);
@@ -42,7 +25,7 @@ export async function getCustomSound(padId: string): Promise<{ buffer: ArrayBuff
 }
 
 export async function deleteCustomSound(padId: string): Promise<void> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).delete(padId);
@@ -52,7 +35,7 @@ export async function deleteCustomSound(padId: string): Promise<void> {
 }
 
 export async function getAllCustomSoundIds(): Promise<string[]> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).getAllKeys();
@@ -67,9 +50,8 @@ function songKey(songId: string, padId: string): string {
   return `song:${songId}:${padId}`;
 }
 
-/** Save all current global custom sounds as song-scoped copies */
 export async function saveCustomSoundsForSong(songId: string, padIds: string[]): Promise<void> {
-  const db = await openDB();
+  const db = await getDB();
   for (const padId of padIds) {
     const data = await getCustomSound(padId);
     if (data) {
@@ -83,9 +65,8 @@ export async function saveCustomSoundsForSong(songId: string, padIds: string[]):
   }
 }
 
-/** Load song-scoped custom sounds back into global keys and audio engine */
 export async function loadCustomSoundsForSong(songId: string, padIds: string[]): Promise<Record<string, { buffer: ArrayBuffer; fileName: string }>> {
-  const db = await openDB();
+  const db = await getDB();
   const result: Record<string, { buffer: ArrayBuffer; fileName: string }> = {};
   for (const padId of padIds) {
     const data = await new Promise<{ buffer: ArrayBuffer; fileName: string } | null>((resolve, reject) => {
@@ -95,7 +76,6 @@ export async function loadCustomSoundsForSong(songId: string, padIds: string[]):
       req.onerror = () => reject(req.error);
     });
     if (data) {
-      // Also save to global key so audio engine can use it
       await saveCustomSound(padId, data.buffer, data.fileName);
       result[padId] = data;
     }
@@ -103,9 +83,8 @@ export async function loadCustomSoundsForSong(songId: string, padIds: string[]):
   return result;
 }
 
-/** Delete song-scoped custom sounds */
 export async function deleteCustomSoundsForSong(songId: string): Promise<void> {
-  const db = await openDB();
+  const db = await getDB();
   const allKeys = await new Promise<string[]>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).getAllKeys();

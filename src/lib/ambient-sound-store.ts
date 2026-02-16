@@ -1,28 +1,11 @@
 // IndexedDB storage for custom ambient pad samples (one MP3 per note)
 
-const DB_NAME = 'drum-pads-worship';
-const DB_VERSION = 2;
+import { getDB } from './db';
+
 const STORE_NAME = 'ambient-pads';
 
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains('custom-sounds')) {
-        db.createObjectStore('custom-sounds');
-      }
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
 export async function saveAmbientSound(note: string, arrayBuffer: ArrayBuffer, fileName: string): Promise<void> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).put({ buffer: arrayBuffer, fileName }, note);
@@ -32,7 +15,7 @@ export async function saveAmbientSound(note: string, arrayBuffer: ArrayBuffer, f
 }
 
 export async function getAmbientSound(note: string): Promise<{ buffer: ArrayBuffer; fileName: string } | null> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).get(note);
@@ -42,7 +25,7 @@ export async function getAmbientSound(note: string): Promise<{ buffer: ArrayBuff
 }
 
 export async function deleteAmbientSound(note: string): Promise<void> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).delete(note);
@@ -52,7 +35,7 @@ export async function deleteAmbientSound(note: string): Promise<void> {
 }
 
 export async function getAllAmbientSoundNotes(): Promise<string[]> {
-  const db = await openDB();
+  const db = await getDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
     const req = tx.objectStore(STORE_NAME).getAllKeys();
