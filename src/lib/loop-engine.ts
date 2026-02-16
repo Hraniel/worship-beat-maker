@@ -16,6 +16,7 @@ let activeLoops: Map<string, ActiveLoop> = new Map();
 let currentSubdivision = 0;
 let timerRef: number | null = null;
 let onSubdivisionCallback: ((sub: number) => void) | null = null;
+let lastTickTime = 0; // timestamp of last tick
 
 let currentBpm = 120;
 let beatsPerBar = 4;
@@ -105,6 +106,8 @@ export function getActiveLoopIds(): string[] {
 // --- Unified tick ---
 
 function tick() {
+  lastTickTime = performance.now();
+
   // Fire loop sounds for this subdivision
   for (const [, loop] of activeLoops) {
     if (!loop.pad.loopSteps) continue;
@@ -117,7 +120,6 @@ function tick() {
 
   // Fire metronome click on quarter-note subdivisions
   if (metronomeEnabled) {
-    // Quarter notes fall on subdivisions: 0, 4, 8, 12 (in 4/4)
     const subsPerBeat = SUBDIVISIONS_PER_BAR / beatsPerBar;
     if (currentSubdivision % subsPerBeat === 0) {
       const beatIndex = currentSubdivision / subsPerBeat;
@@ -164,4 +166,21 @@ export function stopAllLoops() {
   if (!metronomeEnabled) {
     stopEngine();
   }
+}
+
+/**
+ * Returns the delay in seconds to quantize a pad hit to the nearest 16th-note subdivision.
+ * If the engine is not running, returns 0 (play immediately).
+ */
+export function getQuantizeDelay(): number {
+  if (!isRunning) return 0;
+  const subdivisionMs = (60 / currentBpm / 4) * 1000;
+  const elapsed = performance.now() - lastTickTime;
+  const remaining = subdivisionMs - elapsed;
+  // If we're within 40% of the current tick, snap back (no delay)
+  // Otherwise snap forward to the next tick
+  if (elapsed < subdivisionMs * 0.4) {
+    return 0;
+  }
+  return Math.max(0, remaining / 1000); // convert to seconds
 }
