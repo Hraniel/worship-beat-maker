@@ -62,6 +62,7 @@ const Index = () => {
   const [metronomeOpen, setMetronomeOpen] = useState(true);
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [spotifyTrackName, setSpotifyTrackName] = useState<string | null>(null);
+  const [spotifyKey, setSpotifyKey] = useState<string | null>(null);
   const [padSize, setPadSize] = useState<PadSize>(loadPadSize);
   const [padEffects, setPadEffects] = useState<Record<string, PadEffects>>(loadAllEffects);
   const [padNames, setPadNames] = useState<Record<string, string>>(() => {
@@ -286,8 +287,9 @@ const Index = () => {
   }, []);
 
   const handleApplySpotifyConfig = useCallback((config: any) => {
-    // Save track name
+    // Save track name and key
     if (config.trackName) setSpotifyTrackName(config.trackName);
+    if (config.key) setSpotifyKey(config.key);
     // Apply BPM
     if (config.bpm) setBpm(Math.round(config.bpm));
     // Apply time signature
@@ -648,6 +650,9 @@ const Index = () => {
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
                 <span className="text-xs text-muted-foreground">BPM</span>
+                {spotifyKey && (
+                  <span className="text-xs font-semibold text-primary">· Tom {spotifyKey}</span>
+                )}
                 <span className="text-xs text-muted-foreground">· {timeSignature}</span>
               </div>
               <div className="flex items-center gap-1">
