@@ -53,6 +53,7 @@ const PanKnob: React.FC<{ pan: number; onChange: (p: number) => void }> = ({ pan
           window.addEventListener('pointermove', move);
           window.addEventListener('pointerup', up);
         }}
+        onDoubleClick={() => onChange(0)}
         title={`Pan: ${displayValue}`}
       >
         <div
