@@ -746,8 +746,10 @@ const Index = () => {
       </div>
       }
 
+      {/* Main content area - side by side on lg+ */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Pad Grid - Main area */}
-      <main className="flex-1 flex items-center justify-center overflow-hidden">
+      <main className="flex-1 flex items-center justify-center overflow-hidden min-h-0">
         <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
         <PadGrid
           isMasterTier={tier === 'master'}
@@ -775,9 +777,8 @@ const Index = () => {
         </div>
       </main>
 
-      {/* Bottom controls */}
-      <footer className={`shrink-0 border-t border-border bg-card/50 backdrop-blur space-y-1.5 ${focusMode ? 'p-1.5 max-h-[45vh] overflow-y-auto focus-footer' : 'p-2 sm:p-3 space-y-2'}`}>
-        <div className="max-w-[600px] mx-auto space-y-2">
+      <footer className={`shrink-0 lg:w-[340px] xl:w-[380px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1.5 max-h-[45vh] lg:max-h-none overflow-y-auto focus-footer' : 'p-2 sm:p-3 lg:p-4'}`}>
+        <div className="max-w-[600px] lg:max-w-none mx-auto space-y-2">
           {/* Focus mode: show exit button + song name */}
           {focusMode &&
           <div className="flex items-center justify-between">
@@ -873,7 +874,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
-
+      </div>
       {/* Save to repertoire prompt */}
       {showSavePrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4">
