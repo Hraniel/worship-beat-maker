@@ -10,8 +10,8 @@ serve(async (req) => {
 
   try {
     const { trackName, artist, features, analysis } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get("GOOGLE_GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) throw new Error("GOOGLE_GEMINI_API_KEY not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const systemPrompt = `Você é um especialista em produção musical e bateria para worship/louvor.
 Dado os dados de uma música do Spotify (incluindo análise de áudio real), sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
@@ -157,64 +157,51 @@ Use estes valores para calibrar EQ e reverb dos pads.`;
 
     userPrompt += `\n\nCom base em TODOS estes dados reais, sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música.`;
 
-    // Try with retry and backoff
-    const models = ["gemini-2.0-flash", "gemini-2.0-flash-lite"];
-    let lastError = "";
+    // Call Lovable AI Gateway
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+      }),
+    });
 
-    for (const model of models) {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
-
-        console.log(`Trying model ${model}, attempt ${attempt + 1}`);
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                { role: "user", parts: [{ text: systemPrompt + "\n\n" + userPrompt }] },
-              ],
-              generationConfig: { temperature: 0.7 },
-            }),
-          }
-        );
-
-        if (response.status === 429) {
-          lastError = "Rate limit";
-          console.log(`Rate limited on ${model}, attempt ${attempt + 1}`);
-          const body = await response.text();
-          console.log("429 body:", body);
-          continue;
-        }
-
-        if (!response.ok) {
-          lastError = `API error ${response.status}`;
-          const body = await response.text();
-          console.error(`Gemini error (${model}):`, response.status, body);
-          continue;
-        }
-
-        const aiData = await response.json();
-        const content = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-          console.error("No JSON found in AI response:", content);
-          lastError = "Invalid AI response";
-          continue;
-        }
-
-        const config = JSON.parse(jsonMatch[0]);
-        return new Response(JSON.stringify({ config }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    if (response.status === 429) {
+      return new Response(JSON.stringify({ error: "Rate limit excedido. Tente novamente em instantes." }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (response.status === 402) {
+      return new Response(JSON.stringify({ error: "Créditos insuficientes. Adicione créditos ao workspace." }), {
+        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!response.ok) {
+      const body = await response.text();
+      console.error("AI gateway error:", response.status, body);
+      throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    // All attempts failed
-    return new Response(JSON.stringify({ error: `Não foi possível gerar sugestão: ${lastError}. Tente novamente em instantes.` }), {
-      status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const aiData = await response.json();
+    const content = aiData.choices?.[0]?.message?.content || "";
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error("No JSON found in AI response:", content);
+      throw new Error("Invalid AI response");
+    }
+
+    const config = JSON.parse(jsonMatch[0]);
+    return new Response(JSON.stringify({ config }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     console.error("suggest-pad-config error:", e);
