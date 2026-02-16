@@ -57,8 +57,8 @@ function getAmbientPanner(): StereoPannerNode {
   return ambientPanner;
 }
 
-const ATTACK = 3.0;
-const RELEASE = 4.0;
+const ATTACK = 2.0;
+const RELEASE = 1.5;
 
 export function setAmbientVolume(vol: number) {
   ambientVolume = vol;
