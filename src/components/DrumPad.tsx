@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import ZoomPopup from './ZoomPopup';
 import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
-import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
+import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette, Upload } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
@@ -36,11 +36,12 @@ interface DrumPadProps {
   onRename?: (padId: string, name: string) => void;
   customColor?: PadColor;
   onColorChange?: (padId: string, color: PadColor) => void;
+  customSoundsCount?: number;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
-  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled,
+  isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled, customSoundsCount = 0,
   onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange
 }) => {
   const [isActive, setIsActive] = useState(false);
@@ -52,6 +53,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const [renameValue, setRenameValue] = useState('');
   const timeoutRef = useRef<number | null>(null);
   const longPressRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
   const { tier, tierConfig } = useSubscription();
 
@@ -341,6 +343,52 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 color={customColor || { hue: 0, saturation: 75, lightness: 55, opacity: 1 }}
                 onChange={(c) => onColorChange?.(pad.id, c)}
               />
+            )}
+
+            {/* Import sound - not for loop pads */}
+            {!pad.isLoop && (
+              <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      onImportSound?.(pad.id, file);
+                      setShowMenu(false);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+                {(() => {
+                  const maxImports = tierConfig.maxImports;
+                  const atLimit = !hasCustomSound && customSoundsCount >= maxImports;
+                  if (atLimit) {
+                    return (
+                      <button
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
+                        onClick={() => toast.info(`Limite de ${maxImports} importações atingido`, { description: 'Remova um som customizado ou faça upgrade.' })}
+                      >
+                        <Lock className="h-3.5 w-3.5" />
+                        Importar som
+                        <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
+                      </button>
+                    );
+                  }
+                  return (
+                    <button
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      Importar som
+                      <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
+                    </button>
+                  );
+                })()}
+              </>
             )}
 
             {hasCustomSound && (
