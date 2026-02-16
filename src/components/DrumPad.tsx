@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { playSound, getPadPanner, unlockAudioContext, isAudioUnlocked, getAudioContext } from '@/lib/audio-engine';
+import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
 import { Upload, X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -101,32 +101,14 @@ const DrumPad: React.FC<DrumPadProps> = ({
     }
   }, [pad, volume, onToggleLoop, isLocked, goToPricing, isMaster, effects]);
 
-  // Track if sound was attempted before audio was unlocked
-  const needsRetriggerRef = useRef(false);
-  const debugShownRef = useRef(false);
-
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
     unlockAudioContext();
-    
-    // Temporary debug toast — remove after confirming fix
-    if (!debugShownRef.current) {
-      debugShownRef.current = true;
-      try {
-        const ctx = getAudioContext();
-        toast(`🔊 Audio: ${ctx.state} | unlocked: ${isAudioUnlocked()} | type: ${e.pointerType}`);
-      } catch (err) {
-        toast(`❌ Audio error: ${err}`);
-      }
-    }
-    
     if (editMode) {
       setShowMenu(true);
       return;
     }
-    // Play sound IMMEDIATELY on touch for minimum latency
     trigger();
-    needsRetriggerRef.current = !isAudioUnlocked();
     if (!isLocked) {
       longPressRef.current = window.setTimeout(() => {
         setShowMenu(true);
@@ -140,13 +122,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
       clearTimeout(longPressRef.current);
       longPressRef.current = null;
     }
-    // iOS unlocks audio on pointerup/touchend — retry sound if first attempt failed
-    unlockAudioContext();
-    if (needsRetriggerRef.current && !editMode) {
-      needsRetriggerRef.current = false;
-      trigger();
-    }
-  }, [trigger, editMode]);
+  }, []);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
