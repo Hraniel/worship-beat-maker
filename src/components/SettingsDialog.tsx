@@ -172,7 +172,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               />
               <StereoOption
                 id="ambient"
-                label="Ambient Pads"
+                label="Continuous Pads"
                 mode={settings.ambientStereo}
                 side={settings.ambientSide}
                 onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}

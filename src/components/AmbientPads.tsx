@@ -151,7 +151,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
         onClick={() => setExpanded((p) => !p)}
         className="flex items-center justify-between w-full px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">Ambient Pads</span>
+          <span className="text-sm font-semibold text-foreground">Continuous Pads</span>
           {hasActive &&
             <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
               {[...activeNotes][0]} ativa

@@ -22,7 +22,7 @@ const features = [
   { icon: Layers, title: 'Setlists Organizadas', desc: 'Organize suas músicas em setlists com configurações salvas automaticamente.' },
   { icon: Volume2, title: 'Controle Total', desc: 'Volume individual, pan estéreo e equalização por pad.' },
   { icon: Sparkles, title: 'Spotify AI', desc: 'Configure pads automaticamente com base na música do Spotify.' },
-  { icon: Headphones, title: 'Pads Ambiente', desc: 'Texturas sonoras ambiente para criar atmosferas imersivas.' },
+  { icon: Headphones, title: 'Continuous Pads', desc: 'Texturas sonoras contínuas para criar atmosferas imersivas.' },
   { icon: Zap, title: 'Loop Engine', desc: 'Sistema de loops sincronizado com metrônomo e BPM.' },
 ];
 
@@ -40,7 +40,7 @@ const plans = [
       { text: 'Continuous Pads', included: true },
       { text: 'Pads ilimitados', included: false },
       { text: 'Volume individual', included: false },
-      { text: 'Pads ambiente', included: false },
+      { text: 'Continuous Pads', included: false },
       { text: 'Equalização', included: false },
       { text: 'Spotify AI', included: false },
     ],
@@ -57,7 +57,7 @@ const plans = [
       { text: 'Metrônomo e loops', included: true },
       { text: 'Continuous Pads', included: true },
       { text: 'Volume individual', included: true },
-      { text: 'Pads ambiente', included: true },
+      { text: 'Continuous Pads', included: true },
       { text: 'Equalização', included: false },
       { text: 'Reverb e Delay', included: false },
       { text: 'Spotify AI', included: false },
