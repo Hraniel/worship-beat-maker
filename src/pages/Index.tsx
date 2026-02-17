@@ -96,6 +96,7 @@ const Index = () => {
   const [masterPanState, setMasterPanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [footerPage, setFooterPage] = useState(0);
   const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   
@@ -1009,7 +1010,16 @@ const Index = () => {
         </div>
 
         {/* Mobile: vertical snap scroll between mixer and metronome */}
-        <div className="lg:hidden h-full overflow-y-auto snap-y snap-mandatory" style={{ scrollSnapType: 'y mandatory' }}>
+        <div className="lg:hidden h-full relative">
+          <div
+            className="h-full overflow-y-auto snap-y snap-mandatory"
+            style={{ scrollSnapType: 'y mandatory' }}
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              const page = Math.round(el.scrollTop / el.clientHeight);
+              setFooterPage(page);
+            }}
+          >
           {/* Focus mode bar */}
           {focusMode &&
           <div className="flex items-center justify-center gap-2 px-2 py-1">
@@ -1070,6 +1080,26 @@ const Index = () => {
               </div>
             </div>
           </div>
+          </div>
+
+          {/* Scroll indicator dots + chevron */}
+          {!focusMode && (
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 pointer-events-none z-10">
+              <div className="flex gap-1.5">
+                {[0, 1].map((i) => (
+                  <div
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${
+                      footerPage === i ? 'bg-primary' : 'bg-muted-foreground/30'
+                    }`}
+                  />
+                ))}
+              </div>
+              {footerPage === 0 && (
+                <ChevronDown className="h-3 w-3 text-muted-foreground animate-bounce" />
+              )}
+            </div>
+          )}
         </div>
       </footer>
       )}
