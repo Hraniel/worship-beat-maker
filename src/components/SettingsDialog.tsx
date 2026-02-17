@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Volume2, Headphones, Crown, HelpCircle } from 'lucide-react';
+import { Volume2, Headphones, Crown, HelpCircle, Store } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
 
@@ -150,6 +150,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               <Headphones className="h-3.5 w-3.5" />
               Áudio
             </TabsTrigger>
+            <TabsTrigger value="store" className="flex-1 gap-1.5 text-xs">
+              <Store className="h-3.5 w-3.5" />
+              Loja
+            </TabsTrigger>
             <TabsTrigger value="plans" className="flex-1 gap-1.5 text-xs">
               <Crown className="h-3.5 w-3.5" />
               Planos
@@ -186,6 +190,25 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                 onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
                 onSideChange={(v) => update({ metronomeSide: v })}
               />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="store" className="mt-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Store className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Loja de Pads</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Descubra novos sons, packs e texturas para elevar seu louvor.
+              </p>
+              <button
+                onClick={() => { onOpenChange(false); navigate('/dashboard'); }}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+              >
+                <Store className="h-4 w-4" />
+                Acessar Loja
+              </button>
             </div>
           </TabsContent>
 
