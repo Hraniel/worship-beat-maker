@@ -53,8 +53,8 @@ const PadGrid: React.FC<PadGridProps> = ({
 
   return (
     <div
-      className={`grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 p-2 sm:p-4 w-full mx-auto transition-all duration-200 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
-      style={focusMode ? { maxWidth: '100%' } : { maxWidth: `${gridMaxWidth}px` }}
+      className={`grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 p-2 sm:p-4 w-full max-w-full mx-auto transition-all duration-200 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
+      style={focusMode ? { maxWidth: '100%' } : { maxWidth: `min(${gridMaxWidth}px, calc(100vw - 1rem))` }}
     >
       {visiblePads.map((pad, index) => (
         <DrumPad
