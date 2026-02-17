@@ -202,7 +202,6 @@ const MOBILE_PAGE_SIZE = 4;
 const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState(0);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fixedStart = channels.slice(0, 2);
@@ -217,17 +216,29 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
     setPage(newPage);
   }, [page]);
 
-  // Touch swipe support for page navigation
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  // Swipe detection on paginated container
+  const swipeRef = useRef<{ x: number; y: number; decided: boolean; swiping: boolean } | null>(null);
+
+  const handleSwipePointerDown = useCallback((e: React.PointerEvent) => {
+    swipeRef.current = { x: e.clientX, y: e.clientY, decided: false, swiping: false };
   }, []);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return;
-    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
-    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
-    touchStartRef.current = null;
-    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+  const handleSwipePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!swipeRef.current) return;
+    const dx = e.clientX - swipeRef.current.x;
+    const dy = e.clientY - swipeRef.current.y;
+    if (!swipeRef.current.decided && (Math.abs(dx) > 15 || Math.abs(dy) > 15)) {
+      swipeRef.current.decided = true;
+      swipeRef.current.swiping = Math.abs(dx) > Math.abs(dy);
+    }
+  }, []);
+
+  const handleSwipePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!swipeRef.current) return;
+    const dx = e.clientX - swipeRef.current.x;
+    const isSwiping = swipeRef.current.swiping;
+    swipeRef.current = null;
+    if (!isSwiping || Math.abs(dx) < 40) return;
     if (dx < 0 && page < totalPages - 1) goToPage(page + 1);
     else if (dx > 0 && page > 0) goToPage(page - 1);
   }, [page, totalPages, goToPage]);
@@ -239,7 +250,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
   };
 
   return (
-    <div className="flex flex-col gap-1" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div className="flex flex-col gap-1">
       <div ref={containerRef} className="flex items-end gap-1 px-2 py-2 bg-card rounded-lg border border-border">
         {/* Fixed: MET + PAD */}
         {fixedStart.map((ch) => (
@@ -252,7 +263,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
         <div className="w-px self-stretch bg-border mx-0.5" />
 
         {/* Paginated pad channels with slide animation */}
-        <div className="flex-[4] min-w-0 overflow-hidden relative">
+        <div className="flex-[4] min-w-0 overflow-hidden relative" onPointerDown={handleSwipePointerDown} onPointerMove={handleSwipePointerMove} onPointerUp={handleSwipePointerUp}>
           <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
               key={page}
