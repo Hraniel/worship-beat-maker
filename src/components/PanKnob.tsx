@@ -28,7 +28,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange, disabled = false }) =>
   return (
     <div className="flex flex-col items-center gap-0.5 select-none">
       <div
-        className={`relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border-[1.5px] border-black/60 bg-orange-400/80 touch-none ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+        className={`relative w-8 h-8 landscape:w-12 landscape:h-12 rounded-full border-[1.5px] border-border bg-gradient-to-b from-muted-foreground/50 to-muted-foreground/30 touch-none ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
         onPointerDown={(e) => {
           if (disabled) {
             e.preventDefault();
@@ -79,7 +79,7 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange, disabled = false }) =>
         title={disabled ? 'Pan bloqueado (Mono)' : `Pan: ${displayValue}`}
       >
         <div
-          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-black rounded-full origin-bottom"
+          className="absolute top-1 left-1/2 w-0.5 h-2.5 landscape:h-4 bg-foreground rounded-full origin-bottom"
           style={{
             transform: `translateX(-50%) rotate(${angle}deg)`,
             transformOrigin: '50% 100%',
@@ -100,9 +100,9 @@ const PanKnob: React.FC<PanKnobProps> = ({ pan, onChange, disabled = false }) =>
               top: '10px',
             }}
           />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary" />
         </div>
-        <span className="text-sm font-bold text-orange-400 tabular-nums">{displayValue}</span>
+        <span className="text-sm font-bold text-primary tabular-nums">{displayValue}</span>
       </ZoomPopup>
     </div>
   );
