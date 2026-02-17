@@ -13,8 +13,6 @@ function getEmitter() {
   return emitPadHit;
 }
 
-const SUBDIVISIONS_PER_BAR = 16;
-
 interface ActiveLoop {
   pad: PadSound;
   volume: number;
@@ -29,6 +27,17 @@ let lastTickTime = 0; // timestamp of last tick
 
 let currentBpm = 120;
 let beatsPerBar = 4;
+let beatUnit = 4; // denominator of time signature
+
+function getSubdivisionsPerBar(): number {
+  // 4/4 -> 16 (4 beats x 4 subdivisions), 3/4 -> 12, 6/8 -> 12 (6 beats x 2)
+  const subsPerBeat = beatUnit === 8 ? 2 : 4;
+  return beatsPerBar * subsPerBeat;
+}
+
+function getSubsPerBeat(): number {
+  return beatUnit === 8 ? 2 : 4;
+}
 
 // Metronome state (driven by the same clock)
 let metronomeEnabled = false;
@@ -45,7 +54,13 @@ export function setLoopBpm(bpm: number) {
 }
 
 export function setLoopTimeSignature(ts: string) {
-  beatsPerBar = parseInt(ts.split('/')[0]);
+  const parts = ts.split('/');
+  beatsPerBar = parseInt(parts[0]);
+  beatUnit = parseInt(parts[1]) || 4;
+  if (isRunning) {
+    stopEngine();
+    startEngine();
+  }
 }
 
 export function setOnSubdivision(cb: ((sub: number) => void) | null) {
@@ -121,10 +136,12 @@ export function getActiveLoopIds(): string[] {
 function tick() {
   lastTickTime = performance.now();
 
+  const SUBS = getSubdivisionsPerBar();
+
   // Fire loop sounds for this subdivision
   for (const [, loop] of activeLoops) {
     if (!loop.pad.loopSteps) continue;
-    const totalSubs = SUBDIVISIONS_PER_BAR * (loop.pad.loopBars || 1);
+    const totalSubs = SUBS * (loop.pad.loopBars || 1);
     const loopPos = currentSubdivision % totalSubs;
     for (const [sub, soundId] of loop.pad.loopSteps) {
       if (sub === loopPos) {
@@ -135,10 +152,10 @@ function tick() {
     }
   }
 
-  // Fire metronome click on quarter-note subdivisions
+  // Fire metronome click on beat subdivisions
   if (metronomeEnabled) {
-    const subsPerBeat = SUBDIVISIONS_PER_BAR / beatsPerBar;
-    const barPos = currentSubdivision % SUBDIVISIONS_PER_BAR;
+    const subsPerBeat = getSubsPerBeat();
+    const barPos = currentSubdivision % SUBS;
     if (barPos % subsPerBeat === 0) {
       const beatIndex = barPos / subsPerBeat;
       playMetronomeClick(beatIndex === 0, metronomeVolume);
@@ -147,12 +164,12 @@ function tick() {
     }
   }
 
-  onSubdivisionCallback?.(currentSubdivision % SUBDIVISIONS_PER_BAR);
+  onSubdivisionCallback?.(currentSubdivision % SUBS);
 
   // Advance – use max loop length across all active loops
-  let maxSubs = SUBDIVISIONS_PER_BAR;
+  let maxSubs = SUBS;
   for (const [, loop] of activeLoops) {
-    const s = SUBDIVISIONS_PER_BAR * (loop.pad.loopBars || 1);
+    const s = SUBS * (loop.pad.loopBars || 1);
     if (s > maxSubs) maxSubs = s;
   }
   currentSubdivision = (currentSubdivision + 1) % maxSubs;

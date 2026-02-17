@@ -20,7 +20,25 @@ const Metronome: React.FC<MetronomeProps> = ({
   bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat
 }) => {
   const [currentBeat, setCurrentBeat] = React.useState(0);
+  const [localBpm, setLocalBpm] = React.useState(bpm);
+  const debounceRef = React.useRef<number | null>(null);
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
+
+  // Sync localBpm when bpm changes externally
+  React.useEffect(() => { setLocalBpm(bpm); }, [bpm]);
+
+  const handleBpmSlider = React.useCallback((val: number) => {
+    setLocalBpm(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      onBpmChange(val);
+    }, 400);
+  }, [onBpmChange]);
+
+  const handleBpmButton = React.useCallback((val: number) => {
+    setLocalBpm(val);
+    onBpmChange(val);
+  }, [onBpmChange]);
 
   useEffect(() => {
     const handler = (beat: number) => {
@@ -47,18 +65,18 @@ const Metronome: React.FC<MetronomeProps> = ({
     <div className="flex flex-col gap-2 px-3 py-2">
       {/* BPM + slider row */}
       <div className="flex items-center gap-1.5">
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onBpmChange(Math.max(40, bpm - 1))}>
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleBpmButton(Math.max(40, localBpm - 1))}>
           <Minus className="h-3 w-3" />
         </Button>
         <Slider
-          value={[bpm]}
-          onValueChange={([v]) => onBpmChange(v)}
+          value={[localBpm]}
+          onValueChange={([v]) => handleBpmSlider(v)}
           min={40}
           max={240}
           step={1}
           className="flex-1"
         />
-        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onBpmChange(Math.min(240, bpm + 1))}>
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleBpmButton(Math.min(240, localBpm + 1))}>
           <Plus className="h-3 w-3" />
         </Button>
       </div>

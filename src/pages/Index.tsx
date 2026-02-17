@@ -408,6 +408,45 @@ const Index = () => {
     }
   }, []);
 
+  const handleResetPad = useCallback((padId: string) => {
+    // Reset volume
+    setPadVolumes((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-volumes', JSON.stringify(next)); return next; });
+    // Reset pan
+    setPadPans((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-pad-pans', JSON.stringify(next)); setPadPan(padId, 0); return next; });
+    // Reset effects
+    setPadEffects((prev) => { const next = { ...prev }; delete next[padId]; saveAllEffects(next); return next; });
+    // Reset name
+    setPadNames((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-pad-names', JSON.stringify(next)); return next; });
+    // Reset color
+    setPadColors((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-pad-colors', JSON.stringify(next)); return next; });
+    // Remove custom sound
+    removeCustomBuffer(padId);
+    deleteCustomSound(padId);
+    setCustomSounds((prev) => { const next = { ...prev }; delete next[padId]; saveCustomNames(next); return next; });
+    toast.success('Pad redefinido!');
+  }, []);
+
+  const handleResetAllPads = useCallback(() => {
+    defaultPads.forEach(p => {
+      removeCustomBuffer(p.id);
+      deleteCustomSound(p.id);
+      setPadPan(p.id, 0);
+    });
+    setPadVolumes({});
+    localStorage.setItem('drum-pads-volumes', '{}');
+    setPadPans({});
+    localStorage.setItem('drum-pads-pad-pans', '{}');
+    setPadEffects({});
+    saveAllEffects({});
+    setPadNames({});
+    localStorage.setItem('drum-pads-pad-names', '{}');
+    setPadColors({});
+    localStorage.setItem('drum-pads-pad-colors', '{}');
+    setCustomSounds({});
+    saveCustomNames({});
+    toast.success('Todos os pads redefinidos!');
+  }, []);
+
   const handleApplySpotifyConfig = useCallback((config: any) => {
     // Save track name and key
     if (config.trackName) {
@@ -788,6 +827,8 @@ const Index = () => {
                 editMode={editMode}
                 panDisabled={audioSettings.padsStereo === 'mono'}
                 disabled={!currentSongId}
+                onResetPad={handleResetPad}
+                onResetAllPads={handleResetAllPads}
               />
             </div>
           }
