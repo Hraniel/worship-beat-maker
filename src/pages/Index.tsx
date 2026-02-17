@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button';
 import PanControl from '@/components/PanControl';
 import TutorialGuide from '@/components/TutorialGuide';
 import SettingsDialog, { loadAudioSettings, type AudioSettings } from '@/components/SettingsDialog';
+import UpdateBanner from '@/components/UpdateBanner';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
@@ -631,6 +632,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col h-[100dvh] bg-background overflow-hidden" onPointerDown={initAudio}>
+      <UpdateBanner show={needRefresh} onUpdate={() => updateServiceWorker(true)} />
       {/* Header */}
       {!focusMode ? (
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0">
@@ -686,19 +688,11 @@ const Index = () => {
                 className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors relative"
                 title="Menu">
                 <Menu className="h-4 w-4" />
-                {needRefresh && (
-                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
-                )}
               </button>
               {mobileMenuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => { setMobileMenuOpen(false); }} />
                   <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]" style={{ backgroundColor: 'hsl(var(--card))' }}>
-                    {needRefresh && (
-                      <button onClick={() => { updateServiceWorker(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-primary font-medium hover:bg-muted transition-colors">
-                        <Bell className="h-4 w-4 text-primary animate-bounce" /> Nova versão disponível!
-                      </button>
-                    )}
                     <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                     </button>
