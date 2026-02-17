@@ -19,7 +19,7 @@ const features: { label: string; free: boolean; pro: boolean; master: boolean }[
   { label: 'Pads ambiente', free: false, pro: true, master: true },
   { label: 'Equalizador (grave/médio/agudo)', free: false, pro: false, master: true },
   { label: 'Reverb e Delay', free: false, pro: false, master: true },
-  { label: 'Spotify AI', free: false, pro: false, master: true },
+  { label: 'Spotify AI - Pads pré definidos', free: false, pro: false, master: true },
 ];
 
 const Pricing = () => {
