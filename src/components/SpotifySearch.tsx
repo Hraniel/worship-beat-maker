@@ -301,7 +301,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
             Buscar no Spotify
           </SheetTitle>
           <SheetDescription>
-            Busque uma música e a IA analisa o áudio real para sugerir efeitos (EQ, reverb, delay, pan) nos pads
+            Busque uma música e a IA analisa o áudio real para sugerir efeitos (EQ, reverb, delay) nos pads
           </SheetDescription>
         </SheetHeader>
 
