@@ -1,28 +1,35 @@
 
-
-# Efeito Visual Branco nos Faders
+# Efeito Visual no Metronomo/Continuous + Animacao de Scroll na Paginacao
 
 ## Resumo
-Alterar o efeito visual (flash) dos faders de verde para branco, mantendo o comportamento de reagir ao som tocado em cada canal.
 
-## Mudancas
-
-### MixerStrip.tsx
-
-1. **VuTicks** -- Mudar as cores das linhas iluminadas de verde/amarelo/vermelho para branco com diferentes opacidades. Quando `isLit`, usar `rgba(255,255,255,1)` em vez das cores HSL atuais. O `boxShadow` tambem sera branco.
-
-2. **Fader fill** -- Mudar a cor de preenchimento do fader de `hsl(140 60% 45%)` (verde) para branco (`hsl(0 0% 100%)`). A opacidade ja e controlada pelo flash.
-
-3. **Fader thumb glow** -- Mudar o brilho do thumb de verde para branco quando ativo (`hsl(0 0% 100%)` com opacidade variavel).
-
-4. **boxShadow** -- Todos os efeitos de glow passam a usar `hsl(0 0% 100% / opacity)` em vez de verde.
+1. Adicionar emissao de `emitPadHit('ambient')` quando uma nota do Continuous Pad e tocada, para que o fader do Continuous reaja visualmente ao som.
+2. O fader do Metronomo ja possui o efeito visual (o loop-engine ja chama `emitPadHit('metronome')` a cada beat) -- verificar se esta funcionando corretamente.
+3. Substituir a paginacao de corte abrupto dos faders por uma animacao de transicao (slide/scroll suave) ao mudar de pagina.
 
 ## Detalhes Tecnicos
 
-Linhas afetadas no `MixerStrip.tsx`:
+### 1. Ambient/Continuous Pad -- Emitir flash no fader
 
-- `VuTicks`: linhas ~78-90 -- substituir as 3 cores condicionais (vermelho, amarelo, verde) por branco com opacidades decrescentes (1.0, 0.8, 0.6). Shadow tambem branco.
-- `Fader fill`: linha ~136 -- `backgroundColor: 'hsl(0 0% 100%)'`
-- `Fader fill shadow`: linha ~138 -- shadow branco
-- `Fader thumb`: linhas ~142-147 -- cor e glow brancos quando flash ativo
+**Arquivo: `src/components/AmbientPads.tsx`**
+- Importar `emitPadHit` de `MixerStrip`
+- Na funcao `toggleAmbientNote` (ao ativar uma nota), chamar `emitPadHit('ambient')`
+- Isso fara com que o fader do Continuous Pad pisque em branco quando uma nota e ativada
 
+### 2. Animacao de scroll na paginacao dos faders
+
+**Arquivo: `src/components/MixerStrip.tsx`**
+- Envolver a area dos pads paginados em um container com `overflow-hidden`
+- Ao mudar de pagina, aplicar uma animacao CSS de transicao (translateX) nos faders que entram e saem
+- Usar uma `key` baseada na pagina com `framer-motion` (ja instalado no projeto) para animar a entrada/saida dos faders com `AnimatePresence` e `motion.div`
+- A animacao sera um slide horizontal: ao ir para a proxima pagina, os faders deslizam para a esquerda; ao voltar, deslizam para a direita
+- Duracao da animacao: ~250ms com easing suave
+
+### Estrutura da animacao (MixerStrip)
+
+```text
+[MET] [CNT] | <-- slide animation --> [Pad1] [Pad2] [Pad3] [Pad4] | [MST]
+                                       ← pagina anterior | proxima pagina →
+```
+
+Usar `AnimatePresence` do framer-motion com `mode="wait"` e direcao baseada na mudanca de pagina (anterior vs proxima) para controlar se o slide entra pela esquerda ou direita.
