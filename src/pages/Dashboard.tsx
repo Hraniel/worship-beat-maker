@@ -23,17 +23,16 @@ const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: str
 
 // Static fallback packs (shown when DB has no packs yet)
 const STATIC_PACKS: StorePackData[] = [
-  { id: 'worship-essentials', name: 'Worship Essentials', description: 'Kicks, snares e hi-hats otimizados para louvor contemporâneo.', category: 'Drums', icon_name: 'drum', color: 'bg-rose-500', tag: 'Popular', is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'ambient-textures', name: 'Ambient Textures', description: 'Pads atmosféricos e texturas para momentos de oração.', category: 'Continuous Pads', icon_name: 'waves', color: 'bg-sky-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'gospel-grooves', name: 'Gospel Grooves', description: 'Loops e grooves com influência gospel e R&B.', category: 'Loops', icon_name: 'music', color: 'bg-emerald-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'electronic-worship', name: 'Electronic Worship', description: 'Sons eletrônicos modernos para cultos contemporâneos.', category: 'Effects', icon_name: 'sparkles', color: 'bg-violet-500', tag: 'Novo', is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'acoustic-kit', name: 'Acoustic Kit', description: 'Bateria acústica gravada em estúdio profissional.', category: 'Drums', icon_name: 'audio-waveform', color: 'bg-orange-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-strings', name: 'Worship Strings', description: 'Texturas de cordas atmosféricas em todas as 12 tonalidades.', category: 'Worship Pads', icon_name: 'waves', color: 'bg-indigo-500', tag: 'Novo', is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'warm-pads', name: 'Warm Pads', description: 'Pads quentes e envolventes em todas as tonalidades.', category: 'Worship Pads', icon_name: 'headphones', color: 'bg-amber-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-drums-dry', name: 'Worship Drums Dry', description: 'Kit completo de bateria seca para worship.', category: 'Drums', icon_name: 'drum', color: 'bg-rose-500', tag: 'Popular', is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-drums-reverb', name: 'Worship Drums Reverb', description: 'Bateria com reverb hall profundo para worship atmosférico.', category: 'Drums', icon_name: 'drum', color: 'bg-purple-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-percussion', name: 'Worship Percussion', description: 'Percussão orgânica para adoração.', category: 'Percussion', icon_name: 'layers', color: 'bg-teal-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'electronic-worship', name: 'Electronic Worship', description: 'Sons eletrônicos modernos para cultos contemporâneos.', category: 'Effects', icon_name: 'sparkles', color: 'bg-violet-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
   { id: 'cinematic-risers', name: 'Cinematic Risers', description: 'Risers e transições cinematográficas para momentos épicos.', category: 'Effects', icon_name: 'volume-2', color: 'bg-pink-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'keys-pads', name: 'Keys & Pads', description: 'Sons de teclado e sintetizador para camadas harmônicas.', category: 'Continuous Pads', icon_name: 'headphones', color: 'bg-teal-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'latin-percussion', name: 'Latin Percussion', description: 'Percussão latina: congas, bongôs, shakers e mais.', category: 'Percussion', icon_name: 'layers', color: 'bg-amber-600', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
 ];
 
-const categories = ['Todos', 'Drums', 'Continuous Pads', 'Loops', 'Effects', 'Percussion'];
+const categories = ['Todos', 'Worship Pads', 'Drums', 'Percussion', 'Effects'];
 
 const Dashboard = () => {
   const navigate = useNavigate();
