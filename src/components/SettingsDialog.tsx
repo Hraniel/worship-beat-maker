@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Volume2, Headphones, Crown, HelpCircle, Store } from 'lucide-react';
+import { Volume2, Headphones, Crown, HelpCircle, Store, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
 
@@ -87,26 +87,26 @@ const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onMo
     {mode === 'stereo' && (
       <div className="flex items-center gap-2">
         <span className="text-[11px] text-muted-foreground shrink-0">Direcionar para:</span>
-        <div className="flex rounded-md overflow-hidden border border-border flex-1">
+        <div className="flex rounded-md overflow-hidden border border-border">
           <button
             onClick={() => onSideChange('left')}
-            className={`flex-1 px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`px-3 py-1 text-[11px] font-bold transition-colors ${
               side === 'left'
                 ? 'bg-accent text-accent-foreground'
                 : 'bg-muted/30 text-muted-foreground hover:bg-muted'
             }`}
           >
-            ◀ Esquerdo
+            L
           </button>
           <button
             onClick={() => onSideChange('right')}
-            className={`flex-1 px-2 py-1 text-[11px] font-medium transition-colors border-l border-border ${
+            className={`px-3 py-1 text-[11px] font-bold transition-colors border-l border-border ${
               side === 'right'
                 ? 'bg-accent text-accent-foreground'
                 : 'bg-muted/30 text-muted-foreground hover:bg-muted'
             }`}
           >
-            Direito ▶
+            R
           </button>
         </div>
       </div>
@@ -162,6 +162,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               <HelpCircle className="h-3.5 w-3.5" />
               Guia
             </TabsTrigger>
+            <TabsTrigger value="about" className="flex-1 gap-1.5 text-xs">
+              <Info className="h-3.5 w-3.5" />
+              Sobre
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="audio" className="mt-4">
@@ -206,8 +210,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                 onClick={() => { onOpenChange(false); navigate('/dashboard'); }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                <Store className="h-4 w-4" />
-                Acessar Glory Store
+                Acessar
               </button>
             </div>
           </TabsContent>
@@ -225,8 +228,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                 onClick={() => { sessionStorage.setItem('settings-return-tab', 'plans'); onOpenChange(false); navigate('/pricing'); }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
-                <Crown className="h-4 w-4" />
-                Ver Planos
+                Gerenciar
               </button>
             </div>
           </TabsContent>
@@ -253,6 +255,22 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                     {section.label}
                   </button>
                 ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="about" className="mt-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="h-4 w-4 text-primary" />
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sobre</span>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+                <h3 className="text-sm font-bold text-foreground">Glory Pads</h3>
+                <p className="text-xs text-muted-foreground">v1.0.0</p>
+                <p className="text-sm text-muted-foreground">
+                  Pads de louvor profissionais para sua igreja. Configure sons, efeitos e metrônomo para elevar a experiência do seu worship.
+                </p>
               </div>
             </div>
           </TabsContent>

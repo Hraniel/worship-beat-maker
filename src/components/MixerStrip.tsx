@@ -202,6 +202,8 @@ const MOBILE_PAGE_SIZE = 4;
 const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState(0);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const fixedStart = channels.slice(0, 2);
   const fixedEnd = channels.slice(-1);
@@ -215,6 +217,21 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
     setPage(newPage);
   }, [page]);
 
+  // Touch swipe support for page navigation
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStartRef.current) return;
+    const dx = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const dy = e.changedTouches[0].clientY - touchStartRef.current.y;
+    touchStartRef.current = null;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx)) return;
+    if (dx < 0 && page < totalPages - 1) goToPage(page + 1);
+    else if (dx > 0 && page > 0) goToPage(page - 1);
+  }, [page, totalPages, goToPage]);
+
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
     center: { x: 0, opacity: 1 },
@@ -222,8 +239,8 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
   };
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-end gap-1 px-2 py-2 bg-card rounded-lg border border-border">
+    <div className="flex flex-col gap-1" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+      <div ref={containerRef} className="flex items-end gap-1 px-2 py-2 bg-card rounded-lg border border-border">
         {/* Fixed: MET + PAD */}
         {fixedStart.map((ch) => (
           <div key={ch.id} className="flex-1 min-w-0">
