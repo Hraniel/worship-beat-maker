@@ -182,16 +182,16 @@ const DrumPad: React.FC<DrumPadProps> = ({
         `}
         style={{
           backgroundColor: customColor
-            ? (isActive ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.5 * colorOpacity})` : `hsl(${colorHsl} / ${0.3 * colorOpacity})`)
-            : (isActive ? 'hsl(0 0% 20%)' : isLooping ? 'hsl(0 0% 15%)' : 'hsl(0 0% 8%)'),
+            ? (isActive ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.5 * colorOpacity})` : `hsl(${colorHsl} / ${0.15 * colorOpacity})`)
+            : (isActive ? colorRef(0.45) : isLooping ? colorRef(0.3) : colorRef(0.1)),
           borderColor: customColor
-            ? (isActive ? `hsl(${colorHsl} / ${0.9 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : `hsl(${colorHsl} / ${0.4 * colorOpacity})`)
-            : (isActive ? 'hsl(0 0% 40%)' : isLooping ? 'hsl(0 0% 30%)' : 'hsl(0 0% 18%)'),
+            ? (isActive ? `hsl(${colorHsl} / ${0.9 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : `hsl(${colorHsl} / ${0.35 * colorOpacity})`)
+            : (isActive ? colorRef(0.7) : isLooping ? colorRef(0.5) : colorRef(0.25)),
           boxShadow: isActive
-            ? customColor ? `0 0 20px hsl(${colorHsl} / 0.4), inset 0 0 15px hsl(${colorHsl} / 0.2)` : '0 0 20px hsl(0 0% 30% / 0.4), inset 0 0 15px hsl(0 0% 20% / 0.3)'
+            ? `0 0 24px ${colorRef(0.35)}, inset 0 0 12px ${colorRef(0.15)}`
             : isLooping
-            ? customColor ? `0 0 12px hsl(${colorHsl} / 0.3)` : '0 0 12px hsl(0 0% 25% / 0.3)'
-            : 'none',
+            ? `0 0 14px ${colorRef(0.25)}`
+            : `inset 0 1px 0 ${colorRef(0.08)}`,
         }}
       >
         {editMode && (
