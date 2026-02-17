@@ -1,1 +1,7 @@
 project_id = "upafnptdutyxkxjbonye"
+
+[functions.generate-pack-sounds]
+verify_jwt = false
+
+[functions.purchase-pack]
+verify_jwt = false
