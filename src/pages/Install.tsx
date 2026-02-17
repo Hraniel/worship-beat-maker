@@ -17,20 +17,15 @@ const Install: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if iOS
     const ua = navigator.userAgent;
     setIsIOS(/iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream);
-
-    // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
     }
-
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
-
     window.addEventListener('beforeinstallprompt', handler);
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
@@ -59,7 +54,7 @@ const Install: React.FC = () => {
             <Check className="h-7 w-7 text-primary" />
           </div>
           <p className="text-foreground font-medium">App já instalado!</p>
-          <Button onClick={() => navigate('/')} className="mt-2">
+          <Button onClick={() => navigate('/app')} className="mt-2">
             Abrir App
           </Button>
         </div>
@@ -74,7 +69,7 @@ const Install: React.FC = () => {
               <li>3. Toque em <strong>"Adicionar"</strong></li>
             </ol>
           </div>
-          <Button variant="outline" onClick={() => navigate('/')} className="mt-2">
+          <Button variant="outline" onClick={() => navigate('/app')} className="mt-2">
             Voltar ao App
           </Button>
         </div>
@@ -84,7 +79,7 @@ const Install: React.FC = () => {
             <Download className="h-5 w-5" />
             Instalar App
           </Button>
-          <Button variant="ghost" onClick={() => navigate('/')} className="text-sm">
+          <Button variant="ghost" onClick={() => navigate('/app')} className="text-sm">
             Voltar ao App
           </Button>
         </div>
@@ -98,7 +93,7 @@ const Install: React.FC = () => {
           <p className="text-xs text-muted-foreground mt-2">
             No <strong>Google Chrome</strong>, você também pode tocar em <strong>"Compartilhar"</strong> e depois em <strong>"Adicionar à tela inicial"</strong>.
           </p>
-          <Button variant="outline" onClick={() => navigate('/')} className="mt-2">
+          <Button variant="outline" onClick={() => navigate('/app')} className="mt-2">
             Voltar ao App
           </Button>
         </div>

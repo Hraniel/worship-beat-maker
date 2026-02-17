@@ -69,8 +69,8 @@ serve(async (req) => {
       customer_email: customerId ? undefined : email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "subscription",
-      success_url: `${origin}/`,
-      cancel_url: `${origin}/`,
+      success_url: `${origin}/app`,
+      cancel_url: `${origin}/app`,
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
