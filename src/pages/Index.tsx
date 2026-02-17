@@ -755,8 +755,8 @@ const Index = () => {
       {/* Main content area - side by side on lg+ */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Pad Grid - Main area */}
-      <main className="flex-1 flex items-center justify-center overflow-hidden min-h-0 min-h-[55vh] md:min-h-[60vh] lg:min-h-0">
-        <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
+      <main className="flex-1 flex flex-col items-center justify-center overflow-hidden min-h-0 min-h-[55vh] md:min-h-[60vh] lg:min-h-0">
+        <div data-tutorial="pad-grid" className="w-full flex-1 flex items-center justify-center min-h-0">
         <PadGrid
           isMasterTier={tier === 'master'}
           tier={tier}
@@ -783,6 +783,10 @@ const Index = () => {
           panDisabled={audioSettings.padsStereo === 'mono'}
           disabled={!currentSongId} />
         </div>
+        {/* Continuous Pads - always visible below pad grid */}
+        <div data-tutorial="ambient-pads" className="w-full shrink-0 px-2 pb-1">
+          <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+        </div>
       </main>
 
       <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur overflow-y-auto lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[30vh] md:max-h-[25vh] lg:max-h-none focus-footer' : 'p-1.5 sm:p-2 lg:p-3 max-h-[35vh] md:max-h-[30vh] lg:max-h-none'}`}>
@@ -804,10 +808,7 @@ const Index = () => {
             </div>
           }
 
-          {/* Ambient Pads */}
-          <div data-tutorial="ambient-pads">
-            <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-          </div>
+          {/* Ambient Pads moved to main area */}
 
           {!focusMode &&
           <div data-tutorial="volume-master">
