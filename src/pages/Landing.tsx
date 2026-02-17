@@ -91,8 +91,8 @@ const Landing = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={logoDark} alt="Drum Pads Worship" className="h-8 w-auto" />
-            <span className="font-bold text-lg hidden sm:inline">Drum Pads Worship</span>
+            <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
+            <span className="font-bold text-lg hidden sm:inline">Glory Pads</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition hidden sm:inline">
@@ -416,7 +416,7 @@ const Landing = () => {
                 Pronto para transformar seu louvor?
               </h2>
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                Junte-se a músicos que já usam o Drum Pads Worship para criar momentos de adoração inesquecíveis.
+                Junte-se a músicos que já usam o Glory Pads para criar momentos de adoração inesquecíveis.
               </p>
               <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
                 className="bg-primary hover:bg-primary/90 text-lg px-10 py-6 rounded-xl shadow-[0_0_50px_hsl(var(--primary)/0.35)]">
@@ -433,7 +433,7 @@ const Landing = () => {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <img src={logoDark} alt="Logo" className="h-6 w-auto" />
-            <span>Drum Pads Worship</span>
+            <span>Glory Pads</span>
           </div>
           <p>© {new Date().getFullYear()} Todos os direitos reservados.</p>
         </div>

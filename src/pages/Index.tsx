@@ -563,8 +563,8 @@ const Index = () => {
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-2 min-w-0 shrink-0">
             <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-6 w-6" />
-            <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Drum Pads Worship</h1>
-            <h1 className="text-sm font-bold text-foreground tracking-tight sm:hidden">DPW</h1>
+            <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
+            <h1 className="text-sm font-bold text-foreground tracking-tight sm:hidden">GP</h1>
           </div>
 
           {/* Current song name - centered */}
