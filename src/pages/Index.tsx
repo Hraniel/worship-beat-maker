@@ -826,8 +826,8 @@ const Index = () => {
               { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
               ...defaultPads.slice(0, 9).map((pad, i) => ({
                 id: pad.id,
-                label: pad.name,
-                shortLabel: `P${i + 1}`,
+                label: padNames[pad.id] || pad.name,
+                shortLabel: padNames[pad.id] || `P${i + 1}`,
                 volume: padVolumes[pad.id] ?? 0.7,
                 onChange: (v: number) => handlePadVolumeChange(pad.id, v),
               })),

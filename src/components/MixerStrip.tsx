@@ -14,8 +14,8 @@ interface MixerStripProps {
   channels: FaderChannel[];
 }
 
-const FADER_HEIGHT = 72; // px height of fader track
-const VU_LINES = 10; // number of horizontal tick lines
+const FADER_HEIGHT = 110; // px height of fader track
+const VU_LINES = 12; // number of horizontal tick lines
 
 // Global event emitter for pad hits
 const padHitListeners = new Map<string, Set<() => void>>();
@@ -79,8 +79,8 @@ const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash })
             key={i}
             className="transition-all duration-75"
             style={{
-              width: '8px',
-              height: '1.5px',
+              width: '10px',
+              height: '2px',
               borderRadius: '1px',
               backgroundColor: isLit
                 ? 'hsl(0 0% 100%)'
@@ -129,18 +129,18 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
   const glowIntensity = flash * 10;
 
   return (
-    <div className="flex flex-col items-center gap-0.5">
+    <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
       {/* Label */}
-      <span className="text-[6px] text-muted-foreground font-medium truncate w-full text-center leading-tight">
+      <span className="text-[8px] text-muted-foreground font-medium truncate w-full text-center leading-tight">
         {channel.shortLabel}
       </span>
 
       {/* Fader + VU ticks side by side */}
-      <div className="flex items-stretch gap-[2px]">
+      <div className="flex items-stretch gap-[3px]">
         {/* Fader track */}
         <div
           ref={trackRef}
-          className="relative w-[3px] rounded-full touch-none cursor-pointer"
+          className="relative w-[5px] rounded-full touch-none cursor-pointer"
           style={{ height: `${FADER_HEIGHT}px`, backgroundColor: 'hsl(var(--muted))' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
@@ -159,7 +159,7 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
           />
           {/* Thumb */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 w-2.5 h-[5px] rounded-[1px]"
+            className="absolute left-1/2 -translate-x-1/2 w-3.5 h-[6px] rounded-[1px]"
             style={{
               bottom: `calc(${pct}% - 2.5px)`,
               backgroundColor: flash > 0.1 ? `hsl(0 0% 100%)` : 'hsl(0 0% 70%)',
@@ -207,10 +207,10 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="flex items-end gap-[5px] px-2 py-1.5 bg-card rounded-lg border border-border">
+      <div className="flex items-end gap-1 px-2 py-2 bg-card rounded-lg border border-border">
         {/* Fixed: MET + PAD */}
         {fixedStart.map((ch) => (
-          <div key={ch.id} style={{ minWidth: '16px' }}>
+          <div key={ch.id} className="flex-1 min-w-0">
             <Fader channel={ch} />
           </div>
         ))}
@@ -220,7 +220,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
 
         {/* Paginated pad channels */}
         {pagedPads.map((ch) => (
-          <div key={ch.id} style={{ minWidth: '16px' }}>
+          <div key={ch.id} className="flex-1 min-w-0">
             <Fader channel={ch} />
           </div>
         ))}
@@ -230,7 +230,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
 
         {/* Fixed: MST */}
         {fixedEnd.map((ch) => (
-          <div key={ch.id} style={{ minWidth: '16px' }}>
+          <div key={ch.id} className="flex-1 min-w-0">
             <Fader channel={ch} />
           </div>
         ))}
