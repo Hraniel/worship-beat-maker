@@ -4,7 +4,7 @@ import logoLight from '@/assets/logo-light.png';
 import { Slider } from '@/components/ui/slider';
 import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
-import VolumeControl from '@/components/VolumeControl';
+import MixerStrip from '@/components/MixerStrip';
 import SetlistManager from '@/components/SetlistManager';
 import SpotifySearch from '@/components/SpotifySearch';
 import AmbientPads from '@/components/AmbientPads';
@@ -12,7 +12,8 @@ import LandscapeSwipePanels from '@/components/LandscapeSwipePanels';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer, setMasterPan, setMetronomePan, setPadPan } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds, saveCustomSoundsForSong, loadCustomSoundsForSong, deleteCustomSoundsForSong } from '@/lib/custom-sound-store';
-import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops } from '@/lib/loop-engine';
+import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops, setMetronomeVolume, getMetronomeVolume } from '@/lib/loop-engine';
+import { getAmbientVolume, setAmbientVolume } from '@/lib/ambient-engine';
 import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
 import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,6 +66,8 @@ const Index = () => {
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
+  const [metronomeVol, setMetronomeVol] = useState(getMetronomeVolume);
+  const [ambientVol, setAmbientVol] = useState(getAmbientVolume);
   const [bpm, setBpm] = useState(120);
   const [timeSignature, setTimeSignature] = useState('4/4');
   const [activeLoops, setActiveLoops] = useState<Set<string>>(new Set());
@@ -815,16 +818,21 @@ const Index = () => {
             </div>
           }
 
-          {/* Ambient Pads moved to main area */}
-
+          {/* Mixer Strip */}
           {!focusMode &&
           <div data-tutorial="volume-master">
-          <VolumeControl
-            volume={masterVolume}
-            onVolumeChange={setMasterVol}
-            label="Master"
-            pan={masterPanState}
-            onPanChange={(p) => { setMasterPanState(p); setMasterPan(p); }} />
+            <MixerStrip channels={[
+              { id: 'metronome', label: 'Metrônomo', shortLabel: 'MET', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
+              { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
+              ...defaultPads.slice(0, 9).map((pad, i) => ({
+                id: pad.id,
+                label: pad.name,
+                shortLabel: `P${i + 1}`,
+                volume: padVolumes[pad.id] ?? 0.7,
+                onChange: (v: number) => handlePadVolumeChange(pad.id, v),
+              })),
+              { id: 'master', label: 'Master', shortLabel: 'MST', volume: masterVolume, onChange: setMasterVol },
+            ]} />
           </div>
           }
 
