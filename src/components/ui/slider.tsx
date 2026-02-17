@@ -41,16 +41,16 @@ const Slider = React.forwardRef<
       {...props}
     >
       <SliderPrimitive.Track className={cn(
-        "relative grow overflow-hidden rounded-full bg-secondary",
-        isVertical ? "w-2 h-full" : "h-2 w-full"
+        "relative grow overflow-hidden rounded-full bg-muted-foreground/20",
+        isVertical ? "w-1.5 h-full" : "h-1.5 w-full"
       )}>
         <SliderPrimitive.Range className={cn(
-          "absolute bg-primary",
+          "absolute bg-foreground",
           isVertical ? "w-full" : "h-full"
         )} />
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb
-        className="block h-5 w-5 rounded-full border-2 border-primary bg-background ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+        className="block h-4 w-4 rounded-full border border-foreground/20 bg-foreground shadow-[0_0_6px_hsl(0_0%_100%/0.3)] ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
         onDoubleClick={onReset}
         onPointerDown={handleThumbPointerDown}
         onPointerUp={handleThumbPointerUp}
