@@ -169,7 +169,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
         <div className="mt-1.5">
           <div className="flex gap-1.5">
             {/* Note grid - compact */}
-            <div className="grid grid-cols-4 landscape:grid-cols-6 gap-1 flex-1 ambient-grid">
+            <div className="grid grid-cols-6 gap-[3px] flex-1 ambient-grid">
               {ALL_NOTES.map((note) => {
                 const isActive = activeNotes.has(note);
                 const isCustom = customNotes.has(note);
@@ -179,22 +179,26 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                     onClick={() => !loading && handleToggle(note)}
                     disabled={loading}
                     className={`
-                      relative flex items-center justify-center rounded-md
-                      border transition-all duration-200 select-none
-                      h-10 text-[10px] font-bold text-foreground
-                      ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
+                      relative flex items-center justify-center rounded-[5px]
+                      transition-all duration-150 select-none
+                      h-8 text-[10px] font-semibold tracking-wide
+                      ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
+                      ${isActive
+                        ? 'text-foreground ring-1 ring-foreground/30'
+                        : 'text-muted-foreground hover:text-foreground/80'}
                     `}
                     style={{
-                      backgroundColor: isActive ? 'hsl(0 0% 20%)' : 'hsl(0 0% 8%)',
-                      borderColor: isActive ? 'hsl(0 0% 40%)' : 'hsl(0 0% 18%)',
-                      boxShadow: isActive ? '0 0 8px hsl(0 0% 30% / 0.4)' : 'none',
+                      backgroundColor: isActive ? 'hsl(0 0% 18%)' : 'hsl(0 0% 11%)',
+                      boxShadow: isActive
+                        ? 'inset 0 0 0 1px hsl(0 0% 28%), 0 0 10px hsl(0 0% 100% / 0.05)'
+                        : 'inset 0 0 0 1px hsl(0 0% 15%)',
                     }}>
                     {note}
                     {isCustom &&
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[6px] opacity-50">MP3</span>
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[5px] opacity-40">MP3</span>
                     }
                     {isActive &&
-                      <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full animate-pulse bg-foreground" />
+                      <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full animate-pulse bg-primary" />
                     }
                   </button>
                 );
