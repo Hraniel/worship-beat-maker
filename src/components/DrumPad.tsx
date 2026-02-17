@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import ZoomPopup from './ZoomPopup';
 import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
+import { emitPadHit } from './MixerStrip';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
 import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette, Upload, Store } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -88,6 +89,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
         const panner = getPadPanner(pad.id);
         playSound(pad.id, volume, panner);
       }
+      emitPadHit(pad.id);
       setIsActive(true);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => setIsActive(false), 120);

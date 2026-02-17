@@ -4,6 +4,15 @@
 import { getAudioContext, playSound, playMetronomeClick, getPadPanner } from './audio-engine';
 import type { PadSound } from './sounds';
 
+// Lazy import to avoid circular deps
+let emitPadHit: ((id: string) => void) | null = null;
+function getEmitter() {
+  if (!emitPadHit) {
+    import('../components/MixerStrip').then(m => { emitPadHit = m.emitPadHit; });
+  }
+  return emitPadHit;
+}
+
 const SUBDIVISIONS_PER_BAR = 16;
 
 interface ActiveLoop {
@@ -121,6 +130,7 @@ function tick() {
       if (sub === loopPos) {
         const panner = getPadPanner(loop.pad.id);
         playSound(soundId, loop.volume, panner);
+        getEmitter()?.(loop.pad.id);
       }
     }
   }
@@ -132,6 +142,7 @@ function tick() {
     if (barPos % subsPerBeat === 0) {
       const beatIndex = barPos / subsPerBeat;
       playMetronomeClick(beatIndex === 0, metronomeVolume);
+      getEmitter()?.('metronome');
       onMetronomeBeatCallback?.(beatIndex);
     }
   }
