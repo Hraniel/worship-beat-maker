@@ -795,9 +795,22 @@ const Index = () => {
       <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">Segure um pad para ajustar volume e importar som.
       </div>
       }
+      {/* Floating exit focus mode button */}
+      {focusMode && (
+        <div className="absolute top-2 right-2 z-30">
+          <button
+            onClick={toggleFocusMode}
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-lg shadow-md transition-colors"
+            title="Sair do modo foco"
+          >
+            <Minimize className="h-3 w-3" />
+            Sair
+          </button>
+        </div>
+      )}
 
       {/* Main content area - side by side on lg+ */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
       {/* Pad Grid + Continuous Pads - swipeable in landscape mobile */}
       <main className="flex-1 flex flex-col overflow-hidden min-h-0 lg:min-h-0">
         <LandscapeSwipePanels
