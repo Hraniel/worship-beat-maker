@@ -166,32 +166,89 @@ const Landing = () => {
           transition={{ delay: 0.6, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="relative max-w-4xl mx-auto mt-16 sm:mt-20"
         >
-          <div className="relative rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-2 sm:p-4 shadow-2xl shadow-primary/5">
-            {/* Fake pad grid */}
+        <div className="relative rounded-2xl border border-border/50 bg-card/60 backdrop-blur-sm p-2 sm:p-4 shadow-2xl shadow-primary/5">
+            {/* Pad grid with native app colors */}
             <div className="grid grid-cols-4 gap-2 sm:gap-3">
-              {['Kick', 'Snare', 'Hi-Hat', 'Tom', 'Crash', 'Clap', 'Shaker', 'Ride'].map((name, i) => {
-                const colors = [
-                  'from-red-500/80 to-red-600/60',
-                  'from-orange-500/80 to-orange-600/60',
-                  'from-yellow-500/80 to-yellow-600/60',
-                  'from-amber-600/80 to-amber-700/60',
-                  'from-pink-500/80 to-pink-600/60',
-                  'from-green-500/80 to-green-600/60',
-                  'from-emerald-500/80 to-emerald-600/60',
-                  'from-blue-500/80 to-blue-600/60',
-                ];
-                return (
+              {[
+                { name: 'KCK', label: 'Kick', color: '0 75% 55%' },
+                { name: 'SNR', label: 'Snare', color: '30 85% 55%' },
+                { name: 'HHC', label: 'Hi-Hat', color: '50 80% 50%' },
+                { name: 'HHO', label: 'Open HH', color: '50 80% 50%' },
+                { name: 'CRS', label: 'Crash', color: '340 70% 55%' },
+                { name: 'CLP', label: 'Clap', color: '140 60% 45%' },
+                { name: 'WSP', label: 'Loop', color: '262 75% 55%' },
+                { name: 'WFL', label: 'Loop 2', color: '262 75% 55%' },
+              ].map((pad, i) => (
+                <motion.div
+                  key={pad.name}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8 + i * 0.06, duration: 0.4 }}
+                  className="relative aspect-square rounded-xl flex flex-col items-center justify-center cursor-default overflow-hidden group"
+                  style={{
+                    background: `linear-gradient(135deg, hsl(${pad.color} / 0.15) 0%, hsl(${pad.color} / 0.05) 100%)`,
+                    border: `1.5px solid hsl(${pad.color} / 0.3)`,
+                    boxShadow: `0 0 20px hsl(${pad.color} / 0.1), inset 0 1px 0 hsl(${pad.color} / 0.1)`,
+                  }}
+                >
+                  {/* Glow pulse effect */}
                   <motion.div
-                    key={name}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.8 + i * 0.06, duration: 0.4 }}
-                    className={`aspect-square rounded-xl bg-gradient-to-br ${colors[i]} flex items-center justify-center cursor-default`}
+                    className="absolute inset-0 rounded-xl"
+                    style={{ background: `radial-gradient(circle at center, hsl(${pad.color} / 0.25) 0%, transparent 70%)` }}
+                    animate={{ opacity: [0.3, 0.7, 0.3] }}
+                    transition={{ duration: 2 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  {/* Top color bar */}
+                  <div
+                    className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                    style={{ background: `hsl(${pad.color})` }}
+                  />
+                  <span
+                    className="relative text-base sm:text-lg font-bold tracking-wider"
+                    style={{ color: `hsl(${pad.color})` }}
                   >
-                    <span className="text-white/90 font-semibold text-xs sm:text-sm">{name}</span>
-                  </motion.div>
-                );
-              })}
+                    {pad.name}
+                  </span>
+                  <span className="relative text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">{pad.label}</span>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Bottom ambient glow bar */}
+            <div className="mt-3 sm:mt-4 flex gap-1.5 sm:gap-2">
+              {[
+                { note: 'C', color: '0 75% 55%' },
+                { note: 'D', color: '30 85% 55%' },
+                { note: 'E', color: '50 80% 50%' },
+                { note: 'F', color: '140 60% 45%' },
+                { note: 'G', color: '200 75% 50%' },
+                { note: 'A', color: '262 75% 55%' },
+              ].map((n, i) => (
+                <motion.div
+                  key={n.note}
+                  className="flex-1 h-8 sm:h-10 rounded-lg flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    background: `linear-gradient(180deg, hsl(${n.color} / 0.2) 0%, hsl(${n.color} / 0.05) 100%)`,
+                    border: `1px solid hsl(${n.color} / 0.25)`,
+                  }}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.3 + i * 0.05, duration: 0.4 }}
+                >
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{ background: `radial-gradient(ellipse at bottom, hsl(${n.color} / 0.3) 0%, transparent 80%)` }}
+                    animate={{ opacity: [0.2, 0.6, 0.2] }}
+                    transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut' }}
+                  />
+                  <span
+                    className="relative text-[10px] sm:text-xs font-semibold"
+                    style={{ color: `hsl(${n.color} / 0.9)` }}
+                  >
+                    {n.note}
+                  </span>
+                </motion.div>
+              ))}
             </div>
           </div>
           {/* Glow under preview */}
