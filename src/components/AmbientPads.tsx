@@ -140,8 +140,38 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
 
   return (
     <div className="w-full">
-      <div className="flex gap-1.5">
-            {/* Note grid - compact */}
+      <div className="flex gap-1">
+            {/* Left: Volume fader (like reference) */}
+            <div
+              className="flex flex-col items-center gap-0.5 py-0.5 w-7 shrink-0"
+              onPointerDown={() => setDraggingVolume(true)}
+              onPointerUp={() => setDraggingVolume(false)}
+              onPointerLeave={() => setDraggingVolume(false)}
+            >
+              <span className="text-[6px] text-muted-foreground font-medium">S</span>
+              <div className="flex-1 flex items-center justify-center" style={{ minHeight: '50px' }}>
+                <Slider
+                  value={[volume * 100]}
+                  onValueChange={handleVolumeChange}
+                  min={0}
+                  max={100}
+                  step={1}
+                  orientation="vertical"
+                  className="h-full"
+                />
+              </div>
+              <Volume2 className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
+
+              <ZoomPopup visible={draggingVolume}>
+                <Volume2 className="h-6 w-6 text-foreground" />
+                <span className="text-2xl font-bold text-foreground tabular-nums">{Math.round(volume * 100)}%</span>
+                <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all duration-75" style={{ width: `${volume * 100}%` }} />
+                </div>
+              </ZoomPopup>
+            </div>
+
+            {/* Note grid */}
             <div className="grid grid-cols-6 gap-[3px] flex-1 ambient-grid">
               {ALL_NOTES.map((note) => {
                 const isActive = activeNotes.has(note);
@@ -178,36 +208,8 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
               })}
             </div>
 
-            {/* Right controls: volume + pan + stop */}
-            <div className="flex flex-col items-center gap-1.5 py-0.5 w-10 shrink-0">
-              <Volume2 className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
-              <div
-                className="flex-1 flex items-center justify-center"
-                style={{ minHeight: '60px' }}
-                onPointerDown={() => setDraggingVolume(true)}
-                onPointerUp={() => setDraggingVolume(false)}
-                onPointerLeave={() => setDraggingVolume(false)}
-              >
-                <Slider
-                  value={[volume * 100]}
-                  onValueChange={handleVolumeChange}
-                  min={0}
-                  max={100}
-                  step={1}
-                  orientation="vertical"
-                  className="h-full"
-                />
-              </div>
-              <span className="text-[7px] text-muted-foreground tabular-nums">{Math.round(volume * 100)}%</span>
-
-              <ZoomPopup visible={draggingVolume}>
-                <Volume2 className="h-6 w-6 text-foreground" />
-                <span className="text-2xl font-bold text-foreground tabular-nums">{Math.round(volume * 100)}%</span>
-                <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all duration-75" style={{ width: `${volume * 100}%` }} />
-                </div>
-              </ZoomPopup>
-
+            {/* Right: pan + stop */}
+            <div className="flex flex-col items-center justify-between py-0.5 w-7 shrink-0">
               {isMaster ? (
                 <PanKnob pan={pan} onChange={handlePanChange} disabled={panDisabled} />
               ) : (
