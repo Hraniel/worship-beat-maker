@@ -81,6 +81,8 @@ const Index = () => {
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
   const [spotifyTrackName, setSpotifyTrackName] = useState<string | null>(null);
   const [spotifyKey, setSpotifyKey] = useState<string | null>(null);
+  const [editingHeaderBpm, setEditingHeaderBpm] = useState(false);
+  const [headerBpmValue, setHeaderBpmValue] = useState('');
   const [showSavePrompt, setShowSavePrompt] = useState(false);
   const [spotifySongName, setSpotifySongName] = useState('');
   const [padSize, setPadSize] = useState<number>(loadPadSize);
@@ -1092,7 +1094,22 @@ const Index = () => {
                     {spotifyTrackName && <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">♪ {spotifyTrackName}</span>}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors" onClick={(e) => { e.stopPropagation(); }} title="Editar BPM">{bpm}</button>
+                    {editingHeaderBpm ? (
+                      <input
+                        type="number"
+                        min={40}
+                        max={240}
+                        value={headerBpmValue}
+                        onChange={(e) => setHeaderBpmValue(e.target.value)}
+                        onBlur={() => { setEditingHeaderBpm(false); const v = parseInt(headerBpmValue); if (!isNaN(v) && v >= 40 && v <= 240) setBpm(v); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { setEditingHeaderBpm(false); const v = parseInt(headerBpmValue); if (!isNaN(v) && v >= 40 && v <= 240) setBpm(v); } if (e.key === 'Escape') setEditingHeaderBpm(false); }}
+                        className="w-12 h-6 text-center text-xs font-bold bg-muted border border-border rounded px-1 text-foreground"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <button className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors" onClick={(e) => { e.stopPropagation(); setEditingHeaderBpm(true); setHeaderBpmValue(String(bpm)); }} title="Editar BPM">{bpm}</button>
+                    )}
                     <span className="text-[10px] text-muted-foreground">BPM</span>
                     {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
                     <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>

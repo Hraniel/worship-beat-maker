@@ -131,39 +131,15 @@ const Metronome: React.FC<MetronomeProps> = ({
       <div className="flex items-center gap-1.5">
         <Button
           onClick={onTogglePlay}
-          variant={isPlaying ? "destructive" : "default"}
+          variant="outline"
           size="sm"
-          className="h-7 px-3 text-xs gap-1"
+          className={`h-7 px-3 text-xs gap-1 ${isPlaying ? 'bg-foreground text-background hover:bg-foreground/90 border-foreground' : 'bg-foreground text-background hover:bg-foreground/90 border-foreground'}`}
         >
           {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           {isPlaying ? 'Stop' : 'Play'}
         </Button>
 
-        {/* Editable BPM display */}
-        {editingBpm ? (
-          <input
-            ref={inputRef}
-            type="number"
-            min={40}
-            max={240}
-            value={editBpmValue}
-            onChange={(e) => setEditBpmValue(e.target.value)}
-            onBlur={commitBpmEdit}
-            onKeyDown={handleBpmKeyDown}
-            className="w-12 h-7 text-center text-xs font-bold bg-muted border border-border rounded px-1 text-foreground"
-            autoFocus
-          />
-        ) : (
-          <button
-            onClick={handleBpmClick}
-            className="h-7 px-2 text-xs font-bold text-foreground hover:bg-muted rounded transition-colors tabular-nums"
-            title="Clique para digitar o BPM"
-          >
-            {localBpm}
-          </button>
-        )}
-
-        <div className="flex gap-0.5">
+        <div className="flex gap-0.5 ml-2">
           {TIME_SIGNATURES.map((ts) => (
             <Button
               key={ts}
