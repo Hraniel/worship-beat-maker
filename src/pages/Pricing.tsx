@@ -12,11 +12,14 @@ const tierOrder: TierKey[] = ['free', 'pro', 'master'];
 const features: { label: string; free: boolean; pro: boolean; master: boolean }[] = [
   { label: 'Pads por setlist', free: true, pro: true, master: true },
   { label: 'Importar sons customizados', free: true, pro: true, master: true },
+  { label: 'Metrônomo e loops', free: true, pro: true, master: true },
   { label: 'Pads ilimitados', free: false, pro: true, master: true },
   { label: 'Imports ilimitados', free: false, pro: true, master: true },
   { label: 'Volume individual por pad', free: false, pro: true, master: true },
+  { label: 'Pads ambiente', free: false, pro: true, master: true },
   { label: 'Equalizador (grave/médio/agudo)', free: false, pro: false, master: true },
   { label: 'Reverb e Delay', free: false, pro: false, master: true },
+  { label: 'Spotify AI', free: false, pro: false, master: true },
 ];
 
 const Pricing = () => {
