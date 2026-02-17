@@ -21,6 +21,7 @@ interface PadGridProps {
   panDisabled?: boolean;
   isMasterTier?: boolean;
   tier?: TierKey;
+  focusMode?: boolean;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onImportStoreSound: (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => void;
@@ -35,7 +36,7 @@ interface PadGridProps {
 }
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padScale = 65, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free',
+  pads, padVolumes, activeLoops, customSounds, padSize, padScale = 65, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free', focusMode,
   onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange,
   onResetPad, onResetAllPads
 }) => {
@@ -53,7 +54,7 @@ const PadGrid: React.FC<PadGridProps> = ({
   return (
     <div
       className={`grid grid-cols-3 gap-2 sm:gap-3 lg:gap-4 p-2 sm:p-4 w-full mx-auto transition-all duration-200 ${disabled ? 'opacity-40 pointer-events-none' : ''}`}
-      style={{ maxWidth: `${gridMaxWidth}px` }}
+      style={focusMode ? { maxWidth: '100%' } : { maxWidth: `${gridMaxWidth}px` }}
     >
       {visiblePads.map((pad, index) => (
         <DrumPad

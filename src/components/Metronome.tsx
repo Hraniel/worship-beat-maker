@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Play, Pause, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -19,35 +19,76 @@ const TIME_SIGNATURES = ['4/4', '3/4', '6/8'];
 const Metronome: React.FC<MetronomeProps> = ({
   bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat
 }) => {
-  const [currentBeat, setCurrentBeat] = React.useState(0);
-  const [localBpm, setLocalBpm] = React.useState(bpm);
-  const debounceRef = React.useRef<number | null>(null);
+  const [currentBeat, setCurrentBeat] = useState(0);
+  const [localBpm, setLocalBpm] = useState(bpm);
+  const [editingBpm, setEditingBpm] = useState(false);
+  const [editBpmValue, setEditBpmValue] = useState('');
+  const debounceRef = useRef<number | null>(null);
+  const pendingBpmRef = useRef<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
 
   // Sync localBpm when bpm changes externally
-  React.useEffect(() => { setLocalBpm(bpm); }, [bpm]);
+  useEffect(() => { setLocalBpm(bpm); }, [bpm]);
 
-  const handleBpmSlider = React.useCallback((val: number) => {
+  const applyBpm = useCallback((val: number) => {
+    const clamped = Math.max(40, Math.min(240, val));
+    if (isPlaying) {
+      // Queue to apply on beat 0
+      pendingBpmRef.current = clamped;
+      setLocalBpm(clamped);
+    } else {
+      setLocalBpm(clamped);
+      onBpmChange(clamped);
+    }
+  }, [isPlaying, onBpmChange]);
+
+  const handleBpmSlider = useCallback((val: number) => {
     setLocalBpm(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
-      onBpmChange(val);
+      applyBpm(val);
     }, 400);
-  }, [onBpmChange]);
+  }, [applyBpm]);
 
-  const handleBpmButton = React.useCallback((val: number) => {
-    setLocalBpm(val);
-    onBpmChange(val);
-  }, [onBpmChange]);
+  const handleBpmButton = useCallback((val: number) => {
+    applyBpm(val);
+  }, [applyBpm]);
+
+  // Click on BPM number to edit
+  const handleBpmClick = useCallback(() => {
+    setEditBpmValue(String(localBpm));
+    setEditingBpm(true);
+    setTimeout(() => inputRef.current?.select(), 50);
+  }, [localBpm]);
+
+  const commitBpmEdit = useCallback(() => {
+    setEditingBpm(false);
+    const val = parseInt(editBpmValue);
+    if (!isNaN(val) && val >= 40 && val <= 240) {
+      applyBpm(val);
+    }
+  }, [editBpmValue, applyBpm]);
+
+  const handleBpmKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') commitBpmEdit();
+    if (e.key === 'Escape') setEditingBpm(false);
+  }, [commitBpmEdit]);
 
   useEffect(() => {
     const handler = (beat: number) => {
       setCurrentBeat(beat);
       onBeat?.(beat);
+      // Apply pending BPM on beat 0
+      if (beat === 0 && pendingBpmRef.current !== null) {
+        const pending = pendingBpmRef.current;
+        pendingBpmRef.current = null;
+        onBpmChange(pending);
+      }
     };
     onMetronomeBeat(handler);
     return () => onMetronomeBeat(null);
-  }, [onBeat]);
+  }, [onBeat, onBpmChange]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -55,11 +96,16 @@ const Metronome: React.FC<MetronomeProps> = ({
     } else {
       disableMetronome();
       setCurrentBeat(0);
+      // Apply any pending BPM immediately when stopped
+      if (pendingBpmRef.current !== null) {
+        onBpmChange(pendingBpmRef.current);
+        pendingBpmRef.current = null;
+      }
     }
     return () => {
       disableMetronome();
     };
-  }, [isPlaying]);
+  }, [isPlaying, onBpmChange]);
 
   return (
     <div className="flex flex-col gap-2 px-3 py-2">
@@ -92,6 +138,30 @@ const Metronome: React.FC<MetronomeProps> = ({
           {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           {isPlaying ? 'Stop' : 'Play'}
         </Button>
+
+        {/* Editable BPM display */}
+        {editingBpm ? (
+          <input
+            ref={inputRef}
+            type="number"
+            min={40}
+            max={240}
+            value={editBpmValue}
+            onChange={(e) => setEditBpmValue(e.target.value)}
+            onBlur={commitBpmEdit}
+            onKeyDown={handleBpmKeyDown}
+            className="w-12 h-7 text-center text-xs font-bold bg-muted border border-border rounded px-1 text-foreground"
+            autoFocus
+          />
+        ) : (
+          <button
+            onClick={handleBpmClick}
+            className="h-7 px-2 text-xs font-bold text-foreground hover:bg-muted rounded transition-colors tabular-nums"
+            title="Clique para digitar o BPM"
+          >
+            {localBpm}
+          </button>
+        )}
 
         <div className="flex gap-0.5">
           {TIME_SIGNATURES.map((ts) => (
