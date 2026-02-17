@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { Slider } from '@/components/ui/slider';
@@ -8,6 +8,7 @@ import VolumeControl from '@/components/VolumeControl';
 import SetlistManager from '@/components/SetlistManager';
 import SpotifySearch from '@/components/SpotifySearch';
 import AmbientPads from '@/components/AmbientPads';
+import LandscapeSwipePanels from '@/components/LandscapeSwipePanels';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer, setMasterPan, setMetronomePan, setPadPan } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds, saveCustomSoundsForSong, loadCustomSoundsForSong, deleteCustomSoundsForSong } from '@/lib/custom-sound-store';
@@ -754,39 +755,45 @@ const Index = () => {
 
       {/* Main content area - side by side on lg+ */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-      {/* Pad Grid - Main area */}
-      <main className="flex-1 flex flex-col items-center justify-center overflow-hidden min-h-0 min-h-[55vh] md:min-h-[60vh] lg:min-h-0">
-        <div data-tutorial="pad-grid" className="w-full flex-1 flex items-center justify-center min-h-0">
-        <PadGrid
-          isMasterTier={tier === 'master'}
-          tier={tier}
-          pads={defaultPads}
-          padVolumes={padVolumes}
-          activeLoops={activeLoops}
-          customSounds={customSounds}
-          padSize={padSizeToTextSize(padSize)}
-          padScale={padSize}
-          padEffects={padEffects}
-          padPans={padPans}
-          onToggleLoop={toggleLoop}
-          onImportSound={handleImportSound}
-          onImportStoreSound={handleImportStoreSound}
-          onRemoveCustomSound={handleRemoveCustomSound}
-          onPadVolumeChange={handlePadVolumeChange}
-          onEffectsChange={handleEffectsChange}
-          onPadPanChange={handlePadPanChange}
-          padNames={padNames}
-          onRenamePad={handleRenamePad}
-          padColors={padColors}
-          onPadColorChange={handlePadColorChange}
-          editMode={editMode}
-          panDisabled={audioSettings.padsStereo === 'mono'}
-          disabled={!currentSongId} />
-        </div>
-        {/* Continuous Pads - always visible below pad grid */}
-        <div data-tutorial="ambient-pads" className="w-full shrink-0 px-2 pb-1">
-          <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-        </div>
+      {/* Pad Grid + Continuous Pads - swipeable in landscape mobile */}
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-h-[55vh] md:min-h-[60vh] lg:min-h-0">
+        <LandscapeSwipePanels
+          padGrid={
+            <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
+              <PadGrid
+                isMasterTier={tier === 'master'}
+                tier={tier}
+                pads={defaultPads}
+                padVolumes={padVolumes}
+                activeLoops={activeLoops}
+                customSounds={customSounds}
+                padSize={padSizeToTextSize(padSize)}
+                padScale={padSize}
+                padEffects={padEffects}
+                padPans={padPans}
+                onToggleLoop={toggleLoop}
+                onImportSound={handleImportSound}
+                onImportStoreSound={handleImportStoreSound}
+                onRemoveCustomSound={handleRemoveCustomSound}
+                onPadVolumeChange={handlePadVolumeChange}
+                onEffectsChange={handleEffectsChange}
+                onPadPanChange={handlePadPanChange}
+                padNames={padNames}
+                onRenamePad={handleRenamePad}
+                padColors={padColors}
+                onPadColorChange={handlePadColorChange}
+                editMode={editMode}
+                panDisabled={audioSettings.padsStereo === 'mono'}
+                disabled={!currentSongId}
+              />
+            </div>
+          }
+          ambientPads={
+            <div data-tutorial="ambient-pads" className="w-full h-full flex items-end justify-center px-2 pb-2">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
+          }
+        />
       </main>
 
       <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur overflow-y-auto lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[30vh] md:max-h-[25vh] lg:max-h-none focus-footer' : 'p-1.5 sm:p-2 lg:p-3 max-h-[35vh] md:max-h-[30vh] lg:max-h-none'}`}>

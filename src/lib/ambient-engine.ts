@@ -48,16 +48,35 @@ const decodedBuffers = new Map<NoteName, AudioBuffer>();
 let ambientVolume = 0.4;
 let ambientPan = 0;
 let ambientPanner: StereoPannerNode | null = null;
+let ambientAnalyser: AnalyserNode | null = null;
 let samplesInitialized = false;
+
+function getAmbientAnalyser(): AnalyserNode {
+  if (!ambientAnalyser) {
+    const ctx = getAudioContext();
+    ambientAnalyser = ctx.createAnalyser();
+    ambientAnalyser.fftSize = 64;
+    ambientAnalyser.smoothingTimeConstant = 0.7;
+  }
+  return ambientAnalyser;
+}
 
 function getAmbientPanner(): StereoPannerNode {
   if (!ambientPanner) {
     const ctx = getAudioContext();
     ambientPanner = ctx.createStereoPanner();
     ambientPanner.pan.value = ambientPan;
-    ambientPanner.connect(getMasterGain());
+    const analyser = getAmbientAnalyser();
+    ambientPanner.connect(analyser);
+    analyser.connect(getMasterGain());
   }
   return ambientPanner;
+}
+
+export function getAmbientAnalyserNode(): AnalyserNode {
+  // Ensure panner chain is set up
+  getAmbientPanner();
+  return getAmbientAnalyser();
 }
 
 const ATTACK = 0.5;

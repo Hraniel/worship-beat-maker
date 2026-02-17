@@ -19,8 +19,9 @@ import {
   stopAmbientNote,
   startAmbientNote,
   setAmbientPan,
-  getAmbientPan } from
-'@/lib/ambient-engine';
+  getAmbientPan,
+  getAmbientAnalyserNode,
+} from '@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
 
 interface AmbientPadsProps {
@@ -137,6 +138,50 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
 
   const hasActive = activeNotes.size > 0;
 
+  // VU meter animation
+  const vuBarsRef = useRef<number[]>(new Array(8).fill(0));
+  const [vuBars, setVuBars] = useState<number[]>(new Array(8).fill(0));
+  const vuAnimRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (!hasActive) {
+      if (vuAnimRef.current) cancelAnimationFrame(vuAnimRef.current);
+      setVuBars(new Array(8).fill(0));
+      return;
+    }
+
+    let analyser: AnalyserNode;
+    try {
+      analyser = getAmbientAnalyserNode();
+    } catch {
+      return;
+    }
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    const tick = () => {
+      analyser.getByteFrequencyData(dataArray);
+      const bars = vuBarsRef.current;
+      const binSize = Math.floor(dataArray.length / 8);
+      for (let i = 0; i < 8; i++) {
+        let sum = 0;
+        for (let j = 0; j < binSize; j++) {
+          sum += dataArray[i * binSize + j];
+        }
+        const avg = sum / binSize / 255;
+        // Smooth decay
+        bars[i] = Math.max(avg, bars[i] * 0.88);
+      }
+      setVuBars([...bars]);
+      vuAnimRef.current = requestAnimationFrame(tick);
+    };
+
+    vuAnimRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (vuAnimRef.current) cancelAnimationFrame(vuAnimRef.current);
+    };
+  }, [hasActive]);
+
   return (
     <div className="w-full">
       <div className="flex gap-1">
@@ -191,6 +236,34 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                   <div className="h-full bg-primary rounded-full transition-all duration-75" style={{ width: `${volume * 100}%` }} />
                 </div>
               </ZoomPopup>
+            </div>
+
+            {/* VU Meter bars */}
+            <div className="flex flex-col items-end justify-end gap-[1px] w-3 shrink-0 py-0.5">
+              {vuBars.slice(0, 6).map((level, i) => {
+                const barHeight = Math.max(2, level * 100);
+                const isHot = level > 0.7;
+                const isWarm = level > 0.4;
+                return (
+                  <div key={i} className="w-full flex items-end" style={{ height: '12px' }}>
+                    <div
+                      className="w-full rounded-[1px] transition-all duration-75"
+                      style={{
+                        height: `${barHeight}%`,
+                        backgroundColor: isHot
+                          ? 'hsl(0 70% 55%)'
+                          : isWarm
+                          ? 'hsl(45 80% 55%)'
+                          : 'hsl(140 60% 45%)',
+                        opacity: hasActive ? 0.9 : 0.15,
+                        boxShadow: hasActive && level > 0.3
+                          ? `0 0 4px ${isHot ? 'hsl(0 70% 55% / 0.4)' : isWarm ? 'hsl(45 80% 55% / 0.3)' : 'hsl(140 60% 45% / 0.3)'}`
+                          : 'none',
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
             {/* Note grid */}
