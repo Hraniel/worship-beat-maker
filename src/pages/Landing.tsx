@@ -104,7 +104,7 @@ const Landing = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}>
               Entrar
             </Button>
-            <Button size="sm" onClick={() => navigate('/auth')} className="bg-primary hover:bg-primary/90">
+            <Button size="sm" onClick={() => navigate('/auth?mode=signup')} className="bg-primary hover:bg-primary/90">
               Começar grátis
             </Button>
           </div>
@@ -143,7 +143,7 @@ const Landing = () => {
             </motion.p>
 
             <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button size="lg" onClick={() => navigate('/auth')}
+              <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
                 className="bg-primary hover:bg-primary/90 text-lg px-8 py-6 rounded-xl shadow-[0_0_40px_hsl(var(--primary)/0.3)]">
                 Começar gratuitamente
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -387,7 +387,7 @@ const Landing = () => {
                 </ul>
 
                 <Button
-                  onClick={() => navigate('/auth')}
+                  onClick={() => navigate(plan.price === 'Grátis' ? '/auth?mode=signup' : '/auth?mode=signup')}
                   variant={plan.highlight ? 'default' : 'outline'}
                   className={`w-full rounded-xl py-5 ${plan.highlight ? 'bg-primary hover:bg-primary/90' : ''}`}
                 >
@@ -418,7 +418,7 @@ const Landing = () => {
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
                 Junte-se a músicos que já usam o Drum Pads Worship para criar momentos de adoração inesquecíveis.
               </p>
-              <Button size="lg" onClick={() => navigate('/auth')}
+              <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
                 className="bg-primary hover:bg-primary/90 text-lg px-10 py-6 rounded-xl shadow-[0_0_50px_hsl(var(--primary)/0.35)]">
                 Começar agora
                 <ArrowRight className="ml-2 h-5 w-5" />
