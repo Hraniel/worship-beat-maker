@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import ZoomPopup from './ZoomPopup';
 import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
-import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette, Upload } from 'lucide-react';
+import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette, Upload, Store } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ import PadColorPicker, { type PadColor, padColorToHsl } from './PadColorPicker';
 import { type PadEffects, DEFAULT_EFFECTS, getEffectInput, applyEffects, hasActiveEffects } from '@/lib/audio-effects';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { toast } from 'sonner';
+import StoreImportPicker from './StoreImportPicker';
 
 interface DrumPadProps {
   pad: PadSound;
@@ -28,6 +29,7 @@ interface DrumPadProps {
   panDisabled?: boolean;
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
+  onImportStoreSound?: (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => void;
   onRemoveCustomSound?: (padId: string) => void;
   onVolumeChange?: (padId: string, volume: number) => void;
   onEffectsChange?: (padId: string, fx: PadEffects) => void;
@@ -42,12 +44,13 @@ interface DrumPadProps {
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
   isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled, customSoundsCount = 0,
-  onToggleLoop, onImportSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange
+  onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showStorePicker, setShowStorePicker] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [draggingPadVol, setDraggingPadVol] = useState(false);
   const [renameValue, setRenameValue] = useState('');
@@ -369,6 +372,31 @@ const DrumPad: React.FC<DrumPadProps> = ({
                     </button>
                   );
                 })()}
+              </>
+            )}
+
+            {/* Import from Glory Store - not for loop pads */}
+            {!pad.isLoop && (
+              <>
+                <button
+                  className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                    showStorePicker ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
+                  }`}
+                  onClick={() => setShowStorePicker(prev => !prev)}
+                >
+                  <Store className="h-3.5 w-3.5" />
+                  Importar da Glory Store
+                </button>
+                {showStorePicker && (
+                  <StoreImportPicker
+                    onSelect={(soundId, soundName, arrayBuffer) => {
+                      onImportStoreSound?.(pad.id, soundName, arrayBuffer);
+                      setShowStorePicker(false);
+                      setShowMenu(false);
+                    }}
+                    onClose={() => setShowStorePicker(false)}
+                  />
+                )}
               </>
             )}
 

@@ -149,6 +149,26 @@ const Index = () => {
     }
   }, [padPans, defaultPads]);
 
+  // Import from Glory Store
+  const handleImportStoreSound = useCallback(async (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => {
+    try {
+      await loadCustomBuffer(padId, arrayBuffer);
+      await saveCustomSound(padId, arrayBuffer, soundName);
+      const updated = { ...customSounds, [padId]: soundName };
+      setCustomSounds(updated);
+      saveCustomNames(updated);
+
+      setPadVolumes((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-volumes', JSON.stringify(next)); return next; });
+      setPadPans((prev) => { const next = { ...prev }; delete next[padId]; localStorage.setItem('drum-pads-pad-pans', JSON.stringify(next)); setPadPan(padId, 0); return next; });
+      setPadEffects((prev) => { const next = { ...prev }; delete next[padId]; saveAllEffects(next); return next; });
+
+      toast.success(`Som "${soundName}" importado da Glory Store!`);
+    } catch (e) {
+      console.error('Error importing store sound:', e);
+      toast.error('Erro ao importar som da loja.');
+    }
+  }, [customSounds]);
+
 
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -750,6 +770,7 @@ const Index = () => {
           padPans={padPans}
           onToggleLoop={toggleLoop}
           onImportSound={handleImportSound}
+          onImportStoreSound={handleImportStoreSound}
           onRemoveCustomSound={handleRemoveCustomSound}
           onPadVolumeChange={handlePadVolumeChange}
           onEffectsChange={handleEffectsChange}

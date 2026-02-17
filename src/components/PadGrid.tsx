@@ -23,6 +23,7 @@ interface PadGridProps {
   tier?: TierKey;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
+  onImportStoreSound: (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => void;
   onRemoveCustomSound: (padId: string) => void;
   onPadVolumeChange: (padId: string, volume: number) => void;
   onEffectsChange: (padId: string, fx: PadEffects) => void;
@@ -33,7 +34,7 @@ interface PadGridProps {
 
 const PadGrid: React.FC<PadGridProps> = ({
   pads, padVolumes, activeLoops, customSounds, padSize, padScale = 65, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free',
-  onToggleLoop, onImportSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange
+  onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange
 }) => {
   const maxPads = TIERS[tier].maxPads;
 
@@ -66,6 +67,7 @@ const PadGrid: React.FC<PadGridProps> = ({
           pan={padPans[pad.id] ?? 0}
           onToggleLoop={pad.isLoop ? () => onToggleLoop(pad.id) : undefined}
           onImportSound={onImportSound}
+          onImportStoreSound={onImportStoreSound}
           onRemoveCustomSound={onRemoveCustomSound}
           onVolumeChange={onPadVolumeChange}
           onEffectsChange={onEffectsChange}
