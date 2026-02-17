@@ -19,6 +19,7 @@ import {
   getAmbientPan,
 } from '@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
+import { emitPadHit } from './MixerStrip';
 
 interface AmbientPadsProps {
   panDisabled?: boolean;
@@ -74,6 +75,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
       const isNowActive = await toggleAmbientNote(note);
       if (isNowActive) {
         setActiveNotes(new Set([note]));
+        emitPadHit('ambient');
       } else {
         setActiveNotes(new Set());
       }
