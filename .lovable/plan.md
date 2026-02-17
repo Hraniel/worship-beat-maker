@@ -1,50 +1,27 @@
 
-# Correções de Responsividade e Posicionamento
+# Indicador Visual de Scroll entre Faders e Metronomo
 
-## Problemas Identificados
+## Problema
+O usuario nao percebe que existe uma rolagem vertical (scroll snap) entre o Mixer (faders) e o Metronomo no footer mobile.
 
-1. **Botão "Sair" do modo foco** está posicionado no canto superior direito (`top-2 right-2`) e pode sobrepor o pad "Ride" ou outros elementos
-2. **Dialog de Configurações** está cortado nas laterais em telas pequenas -- as abas e conteúdo transbordam porque o `max-w-sm` (384px) é muito largo para telas de 390px sem margem suficiente
-3. **Pads podem ficar cortados** em telas menores
+## Solucao
+Adicionar um indicador visual de paginacao (dots) + seta animada entre as duas secoes, similar aos dots de paginacao ja usados no MixerStrip para os faders.
 
-## Mudanças Planejadas
+### O que sera adicionado
 
-### 1. Botão "Sair do foco" -- reposicionar para não sobrepor pads
+1. **Dots de paginacao** no rodape do container de scroll snap -- dois pontos (um para Mixer, um para Metronomo) que indicam qual secao esta visivel
+2. **Seta animada para baixo** (chevron pulsante) visivel quando o usuario esta na pagina do Mixer, indicando que ha mais conteudo abaixo. A seta desaparece ao rolar para o Metronomo.
 
-Mover o botão para **abaixo do header** (quando o header está oculto no modo foco), posicionando-o no **centro superior** da tela com margem segura, fora da área dos pads.
+### Implementacao
 
-- Posição: `top-1 left-1/2 -translate-x-1/2` (centralizado no topo, fora do grid)
-- Alternativa: mantê-lo no canto mas com `top-0` e estilização mais discreta
-
-### 2. Dialog de Configurações -- responsivo e centralizado
-
-- Alterar `max-w-sm` para `max-w-[calc(100vw-2rem)]` em mobile para garantir margens laterais
-- Adicionar `mx-4` ou padding adequado
-- Nas abas (TabsList), usar `overflow-x-auto` ou reduzir o tamanho do texto para caber sem corte
-
-### 3. Pads -- garantir que não fiquem cortados
-
-- Verificar e ajustar o `PadGrid` para usar o espaço disponível sem overflow
-
-## Detalhes Técnicos
-
-### Arquivos a modificar
-
-| Arquivo | Mudança |
+| Arquivo | Mudanca |
 |---------|---------|
-| `src/pages/Index.tsx` | Reposicionar o botão "Sair" para centro-topo com z-index adequado, sem sobrepor pads |
-| `src/components/SettingsDialog.tsx` | Ajustar `DialogContent` com classe responsiva; ajustar TabsList para caber em telas pequenas |
-| `src/components/PadGrid.tsx` | Garantir pads responsivos sem corte usando `aspect-square` e limites baseados na viewport |
+| `src/pages/Index.tsx` | Adicionar um listener de `onScroll` no container snap para detectar qual pagina esta visivel; renderizar dots + chevron animado sobre o container |
 
-### Botão "Sair" -- nova posição
+### Detalhes tecnicos
 
-O botão ficará centralizado no topo da tela (abaixo da safe area), com `z-30` para ficar acima do conteúdo mas sem tocar nos pads. A posição centralizada evita conflito com qualquer pad nos cantos.
-
-### Dialog Configurações -- responsivo
-
-```text
-Antes:  max-w-sm (384px fixo) -- corta em telas de 390px
-Depois: max-w-sm com mx-4 e overflow protegido
-```
-
-As abas terão texto menor em mobile e `flex-wrap` ou scroll horizontal se necessário para evitar corte.
+- Usar `onScroll` no container `snap-y` para calcular `scrollTop / scrollHeight` e determinar a pagina ativa (0 = mixer, 1 = metronomo)
+- Renderizar dois dots no centro inferior do container, com o dot ativo destacado (cor `primary`)
+- Quando na pagina 0 (mixer), mostrar um icone `ChevronDown` com animacao `animate-bounce` abaixo dos dots para chamar atencao
+- Os dots e a seta ficam com `position: absolute` dentro do container, com `pointer-events-none` para nao interferir no toque
+- A seta desaparece apos o primeiro scroll ou quando a pagina ativa for 1
