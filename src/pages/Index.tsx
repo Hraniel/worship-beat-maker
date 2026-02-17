@@ -1019,9 +1019,12 @@ const Index = () => {
 
         {/* Mobile: vertical snap scroll between mixer and metronome */}
         <div className="lg:hidden h-full relative">
-          {/* Scroll indicator dots + chevron - above content */}
+          {/* Scroll indicator dots + directional chevron */}
           {!focusMode && (
-            <div className="flex justify-center items-center gap-1.5 py-1 pointer-events-none">
+            <div className="flex flex-col justify-center items-center py-1 pointer-events-none">
+              {footerPage === 1 && (
+                <ChevronUp className="h-3 w-3 text-muted-foreground animate-bounce" />
+              )}
               <div className="flex gap-1.5">
                 {[0, 1].map((i) => (
                   <div
