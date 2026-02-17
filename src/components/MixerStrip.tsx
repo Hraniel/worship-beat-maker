@@ -9,10 +9,6 @@ interface FaderChannel {
   shortLabel: string;
   volume: number;
   onChange: (v: number) => void;
-  isMuted?: boolean;
-  isSoloed?: boolean;
-  onToggleMute?: () => void;
-  onToggleSolo?: () => void;
 }
 
 interface MixerStripProps {
@@ -106,46 +102,6 @@ const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash })
   );
 };
 
-/** Solo and Mute buttons */
-const SoloMuteButtons: React.FC<{
-  isSoloed?: boolean;
-  isMuted?: boolean;
-  onToggleSolo?: () => void;
-  onToggleMute?: () => void;
-}> = ({ isSoloed, isMuted, onToggleSolo, onToggleMute }) => (
-  <div className="flex flex-col gap-[1px]">
-    <button
-      onClick={(e) => { e.stopPropagation(); onToggleSolo?.(); }}
-      className="flex items-center justify-center rounded-[2px] transition-colors"
-      style={{
-        width: '14px',
-        height: '14px',
-        fontSize: '7px',
-        fontWeight: 700,
-        backgroundColor: isSoloed ? 'hsl(45 90% 55%)' : 'hsl(var(--muted))',
-        color: isSoloed ? 'hsl(0 0% 0%)' : 'hsl(var(--muted-foreground))',
-      }}
-      title="Solo"
-    >
-      S
-    </button>
-    <button
-      onClick={(e) => { e.stopPropagation(); onToggleMute?.(); }}
-      className="flex items-center justify-center rounded-[2px] transition-colors"
-      style={{
-        width: '14px',
-        height: '14px',
-        fontSize: '7px',
-        fontWeight: 700,
-        backgroundColor: isMuted ? 'hsl(0 70% 50%)' : 'hsl(var(--muted))',
-        color: isMuted ? 'hsl(0 0% 100%)' : 'hsl(var(--muted-foreground))',
-      }}
-      title="Mute"
-    >
-      M
-    </button>
-  </div>
-);
 
 const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
   const [dragging, setDragging] = useState(false);
@@ -177,18 +133,9 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
   const pct = channel.volume * 100;
   const fillOpacity = Math.min(1, 0.6 + Math.min(flash, channel.volume) * 0.4);
   const glowIntensity = Math.min(flash, channel.volume) * 10;
-  const isMuted = channel.isMuted;
 
   return (
-    <div className={`flex flex-col items-center gap-1 flex-1 min-w-0 ${isMuted ? 'opacity-30' : ''}`}>
-      {/* S/M buttons */}
-      <SoloMuteButtons
-        isSoloed={channel.isSoloed}
-        isMuted={channel.isMuted}
-        onToggleSolo={channel.onToggleSolo}
-        onToggleMute={channel.onToggleMute}
-      />
-
+    <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
       {/* Fader + VU ticks side by side */}
       <div className="flex items-stretch gap-[3px]">
         {/* Fader track */}
