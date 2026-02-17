@@ -20,7 +20,7 @@ const Auth = () => {
     setOauthLoading(true);
     try {
       const { error } = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin,
+        redirect_uri: window.location.origin + '/app',
       });
       if (error) toast.error(error.message);
     } catch (err: any) {
