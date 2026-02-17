@@ -827,6 +827,7 @@ const Index = () => {
                 editMode={editMode}
                 panDisabled={audioSettings.padsStereo === 'mono'}
                 disabled={!currentSongId}
+                focusMode={focusMode}
                 onResetPad={handleResetPad}
                 onResetAllPads={handleResetAllPads}
               />
@@ -865,14 +866,14 @@ const Index = () => {
             <MixerStrip channels={[
               { id: 'metronome', label: 'Metrônomo', shortLabel: 'MET', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
               { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
-              ...defaultPads.slice(0, 9).map((pad, i) => ({
+              ...defaultPads.slice(0, 9).map((pad) => ({
                 id: pad.id,
                 label: padNames[pad.id] || pad.name,
-                shortLabel: padNames[pad.id] || `P${i + 1}`,
+                shortLabel: padNames[pad.id] || pad.name,
                 volume: padVolumes[pad.id] ?? 0.7,
                 onChange: (v: number) => handlePadVolumeChange(pad.id, v),
               })),
-              { id: 'master', label: 'Master', shortLabel: 'MST', volume: masterVolume, onChange: setMasterVol },
+              { id: 'master', label: 'Master', shortLabel: 'Master', volume: masterVolume, onChange: setMasterVol },
             ]} />
           </div>
           }
@@ -890,7 +891,11 @@ const Index = () => {
                 )}
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+                <button
+                  className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); }}
+                  title="Editar BPM no metrônomo abaixo"
+                >{bpm}</button>
                 <span className="text-[10px] text-muted-foreground">BPM</span>
                 {spotifyKey && (
                   <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>

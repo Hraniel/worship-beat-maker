@@ -9,14 +9,18 @@ interface FaderChannel {
   shortLabel: string;
   volume: number;
   onChange: (v: number) => void;
+  isMuted?: boolean;
+  isSoloed?: boolean;
+  onToggleMute?: () => void;
+  onToggleSolo?: () => void;
 }
 
 interface MixerStripProps {
   channels: FaderChannel[];
 }
 
-const FADER_HEIGHT = 110; // px height of fader track
-const VU_LINES = 12; // number of horizontal tick lines
+const FADER_HEIGHT = 110;
+const VU_LINES = 12;
 
 // Global event emitter for pad hits
 const padHitListeners = new Map<string, Set<() => void>>();
@@ -62,41 +66,108 @@ function usePadHitFlash(channelId: string): number {
   return flash;
 }
 
-/** VU tick lines on the right side of a fader */
-const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash }) => {
-  const activeLevel = Math.max(volume, flash);
+/** Clipping indicator dot above VU ticks */
+const ClipIndicator: React.FC<{ flash: number; volume: number }> = ({ flash, volume }) => {
+  if (flash <= 0.05 || flash <= volume) return null;
+  const overflow = flash - volume;
+  const isRed = overflow > 0.2;
+  const isYellow = !isRed && overflow > 0;
+  if (!isYellow && !isRed) return null;
   return (
     <div
-      className="flex flex-col-reverse justify-between"
-      style={{ height: `${FADER_HEIGHT}px`, paddingTop: 0, paddingBottom: 0 }}
-    >
-      {Array.from({ length: VU_LINES }).map((_, i) => {
-        const threshold = (i + 1) / VU_LINES;
-        const isLit = activeLevel >= threshold * 0.9;
-        const isTop = i >= VU_LINES - 2;
-        const isMid = i >= VU_LINES - 4;
-        return (
-          <div
-            key={i}
-            className="transition-all duration-75"
-            style={{
-              width: '10px',
-              height: '2px',
-              borderRadius: '1px',
-              backgroundColor: isLit
-                ? 'hsl(0 0% 100%)'
-                : 'hsl(var(--muted))',
-              opacity: isLit ? (isTop ? 1 : isMid ? 0.8 : 0.6) : 0.3,
-              boxShadow: isLit && flash > 0.1
-                ? `0 0 4px hsl(0 0% 100% / 0.5)`
-                : 'none',
-            }}
-          />
-        );
-      })}
+      className="rounded-full mb-0.5"
+      style={{
+        width: '4px',
+        height: '4px',
+        backgroundColor: isRed ? 'hsl(0 80% 50%)' : 'hsl(45 90% 55%)',
+        boxShadow: isRed
+          ? '0 0 6px hsl(0 80% 50% / 0.7)'
+          : '0 0 4px hsl(45 90% 55% / 0.5)',
+      }}
+    />
+  );
+};
+
+/** VU tick lines on the right side of a fader */
+const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash }) => {
+  // Flash is capped at the volume level
+  const activeLevel = Math.min(Math.max(volume, flash * volume), volume);
+  return (
+    <div className="flex flex-col items-center">
+      <ClipIndicator flash={flash} volume={volume} />
+      <div
+        className="flex flex-col-reverse justify-between"
+        style={{ height: `${FADER_HEIGHT}px` }}
+      >
+        {Array.from({ length: VU_LINES }).map((_, i) => {
+          const threshold = (i + 1) / VU_LINES;
+          const isLit = activeLevel >= threshold * 0.9;
+          const isTop = i >= VU_LINES - 2;
+          const isMid = i >= VU_LINES - 4;
+          return (
+            <div
+              key={i}
+              className="transition-all duration-75"
+              style={{
+                width: '10px',
+                height: '2px',
+                borderRadius: '1px',
+                backgroundColor: isLit
+                  ? 'hsl(0 0% 100%)'
+                  : 'hsl(var(--muted))',
+                opacity: isLit ? (isTop ? 1 : isMid ? 0.8 : 0.6) : 0.3,
+                boxShadow: isLit && flash > 0.1
+                  ? `0 0 4px hsl(0 0% 100% / 0.5)`
+                  : 'none',
+              }}
+            />
+          );
+        })}
+      </div>
     </div>
   );
 };
+
+/** Solo and Mute buttons */
+const SoloMuteButtons: React.FC<{
+  isSoloed?: boolean;
+  isMuted?: boolean;
+  onToggleSolo?: () => void;
+  onToggleMute?: () => void;
+}> = ({ isSoloed, isMuted, onToggleSolo, onToggleMute }) => (
+  <div className="flex flex-col gap-[1px]">
+    <button
+      onClick={(e) => { e.stopPropagation(); onToggleSolo?.(); }}
+      className="flex items-center justify-center rounded-[2px] transition-colors"
+      style={{
+        width: '14px',
+        height: '14px',
+        fontSize: '7px',
+        fontWeight: 700,
+        backgroundColor: isSoloed ? 'hsl(45 90% 55%)' : 'hsl(var(--muted))',
+        color: isSoloed ? 'hsl(0 0% 0%)' : 'hsl(var(--muted-foreground))',
+      }}
+      title="Solo"
+    >
+      S
+    </button>
+    <button
+      onClick={(e) => { e.stopPropagation(); onToggleMute?.(); }}
+      className="flex items-center justify-center rounded-[2px] transition-colors"
+      style={{
+        width: '14px',
+        height: '14px',
+        fontSize: '7px',
+        fontWeight: 700,
+        backgroundColor: isMuted ? 'hsl(0 70% 50%)' : 'hsl(var(--muted))',
+        color: isMuted ? 'hsl(0 0% 100%)' : 'hsl(var(--muted-foreground))',
+      }}
+      title="Mute"
+    >
+      M
+    </button>
+  </div>
+);
 
 const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
   const [dragging, setDragging] = useState(false);
@@ -126,11 +197,20 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
   }, []);
 
   const pct = channel.volume * 100;
-  const fillOpacity = Math.min(1, 0.6 + flash * 0.4);
-  const glowIntensity = flash * 10;
+  const fillOpacity = Math.min(1, 0.6 + Math.min(flash, channel.volume) * 0.4);
+  const glowIntensity = Math.min(flash, channel.volume) * 10;
+  const isMuted = channel.isMuted;
 
   return (
-    <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
+    <div className={`flex flex-col items-center gap-1 flex-1 min-w-0 ${isMuted ? 'opacity-30' : ''}`}>
+      {/* S/M buttons */}
+      <SoloMuteButtons
+        isSoloed={channel.isSoloed}
+        isMuted={channel.isMuted}
+        onToggleSolo={channel.onToggleSolo}
+        onToggleMute={channel.onToggleMute}
+      />
+
       {/* Fader + VU ticks side by side */}
       <div className="flex items-stretch gap-[3px]">
         {/* Fader track */}
@@ -150,7 +230,7 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
               height: `${pct}%`,
               backgroundColor: 'hsl(0 0% 100%)',
               opacity: fillOpacity,
-              boxShadow: flash > 0.05 ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${flash * 0.6})` : 'none',
+              boxShadow: flash > 0.05 ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${Math.min(flash, channel.volume) * 0.6})` : 'none',
             }}
           />
           {/* Thumb */}
@@ -160,7 +240,7 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
               bottom: `calc(${pct}% - 2.5px)`,
               backgroundColor: flash > 0.1 ? `hsl(0 0% 100%)` : 'hsl(0 0% 70%)',
               boxShadow: flash > 0.05
-                ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${flash * 0.5})`
+                ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${Math.min(flash, channel.volume) * 0.5})`
                 : '0 1px 2px hsl(0 0% 0% / 0.5)',
             }}
           />
