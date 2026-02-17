@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronDown, ChevronUp, Volume2, StopCircle, Lock } from 'lucide-react';
+import { Volume2, StopCircle, Lock } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -31,7 +31,7 @@ interface AmbientPadsProps {
 const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   const { tier } = useSubscription();
   const isMaster = tier === 'master';
-  const [expanded, setExpanded] = useState(false);
+  // expanded state removed - always visible now
   const [activeNotes, setActiveNotes] = useState<Set<NoteName>>(new Set());
   const [volume, setVolume] = useState(getAmbientVolume);
   const [pan, setPan] = useState(getAmbientPan);
@@ -59,11 +59,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
     ensureSamplesLoaded();
   }, [ensureSamplesLoaded]);
 
-  useEffect(() => {
-    const handler = () => setExpanded(true);
-    window.addEventListener('tutorial:expand-ambient', handler);
-    return () => window.removeEventListener('tutorial:expand-ambient', handler);
-  }, []);
+  // Auto-expand no longer needed - always visible
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -144,30 +140,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
 
   return (
     <div className="w-full">
-      <button
-        onClick={() => setExpanded((p) => !p)}
-        className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-foreground">Continuous Pads</span>
-          {hasActive &&
-            <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
-              {[...activeNotes][0]}
-            </span>
-          }
-        </div>
-        <div className="flex items-center gap-1">
-          {hasActive && !expanded && (
-            <button onClick={(e) => { e.stopPropagation(); handleStopAll(); }} className="p-0.5 rounded hover:bg-muted">
-              <StopCircle className="h-3 w-3 text-muted-foreground" />
-            </button>
-          )}
-          {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-        </div>
-      </button>
-
-      {expanded &&
-        <div className="mt-1.5">
-          <div className="flex gap-1.5">
+      <div className="flex gap-1.5">
             {/* Note grid - compact */}
             <div className="grid grid-cols-6 gap-[3px] flex-1 ambient-grid">
               {ALL_NOTES.map((note) => {
@@ -261,8 +234,6 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
               Carregando...
             </p>
           )}
-        </div>
-      }
     </div>
   );
 };
