@@ -1,44 +1,44 @@
 
-# Notificacao de Atualizacao do App (PWA)
 
-## Situacao Atual
+# Ajustes de Layout Mobile: Scroll, Foco e Landscape
 
-O app ja detecta novas versoes via Service Worker (`useRegisterSW`) e mostra um botao "Nova versao disponivel!" dentro do menu hamburger. Porem, o usuario so ve isso se abrir o menu -- facil de passar despercebido.
+## Problemas Identificados
 
-Alem disso, o `skipWaiting: true` faz o SW atualizar automaticamente, o que pode causar problemas (recarregar no meio do uso). O ideal e dar controle ao usuario.
-
-## Sugestoes de Abordagem
-
-| Abordagem | Descricao | Recomendacao |
-|-----------|-----------|--------------|
-| **Toast/Banner fixo (recomendado)** | Um banner ou toast persistente aparece no topo/rodape da tela quando ha atualizacao, com botao "Atualizar agora" | Melhor UX -- visivel sem ser intrusivo |
-| Dialog modal | Um dialog centralizado interrompe o uso para avisar | Muito intrusivo para atualizacoes frequentes |
-| Badge no icone | Indicador visual sutil em algum icone | Facil de ignorar |
-
-**Recomendacao: Toast/Banner fixo no topo da tela** -- aparece automaticamente, nao bloqueia o uso, e o usuario atualiza quando quiser.
+1. **Scroll global indesejado**: O app inteiro esta rolando no mobile em vez de manter layout fixo (apenas o container de faders/metronomo deve rolar).
+2. **Modo foco (vertical)**: Pads muito distantes do topo; continuous pads e metronomo distantes dos pads.
+3. **Landscape mobile**: Pads podem ficar ocultos; painel lateral nao tem o mesmo esquema de scroll controlado.
+4. **Volumes impedidos pelo scroll**: Ao arrastar faders verticais, o scroll do container pode interferir.
 
 ## Plano de Implementacao
 
-### 1. Remover `skipWaiting` automatico (`vite.config.ts`)
-- Remover `skipWaiting: true` e `clientsClaim: true` do workbox config
-- Mudar `registerType` para `"prompt"` (o usuario decide quando atualizar)
-- Isso faz o `needRefresh` funcionar corretamente como gatilho
+### 1. Corrigir scroll global e reduzir container do footer (Index.tsx)
 
-### 2. Criar componente `UpdateBanner` (`src/components/UpdateBanner.tsx`)
-- Banner fixo no topo da tela com animacao de entrada (slide down)
-- Texto: "Nova versao disponivel!" com botao "Atualizar"
-- Botao de fechar (X) para dispensar temporariamente
-- Estilo: fundo escuro com destaque na cor primary, visivel mas nao intrusivo
+- O footer mobile (`<footer>`) com `max-h-[35vh]` pode ser grande demais e empurrar conteudo. Reduzir para `max-h-[28vh]` no modo normal e `max-h-[20vh]` no foco.
+- Garantir que o container principal (`flex flex-col h-[100dvh] overflow-hidden`) nao permita scroll global. Verificar se nao ha `overflow-auto` nos containers pai.
+- No container de snap-scroll dos faders/metronomo, adicionar `overscroll-behavior: contain` para evitar que o scroll "vaze" para o body.
 
-### 3. Integrar no Index.tsx
-- Passar `needRefresh` e `updateServiceWorker` para o `UpdateBanner`
-- Remover o botao de "Nova versao" do menu hamburger (ja que o banner e mais visivel)
-- Manter a logica de checagem a cada 60 segundos
+### 2. Modo foco vertical: aproximar pads do topo (Index.tsx + LandscapeSwipePanels.tsx)
+
+- No `LandscapeSwipePanels`, quando em portrait, trocar `items-center justify-center` do pad grid para `items-start justify-center` -- isso empurra os pads para cima, perto do header.
+- Receber prop `focusMode` no componente para ajustar layout.
+- No modo foco, remover padding extra do container dos continuous pads para que fiquem colados aos pads.
+
+### 3. Landscape mobile: pads respondem melhor + scroll no painel lateral (LandscapeSwipePanels.tsx)
+
+- No painel direito (landscape), aplicar o mesmo `overscroll-behavior: contain` e `touch-action: pan-y` para que o scroll vertical nao interfira nos faders.
+- Garantir que o pad grid use `items-center` sem overflow oculto cortando pads.
+
+### 4. Faders nao impedidos pelo scroll (MixerStrip.tsx + Index.tsx)
+
+- O fader track ja usa `touch-none` e `setPointerCapture`, o que deveria funcionar. O problema e o container pai com `overflow-y-auto snap-y` que captura o gesto vertical.
+- Solucao: no container de scroll do footer, adicionar `touch-action: pan-y` e no fader track manter `touch-none`. Quando um fader esta sendo arrastado (pointer captured), o scroll do container pai nao deveria interferir porque o pointer capture ja impede.
+- Adicionar `overscroll-behavior: contain` no container scroll para isolar completamente.
 
 ### Resumo de arquivos alterados
 
 | Arquivo | Mudanca |
 |---------|---------|
-| `vite.config.ts` | `registerType: "prompt"`, remover `skipWaiting`/`clientsClaim` |
-| `src/components/UpdateBanner.tsx` | Novo componente -- banner fixo com botao "Atualizar" |
-| `src/pages/Index.tsx` | Adicionar `<UpdateBanner>`, remover botao do menu |
+| `src/pages/Index.tsx` | Reduzir max-height do footer mobile; adicionar `overscroll-behavior: contain` no container de scroll; passar `focusMode` para `LandscapeSwipePanels` |
+| `src/components/LandscapeSwipePanels.tsx` | Receber prop `focusMode`; alinhar pads ao topo no modo foco (portrait); aplicar `overscroll-behavior: contain` no painel lateral (landscape) |
+| `src/index.css` | Ajustar media queries landscape para footer mais compacto |
+
