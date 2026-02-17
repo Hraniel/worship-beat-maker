@@ -61,9 +61,9 @@ const PanControl: React.FC<PanControlProps> = ({ label = 'Pan', pan, onPanChange
               top: '10px',
             }}
           />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-primary" />
         </div>
-        <span className="text-sm font-bold text-orange-400 tabular-nums">{displayValue}</span>
+        <span className="text-sm font-bold text-primary tabular-nums">{displayValue}</span>
       </ZoomPopup>
     </div>
   );
