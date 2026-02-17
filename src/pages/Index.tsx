@@ -941,16 +941,16 @@ const Index = () => {
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
           {focusMode &&
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center gap-2 py-1">
               {currentSongName &&
-            <span className="text-xs font-medium text-primary truncate">♪ {currentSongName}</span>
+            <span className="text-xs font-medium text-primary truncate max-w-[200px]">♪ {currentSongName}</span>
             }
               <button
               onClick={toggleFocusMode}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-auto"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/60 backdrop-blur-sm rounded-full transition-colors"
               title="Sair do modo foco">
                 <Minimize className="h-3 w-3" />
-                Sair do foco
+                Sair
               </button>
             </div>
           }
@@ -1012,10 +1012,10 @@ const Index = () => {
         <div className="lg:hidden h-full overflow-y-auto snap-y snap-mandatory" style={{ scrollSnapType: 'y mandatory' }}>
           {/* Focus mode bar */}
           {focusMode &&
-          <div className="flex items-center justify-between px-2 py-1">
-              {currentSongName && <span className="text-xs font-medium text-primary truncate">♪ {currentSongName}</span>}
-              <button onClick={toggleFocusMode} className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-auto" title="Sair do modo foco">
-                <Minimize className="h-3 w-3" /> Sair do foco
+          <div className="flex items-center justify-center gap-2 px-2 py-1">
+              {currentSongName && <span className="text-xs font-medium text-primary truncate max-w-[200px]">♪ {currentSongName}</span>}
+              <button onClick={toggleFocusMode} className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/60 backdrop-blur-sm rounded-full transition-colors" title="Sair do modo foco">
+                <Minimize className="h-3 w-3" /> Sair
               </button>
             </div>
           }

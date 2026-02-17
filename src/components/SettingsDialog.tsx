@@ -139,32 +139,32 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm w-[calc(100vw-2rem)] mx-auto">
         <DialogHeader>
           <DialogTitle className="text-base">Configurações</DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full">
-            <TabsTrigger value="audio" className="flex-1 gap-1.5 text-xs">
-              <Headphones className="h-3.5 w-3.5" />
-              Áudio
+          <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
+            <TabsTrigger value="audio" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+              <Headphones className="h-3 w-3 shrink-0" />
+              <span className="truncate">Áudio</span>
             </TabsTrigger>
-            <TabsTrigger value="store" className="flex-1 gap-1.5 text-xs">
-              <Store className="h-3.5 w-3.5" />
-              Loja
+            <TabsTrigger value="store" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+              <Store className="h-3 w-3 shrink-0" />
+              <span className="truncate">Loja</span>
             </TabsTrigger>
-            <TabsTrigger value="plans" className="flex-1 gap-1.5 text-xs">
-              <Crown className="h-3.5 w-3.5" />
-              Planos
+            <TabsTrigger value="plans" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+              <Crown className="h-3 w-3 shrink-0" />
+              <span className="truncate">Planos</span>
             </TabsTrigger>
-            <TabsTrigger value="guide" className="flex-1 gap-1.5 text-xs">
-              <HelpCircle className="h-3.5 w-3.5" />
-              Guia
+            <TabsTrigger value="guide" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+              <HelpCircle className="h-3 w-3 shrink-0" />
+              <span className="truncate">Guia</span>
             </TabsTrigger>
-            <TabsTrigger value="about" className="flex-1 gap-1.5 text-xs">
-              <Info className="h-3.5 w-3.5" />
-              Sobre
+            <TabsTrigger value="about" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+              <Info className="h-3 w-3 shrink-0" />
+              <span className="truncate">Sobre</span>
             </TabsTrigger>
           </TabsList>
 
