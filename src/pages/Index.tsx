@@ -756,7 +756,7 @@ const Index = () => {
       {/* Main content area - side by side on lg+ */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
       {/* Pad Grid + Continuous Pads - swipeable in landscape mobile */}
-      <main className="flex-1 flex flex-col overflow-hidden min-h-0 min-h-[55vh] md:min-h-[60vh] lg:min-h-0">
+      <main className="flex-1 flex flex-col overflow-hidden min-h-0 lg:min-h-0">
         <LandscapeSwipePanels
           padGrid={
             <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">

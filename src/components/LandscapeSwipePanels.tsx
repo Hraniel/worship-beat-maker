@@ -54,11 +54,11 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({ padGrid, am
   // In portrait / desktop: show pad grid with ambient pads below
   if (!isLandscape) {
     return (
-      <div className="flex flex-col flex-1 min-h-0">
-        <div className="flex-1 flex items-center justify-center min-h-0">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 flex items-center justify-center min-h-0 overflow-auto">
           {padGrid}
         </div>
-        <div className="shrink-0 px-2 pb-1">
+        <div className="shrink-0 border-t border-border/30 px-2 py-1">
           {ambientPads}
         </div>
       </div>
