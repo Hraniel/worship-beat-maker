@@ -813,6 +813,7 @@ const Index = () => {
       {/* Pad Grid + Continuous Pads - swipeable in landscape mobile */}
       <main className="flex-1 flex flex-col overflow-hidden min-h-0 lg:min-h-0">
         <LandscapeSwipePanels
+          focusMode={focusMode}
           padGrid={
             <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
               <PadGrid
@@ -946,7 +947,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[30vh] md:max-h-[25vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[35vh] md:max-h-[30vh] lg:max-h-none'}`}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-[18vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[28vh] md:max-h-[25vh] lg:max-h-none'}`}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1060,7 +1061,7 @@ const Index = () => {
           ) : (
           <div
             className="flex-1 overflow-y-auto snap-y snap-mandatory"
-            style={{ scrollSnapType: 'y mandatory', height: 'calc(100% - 20px)' }}
+            style={{ scrollSnapType: 'y mandatory', height: 'calc(100% - 20px)', overscrollBehavior: 'contain', touchAction: 'pan-y' }}
             onScroll={(e) => {
               const el = e.currentTarget;
               const page = Math.round(el.scrollTop / el.clientHeight);

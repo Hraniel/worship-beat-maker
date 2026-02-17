@@ -6,19 +6,20 @@ interface LandscapeSwipePanelsProps {
   ambientPads: React.ReactNode;
   mixer?: React.ReactNode;
   metronome?: React.ReactNode;
+  focusMode?: boolean;
 }
 
-const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({ padGrid, ambientPads, mixer, metronome }) => {
+const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({ padGrid, ambientPads, mixer, metronome, focusMode }) => {
   const isLandscape = useIsLandscape();
 
   // Portrait / desktop: pad grid with ambient pads below
   if (!isLandscape) {
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden">
+        <div className={`flex-1 flex justify-center min-h-0 overflow-hidden ${focusMode ? 'items-start' : 'items-center'}`}>
           {padGrid}
         </div>
-        <div className="shrink-0 border-t border-border/30 px-2 py-1">
+        <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
           {ambientPads}
         </div>
       </div>
@@ -34,7 +35,10 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({ padGrid, am
       </div>
 
       {/* Right: Ambient + Mixer + Metronome stacked */}
-      <div className="w-[45%] max-w-[340px] flex flex-col min-h-0 border-l border-border/30 overflow-y-auto">
+      <div
+        className="w-[45%] max-w-[340px] flex flex-col min-h-0 border-l border-border/30 overflow-y-auto"
+        style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+      >
         <div className="shrink-0 px-1.5 py-1">
           {ambientPads}
         </div>

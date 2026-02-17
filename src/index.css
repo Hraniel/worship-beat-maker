@@ -136,6 +136,6 @@ html {
 /* Landscape general: tighter footer */
 @media (orientation: landscape) {
   footer {
-    max-height: 35vh;
+    max-height: 28vh;
   }
 }
