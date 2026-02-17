@@ -629,7 +629,6 @@ const Index = () => {
           <div className="flex items-center gap-2 min-w-0 shrink-0">
             <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-6 w-6" />
             <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
-            <h1 className="text-sm font-bold text-foreground tracking-tight sm:hidden">GP</h1>
           </div>
 
           {/* Current song name - centered */}
@@ -642,8 +641,8 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            {/* Pad size controls - only in edit mode */}
-            {editMode && (
+            {/* Pad size controls - only in edit mode and when song selected */}
+            {editMode && currentSongId && (
             <div className="flex items-center gap-1 mr-1 border border-border rounded-md px-1.5 py-0.5" data-tutorial="pad-size">
               <Minus className="h-3 w-3 text-muted-foreground shrink-0" />
               <Slider
@@ -659,8 +658,19 @@ const Index = () => {
             </div>
             )}
 
-            {/* Repertório - hidden in edit mode */}
-            {!editMode && (
+            {/* Modo Foco - hidden in edit mode or when no song selected */}
+            {!editMode && currentSongId && (
+            <button
+            onClick={toggleFocusMode}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="Modo foco"
+            data-tutorial="focus-mode">
+              <Maximize className="h-4 w-4" />
+            </button>
+            )}
+
+            {/* Repertório - hidden in edit mode or when no song selected */}
+            {!editMode && currentSongId && (
             <div data-tutorial="setlist">
             <SetlistManager
             songs={songs}
@@ -670,17 +680,6 @@ const Index = () => {
             onDeleteSong={handleDeleteSong}
             onReorder={reorderSetlists} />
             </div>
-            )}
-
-
-            {!editMode && (
-            <button
-            onClick={toggleFocusMode}
-            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Modo foco"
-            data-tutorial="focus-mode">
-              <Maximize className="h-4 w-4" />
-            </button>
             )}
 
             {/* Unified menu */}
@@ -924,8 +923,9 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur overflow-y-auto lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[30vh] md:max-h-[25vh] lg:max-h-none focus-footer' : 'p-1.5 sm:p-2 lg:p-3 max-h-[35vh] md:max-h-[30vh] lg:max-h-none'}`}>
-        <div className="max-w-[600px] lg:max-w-none mx-auto space-y-1.5">
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[30vh] md:max-h-[25vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[35vh] md:max-h-[30vh] lg:max-h-none'}`}>
+        {/* Desktop: stacked layout */}
+        <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
           {focusMode &&
           <div className="flex items-center justify-between">
@@ -964,7 +964,6 @@ const Index = () => {
           <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
             <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => setMetronomeOpen((prev) => !prev)}>
-
               <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                 {spotifyTrackName && (
                   <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">
@@ -973,55 +972,89 @@ const Index = () => {
                 )}
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors"
-                  onClick={(e) => { e.stopPropagation(); }}
-                  title="Editar BPM no metrônomo abaixo"
-                >{bpm}</button>
+                <button className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors" onClick={(e) => { e.stopPropagation(); }} title="Editar BPM no metrônomo abaixo">{bpm}</button>
                 <span className="text-[10px] text-muted-foreground">BPM</span>
-                {spotifyKey && (
-                  <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>
-                )}
+                {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
                 <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
               </div>
               <div className="flex items-center gap-1">
                 {!metronomeOpen &&
-                <button
-                  type="button"
-                  onClick={(e) => {e.stopPropagation();setMetronomeIsPlaying((prev) => !prev);}}
-                  className={`p-1.5 rounded-md transition-colors ${
-                  metronomeIsPlaying ?
-                  'text-destructive hover:bg-destructive/10' :
-                  'text-primary hover:bg-primary/10'}`
-                  }
-                  title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}>
-
+                <button type="button" onClick={(e) => {e.stopPropagation();setMetronomeIsPlaying((prev) => !prev);}} className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`} title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}>
                     {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </button>
                 }
-                {metronomeOpen ?
-                <ChevronUp className="h-4 w-4 text-muted-foreground" /> :
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                }
+                {metronomeOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
               </div>
             </div>
             <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
-              <Metronome
-                bpm={bpm}
-                onBpmChange={setBpm}
-                timeSignature={timeSignature}
-                onTimeSignatureChange={setTimeSignature}
-                isPlaying={metronomeIsPlaying}
-                onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
-
+              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
               <div data-tutorial="pan-metronome">
-              <PanControl
-                label="Pan Metrônomo"
-                pan={metronomePan}
-                onPanChange={handleMetronomePanChange}
-                disabled={audioSettings.metronomeStereo === 'mono'} />
+              <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
+            </div>
+          </div>
+        </div>
 
+        {/* Mobile: vertical snap scroll between mixer and metronome */}
+        <div className="lg:hidden h-full overflow-y-auto snap-y snap-mandatory" style={{ scrollSnapType: 'y mandatory' }}>
+          {/* Focus mode bar */}
+          {focusMode &&
+          <div className="flex items-center justify-between px-2 py-1">
+              {currentSongName && <span className="text-xs font-medium text-primary truncate">♪ {currentSongName}</span>}
+              <button onClick={toggleFocusMode} className="flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors ml-auto" title="Sair do modo foco">
+                <Minimize className="h-3 w-3" /> Sair do foco
+              </button>
+            </div>
+          }
+
+          {/* Mixer page */}
+          {!focusMode && (
+          <div className="snap-start min-h-full flex items-center p-1.5" style={{ scrollSnapAlign: 'start' }}>
+            <div className="w-full" data-tutorial="volume-master">
+              <MixerStrip channels={[
+                { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
+                { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
+                ...defaultPads.slice(0, 9).map((pad) => ({
+                  id: pad.id,
+                  label: padNames[pad.id] || pad.name,
+                  shortLabel: padNames[pad.id] || pad.name,
+                  volume: padVolumes[pad.id] ?? 0.7,
+                  onChange: (v: number) => handlePadVolumeChange(pad.id, v),
+                })),
+                { id: 'master', label: 'Master', shortLabel: 'Master', volume: masterVolume, onChange: setMasterVol },
+              ]} />
+            </div>
+          </div>
+          )}
+
+          {/* Metronome page */}
+          <div className="snap-start min-h-full flex items-center p-1.5" style={{ scrollSnapAlign: 'start' }}>
+            <div className="w-full bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+              <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setMetronomeOpen((prev) => !prev)}>
+                <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+                  {spotifyTrackName && <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">♪ {spotifyTrackName}</span>}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors" onClick={(e) => { e.stopPropagation(); }} title="Editar BPM">{bpm}</button>
+                  <span className="text-[10px] text-muted-foreground">BPM</span>
+                  {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
+                  <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  {!metronomeOpen &&
+                  <button type="button" onClick={(e) => {e.stopPropagation();setMetronomeIsPlaying((prev) => !prev);}} className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`} title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}>
+                      {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    </button>
+                  }
+                  {metronomeOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                </div>
+              </div>
+              <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
+                <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+                <div data-tutorial="pan-metronome">
+                <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
+                </div>
+              </div>
             </div>
           </div>
         </div>

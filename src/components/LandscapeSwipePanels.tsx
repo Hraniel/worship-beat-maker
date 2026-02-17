@@ -15,7 +15,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({ padGrid, am
   if (!isLandscape) {
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className="flex-1 flex items-center justify-center min-h-0 overflow-auto">
+      <div className="flex-1 flex items-center justify-center min-h-0 overflow-hidden">
           {padGrid}
         </div>
         <div className="shrink-0 border-t border-border/30 px-2 py-1">
