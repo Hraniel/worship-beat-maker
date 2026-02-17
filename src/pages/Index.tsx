@@ -406,10 +406,9 @@ const Index = () => {
 
       for (const [padId, cfg] of Object.entries(config.pads) as [string, any][]) {
         if (cfg.volume != null) newVolumes[padId] = cfg.volume;
-        if (cfg.pan != null) {
-          newPans[padId] = cfg.pan;
-          setPadPan(padId, cfg.pan);
-        }
+        // Pan always stays at center - Spotify AI should not change pan
+        newPans[padId] = 0;
+        setPadPan(padId, 0);
         newEffects[padId] = {
           eqLow: cfg.eqLow ?? 0,
           eqMid: cfg.eqMid ?? 0,

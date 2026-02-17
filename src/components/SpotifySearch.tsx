@@ -24,7 +24,6 @@ interface PadConfig {
   reverb: number;
   delay: number;
   delayTime: number;
-  pan: number;
   pattern?: number[];
 }
 
@@ -53,8 +52,8 @@ const PAD_LABELS: Record<string, string> = {
   'hihat-open': 'HH Open',
   crash: 'Crash',
   clap: 'Clap',
-  'loop-rock': 'Loop Rock',
-  'loop-ballad': 'Loop Ballad',
+  'loop-worship-1': 'Worship Snap',
+  'loop-worship-2': 'Worship Flow',
 };
 
 
@@ -459,7 +458,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                     </div>
                     <div className="bg-muted/50 rounded-md p-2 text-center">
                       <span className="text-sm font-bold text-foreground">
-                        {suggestion.recommendedLoop === 'loop-rock' ? 'Rock' : 'Ballad'}
+                        {suggestion.recommendedLoop === 'loop-worship-1' ? 'Snap' : suggestion.recommendedLoop === 'loop-worship-2' ? 'Flow' : suggestion.recommendedLoop?.includes('rock') ? 'Rock' : 'Ballad'}
                       </span>
                       <p className="text-[10px] text-muted-foreground">Loop</p>
                     </div>
@@ -478,7 +477,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                           <span>Vol {Math.round(cfg.volume * 100)}%</span>
                           {cfg.reverb > 0 && <span>Rev {Math.round(cfg.reverb * 100)}%</span>}
                           {cfg.delay > 0 && <span>Del {Math.round(cfg.delay * 100)}%</span>}
-                          {cfg.pan !== 0 && <span>{cfg.pan < 0 ? `L${Math.round(Math.abs(cfg.pan)*100)}` : `R${Math.round(cfg.pan*100)}`}</span>}
+                          
                         </div>
                       </div>
                     ))}

@@ -18,17 +18,17 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const systemPrompt = `Você é um especialista em produção musical e bateria para worship/louvor.
-Dado os dados de uma música do Spotify (incluindo análise de áudio real), sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
+Dado os dados de uma música do Spotify (incluindo análise de áudio real quando disponível), sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
 
-Os 8 pads disponíveis são (nesta ordem):
+Os 8 pads disponíveis são (use EXATAMENTE estes IDs):
 1. kick - Bumbo
 2. snare - Caixa  
 3. hihat-closed - Hi-Hat Fechado
 4. hihat-open - Hi-Hat Aberto
 5. crash - Crash/Prato
 6. clap - Palma
-7. loop-rock - Loop Rock Beat (pad de loop)
-8. loop-ballad - Loop Ballad (pad de loop)
+7. loop-worship-1 - Worship Snap (pad de loop contínuo)
+8. loop-worship-2 - Worship Flow (pad de loop contínuo)
 
 Para cada pad, sugira:
 - volume: 0-1 (ex: 0.7)
@@ -38,10 +38,11 @@ Para cada pad, sugira:
 - reverb: 0-1 (baseado na reverberação detectada na análise)
 - delay: 0-1
 - delayTime: 0.1-1.0 segundos (sincronize com o BPM quando possível)
-- pan: -1 (esquerda) a 1 (direita), 0 = centro
+
+IMPORTANTE: NÃO inclua o campo "pan" nas configurações dos pads. O pan será sempre mantido no centro.
 
 IMPORTANTE - Padrão Rítmico:
-Para cada pad, inclua também um campo "pattern" que é um array de 0s e 1s representando quais subdivisões do compasso o instrumento deve tocar.
+Para cada pad (exceto loops), inclua um campo "pattern" que é um array de 0s e 1s representando quais subdivisões do compasso o instrumento deve tocar.
 - Para 4/4: use 16 subdivisões (semicolcheias). Ex: kick típico = [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0]
 - Para 3/4: use 12 subdivisões. 
 - Para 6/8: use 12 subdivisões.
@@ -53,52 +54,62 @@ Exemplos de padrões comuns em worship:
 - Hi-hat em colcheias: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0]
 - Hi-hat aberto no "e" do 4: [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0]
 
-Analise os dados de áudio reais (seções, segmentos com timbre, batidas) para:
-1. Detectar a intensidade e tipo de reverberação
-2. Identificar a panoramização dos instrumentos
-3. Replicar a equalização baseada nos timbres
-4. Criar padrões rítmicos que se aproximem da bateria original
+Para os pads de loop (loop-worship-1 e loop-worship-2), use pattern vazio [].
+
+IMPORTANTE - BPM e TOM:
+- Se os dados de áudio do Spotify fornecerem BPM e tonalidade, use-os.
+- Se NÃO houver dados de áudio disponíveis (endpoints deprecados), você DEVE estimar o BPM e o tom baseado no seu conhecimento da música.
+- Use seu conhecimento musical para determinar o BPM correto e a tonalidade da música.
+- Para músicas famosas, você provavelmente sabe o BPM e tom corretos. USE ESSE CONHECIMENTO.
+- A tonalidade deve ser no formato: "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" seguido de "m" para menor. Ex: "Am", "D", "F#m"
 
 Também sugira:
-- bpm: o BPM ideal (use o valor detectado na análise se disponível)
+- bpm: o BPM correto da música (priorize dados reais, depois seu conhecimento)
+- key: a tonalidade correta da música (ex: "C", "Am", "D#m")
 - timeSignature: "4/4", "3/4" ou "6/8"
-- recommendedLoop: "loop-rock" ou "loop-ballad" (qual loop usar)
+- recommendedLoop: "loop-worship-1" ou "loop-worship-2" (qual loop usar)
 - description: breve descrição do estilo rítmico sugerido (max 2 frases)
 - patternName: nome curto do padrão rítmico (ex: "Rock Worship", "Ballad Suave", "Driving 8ths")
 
 Responda APENAS com JSON válido usando esta estrutura exata:
 {
   "bpm": number,
-  "key": string, // ex: "C", "D#m", "Gb", "Am" - tonalidade da música
+  "key": string,
   "timeSignature": string,
   "recommendedLoop": string,
   "description": string,
   "patternName": string,
   "pads": {
-    "kick": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number, "pattern": number[] },
+    "kick": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": number[] },
     "snare": { ... },
     "hihat-closed": { ... },
     "hihat-open": { ... },
     "crash": { ... },
     "clap": { ... },
-    "loop-rock": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number, "pattern": [] },
-    "loop-ballad": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pan": number, "pattern": [] }
+    "loop-worship-1": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": [] },
+    "loop-worship-2": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": [] }
   }
 }`;
 
-    let userPrompt = `Música: "${trackName}" de ${artist}
+    let userPrompt = `Música: "${trackName}" de ${artist}`;
 
-Dados do Spotify Audio Features:
-- Tempo/BPM: ${features?.tempo || "desconhecido"}
-- Energia: ${features?.energy || "desconhecida"} (0-1)
-- Danceability: ${features?.danceability || "desconhecida"} (0-1)
-- Valence (positividade): ${features?.valence || "desconhecida"} (0-1)
-- Acousticness: ${features?.acousticness || "desconhecida"} (0-1)
-- Instrumentalness: ${features?.instrumentalness || "desconhecida"} (0-1)
-- Loudness: ${features?.loudness || "desconhecida"} dB
-- Key: ${features?.key ?? "desconhecida"}
-- Mode: ${features?.mode === 1 ? "maior" : features?.mode === 0 ? "menor" : "desconhecido"}
-- Time Signature: ${features?.time_signature || "desconhecido"}`;
+    // Add Spotify features if available
+    const hasFeatures = features && Object.keys(features).length > 0 && features.tempo;
+    if (hasFeatures) {
+      userPrompt += `\n\nDados do Spotify Audio Features:
+- Tempo/BPM: ${features.tempo}
+- Energia: ${features.energy} (0-1)
+- Danceability: ${features.danceability} (0-1)
+- Valence (positividade): ${features.valence} (0-1)
+- Acousticness: ${features.acousticness} (0-1)
+- Instrumentalness: ${features.instrumentalness} (0-1)
+- Loudness: ${features.loudness} dB
+- Key: ${features.key ?? "desconhecida"}
+- Mode: ${features.mode === 1 ? "maior" : features.mode === 0 ? "menor" : "desconhecido"}
+- Time Signature: ${features.time_signature}`;
+    } else {
+      userPrompt += `\n\nNOTA: Os dados de áudio do Spotify não estão disponíveis para esta música. Use seu conhecimento musical para determinar o BPM, tom e estilo corretos desta música.`;
+    }
 
     // Add real audio analysis data if available
     if (analysis) {
@@ -119,7 +130,6 @@ Dados do Spotify Audio Features:
       }
 
       if (analysis.segments?.length) {
-        // Compute average timbre values for the first segments
         const avgTimbre = [0, 0, 0, 0, 0, 0];
         let count = 0;
         for (const seg of analysis.segments) {
@@ -140,7 +150,6 @@ Dados do Spotify Audio Features:
 Use estes valores para calibrar EQ e reverb dos pads.`;
         }
 
-        // Loudness dynamics
         const loudnesses = analysis.segments.map((s: any) => s.loudness_max);
         const maxLoud = Math.max(...loudnesses);
         const minLoud = Math.min(...loudnesses);
@@ -160,7 +169,7 @@ Use estes valores para calibrar EQ e reverb dos pads.`;
       }
     }
 
-    userPrompt += `\n\nCom base em TODOS estes dados reais, sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música.`;
+    userPrompt += `\n\nCom base em TODOS estes dados (ou no seu conhecimento musical se os dados não estiverem disponíveis), sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música. Lembre-se: use EXATAMENTE os IDs de pad listados acima.`;
 
     // Call Lovable AI Gateway
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
