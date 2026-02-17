@@ -66,27 +66,6 @@ function usePadHitFlash(channelId: string): number {
   return flash;
 }
 
-/** Clipping indicator dot above VU ticks */
-const ClipIndicator: React.FC<{ flash: number; volume: number }> = ({ flash, volume }) => {
-  if (flash <= 0.05 || flash <= volume) return null;
-  const overflow = flash - volume;
-  const isRed = overflow > 0.2;
-  const isYellow = !isRed && overflow > 0;
-  if (!isYellow && !isRed) return null;
-  return (
-    <div
-      className="rounded-full mb-0.5"
-      style={{
-        width: '4px',
-        height: '4px',
-        backgroundColor: isRed ? 'hsl(0 80% 50%)' : 'hsl(45 90% 55%)',
-        boxShadow: isRed
-          ? '0 0 6px hsl(0 80% 50% / 0.7)'
-          : '0 0 4px hsl(45 90% 55% / 0.5)',
-      }}
-    />
-  );
-};
 
 /** VU tick lines on the right side of a fader */
 const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash }) => {
@@ -94,7 +73,6 @@ const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash })
   const activeLevel = Math.min(Math.max(volume, flash * volume), volume);
   return (
     <div className="flex flex-col items-center">
-      <ClipIndicator flash={flash} volume={volume} />
       <div
         className="flex flex-col-reverse justify-between"
         style={{ height: `${FADER_HEIGHT}px` }}

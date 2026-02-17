@@ -864,7 +864,7 @@ const Index = () => {
           {!focusMode &&
           <div data-tutorial="volume-master">
             <MixerStrip channels={[
-              { id: 'metronome', label: 'Metrônomo', shortLabel: 'MET', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
+              { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
               { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
               ...defaultPads.slice(0, 9).map((pad) => ({
                 id: pad.id,
