@@ -1,62 +1,50 @@
 
-# Ajustes de Interface e Configuracoes
+# Correções de Responsividade e Posicionamento
 
-## 1. Header: esconder elementos quando nao ha musica selecionada
+## Problemas Identificados
 
-Quando o banner "Selecione uma musica" estiver visivel (sem `currentSongId`), os botoes da barra superior (Repertorio, Modo Foco, slider de tamanho) serao ocultados -- somente o menu hamburger permanece visivel.
+1. **Botão "Sair" do modo foco** está posicionado no canto superior direito (`top-2 right-2`) e pode sobrepor o pad "Ride" ou outros elementos
+2. **Dialog de Configurações** está cortado nas laterais em telas pequenas -- as abas e conteúdo transbordam porque o `max-w-sm` (384px) é muito largo para telas de 390px sem margem suficiente
+3. **Pads podem ficar cortados** em telas menores
 
-## 2. Header: trocar posicao do Repertorio com Modo Foco
+## Mudanças Planejadas
 
-O botao de Modo Foco vira antes do Repertorio na ordem dos elementos do header.
+### 1. Botão "Sair do foco" -- reposicionar para não sobrepor pads
 
-## 3. Header: esconder nome do app em mobile
+Mover o botão para **abaixo do header** (quando o header está oculto no modo foco), posicionando-o no **centro superior** da tela com margem segura, fora da área dos pads.
 
-O texto "GP" (versao mobile) sera removido. Apenas o icone/logo permanece em telas pequenas.
+- Posição: `top-1 left-1/2 -translate-x-1/2` (centralizado no topo, fora do grid)
+- Alternativa: mantê-lo no canto mas com `top-0` e estilização mais discreta
 
-## 4. Pads: area nao rolavel e responsiva
+### 2. Dialog de Configurações -- responsivo e centralizado
 
-- Remover `overflow-auto` da area dos pads, usar `overflow-hidden`
-- No `PadGrid`, ajustar o grid para usar `aspect-square` nos pads e `max-width` responsivo baseado na altura disponivel, garantindo que os 9 pads fiquem visiveis sem corte
-- Centralizar vertical e horizontalmente com flex
+- Alterar `max-w-sm` para `max-w-[calc(100vw-2rem)]` em mobile para garantir margens laterais
+- Adicionar `mx-4` ou padding adequado
+- Nas abas (TabsList), usar `overflow-x-auto` ou reduzir o tamanho do texto para caber sem corte
 
-## 5. Faders: scroll horizontal por swipe entre abas
+### 3. Pads -- garantir que não fiquem cortados
 
-O MixerStrip ja tem paginacao com swipe (slide animation entre paginas de 4 canais). Adicionar suporte a gestos de toque (touch swipe) para navegar entre as paginas arrastando o dedo para esquerda/direita.
+- Verificar e ajustar o `PadGrid` para usar o espaço disponível sem overflow
 
-## 6. Faders e Metronomo: area de scroll rapido vertical
-
-No footer (modo vertical), o Mixer e Metronomo ficarao dentro de um container de scroll vertical com `snap` para que o usuario deslize rapidamente entre os dois. Somente um sera visivel por vez, como paginas com scroll snap.
-
-## 7. Configuracoes: aba "Sobre"
-
-Nova aba com icone `Info` contendo informacoes basicas do app (nome, versao, descricao breve).
-
-## 8. Configuracoes: ajustes textuais
-
-- Botao "Ver Planos": remover icone Crown, texto muda para "Gerenciar"
-- Botao "Acessar Glory Store": remover icone Store, texto muda para "Acessar"
-- Aba Audio: "Esquerdo" vira "L", "Direito" vira "R", botoes menores, sem setinhas
-
-## Detalhes Tecnicos
+## Detalhes Técnicos
 
 ### Arquivos a modificar
 
-| Arquivo | Mudanca |
+| Arquivo | Mudança |
 |---------|---------|
-| `src/pages/Index.tsx` | Ocultar botoes do header quando `!currentSongId`; trocar ordem Foco/Repertorio; esconder "GP" em mobile; footer com scroll snap entre mixer e metronomo |
-| `src/components/PadGrid.tsx` | Ajustar grid para `overflow-hidden`, usar altura disponivel para calcular tamanho dos pads responsivamente |
-| `src/components/MixerStrip.tsx` | Adicionar suporte a touch swipe para mudar de pagina |
-| `src/components/SettingsDialog.tsx` | Adicionar aba "Sobre"; remover icones/emojis dos botoes; ajustar L/R na aba de audio |
-| `src/components/LandscapeSwipePanels.tsx` | Garantir que pads nao tenham scroll na area principal |
+| `src/pages/Index.tsx` | Reposicionar o botão "Sair" para centro-topo com z-index adequado, sem sobrepor pads |
+| `src/components/SettingsDialog.tsx` | Ajustar `DialogContent` com classe responsiva; ajustar TabsList para caber em telas pequenas |
+| `src/components/PadGrid.tsx` | Garantir pads responsivos sem corte usando `aspect-square` e limites baseados na viewport |
 
-### Footer com scroll snap (modo vertical)
+### Botão "Sair" -- nova posição
 
-O footer tera `overflow-y-auto` com `scroll-snap-type: y mandatory`. O mixer e o metronomo terao `scroll-snap-align: start` e `min-height` de 100% do container, permitindo transicao rapida entre os dois com deslize do dedo.
+O botão ficará centralizado no topo da tela (abaixo da safe area), com `z-30` para ficar acima do conteúdo mas sem tocar nos pads. A posição centralizada evita conflito com qualquer pad nos cantos.
 
-### Touch swipe nos faders
+### Dialog Configurações -- responsivo
 
-Detectar `touchstart`/`touchend` com diferenca de X > 50px para acionar `goToPage(page+1)` ou `goToPage(page-1)`, tornando a navegacao entre abas de faders mais natural no celular.
+```text
+Antes:  max-w-sm (384px fixo) -- corta em telas de 390px
+Depois: max-w-sm com mx-4 e overflow protegido
+```
 
-### Aba Sobre
-
-Contera: nome do app "Glory Pads", versao, descricao curta e link de contato/suporte.
+As abas terão texto menor em mobile e `flex-wrap` ou scroll horizontal se necessário para evitar corte.
