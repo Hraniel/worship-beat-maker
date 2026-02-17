@@ -114,21 +114,28 @@ html {
   animation: loop-border 1.2s ease-in-out infinite;
 }
 
-/* Landscape mobile: compact footer in focus mode */
+/* Landscape mobile: ultra-compact footer */
 @media (orientation: landscape) and (max-height: 500px) {
   .focus-footer {
-    max-height: 55vh;
-    padding: 4px 8px;
+    max-height: 50vh;
+    padding: 2px 6px;
   }
-  .focus-footer .space-y-2 > * + * {
-    margin-top: 4px;
+  .focus-footer .space-y-1\.5 > * + * {
+    margin-top: 2px;
   }
   .ambient-grid {
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 4px;
+    gap: 2px;
   }
   .ambient-grid button {
-    height: 2rem;
-    font-size: 10px;
+    height: 1.75rem;
+    font-size: 9px;
+  }
+}
+
+/* Landscape general: tighter footer */
+@media (orientation: landscape) {
+  footer {
+    max-height: 35vh;
   }
 }

@@ -59,14 +59,12 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
     ensureSamplesLoaded();
   }, [ensureSamplesLoaded]);
 
-  // Listen for tutorial expand event
   useEffect(() => {
     const handler = () => setExpanded(true);
     window.addEventListener('tutorial:expand-ambient', handler);
     return () => window.removeEventListener('tutorial:expand-ambient', handler);
   }, []);
 
-  // Listen for settings pan changes
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -127,7 +125,6 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   const handlePanChange = useCallback((val: number) => {
     setPan(val);
     setAmbientPan(val);
-    // Clear side selection in settings if pan moved to center
     if (val === 0) {
       try {
         const raw = localStorage.getItem('drum-pads-audio-settings');
@@ -149,28 +146,33 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
     <div className="w-full">
       <button
         onClick={() => setExpanded((p) => !p)}
-        className="flex items-center justify-between w-full px-3 py-2 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+        className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-foreground">Continuous Pads</span>
+          <span className="text-xs font-semibold text-foreground">Continuous Pads</span>
           {hasActive &&
-            <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
-              {[...activeNotes][0]} ativa
+            <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-medium">
+              {[...activeNotes][0]}
             </span>
           }
         </div>
-        {expanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        <div className="flex items-center gap-1">
+          {hasActive && !expanded && (
+            <button onClick={(e) => { e.stopPropagation(); handleStopAll(); }} className="p-0.5 rounded hover:bg-muted">
+              <StopCircle className="h-3 w-3 text-muted-foreground" />
+            </button>
+          )}
+          {expanded ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+        </div>
       </button>
 
       {expanded &&
-        <div className="mt-2">
-          {/* Main layout: pads grid left, controls right */}
-          <div className="flex gap-2">
-            {/* Note grid - 4 columns, 3 rows */}
-            <div className="grid grid-cols-4 landscape:grid-cols-6 gap-1.5 flex-1">
+        <div className="mt-1.5">
+          <div className="flex gap-1.5">
+            {/* Note grid - compact */}
+            <div className="grid grid-cols-4 landscape:grid-cols-6 gap-1 flex-1 ambient-grid">
               {ALL_NOTES.map((note) => {
                 const isActive = activeNotes.has(note);
                 const isCustom = customNotes.has(note);
-                const isSharp = note.includes('#');
                 return (
                   <button
                     key={note}
@@ -179,35 +181,32 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                     className={`
                       relative flex items-center justify-center rounded-md
                       border transition-all duration-200 select-none
-                      h-14 sm:h-16 landscape:h-12 text-xs font-bold text-foreground
+                      h-10 text-[10px] font-bold text-foreground
                       ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
-                      ${isSharp ? 'text-[10px]' : ''}
                     `}
                     style={{
                       backgroundColor: isActive ? 'hsl(0 0% 20%)' : 'hsl(0 0% 8%)',
                       borderColor: isActive ? 'hsl(0 0% 40%)' : 'hsl(0 0% 18%)',
-                      boxShadow: isActive ? '0 0 12px hsl(0 0% 30% / 0.4)' : 'none',
+                      boxShadow: isActive ? '0 0 8px hsl(0 0% 30% / 0.4)' : 'none',
                     }}>
                     {note}
                     {isCustom &&
-                      <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] opacity-60">
-                        MP3
-                      </span>
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[6px] opacity-50">MP3</span>
                     }
                     {isActive &&
-                      <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full animate-pulse bg-foreground" />
+                      <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full animate-pulse bg-foreground" />
                     }
                   </button>
                 );
               })}
             </div>
 
-            {/* Right controls: vertical volume slider + pan knob + stop */}
-            <div className="flex flex-col items-center gap-2 landscape:gap-3 py-1 w-12 landscape:w-16 shrink-0">
-              <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
+            {/* Right controls: volume + pan + stop */}
+            <div className="flex flex-col items-center gap-1.5 py-0.5 w-10 shrink-0">
+              <Volume2 className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
               <div
                 className="flex-1 flex items-center justify-center"
-                style={{ minHeight: '80px' }}
+                style={{ minHeight: '60px' }}
                 onPointerDown={() => setDraggingVolume(true)}
                 onPointerUp={() => setDraggingVolume(false)}
                 onPointerLeave={() => setDraggingVolume(false)}
@@ -222,7 +221,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                   className="h-full"
                 />
               </div>
-              <span className="text-[8px] text-muted-foreground tabular-nums">{Math.round(volume * 100)}%</span>
+              <span className="text-[7px] text-muted-foreground tabular-nums">{Math.round(volume * 100)}%</span>
 
               <ZoomPopup visible={draggingVolume}>
                 <Volume2 className="h-6 w-6 text-foreground" />
@@ -232,7 +231,6 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                 </div>
               </ZoomPopup>
 
-              {/* Pan knob */}
               {isMaster ? (
                 <PanKnob pan={pan} onChange={handlePanChange} disabled={panDisabled} />
               ) : (
@@ -241,28 +239,24 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                   onClick={() => toast('🔒 Pan disponível no plano Master')}
                   title="Pan (Master)"
                 >
-                  <Lock className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-[7px] text-primary font-medium">PAN</span>
+                  <Lock className="h-2.5 w-2.5 text-muted-foreground" />
+                  <span className="text-[6px] text-primary font-medium">PAN</span>
                 </button>
               )}
 
               {hasActive && (
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleStopAll} title="Parar">
-                  <StopCircle className="h-3.5 w-3.5" />
+                <Button variant="ghost" size="icon" className="h-5 w-5" onClick={handleStopAll} title="Parar">
+                  <StopCircle className="h-3 w-3" />
                 </Button>
               )}
             </div>
           </div>
 
           {loading && (
-            <p className="text-[10px] text-primary text-center animate-pulse mt-2">
-              Carregando samples... aguarde
+            <p className="text-[9px] text-primary text-center animate-pulse mt-1">
+              Carregando...
             </p>
           )}
-
-          <p className="text-[10px] text-muted-foreground text-center mt-2">
-            Toque para ativar/desativar acordes sustentados
-          </p>
         </div>
       }
     </div>
