@@ -88,7 +88,7 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-y-auto overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logoDark} alt="Drum Pads Worship" className="h-8 w-auto" />
@@ -112,7 +112,7 @@ const Landing = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-20 sm:pt-40 sm:pb-32 px-4 overflow-hidden">
+      <section className="relative pb-20 sm:pb-32 px-4 overflow-hidden" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 8rem)' }}>
         {/* Gradient blobs */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-20 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px]" />
