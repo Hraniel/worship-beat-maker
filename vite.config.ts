@@ -20,9 +20,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "pwa-icon-512.png"],
       manifest: {
-        name: "Drum Pads Worship",
-        short_name: "DrumPads",
-        description: "App de drum pads para louvor em igrejas",
+        name: "Glory Pads",
+        short_name: "GloryPads",
+        description: "App de pads para louvor em igrejas",
         theme_color: "#0a0b14",
         background_color: "#0a0b14",
         display: "standalone",

@@ -111,7 +111,7 @@ const Dashboard = () => {
         <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
             <img src={logoDark} alt="Logo" className="h-7 w-auto" />
-            <span className="font-bold text-sm text-gray-900 hidden sm:inline">Drum Pads Worship</span>
+            <span className="font-bold text-sm text-gray-900 hidden sm:inline">Glory Pads</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -266,7 +266,7 @@ const Dashboard = () => {
             <span className="text-sm font-medium text-gray-700">Novidades chegando em breve</span>
           </div>
           <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Estamos trabalhando em packs exclusivos para o Drum Pads Worship.
+            Estamos trabalhando em packs exclusivos para o Glory Pads.
             Usuários Master terão acesso antecipado!
           </p>
         </div>
