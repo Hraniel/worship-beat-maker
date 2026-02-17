@@ -6,11 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
+import PackCard from '@/components/PackCard';
+import { useStorePacks, StorePackData } from '@/hooks/useStorePacks';
 import {
-  Crown, Zap, Play, LogOut, Store, RefreshCw,
-  User, Mail, Calendar, Shield, Loader2, Lock,
+  Crown, Zap, Play, LogOut, Store,
+  User, Mail, Calendar, Loader2,
   ChevronDown, Drum, Waves, Sparkles, Music, Headphones,
-  Volume2, Layers, AudioWaveform, Star
+  Volume2, Layers, AudioWaveform, Star, Lock
 } from 'lucide-react';
 
 const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
@@ -19,51 +21,16 @@ const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: str
   master: { label: 'Master', icon: <Crown className="h-3 w-3" />, cls: 'bg-amber-100 text-amber-700' },
 };
 
-interface StorePack {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  sounds: number;
-  icon: React.ReactNode;
-  color: string;
-  available: boolean;
-  tag?: string;
-}
-
-const storePacks: StorePack[] = [
-  {
-    id: 'worship-essentials', name: 'Worship Essentials', description: 'Kicks, snares e hi-hats otimizados para louvor contemporâneo.',
-    category: 'Drums', sounds: 12, icon: <Drum className="h-5 w-5" />, color: 'bg-rose-500', available: false, tag: 'Popular',
-  },
-  {
-    id: 'ambient-textures', name: 'Ambient Textures', description: 'Pads atmosféricos e texturas para momentos de oração.',
-    category: 'Continuous Pads', sounds: 8, icon: <Waves className="h-5 w-5" />, color: 'bg-sky-500', available: false,
-  },
-  {
-    id: 'gospel-grooves', name: 'Gospel Grooves', description: 'Loops e grooves com influência gospel e R&B.',
-    category: 'Loops', sounds: 10, icon: <Music className="h-5 w-5" />, color: 'bg-emerald-500', available: false,
-  },
-  {
-    id: 'electronic-worship', name: 'Electronic Worship', description: 'Sons eletrônicos modernos para cultos contemporâneos.',
-    category: 'Effects', sounds: 14, icon: <Sparkles className="h-5 w-5" />, color: 'bg-violet-500', available: false, tag: 'Novo',
-  },
-  {
-    id: 'acoustic-kit', name: 'Acoustic Kit', description: 'Bateria acústica gravada em estúdio profissional.',
-    category: 'Drums', sounds: 16, icon: <AudioWaveform className="h-5 w-5" />, color: 'bg-orange-500', available: false,
-  },
-  {
-    id: 'cinematic-risers', name: 'Cinematic Risers', description: 'Risers e transições cinematográficas para momentos épicos.',
-    category: 'Effects', sounds: 6, icon: <Volume2 className="h-5 w-5" />, color: 'bg-pink-500', available: false,
-  },
-  {
-    id: 'keys-pads', name: 'Keys & Pads', description: 'Sons de teclado e sintetizador para camadas harmônicas.',
-    category: 'Continuous Pads', sounds: 10, icon: <Headphones className="h-5 w-5" />, color: 'bg-teal-500', available: false,
-  },
-  {
-    id: 'latin-percussion', name: 'Latin Percussion', description: 'Percussão latina: congas, bongôs, shakers e mais.',
-    category: 'Percussion', sounds: 12, icon: <Layers className="h-5 w-5" />, color: 'bg-amber-600', available: false,
-  },
+// Static fallback packs (shown when DB has no packs yet)
+const STATIC_PACKS: StorePackData[] = [
+  { id: 'worship-essentials', name: 'Worship Essentials', description: 'Kicks, snares e hi-hats otimizados para louvor contemporâneo.', category: 'Drums', icon_name: 'drum', color: 'bg-rose-500', tag: 'Popular', is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'ambient-textures', name: 'Ambient Textures', description: 'Pads atmosféricos e texturas para momentos de oração.', category: 'Continuous Pads', icon_name: 'waves', color: 'bg-sky-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'gospel-grooves', name: 'Gospel Grooves', description: 'Loops e grooves com influência gospel e R&B.', category: 'Loops', icon_name: 'music', color: 'bg-emerald-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'electronic-worship', name: 'Electronic Worship', description: 'Sons eletrônicos modernos para cultos contemporâneos.', category: 'Effects', icon_name: 'sparkles', color: 'bg-violet-500', tag: 'Novo', is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'acoustic-kit', name: 'Acoustic Kit', description: 'Bateria acústica gravada em estúdio profissional.', category: 'Drums', icon_name: 'audio-waveform', color: 'bg-orange-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'cinematic-risers', name: 'Cinematic Risers', description: 'Risers e transições cinematográficas para momentos épicos.', category: 'Effects', icon_name: 'volume-2', color: 'bg-pink-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'keys-pads', name: 'Keys & Pads', description: 'Sons de teclado e sintetizador para camadas harmônicas.', category: 'Continuous Pads', icon_name: 'headphones', color: 'bg-teal-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'latin-percussion', name: 'Latin Percussion', description: 'Percussão latina: congas, bongôs, shakers e mais.', category: 'Percussion', icon_name: 'layers', color: 'bg-amber-600', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
 ];
 
 const categories = ['Todos', 'Drums', 'Continuous Pads', 'Loops', 'Effects', 'Percussion'];
@@ -71,12 +38,21 @@ const categories = ['Todos', 'Drums', 'Continuous Pads', 'Loops', 'Effects', 'Pe
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { tier, subscriptionEnd, loading, checkSubscription } = useSubscription();
+  const { tier, subscriptionEnd, loading } = useSubscription();
+  const { packs: dbPacks, loading: packsLoading, refetch } = useStorePacks();
   const [portalLoading, setPortalLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Todos');
 
   const badge = tierBadge[tier];
+
+  // Merge DB packs with static fallbacks
+  const displayPacks = dbPacks.length > 0
+    ? [
+        ...dbPacks,
+        ...STATIC_PACKS.filter(sp => !dbPacks.some(dp => dp.name === sp.name)),
+      ]
+    : STATIC_PACKS;
 
   const handleManageSubscription = async () => {
     setPortalLoading(true);
@@ -101,8 +77,8 @@ const Dashboard = () => {
     : null;
 
   const filteredPacks = activeCategory === 'Todos'
-    ? storePacks
-    : storePacks.filter(p => p.category === activeCategory);
+    ? displayPacks
+    : displayPacks.filter(p => p.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-[#f8f8fa] text-gray-900">
@@ -136,12 +112,10 @@ const Dashboard = () => {
                 <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown */}
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
                   <div className="absolute right-0 top-10 z-50 w-72 bg-white rounded-xl border border-gray-200 shadow-xl p-4 space-y-3">
-                    {/* User info */}
                     <div className="space-y-1.5">
                       <p className="text-sm font-semibold text-gray-900 truncate">
                         {user?.user_metadata?.display_name || user?.email?.split('@')[0]}
@@ -158,7 +132,6 @@ const Dashboard = () => {
 
                     <div className="h-px bg-gray-100" />
 
-                    {/* Subscription */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assinatura</span>
@@ -204,7 +177,6 @@ const Dashboard = () => {
           <div className="flex items-center gap-2.5 mb-1">
             <Store className="h-5 w-5 text-gray-400" />
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Glory Store</h1>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">Em breve</span>
           </div>
           <p className="text-sm text-gray-500 max-w-lg">
             Descubra novos sons, packs e texturas para elevar seu louvor. Cada pack inclui sons exclusivos prontos para usar.
@@ -228,36 +200,21 @@ const Dashboard = () => {
           ))}
         </div>
 
+        {/* Loading */}
+        {packsLoading && (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+          </div>
+        )}
+
         {/* Packs grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredPacks.map(pack => (
-            <div
-              key={pack.id}
-              className="group relative bg-white rounded-2xl border border-gray-200/80 p-4 hover:shadow-lg hover:border-gray-300 transition-all duration-200"
-            >
-              {pack.tag && (
-                <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-                  {pack.tag}
-                </span>
-              )}
-              <div className={`h-11 w-11 rounded-xl ${pack.color} flex items-center justify-center mb-3 text-white shadow-sm`}>
-                {pack.icon}
-              </div>
-              <h3 className="font-semibold text-sm text-gray-900 mb-1">{pack.name}</h3>
-              <p className="text-xs text-gray-500 leading-relaxed mb-3">{pack.description}</p>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Music className="h-3 w-3 text-gray-400" />
-                  <span className="text-[11px] text-gray-400 font-medium">{pack.sounds} sons</span>
-                </div>
-                <div className="flex items-center gap-1 text-gray-400">
-                  <Lock className="h-3 w-3" />
-                  <span className="text-[11px] font-medium">Em breve</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {!packsLoading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredPacks.map(pack => (
+              <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
+            ))}
+          </div>
+        )}
 
         {/* Coming soon banner */}
         <div className="mt-10 text-center py-10 px-4">

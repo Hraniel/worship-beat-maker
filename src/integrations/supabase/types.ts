@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      pack_sounds: {
+        Row: {
+          category: string
+          created_at: string
+          duration_ms: number
+          file_path: string | null
+          id: string
+          name: string
+          pack_id: string
+          preview_path: string | null
+          short_name: string
+          sort_order: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          duration_ms?: number
+          file_path?: string | null
+          id?: string
+          name: string
+          pack_id: string
+          preview_path?: string | null
+          short_name: string
+          sort_order?: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          duration_ms?: number
+          file_path?: string | null
+          id?: string
+          name?: string
+          pack_id?: string
+          preview_path?: string | null
+          short_name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pack_sounds_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "store_packs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -64,6 +111,74 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      store_packs: {
+        Row: {
+          category: string
+          color: string
+          created_at: string
+          description: string
+          icon_name: string
+          id: string
+          is_available: boolean
+          name: string
+          price_cents: number
+          tag: string | null
+        }
+        Insert: {
+          category: string
+          color?: string
+          created_at?: string
+          description: string
+          icon_name?: string
+          id?: string
+          is_available?: boolean
+          name: string
+          price_cents?: number
+          tag?: string | null
+        }
+        Update: {
+          category?: string
+          color?: string
+          created_at?: string
+          description?: string
+          icon_name?: string
+          id?: string
+          is_available?: boolean
+          name?: string
+          price_cents?: number
+          tag?: string | null
+        }
+        Relationships: []
+      }
+      user_purchases: {
+        Row: {
+          id: string
+          pack_id: string
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          pack_id: string
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          pack_id?: string
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchases_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "store_packs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
