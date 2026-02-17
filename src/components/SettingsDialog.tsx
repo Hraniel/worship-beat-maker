@@ -197,7 +197,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             <div className="space-y-3">
               <div className="flex items-center gap-2 mb-2">
                 <Store className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Loja de Pads</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Glory Store</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Descubra novos sons, packs e texturas para elevar seu louvor.
@@ -207,7 +207,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                 className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 <Store className="h-4 w-4" />
-                Acessar Loja
+                Acessar Glory Store
               </button>
             </div>
           </TabsContent>
