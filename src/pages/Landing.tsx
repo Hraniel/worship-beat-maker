@@ -74,7 +74,7 @@ const plans = [
       { text: 'Equalizador completo', included: true },
       { text: 'Reverb e Delay', included: true },
       { text: 'Spotify AI', included: true },
-      { text: 'Loja de Pads (em breve)', included: true },
+      { text: 'Glory Store (em breve)', included: true },
       { text: 'Suporte prioritário', included: true },
       { text: 'Novidades primeiro', included: true },
       { text: 'Acesso completo', included: true },

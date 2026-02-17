@@ -203,7 +203,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className="flex items-center gap-2.5 mb-1">
             <Store className="h-5 w-5 text-gray-400" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Loja de Pads</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Glory Store</h1>
             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">Em breve</span>
           </div>
           <p className="text-sm text-gray-500 max-w-lg">
