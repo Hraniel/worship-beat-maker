@@ -12,6 +12,7 @@ import Pricing from "./pages/Pricing";
 import Install from "./pages/Install";
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/install" element={<Install />} />
