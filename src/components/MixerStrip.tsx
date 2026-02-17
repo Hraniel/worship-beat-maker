@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ZoomPopup from './ZoomPopup';
 import { Volume2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 
 interface FaderChannel {
   id: string;
@@ -130,11 +131,6 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
 
   return (
     <div className="flex flex-col items-center gap-1 flex-1 min-w-0">
-      {/* Label */}
-      <span className="text-[8px] text-muted-foreground font-medium truncate w-full text-center leading-tight">
-        {channel.shortLabel}
-      </span>
-
       {/* Fader + VU ticks side by side */}
       <div className="flex items-stretch gap-[3px]">
         {/* Fader track */}
@@ -179,6 +175,11 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
         {Math.round(pct)}
       </span>
 
+      {/* Label below */}
+      <span className="text-[9px] text-muted-foreground font-medium truncate w-full text-center leading-tight">
+        {channel.shortLabel}
+      </span>
+
       <ZoomPopup visible={dragging}>
         <Volume2 className="h-5 w-5 text-foreground" />
         <span className="text-lg font-bold text-foreground tabular-nums">{channel.label}</span>
@@ -195,15 +196,25 @@ const MOBILE_PAGE_SIZE = 4;
 
 const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
   const [page, setPage] = useState(0);
+  const [direction, setDirection] = useState(0);
 
-  // Fixed channels: first 2 (MET, PAD) + last 1 (MST) always visible
-  // Paginated: pad channels in the middle
   const fixedStart = channels.slice(0, 2);
   const fixedEnd = channels.slice(-1);
   const padChannels = channels.slice(2, -1);
 
   const totalPages = Math.ceil(padChannels.length / MOBILE_PAGE_SIZE);
   const pagedPads = padChannels.slice(page * MOBILE_PAGE_SIZE, (page + 1) * MOBILE_PAGE_SIZE);
+
+  const goToPage = useCallback((newPage: number) => {
+    setDirection(newPage > page ? 1 : -1);
+    setPage(newPage);
+  }, [page]);
+
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -218,12 +229,27 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
         {/* Separator */}
         <div className="w-px self-stretch bg-border mx-0.5" />
 
-        {/* Paginated pad channels */}
-        {pagedPads.map((ch) => (
-          <div key={ch.id} className="flex-1 min-w-0">
-            <Fader channel={ch} />
-          </div>
-        ))}
+        {/* Paginated pad channels with slide animation */}
+        <div className="flex-[4] min-w-0 overflow-hidden relative">
+          <AnimatePresence initial={false} custom={direction} mode="wait">
+            <motion.div
+              key={page}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              className="flex gap-1"
+            >
+              {pagedPads.map((ch) => (
+                <div key={ch.id} className="flex-1 min-w-0">
+                  <Fader channel={ch} />
+                </div>
+              ))}
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
         {/* Separator */}
         <div className="w-px self-stretch bg-border mx-0.5" />
@@ -240,7 +266,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() => setPage(p => Math.max(0, p - 1))}
+            onClick={() => goToPage(Math.max(0, page - 1))}
             disabled={page === 0}
             className="p-0.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
           >
@@ -250,7 +276,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
             {Array.from({ length: totalPages }).map((_, i) => (
               <button
                 key={i}
-                onClick={() => setPage(i)}
+                onClick={() => goToPage(i)}
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
                   i === page ? 'bg-primary' : 'bg-muted-foreground/30'
                 }`}
@@ -258,7 +284,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
             ))}
           </div>
           <button
-            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+            onClick={() => goToPage(Math.min(totalPages - 1, page + 1))}
             disabled={page === totalPages - 1}
             className="p-0.5 rounded text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
           >
