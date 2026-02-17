@@ -14,7 +14,7 @@ interface MixerStripProps {
   channels: FaderChannel[];
 }
 
-const FADER_HEIGHT = 72; // px
+const FADER_HEIGHT = 72; // px height of fader track
 const VU_LINES = 10; // number of horizontal tick lines
 
 // Global event emitter for pad hits
