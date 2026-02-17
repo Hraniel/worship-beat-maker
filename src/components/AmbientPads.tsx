@@ -215,7 +215,11 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                   className="absolute bottom-0 left-0 w-full rounded-full"
                   style={{
                     height: `${volume * 100}%`,
-                    backgroundColor: 'hsl(0 0% 45%)',
+                    background: volume > 0.8
+                      ? 'linear-gradient(to top, hsl(140 60% 45%), hsl(45 80% 55%) 60%, hsl(0 70% 55%))'
+                      : volume > 0.5
+                      ? 'linear-gradient(to top, hsl(140 60% 45%), hsl(45 80% 55%))'
+                      : 'hsl(140 60% 45%)',
                   }}
                 />
                 {/* Thumb */}
