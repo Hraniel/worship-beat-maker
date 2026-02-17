@@ -52,11 +52,11 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
   },
   {
     id: 'ambient',
-    label: 'Ambient Pads',
+    label: 'Continuous Pads',
     steps: [
       {
         targetSelector: '[data-tutorial="ambient-pads"]',
-        title: 'Ambient Pads',
+        title: 'Continuous Pads',
         description: 'Pads de notas sustentadas para criar atmosferas de louvor. Toque para ativar/desativar.',
         prepareEvent: 'tutorial:expand-ambient',
       },
@@ -129,8 +129,8 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       },
       {
         targetSelector: '[data-tutorial="ambient-pads"]',
-        title: 'Pan do Ambient',
-        description: 'O knob de pan nos Ambient Pads direciona as notas sustentadas para L ou R independentemente dos outros sons. Recurso MASTER.',
+        title: 'Pan do Continuous Pads',
+        description: 'O knob de pan nos Continuous Pads direciona as notas sustentadas para L ou R independentemente dos outros sons. Recurso MASTER.',
         prepareEvent: 'tutorial:expand-ambient',
       },
     ],
@@ -158,7 +158,7 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       {
         targetSelector: '[data-tutorial="focus-mode"]',
         title: 'Modo Foco',
-        description: 'Oculta o cabeçalho para maximizar o espaço dos pads. Ideal para apresentações ao vivo! Os Ambient Pads continuam acessíveis.',
+        description: 'Oculta o cabeçalho para maximizar o espaço dos pads. Ideal para apresentações ao vivo! Os Continuous Pads continuam acessíveis.',
       },
     ],
   },
