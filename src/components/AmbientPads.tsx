@@ -1,6 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Volume2, StopCircle, Lock } from 'lucide-react';
-import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -141,26 +140,49 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   return (
     <div className="w-full">
       <div className="flex gap-1">
-            {/* Left: Volume fader (like reference) */}
+            {/* Left: Volume fader (mixing console style) */}
             <div
-              className="flex flex-col items-center gap-0.5 py-0.5 w-7 shrink-0"
-              onPointerDown={() => setDraggingVolume(true)}
+              className="flex flex-col items-center py-0.5 w-5 shrink-0 touch-none"
+              onPointerDown={(e) => {
+                setDraggingVolume(true);
+                (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+              }}
               onPointerUp={() => setDraggingVolume(false)}
               onPointerLeave={() => setDraggingVolume(false)}
             >
-              <span className="text-[6px] text-muted-foreground font-medium">S</span>
-              <div className="flex-1 flex items-center justify-center" style={{ minHeight: '50px' }}>
-                <Slider
-                  value={[volume * 100]}
-                  onValueChange={handleVolumeChange}
-                  min={0}
-                  max={100}
-                  step={1}
-                  orientation="vertical"
-                  className="h-full"
+              <div
+                className="relative flex-1 w-[3px] rounded-full"
+                style={{ backgroundColor: 'hsl(0 0% 20%)', minHeight: '50px' }}
+                onPointerDown={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const y = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
+                  handleVolumeChange([y * 100]);
+                }}
+                onPointerMove={(e) => {
+                  if (!draggingVolume) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const y = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
+                  handleVolumeChange([y * 100]);
+                }}
+              >
+                {/* Fill */}
+                <div
+                  className="absolute bottom-0 left-0 w-full rounded-full"
+                  style={{
+                    height: `${volume * 100}%`,
+                    backgroundColor: 'hsl(0 0% 45%)',
+                  }}
+                />
+                {/* Thumb */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 w-3 h-[6px] rounded-[1px]"
+                  style={{
+                    bottom: `calc(${volume * 100}% - 3px)`,
+                    backgroundColor: 'hsl(0 0% 70%)',
+                    boxShadow: '0 1px 3px hsl(0 0% 0% / 0.4)',
+                  }}
                 />
               </div>
-              <Volume2 className="h-2.5 w-2.5 text-muted-foreground shrink-0" />
 
               <ZoomPopup visible={draggingVolume}>
                 <Volume2 className="h-6 w-6 text-foreground" />
