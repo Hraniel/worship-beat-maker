@@ -1,32 +1,41 @@
 
+# Ajustes de Interface e Configuracoes
 
-# Remoção Solo/Mute + Layout Landscape Completo
+## 1. Header: esconder elementos quando nao ha musica selecionada
 
-## 1. Remover botões Solo e Mute dos faders
+Quando o banner "Selecione uma musica" estiver visivel (sem `currentSongId`), os botoes da barra superior (Repertorio, Modo Foco, slider de tamanho) serao ocultados -- somente o menu hamburger permanece visivel.
 
-Eliminar o componente `SoloMuteButtons` do `MixerStrip.tsx` e remover as props `isMuted`, `isSoloed`, `onToggleMute`, `onToggleSolo` da interface `FaderChannel` e do componente `Fader`.
+## 2. Header: trocar posicao do Repertorio com Modo Foco
 
-## 2. Layout landscape para mobile/tablet
+O botao de Modo Foco vira antes do Repertorio na ordem dos elementos do header.
 
-Quando o dispositivo estiver na horizontal, o layout muda completamente:
+## 3. Header: esconder nome do app em mobile
 
-```text
-+--------------------------------------------------+
-|              HEADER (barra superior)              |
-+---------------------------+----------------------+
-|                           |  Continuous Pads     |
-|                           +----------------------+
-|       PAD GRID            |  Mixer Faders        |
-|    (ocupa toda a          +----------------------+
-|     metade esquerda)      |  Metrônomo           |
-|                           |  (compacto)          |
-+---------------------------+----------------------+
-```
+O texto "GP" (versao mobile) sera removido. Apenas o icone/logo permanece em telas pequenas.
 
-- **Esquerda**: Grade de pads 3x3 ocupando toda a altura disponivel
-- **Direita**: Painel lateral com Continuous Pads, Faders do Mixer e Metronomo empilhados verticalmente
-- Header continua no topo
-- Tudo ocupa 100% da tela sem scroll
+## 4. Pads: area nao rolavel e responsiva
+
+- Remover `overflow-auto` da area dos pads, usar `overflow-hidden`
+- No `PadGrid`, ajustar o grid para usar `aspect-square` nos pads e `max-width` responsivo baseado na altura disponivel, garantindo que os 9 pads fiquem visiveis sem corte
+- Centralizar vertical e horizontalmente com flex
+
+## 5. Faders: scroll horizontal por swipe entre abas
+
+O MixerStrip ja tem paginacao com swipe (slide animation entre paginas de 4 canais). Adicionar suporte a gestos de toque (touch swipe) para navegar entre as paginas arrastando o dedo para esquerda/direita.
+
+## 6. Faders e Metronomo: area de scroll rapido vertical
+
+No footer (modo vertical), o Mixer e Metronomo ficarao dentro de um container de scroll vertical com `snap` para que o usuario deslize rapidamente entre os dois. Somente um sera visivel por vez, como paginas com scroll snap.
+
+## 7. Configuracoes: aba "Sobre"
+
+Nova aba com icone `Info` contendo informacoes basicas do app (nome, versao, descricao breve).
+
+## 8. Configuracoes: ajustes textuais
+
+- Botao "Ver Planos": remover icone Crown, texto muda para "Gerenciar"
+- Botao "Acessar Glory Store": remover icone Store, texto muda para "Acessar"
+- Aba Audio: "Esquerdo" vira "L", "Direito" vira "R", botoes menores, sem setinhas
 
 ## Detalhes Tecnicos
 
@@ -34,26 +43,20 @@ Quando o dispositivo estiver na horizontal, o layout muda completamente:
 
 | Arquivo | Mudanca |
 |---------|---------|
-| `src/components/MixerStrip.tsx` | Remover `SoloMuteButtons`, props de solo/mute da interface e do `Fader` |
-| `src/components/LandscapeSwipePanels.tsx` | Reformular para aceitar tambem faders e metronomo; em landscape, usar layout side-by-side (pads a esquerda, painel direito com ambient+faders+metronomo) |
-| `src/pages/Index.tsx` | Passar faders e metronomo como props para `LandscapeSwipePanels`; remover props solo/mute dos channels |
-| `src/hooks/use-mobile.tsx` | Adicionar hook `useIsLandscape()` reutilizavel |
-| `src/index.css` | Ajustar media queries de landscape para o novo layout |
+| `src/pages/Index.tsx` | Ocultar botoes do header quando `!currentSongId`; trocar ordem Foco/Repertorio; esconder "GP" em mobile; footer com scroll snap entre mixer e metronomo |
+| `src/components/PadGrid.tsx` | Ajustar grid para `overflow-hidden`, usar altura disponivel para calcular tamanho dos pads responsivamente |
+| `src/components/MixerStrip.tsx` | Adicionar suporte a touch swipe para mudar de pagina |
+| `src/components/SettingsDialog.tsx` | Adicionar aba "Sobre"; remover icones/emojis dos botoes; ajustar L/R na aba de audio |
+| `src/components/LandscapeSwipePanels.tsx` | Garantir que pads nao tenham scroll na area principal |
 
-### Hook useIsLandscape
+### Footer com scroll snap (modo vertical)
 
-Criar um hook compartilhado que detecta orientacao horizontal em mobile/tablet (largura > altura e altura <= 600px para incluir tablets).
+O footer tera `overflow-y-auto` com `scroll-snap-type: y mandatory`. O mixer e o metronomo terao `scroll-snap-align: start` e `min-height` de 100% do container, permitindo transicao rapida entre os dois com deslize do dedo.
 
-### LandscapeSwipePanels refatorado
+### Touch swipe nos faders
 
-- Recebera novas props: `mixer` e `metronome` (ReactNode)
-- Em portrait: layout atual (pads em cima, ambient embaixo, footer com mixer/metronomo separado)
-- Em landscape: layout horizontal com pads a esquerda e painel direito com ambient + mixer + metronomo em coluna com scroll interno
+Detectar `touchstart`/`touchend` com diferenca de X > 50px para acionar `goToPage(page+1)` ou `goToPage(page-1)`, tornando a navegacao entre abas de faders mais natural no celular.
 
-### MixerStrip simplificado
+### Aba Sobre
 
-- Remover `SoloMuteButtons` completamente
-- Remover `isMuted`, `isSoloed`, `onToggleMute`, `onToggleSolo` da interface
-- Remover logica de opacidade baseada em `isMuted` no Fader
-- Os faders ficam mais compactos sem os botoes S/M
-
+Contera: nome do app "Glory Pads", versao, descricao curta e link de contato/suporte.
