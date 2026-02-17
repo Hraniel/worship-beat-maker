@@ -12,6 +12,7 @@ const tierOrder: TierKey[] = ['free', 'pro', 'master'];
 const features: { label: string; free: boolean; pro: boolean; master: boolean }[] = [
   { label: 'Pads por setlist', free: true, pro: true, master: true },
   { label: 'Importar sons customizados', free: true, pro: true, master: true },
+  { label: 'Continuous Pads', free: true, pro: true, master: true },
   { label: 'Metrônomo e loops', free: true, pro: true, master: true },
   { label: 'Pads ilimitados', free: false, pro: true, master: true },
   { label: 'Imports ilimitados', free: false, pro: true, master: true },
