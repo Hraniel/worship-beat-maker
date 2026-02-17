@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { StopCircle, Lock } from 'lucide-react';
+import { StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import PanKnob from './PanKnob';
+
 
 import {
   ALL_NOTES,
@@ -15,8 +15,6 @@ import {
   initAmbientSamples,
   stopAmbientNote,
   startAmbientNote,
-  setAmbientPan,
-  getAmbientPan,
 } from '@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
 import { emitPadHit } from './MixerStrip';
@@ -27,9 +25,7 @@ interface AmbientPadsProps {
 
 const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   const { tier } = useSubscription();
-  const isMaster = tier === 'master';
   const [activeNotes, setActiveNotes] = useState<Set<NoteName>>(new Set());
-  const [pan, setPan] = useState(getAmbientPan);
   const [customNotes, setCustomNotes] = useState<Set<string>>(new Set());
   const togglingRef = useRef(false);
 
@@ -54,18 +50,6 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   }, [ensureSamplesLoaded]);
 
   // Auto-expand no longer needed - always visible
-
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail) {
-        setPan(detail.pan);
-        setAmbientPan(detail.pan);
-      }
-    };
-    window.addEventListener('settings:ambient-pan', handler);
-    return () => window.removeEventListener('settings:ambient-pan', handler);
-  }, []);
 
   const handleToggle = useCallback(async (note: NoteName) => {
     if (togglingRef.current) return;
@@ -108,31 +92,13 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   }, []);
 
 
-  const handlePanChange = useCallback((val: number) => {
-    setPan(val);
-    setAmbientPan(val);
-    if (val === 0) {
-      try {
-        const raw = localStorage.getItem('drum-pads-audio-settings');
-        if (raw) {
-          const settings = JSON.parse(raw);
-          if (settings.ambientSide) {
-            settings.ambientSide = null;
-            localStorage.setItem('drum-pads-audio-settings', JSON.stringify(settings));
-            window.dispatchEvent(new CustomEvent('settings:audio-changed', { detail: settings }));
-          }
-        }
-      } catch {}
-    }
-  }, []);
-
   const hasActive = activeNotes.size > 0;
 
   return (
     <div className="w-full">
       <div className="flex gap-1">
             {/* Note grid */}
-            <div className="grid grid-cols-6 gap-[3px] flex-1 ambient-grid">
+            <div className="grid grid-cols-6 gap-[3px] md:gap-1 flex-1 ambient-grid">
               {ALL_NOTES.map((note) => {
                 const isActive = activeNotes.has(note);
                 const isCustom = customNotes.has(note);
@@ -144,7 +110,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                     className={`
                       relative flex items-center justify-center rounded-[5px]
                       transition-all duration-150 select-none
-                      h-8 text-[10px] font-semibold tracking-wide
+                      h-8 md:h-10 text-[10px] md:text-xs font-semibold tracking-wide
                       ${loading ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
                       ${isActive
                         ? 'text-foreground ring-1 ring-foreground/30'
@@ -168,27 +134,14 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
               })}
             </div>
 
-            {/* Right: pan + stop */}
-            <div className="flex flex-col items-center justify-between py-0.5 w-7 shrink-0">
-              {isMaster ? (
-                <PanKnob pan={pan} onChange={handlePanChange} disabled={panDisabled} />
-              ) : (
-                <button
-                  className="flex flex-col items-center gap-0.5"
-                  onClick={() => toast('🔒 Pan disponível no plano Master')}
-                  title="Pan (Master)"
-                >
-                  <Lock className="h-2.5 w-2.5 text-muted-foreground" />
-                  <span className="text-[6px] text-primary font-medium">PAN</span>
-                </button>
-              )}
-
-              {hasActive && (
+            {/* Right: stop only */}
+            {hasActive && (
+              <div className="flex flex-col items-center justify-end py-0.5 w-7 shrink-0">
                 <Button variant="ghost" size="icon" className="h-5 w-5" onClick={handleStopAll} title="Parar">
                   <StopCircle className="h-3 w-3" />
                 </Button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {loading && (

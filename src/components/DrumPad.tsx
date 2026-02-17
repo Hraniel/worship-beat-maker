@@ -3,7 +3,7 @@ import ZoomPopup from './ZoomPopup';
 import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
 import { emitPadHit } from './MixerStrip';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
-import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette, Upload, Store } from 'lucide-react';
+import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette, Upload, Store, RefreshCw } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import type { PadSound } from '@/lib/sounds';
 import { useNavigate } from 'react-router-dom';
@@ -40,12 +40,15 @@ interface DrumPadProps {
   customColor?: PadColor;
   onColorChange?: (padId: string, color: PadColor) => void;
   customSoundsCount?: number;
+  onResetPad?: (padId: string) => void;
+  onResetAllPads?: () => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
   isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled, customSoundsCount = 0,
-  onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange
+  onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange,
+  onResetPad, onResetAllPads
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -448,6 +451,23 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 )}
               </div>
             )}
+
+            {/* Reset options */}
+            <div className="h-px bg-border" />
+            <button
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
+              onClick={() => { onResetPad?.(pad.id); setShowMenu(false); }}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Redefinir este pad
+            </button>
+            <button
+              className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-muted rounded-md transition-colors"
+              onClick={() => { onResetAllPads?.(); setShowMenu(false); }}
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Redefinir todos os pads
+            </button>
 
             {/* Effects - Master tier */}
             <div className="h-px bg-border" />

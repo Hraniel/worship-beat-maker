@@ -239,11 +239,11 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.25, ease: 'easeInOut' }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
               className="flex gap-1"
             >
               {pagedPads.map((ch) => (
-                <div key={ch.id} className="flex-1 min-w-0">
+                <div key={ch.id} className="min-w-0" style={{ width: `calc(${100 / MOBILE_PAGE_SIZE}% - ${((MOBILE_PAGE_SIZE - 1) * 4) / MOBILE_PAGE_SIZE}px)` }}>
                   <Fader channel={ch} />
                 </div>
               ))}
