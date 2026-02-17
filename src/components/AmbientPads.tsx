@@ -1,26 +1,22 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Volume2, StopCircle, Lock } from 'lucide-react';
+import { StopCircle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import PanKnob from './PanKnob';
-import ZoomPopup from './ZoomPopup';
+
 import {
   ALL_NOTES,
   type NoteName,
   toggleAmbientNote,
   stopAllAmbient,
   isAmbientNoteActive,
-  setAmbientVolume,
-  getAmbientVolume,
-  hasCustomSample,
   loadAmbientSample,
   initAmbientSamples,
   stopAmbientNote,
   startAmbientNote,
   setAmbientPan,
   getAmbientPan,
-  getAmbientAnalyserNode,
 } from '@/lib/ambient-engine';
 import { saveAmbientSound, deleteAmbientSound, getAllAmbientSoundNotes } from '@/lib/ambient-sound-store';
 
@@ -31,13 +27,10 @@ interface AmbientPadsProps {
 const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   const { tier } = useSubscription();
   const isMaster = tier === 'master';
-  // expanded state removed - always visible now
   const [activeNotes, setActiveNotes] = useState<Set<NoteName>>(new Set());
-  const [volume, setVolume] = useState(getAmbientVolume);
   const [pan, setPan] = useState(getAmbientPan);
   const [customNotes, setCustomNotes] = useState<Set<string>>(new Set());
   const togglingRef = useRef(false);
-  const [draggingVolume, setDraggingVolume] = useState(false);
 
   const samplesLoadedRef = useRef(false);
 
@@ -112,11 +105,6 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
     setActiveNotes(new Set());
   }, []);
 
-  const handleVolumeChange = useCallback((val: number[]) => {
-    const v = val[0] / 100;
-    setVolume(v);
-    setAmbientVolume(v);
-  }, []);
 
   const handlePanChange = useCallback((val: number) => {
     setPan(val);
@@ -138,138 +126,9 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
 
   const hasActive = activeNotes.size > 0;
 
-  // VU meter animation
-  const vuBarsRef = useRef<number[]>(new Array(8).fill(0));
-  const [vuBars, setVuBars] = useState<number[]>(new Array(8).fill(0));
-  const vuAnimRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (!hasActive) {
-      if (vuAnimRef.current) cancelAnimationFrame(vuAnimRef.current);
-      setVuBars(new Array(8).fill(0));
-      return;
-    }
-
-    let analyser: AnalyserNode;
-    try {
-      analyser = getAmbientAnalyserNode();
-    } catch {
-      return;
-    }
-
-    const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-    const tick = () => {
-      analyser.getByteFrequencyData(dataArray);
-      const bars = vuBarsRef.current;
-      const binSize = Math.floor(dataArray.length / 8);
-      for (let i = 0; i < 8; i++) {
-        let sum = 0;
-        for (let j = 0; j < binSize; j++) {
-          sum += dataArray[i * binSize + j];
-        }
-        const avg = sum / binSize / 255;
-        // Smooth decay
-        bars[i] = Math.max(avg, bars[i] * 0.88);
-      }
-      setVuBars([...bars]);
-      vuAnimRef.current = requestAnimationFrame(tick);
-    };
-
-    vuAnimRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (vuAnimRef.current) cancelAnimationFrame(vuAnimRef.current);
-    };
-  }, [hasActive]);
-
   return (
     <div className="w-full">
       <div className="flex gap-1">
-            {/* Left: Volume fader (mixing console style) */}
-            <div
-              className="flex flex-col items-center py-0.5 w-5 shrink-0 touch-none"
-              onPointerDown={(e) => {
-                setDraggingVolume(true);
-                (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-              }}
-              onPointerUp={() => setDraggingVolume(false)}
-              onPointerLeave={() => setDraggingVolume(false)}
-            >
-              <div
-                className="relative flex-1 w-[3px] rounded-full"
-                style={{ backgroundColor: 'hsl(0 0% 20%)', minHeight: '50px' }}
-                onPointerDown={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const y = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
-                  handleVolumeChange([y * 100]);
-                }}
-                onPointerMove={(e) => {
-                  if (!draggingVolume) return;
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const y = Math.max(0, Math.min(1, (rect.bottom - e.clientY) / rect.height));
-                  handleVolumeChange([y * 100]);
-                }}
-              >
-                {/* Fill */}
-                <div
-                  className="absolute bottom-0 left-0 w-full rounded-full"
-                  style={{
-                    height: `${volume * 100}%`,
-                    background: volume > 0.8
-                      ? 'linear-gradient(to top, hsl(140 60% 45%), hsl(45 80% 55%) 60%, hsl(0 70% 55%))'
-                      : volume > 0.5
-                      ? 'linear-gradient(to top, hsl(140 60% 45%), hsl(45 80% 55%))'
-                      : 'hsl(140 60% 45%)',
-                  }}
-                />
-                {/* Thumb */}
-                <div
-                  className="absolute left-1/2 -translate-x-1/2 w-3 h-[6px] rounded-[1px]"
-                  style={{
-                    bottom: `calc(${volume * 100}% - 3px)`,
-                    backgroundColor: 'hsl(0 0% 70%)',
-                    boxShadow: '0 1px 3px hsl(0 0% 0% / 0.4)',
-                  }}
-                />
-              </div>
-
-              <ZoomPopup visible={draggingVolume}>
-                <Volume2 className="h-6 w-6 text-foreground" />
-                <span className="text-2xl font-bold text-foreground tabular-nums">{Math.round(volume * 100)}%</span>
-                <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary rounded-full transition-all duration-75" style={{ width: `${volume * 100}%` }} />
-                </div>
-              </ZoomPopup>
-            </div>
-
-            {/* VU Meter bars */}
-            <div className="flex flex-col items-end justify-end gap-[1px] w-3 shrink-0 py-0.5">
-              {vuBars.slice(0, 6).map((level, i) => {
-                const barHeight = Math.max(2, level * 100);
-                const isHot = level > 0.7;
-                const isWarm = level > 0.4;
-                return (
-                  <div key={i} className="w-full flex items-end" style={{ height: '12px' }}>
-                    <div
-                      className="w-full rounded-[1px] transition-all duration-75"
-                      style={{
-                        height: `${barHeight}%`,
-                        backgroundColor: isHot
-                          ? 'hsl(0 70% 55%)'
-                          : isWarm
-                          ? 'hsl(45 80% 55%)'
-                          : 'hsl(140 60% 45%)',
-                        opacity: hasActive ? 0.9 : 0.15,
-                        boxShadow: hasActive && level > 0.3
-                          ? `0 0 4px ${isHot ? 'hsl(0 70% 55% / 0.4)' : isWarm ? 'hsl(45 80% 55% / 0.3)' : 'hsl(140 60% 45% / 0.3)'}`
-                          : 'none',
-                      }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-
             {/* Note grid */}
             <div className="grid grid-cols-6 gap-[3px] flex-1 ambient-grid">
               {ALL_NOTES.map((note) => {

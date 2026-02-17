@@ -64,6 +64,10 @@ export function setMetronomeVolume(vol: number) {
   metronomeVolume = vol;
 }
 
+export function getMetronomeVolume() {
+  return metronomeVolume;
+}
+
 export function onMetronomeBeat(cb: ((beat: number) => void) | null) {
   onMetronomeBeatCallback = cb;
 }
