@@ -764,8 +764,8 @@ const Index = () => {
         </div>
       </main>
 
-      <footer className={`shrink-0 lg:w-[340px] xl:w-[380px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur overflow-y-auto lg:overflow-y-auto ${focusMode ? 'p-1.5 max-h-[35vh] md:max-h-[30vh] lg:max-h-none focus-footer' : 'p-2 sm:p-3 lg:p-4 max-h-[40vh] md:max-h-[35vh] lg:max-h-none'}`}>
-        <div className="max-w-[600px] lg:max-w-none mx-auto space-y-2">
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur overflow-y-auto lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[30vh] md:max-h-[25vh] lg:max-h-none focus-footer' : 'p-1.5 sm:p-2 lg:p-3 max-h-[35vh] md:max-h-[30vh] lg:max-h-none'}`}>
+        <div className="max-w-[600px] lg:max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
           {focusMode &&
           <div className="flex items-center justify-between">
@@ -801,7 +801,7 @@ const Index = () => {
 
           {/* Metronome */}
           <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
-            <div className="flex items-center justify-between w-full px-4 py-2 hover:bg-muted/50 transition-colors cursor-pointer"
+            <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => setMetronomeOpen((prev) => !prev)}>
 
               <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
@@ -811,13 +811,13 @@ const Index = () => {
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-lg font-bold text-foreground tabular-nums">{bpm}</span>
-                <span className="text-xs text-muted-foreground">BPM</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+                <span className="text-[10px] text-muted-foreground">BPM</span>
                 {spotifyKey && (
-                  <span className="text-xs font-semibold text-primary">· Tom {spotifyKey}</span>
+                  <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>
                 )}
-                <span className="text-xs text-muted-foreground">· {timeSignature}</span>
+                <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
               </div>
               <div className="flex items-center gap-1">
                 {!metronomeOpen &&

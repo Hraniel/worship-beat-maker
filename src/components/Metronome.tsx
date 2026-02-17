@@ -22,7 +22,6 @@ const Metronome: React.FC<MetronomeProps> = ({
   const [currentBeat, setCurrentBeat] = React.useState(0);
   const beatsPerMeasure = parseInt(timeSignature.split('/')[0]);
 
-  // Wire metronome beat callback
   useEffect(() => {
     const handler = (beat: number) => {
       setCurrentBeat(beat);
@@ -32,7 +31,6 @@ const Metronome: React.FC<MetronomeProps> = ({
     return () => onMetronomeBeat(null);
   }, [onBeat]);
 
-  // Start/stop metronome via unified engine
   useEffect(() => {
     if (isPlaying) {
       enableMetronome(0.3);
@@ -46,69 +44,66 @@ const Metronome: React.FC<MetronomeProps> = ({
   }, [isPlaying]);
 
   return (
-    <div className="flex flex-col items-center gap-3 px-4 py-3">
-      <div className="flex items-center gap-2 w-full">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onBpmChange(Math.max(40, bpm - 1))}>
+    <div className="flex flex-col gap-2 px-3 py-2">
+      {/* BPM + slider row */}
+      <div className="flex items-center gap-1.5">
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onBpmChange(Math.max(40, bpm - 1))}>
           <Minus className="h-3 w-3" />
         </Button>
-        <div className="flex-1 text-center">
-          <span className="text-2xl font-bold text-foreground tabular-nums">{bpm}</span>
-          <span className="text-xs text-muted-foreground ml-1">BPM</span>
-        </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onBpmChange(Math.min(240, bpm + 1))}>
+        <Slider
+          value={[bpm]}
+          onValueChange={([v]) => onBpmChange(v)}
+          min={40}
+          max={240}
+          step={1}
+          className="flex-1"
+        />
+        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => onBpmChange(Math.min(240, bpm + 1))}>
           <Plus className="h-3 w-3" />
         </Button>
       </div>
 
-      <Slider
-        value={[bpm]}
-        onValueChange={([v]) => onBpmChange(v)}
-        min={40}
-        max={240}
-        step={1}
-        className="w-full"
-      />
-
-      <div className="flex items-center gap-2 w-full">
+      {/* Controls row: play + time sigs + beats */}
+      <div className="flex items-center gap-1.5">
         <Button
           onClick={onTogglePlay}
           variant={isPlaying ? "destructive" : "default"}
           size="sm"
-          className="flex-1"
+          className="h-7 px-3 text-xs gap-1"
         >
-          {isPlaying ? <Pause className="h-4 w-4 mr-1" /> : <Play className="h-4 w-4 mr-1" />}
-          {isPlaying ? 'Parar' : 'Iniciar'}
+          {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+          {isPlaying ? 'Stop' : 'Play'}
         </Button>
 
-        <div className="flex gap-1">
+        <div className="flex gap-0.5">
           {TIME_SIGNATURES.map((ts) => (
             <Button
               key={ts}
               variant={timeSignature === ts ? "default" : "outline"}
               size="sm"
-              className="text-xs px-2 h-8"
+              className="text-[10px] px-1.5 h-7"
               onClick={() => onTimeSignatureChange(ts)}
             >
               {ts}
             </Button>
           ))}
         </div>
-      </div>
 
-      {/* Beat indicator */}
-      <div className="flex gap-1.5">
-        {Array.from({ length: beatsPerMeasure }).map((_, i) => (
-          <div
-            key={i}
-            className={`w-3 h-3 rounded-full transition-all ${
-              isPlaying && currentBeat === i
-                ? i === 0
-                  ? 'bg-primary scale-125 animate-beat-flash'
-                  : 'bg-foreground/70 scale-110 animate-beat-flash'
-                : 'bg-muted-foreground/20'
-            }`}
-          />
-        ))}
+        {/* Beat indicator */}
+        <div className="flex gap-1 ml-auto">
+          {Array.from({ length: beatsPerMeasure }).map((_, i) => (
+            <div
+              key={i}
+              className={`w-2 h-2 rounded-full transition-all ${
+                isPlaying && currentBeat === i
+                  ? i === 0
+                    ? 'bg-primary scale-125 animate-beat-flash'
+                    : 'bg-foreground/70 scale-110 animate-beat-flash'
+                  : 'bg-muted-foreground/20'
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
