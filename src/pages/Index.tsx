@@ -513,6 +513,11 @@ const Index = () => {
     }
   }, []);
 
+  const handleMetronomeVolChange = useCallback((v: number) => {
+    setMetronomeVol(v);
+    setMetronomeVolume(v);
+  }, []);
+
   // Setlist management — now backed by database
   const songs = setlists.flatMap((sl) =>
   sl.songs.length > 0 ? sl.songs.map((s) => ({ ...s, id: sl.id, _setlistId: sl.id })) : [{
@@ -867,7 +872,7 @@ const Index = () => {
             !focusMode ? (
               <div data-tutorial="volume-master">
                 <MixerStrip channels={[
-                  { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
+                  { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: handleMetronomeVolChange },
                   { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
                   ...defaultPads.slice(0, 9).map((pad) => ({
                     id: pad.id,
@@ -970,7 +975,7 @@ const Index = () => {
           {!focusMode &&
           <div data-tutorial="volume-master">
             <MixerStrip channels={[
-              { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
+              { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: handleMetronomeVolChange },
               { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
               ...defaultPads.slice(0, 9).map((pad) => ({
                 id: pad.id,
@@ -1072,7 +1077,7 @@ const Index = () => {
             <div className="snap-start min-h-full flex items-center p-1.5" style={{ scrollSnapAlign: 'start' }}>
               <div className="w-full" data-tutorial="volume-master">
                 <MixerStrip channels={[
-                  { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: (v) => { setMetronomeVol(v); setMetronomeVolume(v); } },
+                  { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: handleMetronomeVolChange },
                   { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
                   ...defaultPads.slice(0, 9).map((pad) => ({
                     id: pad.id,

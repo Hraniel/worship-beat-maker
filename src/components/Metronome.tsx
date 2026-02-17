@@ -133,7 +133,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           onClick={onTogglePlay}
           variant="outline"
           size="sm"
-          className={`h-7 px-3 text-xs gap-1 ${isPlaying ? 'bg-foreground text-background hover:bg-foreground/90 border-foreground' : 'bg-foreground text-background hover:bg-foreground/90 border-foreground'}`}
+          className={`h-7 px-3 text-xs gap-1 ${isPlaying ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' : 'bg-foreground text-background hover:bg-foreground/90 border-foreground'}`}
         >
           {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           {isPlaying ? 'Stop' : 'Play'}
