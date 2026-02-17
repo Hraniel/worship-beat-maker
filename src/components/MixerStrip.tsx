@@ -83,15 +83,11 @@ const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash })
               height: '1.5px',
               borderRadius: '1px',
               backgroundColor: isLit
-                ? isTop
-                  ? 'hsl(0 70% 50%)'
-                  : isMid
-                  ? 'hsl(45 80% 50%)'
-                  : 'hsl(140 60% 45%)'
+                ? 'hsl(0 0% 100%)'
                 : 'hsl(var(--muted))',
-              opacity: isLit ? 1 : 0.3,
+              opacity: isLit ? (isTop ? 1 : isMid ? 0.8 : 0.6) : 0.3,
               boxShadow: isLit && flash > 0.1
-                ? `0 0 4px ${isTop ? 'hsl(0 70% 50% / 0.5)' : isMid ? 'hsl(45 80% 50% / 0.4)' : 'hsl(140 60% 50% / 0.4)'}`
+                ? `0 0 4px hsl(0 0% 100% / 0.5)`
                 : 'none',
             }}
           />
@@ -156,9 +152,9 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
             className="absolute bottom-0 left-0 w-full rounded-full transition-opacity duration-75"
             style={{
               height: `${pct}%`,
-              backgroundColor: 'hsl(140 60% 45%)',
+              backgroundColor: 'hsl(0 0% 100%)',
               opacity: fillOpacity,
-              boxShadow: flash > 0.05 ? `0 0 ${glowIntensity}px hsl(140 60% 50% / ${flash * 0.6})` : 'none',
+              boxShadow: flash > 0.05 ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${flash * 0.6})` : 'none',
             }}
           />
           {/* Thumb */}
@@ -166,9 +162,9 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
             className="absolute left-1/2 -translate-x-1/2 w-2.5 h-[5px] rounded-[1px]"
             style={{
               bottom: `calc(${pct}% - 2.5px)`,
-              backgroundColor: flash > 0.1 ? `hsl(140 60% ${70 + flash * 20}%)` : 'hsl(0 0% 70%)',
+              backgroundColor: flash > 0.1 ? `hsl(0 0% 100%)` : 'hsl(0 0% 70%)',
               boxShadow: flash > 0.05
-                ? `0 0 ${glowIntensity}px hsl(140 60% 50% / ${flash * 0.5})`
+                ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${flash * 0.5})`
                 : '0 1px 2px hsl(0 0% 0% / 0.5)',
             }}
           />
