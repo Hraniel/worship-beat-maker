@@ -1078,10 +1078,6 @@ const Index = () => {
                   })),
                   { id: 'master', label: 'Master', shortLabel: 'Master', volume: masterVolume, onChange: setMasterVol },
                 ]} />
-                {/* Continuous Pads below faders */}
-                <div data-tutorial="ambient-pads" className="pt-1 border-t border-border/30">
-                  <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-                </div>
               </div>
             ) : undefined
           }
@@ -1210,37 +1206,16 @@ const Index = () => {
           </div>
           }
 
-          {/* Metronome — below faders */}
+          {/* Metronome — below faders, always expanded */}
           <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
-            <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
-            onClick={() => setMetronomeOpen((prev) => !prev)}>
-              <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-                {spotifyTrackName && (
-                  <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">
-                    ♪ {spotifyTrackName}
-                  </span>
-                )}
+            {spotifyTrackName && (
+              <div className="px-3 py-1 border-b border-border/50">
+                <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">♪ {spotifyTrackName}</span>
               </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors" onClick={(e) => { e.stopPropagation(); }} title="Editar BPM no metrônomo abaixo">{bpm}</button>
-                <span className="text-[10px] text-muted-foreground">BPM</span>
-                {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-                <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                {!metronomeOpen &&
-                <button type="button" onClick={(e) => {e.stopPropagation();setMetronomeIsPlaying((prev) => !prev);}} className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`} title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}>
-                    {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </button>
-                }
-                {metronomeOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-              </div>
-            </div>
-            <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
-              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
-              <div data-tutorial="pan-metronome">
+            )}
+            <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
+            <div data-tutorial="pan-metronome">
               <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
-              </div>
             </div>
           </div>
 

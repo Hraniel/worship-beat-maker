@@ -125,29 +125,18 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
           <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
 
             {/* === MIX TAB === */}
-            <div className={landscapeTab === 0 ? 'flex-1 min-h-0 flex flex-col' : 'hidden'}>
-              {/* Ambient pads (compact) */}
-              <div className="shrink-0 px-1.5 py-1 border-b border-border/30">
-                {ambientPads}
-              </div>
+            <div className={landscapeTab === 0 ? 'flex-1 min-h-0 flex flex-col overflow-y-auto' : 'hidden'}>
               {/* Faders */}
-              <div className="flex-1 min-h-0 px-1 pt-1 pb-1 overflow-y-auto">
+              <div className="shrink-0 px-1 pt-1 pb-1">
                 {mixer}
               </div>
-              {/* Metronome mini-bar */}
-              <div className="flex items-center justify-center gap-2 px-3 py-1 shrink-0 border-t border-border/30">
-                <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
-                <span className="text-[10px] text-muted-foreground">BPM</span>
-                {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-                <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-                <button
-                  type="button"
-                  onClick={onTogglePlay}
-                  className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
-                  title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
-                >
-                  {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                </button>
+              {/* Metronome — full, below faders */}
+              <div className="shrink-0 border-t border-border/30">
+                {metronome}
+              </div>
+              {/* Continuous Pads — below metronome */}
+              <div className="shrink-0 px-1.5 py-1 border-t border-border/30">
+                {ambientPads}
               </div>
             </div>
 
