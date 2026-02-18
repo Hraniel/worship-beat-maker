@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.songbpm-search]
 verify_jwt = false
+
+[functions.music-search-ai]
+verify_jwt = false

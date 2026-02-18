@@ -1,20 +1,17 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Search, Music, Loader2, Sparkles, Check, X, Zap, Lock, Play, Pause, SkipBack, SkipForward, ExternalLink } from 'lucide-react';
+import { Search, Music, Loader2, Sparkles, Check, X, Zap, Lock, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface SongBpmResult {
+interface AISongResult {
   name: string;
   artist: string;
-  bpm: number;
+  bpm: number | null;
   key: string | null;
   mode: string;
-  duration: string | null;
-  spotifyUrl: string | null;
-  songbpmUrl: string;
 }
 
 interface SpotifyTrack {
@@ -89,16 +86,17 @@ function incrementUsage() {
   return stats;
 }
 
+
 const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, externalOpen, onExternalOpenChange }) => {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen ?? internalOpen;
   const setOpen = (v: boolean) => { onExternalOpenChange ? onExternalOpenChange(v) : setInternalOpen(v); };
 
-  // songbpm search state
+  // AI song search state
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [results, setResults] = useState<SongBpmResult[]>([]);
-  const [selectedSong, setSelectedSong] = useState<SongBpmResult | null>(null);
+  const [results, setResults] = useState<AISongResult[]>([]);
+  const [selectedSong, setSelectedSong] = useState<AISongResult | null>(null);
 
   // AI analysis state
   const [analyzing, setAnalyzing] = useState(false);
@@ -209,24 +207,24 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
     setDataSource(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke('songbpm-search', {
+      const { data, error } = await supabase.functions.invoke('music-search-ai', {
         body: { query: query.trim() },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      const found: SongBpmResult[] = data.results || [];
+      const found: AISongResult[] = data.results || [];
       setResults(found);
-      if (!found.length) toast.info('Nenhuma música encontrada no songbpm.com.');
+      if (!found.length) toast.info('Nenhuma música encontrada. Tente outra busca.');
     } catch (e) {
-      console.error('songbpm search error:', e);
-      toast.error('Erro ao buscar no songbpm.com. Tente novamente.');
+      console.error('music-search-ai error:', e);
+      toast.error('Erro ao buscar músicas. Tente novamente.');
     } finally {
       setSearching(false);
     }
   }, [query]);
 
   // --- AI analysis ---
-  const handleAnalyze = useCallback(async (song: SongBpmResult) => {
+  const handleAnalyze = useCallback(async (song: AISongResult) => {
     setSelectedSong(song);
     setSuggestion(null);
     setDataSource(null);
@@ -326,7 +324,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
             Music AI
           </SheetTitle>
           <SheetDescription>
-            Busque no songbpm.com para obter BPM e Tom reais, depois a IA configura seus pads
+            Digite o nome da música ou artista e a IA sugere as opções com BPM e Tom
           </SheetDescription>
         </SheetHeader>
 
@@ -337,10 +335,10 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
         </div>
 
         <div className="flex-1 overflow-y-auto space-y-5 pb-4">
-          {/* ── Section 1: songbpm.com search ── */}
+          {/* ── Section 1: AI song search ── */}
           <div className="space-y-2">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-              1. Buscar no songbpm.com
+              1. Buscar música com IA
             </p>
             <div className="flex gap-2">
               <Input
@@ -398,19 +396,15 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
                   <p className="text-sm font-semibold truncate">{selectedSong.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{selectedSong.artist}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[10px] font-bold text-foreground">{selectedSong.bpm} BPM</span>
+                    {selectedSong.bpm && (
+                      <span className="text-[10px] font-bold text-foreground">{selectedSong.bpm} BPM</span>
+                    )}
                     {selectedSong.key && (
                       <span className="text-[10px] bg-primary/10 text-primary px-1 rounded font-bold">{selectedSong.key}</span>
                     )}
-                    <a
-                      href={selectedSong.songbpmUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5 transition-colors"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      songbpm.com <ExternalLink className="h-2.5 w-2.5" />
-                    </a>
+                    <span className="text-[10px] text-primary/70 font-medium flex items-center gap-0.5">
+                      <Sparkles className="h-2.5 w-2.5" /> IA
+                    </span>
                   </div>
                 </div>
                 <Button
@@ -548,6 +542,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
                             <button
                               onClick={() => togglePreview(track)}
                               className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${isActive && previewPlaying ? 'bg-primary text-primary-foreground' : 'bg-muted/80 text-foreground hover:bg-primary hover:text-primary-foreground'}`}
+                              title="Ouvir preview 30s"
                             >
                               {isActive && previewPlaying ? (
                                 <Pause className="h-3 w-3" />
@@ -556,7 +551,9 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
                               )}
                             </button>
                           ) : (
-                            <div className="shrink-0 w-7 h-7" />
+                            <div className="shrink-0 w-7 h-7 flex items-center justify-center" title="Preview não disponível no Spotify">
+                              <VolumeX className="h-3 w-3 text-muted-foreground/50" />
+                            </div>
                           )}
                         </div>
 
