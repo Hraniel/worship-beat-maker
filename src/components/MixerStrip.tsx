@@ -13,6 +13,8 @@ interface FaderChannel {
 
 interface MixerStripProps {
   channels: FaderChannel[];
+  showAll?: boolean;
+  compactFaderHeight?: number;
 }
 
 const FADER_HEIGHT = 110;
@@ -64,14 +66,14 @@ function usePadHitFlash(channelId: string): number {
 
 
 /** VU tick lines on the right side of a fader */
-const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash }) => {
+const VuTicks: React.FC<{ volume: number; flash: number; height?: number }> = ({ volume, flash, height = FADER_HEIGHT }) => {
   // Flash is capped at the volume level
   const activeLevel = Math.min(Math.max(volume, flash * volume), volume);
   return (
     <div className="flex flex-col items-center">
       <div
         className="flex flex-col-reverse justify-between"
-        style={{ height: `${FADER_HEIGHT}px` }}
+        style={{ height: `${height}px` }}
       >
         {Array.from({ length: VU_LINES }).map((_, i) => {
           const threshold = (i + 1) / VU_LINES;
@@ -103,7 +105,7 @@ const VuTicks: React.FC<{ volume: number; flash: number }> = ({ volume, flash })
 };
 
 
-const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
+const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ channel, faderHeight = FADER_HEIGHT }) => {
   const [dragging, setDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
   const flash = usePadHitFlash(channel.id);
@@ -142,7 +144,7 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
         <div
           ref={trackRef}
           className="relative w-[5px] rounded-full touch-none cursor-pointer"
-          style={{ height: `${FADER_HEIGHT}px`, backgroundColor: 'hsl(var(--muted))' }}
+          style={{ height: `${faderHeight}px`, backgroundColor: 'hsl(var(--muted))' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -172,7 +174,7 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
         </div>
 
         {/* VU tick lines on the right */}
-        <VuTicks volume={channel.volume} flash={flash} />
+        <VuTicks volume={channel.volume} flash={flash} height={faderHeight} />
       </div>
 
       {/* Volume % */}
@@ -199,7 +201,7 @@ const Fader: React.FC<{ channel: FaderChannel }> = ({ channel }) => {
 
 const MOBILE_PAGE_SIZE = 4;
 
-const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
+const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFaderHeight }) => {
   const [page, setPage] = useState(0);
   const [direction, setDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -248,6 +250,23 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels }) => {
     center: { x: 0, opacity: 1 },
     exit: (dir: number) => ({ x: dir > 0 ? '-100%' : '100%', opacity: 0 }),
   };
+
+  const fHeight = compactFaderHeight || FADER_HEIGHT;
+
+  // Show all channels in a single row (tablet mode)
+  if (showAll) {
+    return (
+      <div className="flex flex-col gap-1">
+        <div ref={containerRef} className="flex items-end gap-0.5 px-1 py-1.5 bg-card rounded-lg border border-border">
+          {channels.map((ch) => (
+            <div key={ch.id} className="flex-1 min-w-0">
+              <Fader channel={ch} faderHeight={fHeight} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-1">
