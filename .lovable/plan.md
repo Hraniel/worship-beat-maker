@@ -1,119 +1,88 @@
 
-# 5 Melhorias: Admin Analytics + Assinaturas + Visual + Cargos + Remover Banner
+# Two Improvements: User Search Filter + Fader Button 3
 
-## Resumo das mudanças
+## Summary
 
-Cinco melhorias independentes, organizadas do mais simples ao mais complexo:
+1. **Admin: User search and role filter** — Add a text input (search by email) and role filter chips (All / Admin / Moderador / Usuário) in `AdminUserManager.tsx`. Filtering happens client-side on the already-fetched `users` array — no backend changes needed.
 
-1. **Filtro de data no analytics de packs** — chips de período (Semana / Mês / Ano / Tudo) + gráfico de linha de receita ao longo do tempo
-2. **Analytics de assinaturas** — nova aba "Assinaturas" no painel admin mostrando KPIs de planos Pro/Master
-3. **Cor do painel admin** — trocar o fundo escuro (#0f0f14) por um tom mais agradável, como slate/indigo escuro
-4. **Cargos de administração** — expandir o `AdminUserManager` para suportar "moderator" além de "admin", usando a enum `app_role` já existente
-5. **Remover banner** — adicionar botão "Remover banner" com confirmação no painel admin, que seta `banner_url = null` no banco
+2. **App: Button 3 in fader container** — Add button "3" alongside buttons "1" and "2" to navigate to the third fader page (which shows pads 8 of 9, currently unreachable). The MixerStrip already supports 3 pages (`totalPages = Math.ceil(9/4) = 3`) but the buttons array was hardcoded to `[0, 1]`. Change to `[0, 1, 2]` in all four rendering locations in `Index.tsx`.
 
 ---
 
-## Detalhes técnicos por feature
+## Feature 1: User Search + Role Filter (AdminUserManager.tsx)
 
-### 1. Filtro de data + gráfico de linha no Analytics
+### What changes
 
-**Arquivo:** `src/components/AdminAnalytics.tsx`
+State additions:
+- `searchQuery: string` — controlled text input, filters `user.email.toLowerCase().includes(...)`
+- `roleFilter: 'all' | 'admin' | 'moderator' | 'user'` — chip selection
 
-O campo `purchased_at` (timestamp with time zone) já existe na tabela `user_purchases`. A mudança é:
+Filtered list computed from `users`:
+```typescript
+const filtered = users.filter(u => {
+  const matchesEmail = u.email.toLowerCase().includes(searchQuery.toLowerCase());
+  const matchesRole =
+    roleFilter === 'all' ||
+    (roleFilter === 'admin' && u.is_admin) ||
+    (roleFilter === 'moderator' && u.is_moderator) ||
+    (roleFilter === 'user' && !u.is_admin && !u.is_moderator);
+  return matchesEmail && matchesRole;
+});
+```
 
-- Adicionar estado `period: 'week' | 'month' | 'year' | 'all'` com chips de seleção no topo
-- Filtrar as compras client-side por `purchased_at >= startDate` conforme o período selecionado
-- Adicionar gráfico de **linha** (LineChart do Recharts) mostrando receita acumulada por dia/semana abaixo dos KPIs existentes
-- O gráfico de barras de "Compras por Pack" existente permanece, mas passa a respeitar o filtro de período
-- A query ao banco busca `purchased_at` além de `pack_id, user_id`:
-  ```typescript
-  supabase.from('user_purchases').select('pack_id, user_id, purchased_at')
-  ```
-- Lógica de agrupamento por dia para o gráfico de linha (format: `dd/MM`)
-- Nenhuma migração necessária
+UI additions (above the user list):
+1. **Search input** — `<input>` with `Search` icon, `placeholder="Buscar por email..."`, full width
+2. **Role filter chips** — row of 4 chips: Todos / Admin / Moderador / Usuário, each highlighted when active
+3. **Counter** shows `filtered.length` of `users.length` total
 
-### 2. Analytics de Assinaturas
+The list renders `filtered` instead of `users`.
 
-**Arquivo:** `src/components/AdminAnalytics.tsx` (nova seção) ou uma aba separada
-
-Como o Stripe não é consultável diretamente do frontend sem a Service Role Key, a solução é criar uma nova edge function leve `subscription-stats` que:
-- Usa a Stripe API para buscar contagem de assinaturas ativas por produto
-- Retorna: `{ pro_count, master_count, total_mrr }`
-
-**Arquivo novo:** `supabase/functions/subscription-stats/index.ts`
-- Checa se o chamador é admin via `user_roles`
-- Chama `stripe.subscriptions.list({ status: 'active', limit: 100 })`
-- Agrupa por `product_id` (comparando com `TIERS.pro.product_id` e `TIERS.master.product_id`)
-- Retorna contagens e MRR estimado
-
-**No frontend:** nova seção "Assinaturas" dentro de `AdminAnalytics.tsx` com:
-- Card "Pro Ativos", Card "Master Ativos", Card "MRR Estimado"
-- Mini gráfico de pizza (PieChart do Recharts) mostrando distribuição Free/Pro/Master estimada
-
-### 3. Cor do painel admin
-
-O painel admin é renderizado dentro de `src/pages/Dashboard.tsx`. O fundo atual vem do CSS global `--background: 240 10% 6%` (quase preto).
-
-A mudança é adicionar uma classe de override para a seção admin, usando um tom de **slate-900/indigo-950** mais suave e com sutil gradiente:
-
-**Arquivo:** `src/pages/Dashboard.tsx`
-- Adicionar `className` com `bg-gradient-to-b from-slate-900 to-indigo-950/30` no container do painel admin
-- Também adicionar uma borda sutil colorida no topo: `border-t-2 border-indigo-500/30`
-- O cabeçalho "Painel Admin" ganha um leve ícone com gradiente de texto
-
-**Arquivo:** `src/components/AdminPackManager.tsx`
-- O header do painel recebe `bg-gradient-to-r from-indigo-950/50 to-violet-950/30 rounded-xl p-3`
-
-### 4. Cargos de administração no painel
-
-O banco já tem `app_role AS ENUM ('admin', 'moderator', 'user')` e a tabela `user_roles`.
-
-**Arquivo:** `src/components/AdminUserManager.tsx`
-- Expandir a interface `UserRow` para incluir `is_moderator: boolean`
-- Exibir badge "MOD" além de "ADMIN" para usuários com role moderator
-- Adicionar botão de cargo com dropdown (ao invés de toggle simples): "Promover a Admin" / "Promover a Moderador" / "Remover cargo"
-- Implementar a lógica de forma que um usuário possa ter ambos admin+moderator simultaneamente
-
-**Arquivo:** `supabase/functions/admin-get-users/index.ts`
-- A query de roles já busca `role = 'admin'` — expandir para `select('user_id, role')` sem filtro, retornando todas as roles
-- No resultado: `is_admin: roles.includes('admin'), is_moderator: roles.includes('moderator')`
-- Tratar actions `promote-moderator` e `demote-moderator`
-
-### 5. Remover banner do pack
-
-**Arquivo:** `src/components/AdminPackManager.tsx`
-- No banner preview (linhas 607-623), ao lado de "Trocar banner", adicionar botão "Remover banner" com ícone `Trash2`
-- Ao clicar: `confirm()` → chama nova action `remove-banner`
-- Após remover: `onRefresh()` e toast de sucesso
-
-**Arquivo:** `supabase/functions/admin-upload-sound/index.ts`
-- Nova action `remove-banner`:
-  ```typescript
-  } else if (action === 'remove-banner') {
-    const packId = formData.get('packId') as string;
-    // Get current banner path to delete from storage
-    const { data: pack } = await supabase.from('store_packs').select('banner_url').eq('id', packId).single();
-    if (pack?.banner_url && !pack.banner_url.startsWith('http')) {
-      await supabase.storage.from('sound-previews').remove([pack.banner_url]);
-    }
-    await supabase.from('store_packs').update({ banner_url: null }).eq('id', packId);
-    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
-  }
-  ```
+No backend changes — filtering is pure client-side.
 
 ---
 
-## Arquivos que serão modificados
+## Feature 2: Fader Button 3 (Index.tsx)
 
-| Arquivo | Mudança |
+### Root cause
+
+The channels array has 12 entries (metronome + ambient + 9 pads + master). `MixerStrip` slices:
+- `fixedStart = channels.slice(0, 2)` → metronome + ambient
+- `padChannels = channels.slice(2, -1)` → 9 pads
+- `fixedEnd = channels.slice(-1)` → master
+
+With `MOBILE_PAGE_SIZE = 4`:
+- `totalPages = Math.ceil(9 / 4) = 3`
+- Page 0: pads[0–3]
+- Page 1: pads[4–7]
+- Page 2: pads[8] ← **currently unreachable**
+
+### Fix
+
+There are **4 places** in `Index.tsx` where the fader page buttons are rendered with `([0, 1] as const)`:
+
+1. **Lines 1023** — landscape panel mixer
+2. **Lines 1153** — footer desktop sidebar
+3. **Lines 1241** — tablet mid section
+4. **Lines 1369** — mobile footer tab bar
+
+In every one of these, change:
+```tsx
+{([0, 1] as const).map((p) => (
+```
+to:
+```tsx
+{([0, 1, 2] as const).map((p) => (
+```
+
+This is a purely additive, 4-line change that exposes the already-working third page of faders. No changes to `MixerStrip.tsx` are needed — it already handles `totalPages` and pagination correctly.
+
+---
+
+## Files to Modify
+
+| File | Change |
 |---|---|
-| `src/components/AdminAnalytics.tsx` | Filtro de período + gráfico de linha + seção de assinaturas |
-| `src/components/AdminUserManager.tsx` | Suporte a cargo "moderador" + dropdown de cargos |
-| `src/components/AdminPackManager.tsx` | Botão remover banner + visual do painel |
-| `src/pages/Dashboard.tsx` | Cor de fundo do painel admin |
-| `supabase/functions/admin-upload-sound/index.ts` | Nova action `remove-banner` |
-| `supabase/functions/admin-get-users/index.ts` | Roles completas + promote/demote moderator |
-| `supabase/functions/subscription-stats/index.ts` | **NOVO** — stats de assinatura via Stripe |
-| `supabase/config.toml` | Registrar nova edge function |
+| `src/components/AdminUserManager.tsx` | Add `searchQuery` + `roleFilter` state; add search input + chip filters UI; render `filtered` list instead of `users` |
+| `src/pages/Index.tsx` | Change `([0, 1])` → `([0, 1, 2])` in 4 fader button render locations |
 
-**Nenhuma migração de banco necessária** — todos os dados necessários já existem (enum `app_role` tem `moderator`, coluna `purchased_at` existe, coluna `banner_url` existe).
+No database migrations, no edge function changes, no new files required.
