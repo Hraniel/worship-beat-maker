@@ -1,41 +1,93 @@
 
-
-# Fix: Spotify AI nao traz BPM e Tom corretos
+# Fix: Busca no songbpm.com usando URL direta com slugs do Spotify
 
 ## Causa Raiz
 
-A Spotify deprecou as APIs `audio-features` e `audio-analysis` em novembro de 2024. O edge function `spotify-search` ainda chama esses endpoints, mas eles retornam erro (403 ou 404). Como resultado:
-- `features` chega como `null` no `suggest-pad-config`
-- `analysis` chega como `null`
-- A IA recebe a mensagem "dados nao disponiveis" e tenta estimar, mas nem sempre acerta
+A função `fetchSongBpm` no edge function `suggest-pad-config` usa a URL de pesquisa `https://songbpm.com/searches?q=...`. Após investigação, essa URL de busca do songbpm.com retorna "Not Found" para qualquer query — ela não funciona como endpoint de pesquisa acessível externamente.
 
-## Plano de Correcao
+O site songbpm.com usa URLs diretas no formato:
+```
+https://songbpm.com/@{artist-slug}/{track-slug}
+```
 
-### 1. Remover chamadas deprecadas do `spotify-search` (edge function)
+Exemplo verificado:
+- Artista: `Bethel Music` → slug: `bethel-music`
+- Música: `Goodness of God` → slug: `goodness-of-god`
+- URL final: `https://songbpm.com/@bethel-music/goodness-of-god`
+- Resultado: BPM 128, Key G#/Ab — correto!
 
-- Remover as chamadas para `/v1/audio-features/{trackId}` e `/v1/audio-analysis/{trackId}` pois nao funcionam mais
-- Manter apenas a chamada `/v1/tracks/{trackId}` que ainda funciona e retorna dados basicos (nome, artista, album, duracao)
-- Retornar `features: null` e `analysis: null` explicitamente para que o frontend saiba que nao ha dados
+O nome e artista **já chegam corretamente do Spotify** via `track.name` e `track.artist` no frontend.
 
-### 2. Melhorar o prompt da IA no `suggest-pad-config` (edge function)
+## Plano de Correção
 
-- Reforcar no prompt que a IA DEVE usar seu conhecimento musical interno para determinar BPM e tom
-- Remover a logica condicional que monta o prompt com dados do Spotify (ja que nunca terao dados)
-- Simplificar o `userPrompt` para focar no nome da musica e artista, pedindo explicitamente: "Voce PRECISA saber o BPM e tom desta musica. Use seu conhecimento musical."
-- Manter a estrutura de resposta JSON igual
+### Único arquivo alterado: `supabase/functions/suggest-pad-config/index.ts`
 
-### 3. Cleanup no frontend `SpotifySearch.tsx`
+#### 1. Nova função `toSlug()`
 
-- Remover o passo "Obtendo dados de audio..." ja que nao ha mais dados para obter
-- Chamar diretamente o `suggest-pad-config` com apenas `trackName` e `artist`
-- Remover a chamada intermediaria ao `spotify-search` com `trackId` (que buscava features/analysis)
-- Simplificar o fluxo: buscar musica -> selecionar -> IA analisa pelo nome
+Criar uma função utilitária para converter texto em slug compatível com o songbpm.com:
 
-### Resumo de arquivos alterados
+- Converter para minúsculas
+- Remover acentos e caracteres especiais
+- Substituir espaços por hifens
+- Remover caracteres que não sejam letras, números ou hifens
+- Remover hifens duplicados ou nas extremidades
 
-| Arquivo | Mudanca |
-|---------|---------|
-| `supabase/functions/spotify-search/index.ts` | Remover bloco de audio-features e audio-analysis; manter apenas search e track basico |
-| `supabase/functions/suggest-pad-config/index.ts` | Simplificar prompt removendo logica de features/analysis; reforcar que IA deve usar conhecimento proprio |
-| `src/components/SpotifySearch.tsx` | Remover chamada intermediaria de features; passar direto para suggest-pad-config com nome e artista |
+Exemplos:
+```
+"Bethel Music"       → "bethel-music"
+"Goodness of God"    → "goodness-of-god"
+"Julliany Souza"     → "julliany-souza"
+"Quem É Esse"        → "quem-e-esse"
+"Kirk Franklin"      → "kirk-franklin"
+```
 
+#### 2. Atualizar `fetchSongBpm()` para usar URL direta
+
+Trocar a URL de busca pela URL direta:
+
+```
+ANTES: https://songbpm.com/searches?q={trackName}+{artist}
+DEPOIS: https://songbpm.com/@{artistSlug}/{trackSlug}
+```
+
+- O artista que vem do Spotify pode ter múltiplos artistas separados por vírgula (ex: `"Bethel Music, Jenn Johnson"`). Nesse caso, usar apenas o **primeiro artista**.
+- Fazer scrape da página com Firecrawl (já conectado)
+- Parsear BPM e Key do markdown retornado (a estrutura da página já foi verificada e funciona)
+
+#### 3. Fallback inteligente
+
+Se a URL direta não retornar dados (música não encontrada), o comportamento atual já cobre: a IA usa seu conhecimento musical como fallback.
+
+## Fluxo Final
+
+```text
+Usuário seleciona música no Spotify
+        ↓
+Frontend envia track.name + track.artist (dados exatos do Spotify)
+        ↓
+Edge function converte para slugs:
+  "Bethel Music" → "bethel-music"
+  "Goodness of God" → "goodness-of-god"
+        ↓
+Firecrawl acessa: songbpm.com/@bethel-music/goodness-of-god
+        ↓
+Extrai BPM e Tom reais da página
+        ↓
+GPT-5 recebe BPM e Tom confirmados + gera config dos pads
+```
+
+## Técnico: Parsing da resposta do songbpm.com
+
+A página retorna markdown com os dados assim:
+```
+128  BPM
+Key  G♯/A♭
+```
+
+O regex atual para BPM já funciona. Para o Key, precisa lidar com o formato `G♯/A♭` (com símbolo unicode ♯ e ♭), convertendo para o formato da app: `G#`, `Ab`, etc.
+
+Será adicionado tratamento para:
+- `♯` → `#`
+- `♭` → `b`
+- Pegar apenas a primeira tonalidade quando houver barra (ex: `G♯/A♭` → `G#`)
+- Identificar se é `major` ou `minor` pela palavra-chave na página
