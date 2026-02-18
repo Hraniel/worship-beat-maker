@@ -552,7 +552,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, onAddToSet
             <span>Hoje: <strong className="text-foreground">{usage.total}</strong> análise{usage.total !== 1 ? 's' : ''} de IA</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-5 pb-4">
+          <div className="flex-1 overflow-y-auto space-y-5 pb-6" style={{ overscrollBehavior: 'contain' }}>
             {/* ── Section 1: AI song search ── */}
             <div className="space-y-2">
               <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">

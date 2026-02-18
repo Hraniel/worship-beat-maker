@@ -113,14 +113,14 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           Repertório
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="bg-card border-border">
+      <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden">
         <SheetHeader>
           <SheetTitle className="text-foreground">Repertório</SheetTitle>
           <SheetDescription className="text-muted-foreground">
             Salve e organize configurações por música
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-4 flex-1 overflow-y-auto pb-4" style={{ overscrollBehavior: 'contain' }}>
           {/* Save current */}
           <div className="flex gap-2">
             <Input
