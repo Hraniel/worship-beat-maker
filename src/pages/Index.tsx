@@ -970,7 +970,7 @@ const Index = () => {
           metronomePanDisabled={audioSettings.metronomeStereo === 'mono'}
           spotifyTrackName={spotifyTrackName}
           padGrid={
-            <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center gap-3 min-w-0 min-h-0 overflow-hidden">
+            <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center min-w-0 min-h-0 overflow-hidden">
               <PadGrid
                 isMasterTier={tier === 'master'}
                 tier={tier}
@@ -1011,38 +1011,24 @@ const Index = () => {
                   }
                 }}
               />
-              {/* Continuous Pads ao lado do grid — só tablet/desktop portrait */}
-              {(isTablet || isDesktop) && !isLandscape && (
-                <div className="w-[130px] xl:w-[150px] shrink-0 self-center">
-                  <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-                </div>
-              )}
             </div>
           }
           ambientPads={
-            isLandscape ? (
-              /* On landscape: ambient pads handled inside LandscapeSwipePanels Mix tab */
-              <div className="hidden" />
-            ) : (
-              /* All portrait: show focus button. AmbientPads rendered beside PadGrid (above) for tablet/desktop */
-              <div data-tutorial="ambient-pads" className="w-full flex flex-col items-center px-2 pb-1 gap-1">
-                {currentSongId && !editMode && (
-                  <button
-                    onClick={toggleFocusMode}
-                    className="flex items-center gap-1 px-3 py-1 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors"
-                    title={focusMode ? 'Sair do modo foco' : 'Modo foco'}
-                    data-tutorial="focus-mode"
-                  >
-                    {focusMode ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
-                    {focusMode ? 'Sair' : 'Foco'}
-                  </button>
-                )}
-                {/* Only show AmbientPads below grid on mobile portrait; tablet/desktop show it beside the grid */}
-                {!isTablet && !isDesktop && (
-                  <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-                )}
-              </div>
-            )
+            <div data-tutorial="ambient-pads" className="w-full flex flex-col items-center gap-1">
+              {/* Focus mode button — only on mobile portrait */}
+              {!isTablet && !isDesktop && !isLandscape && currentSongId && !editMode && (
+                <button
+                  onClick={toggleFocusMode}
+                  className="flex items-center gap-1 px-3 py-1 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors"
+                  title={focusMode ? 'Sair do modo foco' : 'Modo foco'}
+                  data-tutorial="focus-mode"
+                >
+                  {focusMode ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                  {focusMode ? 'Sair' : 'Foco'}
+                </button>
+              )}
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
           }
           mixer={
             !focusMode ? (
