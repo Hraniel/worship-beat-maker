@@ -219,6 +219,36 @@ const Index = () => {
     return () => window.removeEventListener('settings:audio-changed', handler);
   }, []);
 
+  // Media Session API: tells the OS this is a media app so it keeps audio
+  // alive when the screen locks or the user switches to another app.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: 'Worship Beat Maker',
+      artist: 'Beat ao vivo',
+      album: 'Metrônomo',
+    });
+    // Prevent the OS from pausing us when the screen locks
+    navigator.mediaSession.setActionHandler('play', () => {
+      getAudioContext().resume().catch(() => {});
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      // Do nothing – we keep playing
+    });
+    navigator.mediaSession.playbackState = 'playing';
+  }, []);
+
+  // Visibility change: resume AudioContext if OS suspended it
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        getAudioContext().resume().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, []);
+
   const handleInstallClick = async () => {
     if (installPrompt) {
       await installPrompt.prompt();
