@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar, ChevronDown, ShieldCheck, Search } from 'lucide-react';
 
 type AppRole = 'admin' | 'moderator';
 
@@ -22,11 +22,22 @@ const ROLE_OPTIONS: { role: AppRole | null; label: string; description: string }
   { role: null, label: 'Remover cargo', description: 'Volta a usuário padrão' },
 ];
 
+type RoleFilter = 'all' | 'admin' | 'moderator' | 'user';
+
+const ROLE_CHIPS: { value: RoleFilter; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'moderator', label: 'Moderador' },
+  { value: 'user', label: 'Usuário' },
+];
+
 const AdminUserManager: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -91,6 +102,16 @@ const AdminUserManager: React.FC = () => {
     return null;
   };
 
+  const filtered = users.filter(u => {
+    const matchesEmail = u.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole =
+      roleFilter === 'all' ||
+      (roleFilter === 'admin' && u.is_admin) ||
+      (roleFilter === 'moderator' && u.is_moderator) ||
+      (roleFilter === 'user' && !u.is_admin && !u.is_moderator);
+    return matchesEmail && matchesRole;
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-48">
@@ -103,10 +124,39 @@ const AdminUserManager: React.FC = () => {
     <div className="space-y-3">
       <div className="flex items-center gap-2 mb-2">
         <Users className="h-4 w-4 text-muted-foreground" />
-        <p className="text-xs text-muted-foreground">{users.length} usuários cadastrados</p>
+        <p className="text-xs text-muted-foreground">{filtered.length} de {users.length} usuários</p>
         <Button size="sm" variant="outline" className="ml-auto h-7 text-xs" onClick={fetchUsers}>
           Atualizar
         </Button>
+      </div>
+
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Buscar por email..."
+          className="w-full pl-8 pr-3 py-1.5 text-xs bg-muted border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+        />
+      </div>
+
+      {/* Role filter chips */}
+      <div className="flex gap-1.5 flex-wrap">
+        {ROLE_CHIPS.map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => setRoleFilter(value)}
+            className={`px-2.5 py-0.5 rounded-full text-[10px] font-medium transition-colors border ${
+              roleFilter === value
+                ? 'bg-primary text-primary-foreground border-primary'
+                : 'border-border text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
       {/* Role legend */}
@@ -122,10 +172,10 @@ const AdminUserManager: React.FC = () => {
       </div>
 
       <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-        {users.length === 0 && (
+        {filtered.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-6">Nenhum usuário encontrado</p>
         )}
-        {users.map((user) => {
+        {filtered.map((user) => {
           const roleLabel = getCurrentRoleLabel(user);
           return (
             <div key={user.id} className="flex items-center gap-3 px-3 py-2.5">

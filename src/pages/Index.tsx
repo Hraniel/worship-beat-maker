@@ -1020,7 +1020,7 @@ const Index = () => {
                 {/* Fader page buttons 1 / 2 */}
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
-                  {([0, 1] as const).map((p) => (
+                  {([0, 1, 2] as const).map((p) => (
                     <button
                       key={p}
                       onClick={() => setFaderPage(p)}
@@ -1150,7 +1150,7 @@ const Index = () => {
             {/* Fader page buttons 1 / 2 */}
             <div className="flex items-center gap-1 mb-1">
               <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
-              {([0, 1] as const).map((p) => (
+              {([0, 1, 2] as const).map((p) => (
                 <button
                   key={p}
                   onClick={() => setFaderPage(p)}
@@ -1238,7 +1238,7 @@ const Index = () => {
               {/* Fader page buttons */}
               <div className="flex items-center gap-1 mb-1">
                 <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
-                {([0, 1] as const).map((p) => (
+                {([0, 1, 2] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => setFaderPage(p)}
@@ -1366,7 +1366,7 @@ const Index = () => {
                 <div className="flex-1" />
 
                 {/* Fader page buttons — only visible when Mix tab is active */}
-                {footerPage === 0 && ([0, 1] as const).map((p) => (
+                {footerPage === 0 && ([0, 1, 2] as const).map((p) => (
                   <button
                     key={p}
                     onClick={() => setFaderPage(p)}
