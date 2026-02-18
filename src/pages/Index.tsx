@@ -1195,13 +1195,16 @@ const Index = () => {
                   <button
                     key={i}
                     onClick={() => setFooterPage(i)}
-                    className={`px-2 h-5 rounded text-[9px] font-bold transition-colors ${
+                    className={`relative px-2 h-5 rounded text-[9px] font-bold transition-colors flex items-center gap-1 ${
                       footerPage === i
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                   >
                     {label}
+                    {label === 'Met' && metronomeIsPlaying && (
+                      <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
+                    )}
                   </button>
                 ))}
               </div>
