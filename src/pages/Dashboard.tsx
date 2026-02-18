@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
 import PackCard from '@/components/PackCard';
 import AdminPackManager from '@/components/AdminPackManager';
+import CommunitySuggestions from '@/components/CommunitySuggestions';
 import { useStorePacks, StorePackData } from '@/hooks/useStorePacks';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import {
@@ -461,17 +462,8 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Coming soon banner */}
-        <div className="mt-10 text-center py-10 px-4">
-          <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm mb-4">
-            <Star className="h-4 w-4 text-amber-500" />
-            <span className="text-sm font-medium text-gray-700">Novidades chegando em breve</span>
-          </div>
-          <p className="text-sm text-gray-500 max-w-md mx-auto">
-            Estamos trabalhando em packs exclusivos para o Glory Pads.
-            Usuários Master terão acesso antecipado!
-          </p>
-        </div>
+        {/* Community Suggestions */}
+        <CommunitySuggestions />
       </main>
     </div>
   );
