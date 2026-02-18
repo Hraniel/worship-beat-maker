@@ -652,19 +652,19 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-            {/* Pad size controls - only in edit mode and when song selected */}
-            {editMode && currentSongId && (
-            <div className="flex items-center gap-1 mr-1 border border-border rounded-md px-1.5 py-0.5" data-tutorial="pad-size">
-              <Minus className="h-3 w-3 text-muted-foreground shrink-0" />
+            {/* Pad size controls - always visible when song selected */}
+            {currentSongId && (
+            <div className="flex items-center gap-1 mr-1 border border-border rounded-md px-2 py-1" data-tutorial="pad-size">
+              <Minus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <Slider
                 value={[padSize]}
                 onValueChange={([v]) => handlePadSizeChange(v)}
                 min={PAD_SIZE_MIN}
                 max={PAD_SIZE_MAX}
                 step={5}
-                className="w-16 sm:w-20"
+                className="w-20 sm:w-28"
               />
-              <Plus className="h-3 w-3 text-muted-foreground shrink-0" />
+              <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">{padSize}%</span>
             </div>
             )}
@@ -752,6 +752,21 @@ const Index = () => {
             {currentSongName && <span className="text-xs font-medium text-primary truncate max-w-[200px]">♪ {currentSongName}</span>}
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {/* Pad size controls in focus mode */}
+            {currentSongId && (
+              <div className="flex items-center gap-1 mr-1 border border-border rounded-md px-2 py-1" data-tutorial="pad-size">
+                <Minus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Slider
+                  value={[padSize]}
+                  onValueChange={([v]) => handlePadSizeChange(v)}
+                  min={PAD_SIZE_MIN}
+                  max={PAD_SIZE_MAX}
+                  step={5}
+                  className="w-20 sm:w-28"
+                />
+                <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </div>
+            )}
             {currentSongId && (
               <div data-tutorial="setlist">
                 <SetlistManager
@@ -824,8 +839,8 @@ const Index = () => {
                 padVolumes={padVolumes}
                 activeLoops={activeLoops}
                 customSounds={customSounds}
-                padSize={padSizeToTextSize(isTablet ? Math.max(padSize, 85) : padSize)}
-                padScale={isTablet ? Math.max(padSize, 85) : padSize}
+                padSize={padSizeToTextSize(isTablet ? Math.max(padSize, 90) : padSize)}
+                padScale={isTablet ? Math.max(padSize, 90) : padSize}
                 padEffects={padEffects}
                 padPans={padPans}
                 onToggleLoop={toggleLoop}
@@ -1065,9 +1080,23 @@ const Index = () => {
                 />
               </div>
             </div>
-            {/* Metronome below both - compact */}
+            {/* Metronome below both - compact with BPM header + Pan */}
             <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+              <div className="flex items-center justify-between px-3 py-1 border-b border-border/50">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+                  <span className="text-[10px] text-muted-foreground">BPM</span>
+                  {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
+                  <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+                </div>
+                {spotifyTrackName && (
+                  <span className="text-xs font-medium text-primary truncate max-w-[150px]">♪ {spotifyTrackName}</span>
+                )}
+              </div>
               <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+              <div data-tutorial="pan-metronome">
+                <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
+              </div>
             </div>
           </div>
         )}
