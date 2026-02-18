@@ -225,33 +225,6 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFader
     setPage(newPage);
   }, [page]);
 
-  // Swipe detection on paginated container
-  const swipeRef = useRef<{ x: number; y: number; decided: boolean; swiping: boolean } | null>(null);
-
-  const handleSwipePointerDown = useCallback((e: React.PointerEvent) => {
-    swipeRef.current = { x: e.clientX, y: e.clientY, decided: false, swiping: false };
-  }, []);
-
-  const handleSwipePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!swipeRef.current) return;
-    const dx = e.clientX - swipeRef.current.x;
-    const dy = e.clientY - swipeRef.current.y;
-    if (!swipeRef.current.decided && (Math.abs(dx) > 15 || Math.abs(dy) > 15)) {
-      swipeRef.current.decided = true;
-      swipeRef.current.swiping = Math.abs(dx) > Math.abs(dy);
-    }
-  }, []);
-
-  const handleSwipePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!swipeRef.current) return;
-    const dx = e.clientX - swipeRef.current.x;
-    const isSwiping = swipeRef.current.swiping;
-    swipeRef.current = null;
-    if (!isSwiping || Math.abs(dx) < 40) return;
-    if (dx < 0 && page < totalPages - 1) goToPage(page + 1);
-    else if (dx > 0 && page > 0) goToPage(page - 1);
-  }, [page, totalPages, goToPage]);
-
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
     center: { x: 0, opacity: 1 },
@@ -288,8 +261,8 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFader
         {/* Separator */}
         <div className="w-px self-stretch bg-border mx-0.5" />
 
-        {/* Paginated pad channels with slide animation */}
-        <div className="flex-[4] min-w-0 overflow-hidden relative" onPointerDown={handleSwipePointerDown} onPointerMove={handleSwipePointerMove} onPointerUp={handleSwipePointerUp}>
+        {/* Paginated pad channels — no swipe, only button navigation to prevent fader conflicts */}
+        <div className="flex-[4] min-w-0 overflow-hidden relative">
           <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
               key={page}
@@ -321,7 +294,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFader
         ))}
       </div>
 
-      {/* Page nav */}
+      {/* Page nav — buttons only, no swipe */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button

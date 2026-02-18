@@ -1245,8 +1245,9 @@ const Index = () => {
             </div>
           ) : (
             <>
-              {/* Page tab buttons */}
+              {/* Tab bar: Mix | Met | 1 | 2 */}
               <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
+                {/* Mix / Met tabs on the left */}
                 {(['Mix', 'Met'] as const).map((label, i) => (
                   <button
                     key={i}
@@ -1261,6 +1262,24 @@ const Index = () => {
                     {label === 'Met' && metronomeIsPlaying && (
                       <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
                     )}
+                  </button>
+                ))}
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* Page buttons 1 and 2 on the right */}
+                {([1, 2] as const).map((num) => (
+                  <button
+                    key={num}
+                    onClick={() => setFooterPage(num + 1)}
+                    className={`relative w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
+                      footerPage === num + 1
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {num}
                   </button>
                 ))}
               </div>
@@ -1348,6 +1367,16 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+
+                {/* === PAGE 1 (button "1") === placeholder */}
+                <div className={footerPage === 2 ? 'h-full flex items-center justify-center p-4' : 'hidden'}>
+                  <span className="text-xs text-muted-foreground">Página 1</span>
+                </div>
+
+                {/* === PAGE 2 (button "2") === placeholder */}
+                <div className={footerPage === 3 ? 'h-full flex items-center justify-center p-4' : 'hidden'}>
+                  <span className="text-xs text-muted-foreground">Página 2</span>
                 </div>
 
               </div>
