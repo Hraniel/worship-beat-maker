@@ -1,93 +1,129 @@
 
-# Fix: Busca no songbpm.com usando URL direta com slugs do Spotify
+# Redesign: Busca no songbpm.com como busca principal + Spotify apenas para preview
 
-## Causa Raiz
+## Visão Geral da Mudança
 
-A função `fetchSongBpm` no edge function `suggest-pad-config` usa a URL de pesquisa `https://songbpm.com/searches?q=...`. Após investigação, essa URL de busca do songbpm.com retorna "Not Found" para qualquer query — ela não funciona como endpoint de pesquisa acessível externamente.
+O fluxo atual usa o Spotify como busca principal. O novo fluxo inverte isso:
 
-O site songbpm.com usa URLs diretas no formato:
-```
-https://songbpm.com/@{artist-slug}/{track-slug}
-```
+- **Busca principal** → songbpm.com (BPM e Tom reais)
+- **Spotify** → campo separado, opcional, apenas para reproduzir o preview de 30s da música
 
-Exemplo verificado:
-- Artista: `Bethel Music` → slug: `bethel-music`
-- Música: `Goodness of God` → slug: `goodness-of-god`
-- URL final: `https://songbpm.com/@bethel-music/goodness-of-god`
-- Resultado: BPM 128, Key G#/Ab — correto!
+---
 
-O nome e artista **já chegam corretamente do Spotify** via `track.name` e `track.artist` no frontend.
+## Por que o songbpm.com não tem busca direta acessível
 
-## Plano de Correção
+A URL `https://songbpm.com/searches?q=...` retorna "Not Found" para qualquer busca — é uma rota interna que não funciona externamente. Porém, a Firecrawl tem um **endpoint de busca na web** (`POST /v1/search`) que pode fazer uma busca `site:songbpm.com {artista} {música}` e retornar os links das páginas encontradas. Em seguida, a página do resultado (ex: `/@bethel-music/goodness-of-god`) é raspada para extrair BPM e Tom.
 
-### Único arquivo alterado: `supabase/functions/suggest-pad-config/index.ts`
+---
 
-#### 1. Nova função `toSlug()`
-
-Criar uma função utilitária para converter texto em slug compatível com o songbpm.com:
-
-- Converter para minúsculas
-- Remover acentos e caracteres especiais
-- Substituir espaços por hifens
-- Remover caracteres que não sejam letras, números ou hifens
-- Remover hifens duplicados ou nas extremidades
-
-Exemplos:
-```
-"Bethel Music"       → "bethel-music"
-"Goodness of God"    → "goodness-of-god"
-"Julliany Souza"     → "julliany-souza"
-"Quem É Esse"        → "quem-e-esse"
-"Kirk Franklin"      → "kirk-franklin"
-```
-
-#### 2. Atualizar `fetchSongBpm()` para usar URL direta
-
-Trocar a URL de busca pela URL direta:
-
-```
-ANTES: https://songbpm.com/searches?q={trackName}+{artist}
-DEPOIS: https://songbpm.com/@{artistSlug}/{trackSlug}
-```
-
-- O artista que vem do Spotify pode ter múltiplos artistas separados por vírgula (ex: `"Bethel Music, Jenn Johnson"`). Nesse caso, usar apenas o **primeiro artista**.
-- Fazer scrape da página com Firecrawl (já conectado)
-- Parsear BPM e Key do markdown retornado (a estrutura da página já foi verificada e funciona)
-
-#### 3. Fallback inteligente
-
-Se a URL direta não retornar dados (música não encontrada), o comportamento atual já cobre: a IA usa seu conhecimento musical como fallback.
-
-## Fluxo Final
+## Novo Fluxo
 
 ```text
-Usuário seleciona música no Spotify
-        ↓
-Frontend envia track.name + track.artist (dados exatos do Spotify)
-        ↓
-Edge function converte para slugs:
-  "Bethel Music" → "bethel-music"
-  "Goodness of God" → "goodness-of-god"
-        ↓
-Firecrawl acessa: songbpm.com/@bethel-music/goodness-of-god
-        ↓
-Extrai BPM e Tom reais da página
-        ↓
-GPT-5 recebe BPM e Tom confirmados + gera config dos pads
+[Campo 1 - Busca principal]
+  Usuário digita: "Goodness of God Bethel Music"
+         ↓
+  Firecrawl Search: site:songbpm.com "goodness of god bethel music"
+         ↓
+  Retorna URLs: ["https://songbpm.com/@bethel-music/goodness-of-god", ...]
+         ↓
+  Raspa a primeira URL → BPM: 128, Tom: G#
+         ↓
+  Exibe resultado com capa, BPM, Tom, link do Spotify (se houver na página)
+         ↓
+  Usuário clica em "Analisar com IA" → GPT-5 gera config dos pads
+
+[Campo 2 - Preview Spotify (opcional, aparece após selecionar música)]
+  Usuário digita nome no campo de preview do Spotify
+         ↓
+  Busca no Spotify → exibe lista
+         ↓
+  Usuário clica Play → toca 30s de preview
 ```
 
-## Técnico: Parsing da resposta do songbpm.com
+---
 
-A página retorna markdown com os dados assim:
+## Mudanças Técnicas
+
+### 1. Nova edge function: `supabase/functions/songbpm-search/index.ts`
+
+Responsável por buscar músicas no songbpm.com usando Firecrawl Search + scrape:
+
+- Recebe `{ query: string }` (ex: `"goodness of god bethel music"`)
+- Chama `POST https://api.firecrawl.dev/v1/search` com query `site:songbpm.com {query}` e `limit: 5`
+- Filtra os resultados para apenas URLs no padrão `songbpm.com/@artist/track`
+- Para as primeiras 3 URLs encontradas, faz scrape paralelo com Firecrawl
+- De cada página, extrai: nome da música, artista, BPM, Tom, duração, modo (major/minor), link do Spotify (que aparece na página)
+- Retorna array de resultados com esses dados
+
+### 2. Atualizar `supabase/functions/suggest-pad-config/index.ts`
+
+- Remover a função `fetchSongBpm()` de dentro dessa edge function
+- O BPM e Tom agora chegam **já prontos** do frontend (pré-buscados no songbpm.com)
+- A função recebe: `{ trackName, artist, bpm?, key? }` e usa esses valores confirmados no prompt da IA
+
+### 3. Refatorar `src/components/SpotifySearch.tsx` → renomear para `src/components/MusicAISearch.tsx`
+
+O componente é completamente redesenhado com dois campos:
+
+**Seção 1 — Busca no songbpm.com (campo principal):**
+- Input de texto livre: "Buscar música no songbpm..."
+- Botão de busca → chama a nova edge function `songbpm-search`
+- Exibe lista de resultados: nome, artista, BPM, Tom
+- Ao clicar em um resultado → seleciona e ativa a análise da IA
+
+**Seção 2 — Preview Spotify (seção colapsável/secundária, após selecionar música):**
+- Título: "Ouvir preview no Spotify (opcional)"
+- Input de texto: busca no Spotify
+- Exibe lista de faixas com botão Play (preview 30s)
+- Player compacto com barra de progresso
+- Essa seção só aparece após uma música do songbpm.com ser selecionada
+
+**Estado da análise (seção 3):**
+- Quando o usuário clica em "Analisar com IA" (após selecionar música do songbpm.com)
+- Mostra spinner de análise → resultado com BPM, Tom, padrão, efeitos dos pads
+- Botão "Aplicar configuração"
+
+### 4. Atualizar referências ao componente
+
+- Em `src/pages/Index.tsx` (ou onde quer que `SpotifySearch` seja importado), atualizar o import para `MusicAISearch`
+
+---
+
+## Estrutura dos Dados
+
+### Tipo `SongBpmResult` (novo):
+```typescript
+interface SongBpmResult {
+  name: string;       // "Goodness of God"
+  artist: string;     // "Bethel Music"
+  bpm: number;        // 128
+  key: string;        // "G#"
+  mode: string;       // "major" | "minor"
+  duration?: string;  // "4:30"
+  spotifyUrl?: string; // URL do Spotify encontrada na página do songbpm
+  songbpmUrl: string; // URL original no songbpm.com
+}
 ```
-128  BPM
-Key  G♯/A♭
+
+---
+
+## Extração de Dados da Página songbpm.com
+
+A página do songbpm.com já contém o link do Spotify no formato:
+```
+[Listen on Spotify](https://open.spotify.com/track/2C5WGOg1zIxkUnKP3mY6go)
 ```
 
-O regex atual para BPM já funciona. Para o Key, precisa lidar com o formato `G♯/A♭` (com símbolo unicode ♯ e ♭), convertendo para o formato da app: `G#`, `Ab`, etc.
+Isso permite extrair o `trackId` do Spotify diretamente da página do songbpm.com, sem precisar que o usuário busque manualmente no Spotify — a busca do Spotify no campo de preview pode já ser pré-preenchida com o nome da música selecionada.
 
-Será adicionado tratamento para:
-- `♯` → `#`
-- `♭` → `b`
-- Pegar apenas a primeira tonalidade quando houver barra (ex: `G♯/A♭` → `G#`)
-- Identificar se é `major` ou `minor` pela palavra-chave na página
+---
+
+## Arquivos Afetados
+
+| Arquivo | Ação |
+|---|---|
+| `supabase/functions/songbpm-search/index.ts` | Criar (nova edge function) |
+| `supabase/functions/suggest-pad-config/index.ts` | Simplificar (remover fetchSongBpm, receber bpm/key prontos) |
+| `src/components/SpotifySearch.tsx` | Refatorar completamente (renomear para MusicAISearch) |
+| `src/components/MusicAISearch.tsx` | Criar (componente redesenhado) |
+| `src/pages/Index.tsx` (ou onde SpotifySearch é usado) | Atualizar import |
