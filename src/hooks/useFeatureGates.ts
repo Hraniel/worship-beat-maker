@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
@@ -17,28 +17,34 @@ function tierIndex(tier: string): number {
   return idx === -1 ? 0 : idx;
 }
 
+// Cache compartilhado — invalidado via Realtime ou chamada explícita
 let cachedGates: FeatureGate[] | null = null;
 let cachePromise: Promise<FeatureGate[]> | null = null;
+
+async function loadGates(): Promise<FeatureGate[]> {
+  const { data } = await supabase
+    .from('feature_gates')
+    .select('*')
+    .order('gate_key');
+  cachedGates = (data as FeatureGate[]) ?? [];
+  cachePromise = null;
+  return cachedGates;
+}
 
 async function fetchGates(): Promise<FeatureGate[]> {
   if (cachedGates) return cachedGates;
   if (cachePromise) return cachePromise;
-  cachePromise = supabase
-    .from('feature_gates')
-    .select('*')
-    .order('gate_key')
-    .then(({ data }) => {
-      cachedGates = (data as FeatureGate[]) ?? [];
-      cachePromise = null;
-      return cachedGates;
-    }) as Promise<FeatureGate[]>;
+  cachePromise = loadGates();
   return cachePromise;
 }
 
-// Invalidate cache (e.g. after admin changes)
+// Invalida o cache e notifica listeners registrados
+const refreshListeners = new Set<() => void>();
+
 export function invalidateGatesCache() {
   cachedGates = null;
   cachePromise = null;
+  refreshListeners.forEach(fn => fn());
 }
 
 export interface GateCheckResult {
@@ -51,21 +57,52 @@ export function useFeatureGates() {
   const { tier } = useSubscription();
   const [gates, setGates] = useState<FeatureGate[]>(cachedGates ?? []);
   const [loading, setLoading] = useState(!cachedGates);
+  const mountedRef = useRef(true);
+
+  const refresh = useCallback(async () => {
+    cachedGates = null;
+    cachePromise = null;
+    const data = await loadGates();
+    if (mountedRef.current) {
+      setGates(data);
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    mountedRef.current = true;
+
+    // Carga inicial
     fetchGates().then(data => {
-      if (!cancelled) {
+      if (mountedRef.current) {
         setGates(data);
         setLoading(false);
       }
     });
-    return () => { cancelled = true; };
-  }, []);
+
+    // Listener para invalidações feitas pelo próprio admin (mesma aba)
+    refreshListeners.add(refresh);
+
+    // Canal Realtime — dispara para todos os clientes conectados
+    const channel = supabase
+      .channel('feature_gates_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'feature_gates' },
+        () => { refresh(); }
+      )
+      .subscribe();
+
+    return () => {
+      mountedRef.current = false;
+      refreshListeners.delete(refresh);
+      supabase.removeChannel(channel);
+    };
+  }, [refresh]);
 
   const canAccess = useCallback((gateKey: string): GateCheckResult => {
     const gate = gates.find(g => g.gate_key === gateKey);
-    if (!gate) return { allowed: true, requiredTier: null, gate: null }; // no gate = allow
+    if (!gate) return { allowed: true, requiredTier: null, gate: null };
     const allowed = tierIndex(tier) >= tierIndex(gate.required_tier);
     return { allowed, requiredTier: gate.required_tier, gate };
   }, [gates, tier]);

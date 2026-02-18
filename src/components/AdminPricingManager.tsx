@@ -9,6 +9,7 @@ import {
   AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import type { PlanPricing, PlanFeature, FeatureGate } from '@/hooks/useLandingConfig';
+import { invalidateGatesCache } from '@/hooks/useFeatureGates';
 
 // ── Catálogo de funcionalidades do app ──────────────────────────────────────
 const APP_FEATURES_CATALOG: {
@@ -232,6 +233,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
       const { error } = await supabase.from('feature_gates').update({ required_tier }).eq('id', id);
       if (error) throw error;
       setGates(prev => prev.map(g => g.id === id ? { ...g, required_tier } : g));
+      invalidateGatesCache();
       toast.success('Gate atualizado!');
     } catch (e: any) {
       toast.error(e.message);
@@ -251,6 +253,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
         description: newGate.description || null,
       });
       if (error) throw error;
+      invalidateGatesCache();
       toast.success('Gate criado!');
       setAddingGate(false);
       setNewGate({ gate_key: '', gate_label: '', required_tier: 'pro', description: '' });
@@ -277,6 +280,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
         }))
       );
       if (error) throw error;
+      invalidateGatesCache();
       toast.success(`${missing.length} gate(s) adicionado(s) com sucesso!`);
       fetchData();
     } catch (e: any) {
@@ -290,6 +294,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
     if (!confirm('Remover este gate?')) return;
     try {
       await supabase.from('feature_gates').delete().eq('id', id);
+      invalidateGatesCache();
       setGates(prev => prev.filter(g => g.id !== id));
     } catch (e: any) {
       toast.error(e.message);
