@@ -1,88 +1,82 @@
 
-# Two Improvements: User Search Filter + Fader Button 3
+# Redesign Visual dos Pads: Aparência de Pad Real
 
-## Summary
+## O que muda
 
-1. **Admin: User search and role filter** — Add a text input (search by email) and role filter chips (All / Admin / Moderador / Usuário) in `AdminUserManager.tsx`. Filtering happens client-side on the already-fetched `users` array — no backend changes needed.
+Os pads atualmente têm o fundo colorido como identidade visual base (fundo com 10% de opacidade da cor do pad). A proposta é inverter essa lógica:
 
-2. **App: Button 3 in fader container** — Add button "3" alongside buttons "1" and "2" to navigate to the third fader page (which shows pads 8 of 9, currently unreachable). The MixerStrip already supports 3 pages (`totalPages = Math.ceil(9/4) = 3`) but the buttons array was hardcoded to `[0, 1]`. Change to `[0, 1, 2]` in all four rendering locations in `Index.tsx`.
-
----
-
-## Feature 1: User Search + Role Filter (AdminUserManager.tsx)
-
-### What changes
-
-State additions:
-- `searchQuery: string` — controlled text input, filters `user.email.toLowerCase().includes(...)`
-- `roleFilter: 'all' | 'admin' | 'moderator' | 'user'` — chip selection
-
-Filtered list computed from `users`:
-```typescript
-const filtered = users.filter(u => {
-  const matchesEmail = u.email.toLowerCase().includes(searchQuery.toLowerCase());
-  const matchesRole =
-    roleFilter === 'all' ||
-    (roleFilter === 'admin' && u.is_admin) ||
-    (roleFilter === 'moderator' && u.is_moderator) ||
-    (roleFilter === 'user' && !u.is_admin && !u.is_moderator);
-  return matchesEmail && matchesRole;
-});
-```
-
-UI additions (above the user list):
-1. **Search input** — `<input>` with `Search` icon, `placeholder="Buscar por email..."`, full width
-2. **Role filter chips** — row of 4 chips: Todos / Admin / Moderador / Usuário, each highlighted when active
-3. **Counter** shows `filtered.length` of `users.length` total
-
-The list renders `filtered` instead of `users`.
-
-No backend changes — filtering is pure client-side.
+- **Fundo nativo:** preto sólido com textura de pad real (gradiente escuro, bordas sutis, sombra interna)
+- **Borda nativa:** cinza escuro neutro, sem cor
+- **Efeito de batida:** flash branco (sem cor personalizada)
+- **Quando cor customizada está definida:** só o efeito da batida usa a cor — o fundo permanece preto
+- **Loop ativo:** borda pulsante usa a cor do pad (para diferenciar loops ativos)
+- **Indicador de atividade (ponto):** permanece com cor primary
 
 ---
 
-## Feature 2: Fader Button 3 (Index.tsx)
+## Detalhes técnicos — `src/components/DrumPad.tsx`
 
-### Root cause
-
-The channels array has 12 entries (metronome + ambient + 9 pads + master). `MixerStrip` slices:
-- `fixedStart = channels.slice(0, 2)` → metronome + ambient
-- `padChannels = channels.slice(2, -1)` → 9 pads
-- `fixedEnd = channels.slice(-1)` → master
-
-With `MOBILE_PAGE_SIZE = 4`:
-- `totalPages = Math.ceil(9 / 4) = 3`
-- Page 0: pads[0–3]
-- Page 1: pads[4–7]
-- Page 2: pads[8] ← **currently unreachable**
-
-### Fix
-
-There are **4 places** in `Index.tsx` where the fader page buttons are rendered with `([0, 1] as const)`:
-
-1. **Lines 1023** — landscape panel mixer
-2. **Lines 1153** — footer desktop sidebar
-3. **Lines 1241** — tablet mid section
-4. **Lines 1369** — mobile footer tab bar
-
-In every one of these, change:
-```tsx
-{([0, 1] as const).map((p) => (
+### Estado de repouso (idle)
 ```
-to:
-```tsx
-{([0, 1, 2] as const).map((p) => (
+backgroundColor: 'hsl(0 0% 7%)'            ← quase preto, mais escuro que o fundo
+borderColor: 'hsl(0 0% 20%)'              ← cinza escuro neutro
+boxShadow: 'inset 0 1px 0 hsl(0 0% 100% / 0.04),
+            inset 0 -2px 4px hsl(0 0% 0% / 0.4)'   ← sombra interna dá profundidade de pad
 ```
 
-This is a purely additive, 4-line change that exposes the already-working third page of faders. No changes to `MixerStrip.tsx` are needed — it already handles `totalPages` and pagination correctly.
+### Estado ativo (hit) — efeito branco nativo, ou cor se customizada
+```
+backgroundColor: customColor
+  ? `hsl(${colorHsl} / 0.25)`     ← usa cor customizada com opacidade baixa
+  : 'hsl(0 0% 22%)'               ← branco/cinza claro sem cor
+
+borderColor: customColor
+  ? `hsl(${colorHsl} / 0.9)`
+  : 'hsl(0 0% 80%)'               ← borda quase branca no hit
+
+boxShadow: customColor
+  ? `0 0 24px hsl(${colorHsl} / 0.45), inset 0 0 12px hsl(${colorHsl} / 0.15)`
+  : '0 0 20px hsl(0 0% 100% / 0.25), inset 0 0 10px hsl(0 0% 100% / 0.08)'   ← glow branco
+```
+
+### Estado looping — mantém cor para diferenciar
+```
+backgroundColor: customColor
+  ? `hsl(${colorHsl} / 0.12)`
+  : colorRef(0.08)                ← leve cor de fundo para indicar loop ativo
+
+borderColor usa a cor (animate-loop-border já existe no CSS)
+```
+
+### Texto do pad
+- Permanece `text-foreground` (branco/cinza claro)
+- Quando ativo: adicionar `text-white` para contrastar com o flash branco
+
+### Textura de pad real
+Adicionar no `style` do botão:
+```
+background: `linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 5%) 100%)`
+```
+Sobrescrito quando ativo ou em loop.
 
 ---
 
-## Files to Modify
+## Resultado visual esperado
 
-| File | Change |
+| Estado | Fundo | Borda | Glow |
+|--------|-------|-------|------|
+| Idle (sem cor) | Preto gradiente | Cinza escuro | Sombra interna sutil |
+| Idle (com cor) | Preto gradiente | Cinza escuro | Sombra interna sutil |
+| Ativo (sem cor) | Cinza claro | Branco | Glow branco |
+| Ativo (com cor) | Cor com 25% opacidade | Cor intensa | Glow colorido |
+| Loop ativo | Cor com 8% opacidade | Cor pulsante | Animação loop-border |
+
+---
+
+## Arquivo modificado
+
+| Arquivo | Mudança |
 |---|---|
-| `src/components/AdminUserManager.tsx` | Add `searchQuery` + `roleFilter` state; add search input + chip filters UI; render `filtered` list instead of `users` |
-| `src/pages/Index.tsx` | Change `([0, 1])` → `([0, 1, 2])` in 4 fader button render locations |
+| `src/components/DrumPad.tsx` | Linhas 191–203: reescrever `style` do botão com novo esquema de cores |
 
-No database migrations, no edge function changes, no new files required.
+Nenhuma migração, nenhum novo arquivo, nenhuma mudança de CSS global necessária. A `animate-pad-pulse` e `animate-loop-border` já existem no `index.css` e continuam funcionando.
