@@ -447,8 +447,6 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
     setEditingPack(pack.id);
   };
 
-  const dbPacks = packs.filter(p => p.id.length === 36);
-
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -479,7 +477,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         onChange={(e) => {
           const file = e.target.files?.[0];
           const meta = pendingUploadRef.current;
-          if (file && meta) handleUploadIcon(file, meta.packId);
+          if (file && meta?.packId) handleUploadIcon(file, meta.packId);
           e.target.value = '';
         }}
       />
@@ -487,365 +485,339 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         onChange={(e) => {
           const file = e.target.files?.[0];
           const meta = pendingUploadRef.current;
-          if (file && meta) handleUploadBanner(file, meta.packId);
+          if (file && meta?.packId) handleUploadBanner(file, meta.packId);
           e.target.value = '';
         }}
       />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Settings className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-foreground">Painel Admin</h2>
-        </div>
-        {activeTab === 'packs' && (
-          <Button size="sm" onClick={() => setShowCreatePack(v => !v)}
-            className="h-7 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Plus className="h-3 w-3 mr-1" /> Novo Pack
-          </Button>
-        )}
-      </div>
-
-      {/* Tab bar */}
-      <div className="flex bg-muted rounded-lg p-0.5 gap-0.5 flex-wrap">
+      {/* Tab navigation */}
+      <div className="flex gap-1 flex-wrap">
         {([
-          { id: 'packs', label: 'Packs', icon: Music },
-          { id: 'analytics', label: 'Analytics', icon: BarChart2 },
-          { id: 'users', label: 'Usuários', icon: Users },
-          { id: 'suggestions', label: 'Sugestões', icon: Bell },
-          { id: 'pricing', label: 'Planos', icon: Settings },
-          { id: 'landing', label: 'Landing', icon: Eye },
-        ] as const).map(({ id, label, icon: Icon }) => (
+          { key: 'packs', label: '📦 Packs' },
+          { key: 'analytics', label: '📊 Analytics' },
+          { key: 'users', label: '👥 Usuários' },
+          { key: 'suggestions', label: '💡 Sugestões' },
+          { key: 'pricing', label: '💳 Planos' },
+          { key: 'landing', label: '🌐 Landing' },
+        ] as const).map(tab => (
           <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium transition-colors ${
-              activeTab === id
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              activeTab === tab.key
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            <Icon className="h-3 w-3" />
-            {label}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Analytics tab */}
       {activeTab === 'analytics' && <AdminAnalytics />}
-
-      {/* Users tab */}
       {activeTab === 'users' && <AdminUserManager />}
-
-      {/* Suggestions tab */}
       {activeTab === 'suggestions' && <AdminSuggestionsManager />}
-
-      {/* Pricing tab */}
-      {activeTab === 'pricing' && <AdminPricingManager onRefresh={() => {}} />}
-
-      {/* Landing editor tab */}
+      {activeTab === 'pricing' && <AdminPricingManager />}
       {activeTab === 'landing' && <AdminLandingEditor />}
 
-      {/* Packs tab content starts below */}
       {activeTab === 'packs' && (
-      <>
+        <>
+          {/* Create pack button */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-foreground">Packs ({dbPacks.length})</h3>
+            <button
+              onClick={() => setShowCreatePack(v => !v)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Novo Pack
+            </button>
+          </div>
 
-      {/* Create Pack Form */}
-      {showCreatePack && (
-        <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Criar novo pack</p>
-          <input className="w-full h-9 px-3 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Nome do pack" value={newPack.name}
-            onChange={e => setNewPack(p => ({ ...p, name: e.target.value }))} />
-          <textarea className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-            placeholder="Descrição" rows={2} value={newPack.description}
-            onChange={e => setNewPack(p => ({ ...p, description: e.target.value }))} />
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <p className="text-[10px] text-muted-foreground mb-1">Categoria</p>
-              <select className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none"
-                value={newPack.category} onChange={e => setNewPack(p => ({ ...p, category: e.target.value }))}>
+          {/* Create pack form */}
+          {showCreatePack && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <h4 className="text-xs font-semibold text-foreground">Criar novo pack</h4>
+              <input
+                className="w-full h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                placeholder="Nome do pack"
+                value={newPack.name}
+                onChange={e => setNewPack(p => ({ ...p, name: e.target.value }))}
+              />
+              <input
+                className="w-full h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                placeholder="Descrição"
+                value={newPack.description}
+                onChange={e => setNewPack(p => ({ ...p, description: e.target.value }))}
+              />
+              <select
+                className="w-full h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                value={newPack.category}
+                onChange={e => setNewPack(p => ({ ...p, category: e.target.value }))}
+              >
                 {PACK_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-            </div>
-            <div>
-              <p className="text-[10px] text-muted-foreground mb-1">Ícone</p>
-              <select className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none"
-                value={newPack.iconName} onChange={e => setNewPack(p => ({ ...p, iconName: e.target.value }))}>
-                {PACK_ICONS.map(i => <option key={i.key} value={i.key}>{i.label}</option>)}
-              </select>
-            </div>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground mb-1">Cor</p>
-            <div className="flex flex-wrap gap-1.5">
-              {PACK_COLORS.map(c => (
-                <button key={c} onClick={() => setNewPack(p => ({ ...p, color: c }))}
-                  className={`h-5 w-5 rounded-full ${c} ${newPack.color === c ? 'ring-2 ring-offset-1 ring-foreground' : ''}`} />
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleCreatePack} className="flex-1 h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Check className="h-3 w-3 mr-1" /> Criar Pack
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => setShowCreatePack(false)} className="h-8 text-xs">
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Packs list */}
-      <div className="space-y-2">
-        {dbPacks.length === 0 && (
-          <p className="text-xs text-muted-foreground text-center py-4">Nenhum pack no banco ainda. Crie o primeiro!</p>
-        )}
-        {dbPacks.map(pack => {
-          const sounds = getSounds(pack);
-          const hasUnsavedOrder = !!localOrder[pack.id];
-          const isIconImage = pack.icon_name?.startsWith('pack-icons/') || pack.icon_name?.startsWith('http');
-          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-          const iconUrl = isIconImage && !pack.icon_name.startsWith('http')
-            ? `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${pack.icon_name}`
-            : pack.icon_name;
-          const hasBanner = !!(pack as any).banner_url;
-          const bannerDisplayUrl = hasBanner
-            ? ((pack as any).banner_url.startsWith('http')
-                ? (pack as any).banner_url
-                : `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${(pack as any).banner_url}`)
-            : null;
-
-          return (
-            <div key={pack.id} className="bg-card border border-border rounded-xl overflow-hidden">
-              {/* Banner preview (admin) */}
-              {hasBanner && (
-                <div className="relative h-20 w-full overflow-hidden bg-muted">
-                  <img src={bannerDisplayUrl!} alt="banner" className="w-full h-full object-cover" />
-                  <div className="absolute top-1.5 right-1.5 flex gap-1">
-                    <button
-                      className="bg-black/60 hover:bg-black/80 rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-white transition-colors"
-                      onClick={() => {
-                        pendingUploadRef.current = { packId: pack.id, type: 'banner' };
-                        bannerInputRef.current?.click();
-                      }}
-                    >
-                      {uploading?.packId === pack.id && uploading.type === 'banner'
-                        ? <Loader2 className="h-3 w-3 animate-spin" />
-                        : <Image className="h-3 w-3" />}
-                      Trocar
-                    </button>
-                    <button
-                      className="bg-red-600/80 hover:bg-red-600 rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-white transition-colors"
-                      onClick={async () => {
-                        if (!confirm('Remover banner deste pack?')) return;
-                        try {
-                          const fd = new FormData();
-                          fd.append('action', 'remove-banner');
-                          fd.append('packId', pack.id);
-                          await invokeAdmin(fd);
-                          toast.success('Banner removido!');
-                          onRefresh();
-                        } catch (e: any) {
-                          toast.error(e.message || 'Erro ao remover banner');
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Remover
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Pack header */}
-              <div className="flex items-center gap-3 p-3">
-                {/* Icon - clickable to upload new image */}
-                <div
-                  className={`h-8 w-8 rounded-lg ${isIconImage ? '' : pack.color} flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer`}
-                  onClick={() => {
-                    pendingUploadRef.current = { packId: pack.id, type: 'icon' };
-                    iconInputRef.current?.click();
-                  }}
-                  title="Clique para trocar a imagem do ícone"
+              <div className="flex gap-2">
+                <select
+                  className="flex-1 h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                  value={newPack.iconName}
+                  onChange={e => setNewPack(p => ({ ...p, iconName: e.target.value }))}
                 >
-                  {isIconImage ? (
-                    <img src={iconUrl} alt={pack.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <Package className="h-4 w-4 text-white" />
-                  )}
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    {uploading?.packId === pack.id && uploading.type === 'icon'
-                      ? <Loader2 className="h-3 w-3 animate-spin text-white" />
-                      : <Image className="h-3 w-3 text-white" />}
-                  </div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{pack.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{pack.category} · {pack.sounds.length} sons · {pack.is_available ? `R$ ${(pack.price_cents / 100).toFixed(2)}` : 'Oculto'}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  {/* Banner upload button */}
-                  {!hasBanner && (
-                    <button
-                      onClick={() => {
-                        pendingUploadRef.current = { packId: pack.id, type: 'banner' };
-                        bannerInputRef.current?.click();
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                      title="Adicionar banner de capa"
-                    >
-                      {uploading?.packId === pack.id && uploading.type === 'banner'
-                        ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                        : <Image className="h-3.5 w-3.5 text-muted-foreground" />}
-                    </button>
-                  )}
-                  {/* Clone button */}
-                  <button
-                    onClick={() => handleDuplicatePack(pack.id)}
-                    disabled={cloningPack === pack.id}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                    title="Duplicar pack"
-                  >
-                    {cloningPack === pack.id
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                      : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
-                  </button>
-                  {/* Notify button — only for available packs */}
-                  {pack.is_available && (
-                    <button
-                      onClick={() => handleNotifyUsers(pack.name)}
-                      disabled={notifyingPack === pack.name}
-                      className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
-                      title="Notificar usuários sobre este pack"
-                    >
-                      {notifyingPack === pack.name
-                        ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                        : <Bell className="h-3.5 w-3.5 text-primary" />}
-                    </button>
-                  )}
-                  <button onClick={() => startEditPack(pack)}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Editar pack">
-                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                  </button>
-                  <button onClick={() => setExpandedPack(v => v === pack.id ? null : pack.id)}
-                    className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                    {expandedPack === pack.id
-                      ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
-                      : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
-                  </button>
-                </div>
+                  {PACK_ICONS.map(i => <option key={i.key} value={i.key}>{i.label}</option>)}
+                </select>
+                <select
+                  className="flex-1 h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                  value={newPack.color}
+                  onChange={e => setNewPack(p => ({ ...p, color: e.target.value }))}
+                >
+                  {PACK_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleCreatePack} className="flex-1 h-8 text-xs">Criar</Button>
+                <Button size="sm" variant="outline" onClick={() => setShowCreatePack(false)} className="h-8 text-xs">Cancelar</Button>
+              </div>
+            </div>
+          )}
 
-              {/* Edit pack settings */}
-              {editingPack === pack.id && packEdit[pack.id] && (
-                <div className="px-3 pb-3 border-t border-border pt-3 space-y-2">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Configurações do Pack</p>
+          {/* Pack list */}
+          <div className="space-y-2">
+            {dbPacks.map(pack => {
+              const sounds = getSounds(pack);
+              const hasUnsavedOrder = !!localOrder[pack.id];
+              const isIconImage = pack.icon_name?.startsWith('pack-icons/') || pack.icon_name?.startsWith('http');
+              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+              const iconUrl = isIconImage && !pack.icon_name.startsWith('http')
+                ? `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${pack.icon_name}`
+                : pack.icon_name;
+              const hasBanner = !!(pack as any).banner_url;
+              const bannerDisplayUrl = hasBanner
+                ? ((pack as any).banner_url.startsWith('http')
+                    ? (pack as any).banner_url
+                    : `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${(pack as any).banner_url}`)
+                : null;
 
-                  {/* Name & Description */}
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">Nome</p>
-                    <input
-                      className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                      value={packEdit[pack.id].name}
-                      onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], name: e.target.value } }))}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">Descrição</p>
-                    <textarea
-                      rows={2}
-                      className="w-full px-2 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
-                      value={packEdit[pack.id].description}
-                      onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], description: e.target.value } }))}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-0.5">Preço (centavos)</p>
-                      <input type="number" min={0}
-                        className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none"
-                        value={packEdit[pack.id].priceCents}
-                        onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], priceCents: parseInt(e.target.value) || 0 } }))} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-0.5">Tag (ex: Novo, Popular)</p>
-                      <input className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none"
-                        value={packEdit[pack.id].tag}
-                        onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], tag: e.target.value } }))} />
-                    </div>
-                  </div>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={packEdit[pack.id].isAvailable}
-                      onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], isAvailable: e.target.checked } }))}
-                      className="rounded" />
-                    <span className="text-xs text-foreground">Pack disponível para compra</span>
-                  </label>
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
-                      <Calendar className="h-2.5 w-2.5" /> Publicar automaticamente em (opcional)
-                    </p>
-                    <input
-                      type="datetime-local"
-                      className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none"
-                      value={packEdit[pack.id].publishAt}
-                      onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], publishAt: e.target.value } }))}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => handleUpdatePack(pack.id)}
-                      className="flex-1 h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
-                      <Check className="h-3 w-3 mr-1" /> Salvar
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setEditingPack(null)} className="h-7 text-xs">
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Expanded: sounds list + upload */}
-              {expandedPack === pack.id && (
-                <div className="border-t border-border">
-                  {/* Upload + save order */}
-                  <div className="p-3 border-b border-border flex gap-2">
-                    <Button size="sm" variant="outline" disabled={!!uploading}
-                      className="flex-1 h-8 text-xs border-dashed"
-                      onClick={() => {
-                        pendingUploadRef.current = { packId: pack.id, type: 'full' };
-                        fileInputRef.current?.click();
-                      }}>
-                      {uploading?.packId === pack.id && uploading.type === 'full'
-                        ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                        : <Upload className="h-3 w-3 mr-1" />}
-                      {batchProgress && uploading?.packId === pack.id
-                        ? `${batchProgress.done + 1}/${batchProgress.total} — ${batchProgress.current.slice(0, 20)}`
-                        : 'Enviar sons (múltiplos)'}
-                    </Button>
-                    {hasUnsavedOrder && (
-                      <Button size="sm" disabled={savingOrder === pack.id}
-                        className="h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground px-3"
-                        onClick={() => handleSaveOrder(pack)}>
-                        {savingOrder === pack.id
-                          ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          : <Save className="h-3 w-3 mr-1" />}
-                        Salvar ordem
-                      </Button>
-                    )}
-                  </div>
-
-                  {/* Batch progress bar */}
-                  {batchProgress && uploading?.packId === pack.id && (
-                    <div className="px-3 py-2 border-b border-border">
-                      <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-                        <span>Enviando {batchProgress.current.slice(0, 30)}...</span>
-                        <span>{batchProgress.done}/{batchProgress.total}</span>
+              return (
+                <div key={pack.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                  {/* Banner preview */}
+                  {hasBanner && (
+                    <div className="relative h-20 w-full overflow-hidden bg-muted">
+                      <img src={bannerDisplayUrl!} alt="banner" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <button
+                          className="bg-muted/80 hover:bg-muted rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-foreground transition-colors"
+                          onClick={() => {
+                            pendingUploadRef.current = { packId: pack.id, type: 'banner' };
+                            bannerInputRef.current?.click();
+                          }}
+                        >
+                          <Image className="h-3 w-3" />
+                          Trocar
+                        </button>
+                        <button
+                          className="bg-destructive/80 hover:bg-destructive rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-destructive-foreground transition-colors"
+                          onClick={async () => {
+                            if (!confirm('Remover banner deste pack?')) return;
+                            try {
+                              const fd = new FormData();
+                              fd.append('action', 'remove-banner');
+                              fd.append('packId', pack.id);
+                              await invokeAdmin(fd);
+                              toast.success('Banner removido');
+                              onRefresh();
+                            } catch (e: any) {
+                              toast.error(e.message || 'Erro ao remover banner');
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Remover
+                        </button>
                       </div>
-                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    </div>
+                  )}
+
+                  {/* Pack header */}
+                  <div className="flex items-center gap-3 p-3">
+                    {/* Icon */}
+                    <div
+                      className={`h-8 w-8 rounded-lg ${isIconImage ? '' : pack.color} flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer`}
+                      onClick={() => {
+                        pendingUploadRef.current = { packId: pack.id, type: 'icon' };
+                        iconInputRef.current?.click();
+                      }}
+                      title="Clique para trocar a imagem do ícone"
+                    >
+                      {isIconImage ? (
+                        <img src={iconUrl} alt={pack.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <Music className="h-4 w-4 text-white" />
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Upload className="h-3 w-3 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-foreground truncate">{pack.name}</span>
+                        {pack.is_available
+                          ? <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-600 font-medium">Ativo</span>
+                          : <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">Rascunho</span>
+                        }
+                        {pack.tag && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">{pack.tag}</span>}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {sounds.length} sons · {pack.price_cents === 0 ? 'Grátis' : `R$${(pack.price_cents / 100).toFixed(2)}`}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      {/* Banner upload button */}
+                      {!hasBanner && (
+                        <button
+                          onClick={() => {
+                            pendingUploadRef.current = { packId: pack.id, type: 'banner' };
+                            bannerInputRef.current?.click();
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                          title="Adicionar banner"
+                        >
+                          {uploading?.packId === pack.id && uploading?.type === 'banner'
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                            : <Image className="h-3.5 w-3.5 text-muted-foreground" />}
+                        </button>
+                      )}
+
+                      {/* Notify users */}
+                      <button
+                        onClick={() => handleNotifyUsers(pack.name)}
+                        disabled={notifyingPack === pack.name}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                        title="Notificar usuários"
+                      >
+                        {notifyingPack === pack.name
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                          : <Bell className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </button>
+
+                      {/* Duplicate pack */}
+                      <button
+                        onClick={() => handleDuplicatePack(pack.id)}
+                        disabled={cloningPack === pack.id}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                        title="Duplicar pack"
+                      >
+                        {cloningPack === pack.id
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                          : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </button>
+
+                      {/* Edit pack */}
+                      <button
+                        onClick={() => editingPack === pack.id ? setEditingPack(null) : startEditPack(pack)}
+                        className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+                        title="Editar pack"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+
+                      {/* Upload sounds */}
+                      <button
+                        onClick={() => {
+                          pendingUploadRef.current = { packId: pack.id, type: 'full' };
+                          fileInputRef.current?.click();
+                        }}
+                        disabled={uploading?.packId === pack.id && uploading?.type === 'full'}
+                        className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+                        title="Enviar sons"
+                      >
+                        {uploading?.packId === pack.id && uploading?.type === 'full'
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          : <Upload className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </button>
+
+                      {/* Expand/collapse */}
+                      <button
+                        onClick={() => setExpandedPack(expandedPack === pack.id ? null : pack.id)}
+                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                      >
+                        {expandedPack === pack.id
+                          ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                          : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Edit pack settings */}
+                  {editingPack === pack.id && packEdit[pack.id] && (
+                    <div className="px-3 pb-3 border-t border-border pt-3 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                          placeholder="Nome"
+                          value={packEdit[pack.id].name}
+                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], name: e.target.value } }))}
+                        />
+                        <input
+                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                          placeholder="Tag (ex: NOVO)"
+                          value={packEdit[pack.id].tag}
+                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], tag: e.target.value } }))}
+                        />
+                      </div>
+                      <div>
+                        <textarea
+                          className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-muted border border-border focus:outline-none resize-none"
+                          rows={2}
+                          placeholder="Descrição"
+                          value={packEdit[pack.id].description}
+                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], description: e.target.value } }))}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="number"
+                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                          placeholder="Preço (centavos)"
+                          value={packEdit[pack.id].priceCents}
+                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], priceCents: parseInt(e.target.value) || 0 } }))}
+                        />
+                        <input
+                          type="datetime-local"
+                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                          value={packEdit[pack.id].publishAt}
+                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], publishAt: e.target.value } }))}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={packEdit[pack.id].isAvailable}
+                            onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], isAvailable: e.target.checked } }))}
+                          />
+                          <span className="text-xs text-foreground">Disponível na loja</span>
+                        </label>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => handleUpdatePack(pack.id)} className="flex-1 h-7 text-xs">
+                          <Save className="h-3 w-3 mr-1" /> Salvar
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => setEditingPack(null)} className="h-7 text-xs">Cancelar</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Batch progress */}
+                  {batchProgress && uploading?.packId === pack.id && (
+                    <div className="px-3 pb-2">
+                      <div className="text-[10px] text-muted-foreground mb-1">
+                        {batchProgress.done}/{batchProgress.total} — {batchProgress.current}
+                      </div>
+                      <div className="h-1 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-primary rounded-full transition-all"
+                          className="h-full bg-primary transition-all"
                           style={{ width: `${(batchProgress.done / batchProgress.total) * 100}%` }}
                         />
                       </div>
@@ -853,125 +825,143 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                   )}
 
                   {/* Sounds list */}
-                  <div className="divide-y divide-border max-h-80 overflow-y-auto">
-                    {sounds.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-3">Nenhum som ainda</p>
-                    )}
-                    {sounds.map((sound, idx) => {
-                      const isEditing = editingSound === sound.id;
-                      const isDragTarget = dragOver?.packId === pack.id && dragOver?.index === idx;
-
-                      return (
-                        <div
-                          key={sound.id}
-                          draggable
-                          onDragStart={() => handleDragStart(pack.id, idx)}
-                          onDragOver={(e) => handleDragOver(e, pack.id, idx)}
-                          onDrop={(e) => handleDrop(e, pack, idx)}
-                          onDragEnd={() => { setDragOver(null); dragSoundRef.current = null; }}
-                          className={`flex items-start gap-2 px-3 py-2 transition-colors ${isDragTarget ? 'bg-primary/10 border-t-2 border-primary' : 'hover:bg-muted/30'}`}
-                        >
-                          <div className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground/40 shrink-0">
-                            <GripVertical className="h-3.5 w-3.5" />
-                          </div>
-
+                  {expandedPack === pack.id && (
+                    <div className="border-t border-border">
+                      {hasUnsavedOrder && (
+                        <div className="px-3 py-2 flex items-center justify-between bg-amber-500/10">
+                          <span className="text-[10px] text-amber-600">Ordem alterada — salvar?</span>
                           <button
-                            onClick={() => handlePlay(sound)}
-                            className="mt-0.5 p-1 rounded-full hover:bg-primary/10 transition-colors shrink-0"
-                            title={playingId === sound.id ? 'Pausar' : 'Ouvir preview'}
+                            onClick={() => handleSaveOrder(pack)}
+                            disabled={savingOrder === pack.id}
+                            className="text-[10px] px-2 py-0.5 rounded bg-amber-500 text-white hover:bg-amber-600 transition-colors flex items-center gap-1"
                           >
-                            {playingId === sound.id
-                              ? <Pause className="h-3 w-3 text-primary" />
-                              : <Play className="h-3 w-3 text-muted-foreground" />}
+                            {savingOrder === pack.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Save className="h-2.5 w-2.5" />}
+                            Salvar
                           </button>
+                        </div>
+                      )}
 
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-foreground truncate">{sound.name}</p>
-                            {isEditing ? (
-                              <div className="mt-1 space-y-1">
-                                <div className="flex gap-1">
-                                  <div className="flex-1">
-                                    <p className="text-[9px] text-muted-foreground mb-0.5">Nome curto</p>
-                                    <input
-                                      maxLength={6}
-                                      className="w-full h-6 px-2 text-[10px] rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring uppercase"
-                                      value={soundEdits[sound.id]?.shortName ?? sound.short_name}
-                                      onChange={e => setSoundEdits(prev => ({ ...prev, [sound.id]: { ...prev[sound.id], shortName: e.target.value.toUpperCase() } }))}
-                                    />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-[9px] text-muted-foreground mb-0.5">Categoria</p>
-                                    <select
-                                      className="w-full h-6 px-1 text-[10px] rounded border border-border bg-background text-foreground focus:outline-none"
-                                      value={soundEdits[sound.id]?.category ?? (sound as any).category ?? 'sample'}
-                                      onChange={e => setSoundEdits(prev => ({ ...prev, [sound.id]: { ...prev[sound.id], category: e.target.value } }))}
-                                    >
-                                      {SOUND_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                  </div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <button
-                                    disabled={savingSound === sound.id}
-                                    onClick={() => handleSaveSound(sound.id)}
-                                    className="flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                      {sounds.length === 0 ? (
+                        <div className="py-6 text-center text-xs text-muted-foreground">
+                          Nenhum som. Clique em upload para adicionar.
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-border">
+                          {sounds.map((sound, idx) => (
+                            <div
+                              key={sound.id}
+                              draggable
+                              onDragStart={() => handleDragStart(pack.id, idx)}
+                              onDragOver={(e) => handleDragOver(e, pack.id, idx)}
+                              onDrop={(e) => handleDrop(e, pack, idx)}
+                              className={`flex items-center gap-2 px-3 py-2 transition-colors ${
+                                dragOver?.packId === pack.id && dragOver?.index === idx ? 'bg-primary/10' : ''
+                              }`}
+                            >
+                              <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 cursor-grab shrink-0" />
+
+                              {/* Play button */}
+                              <button
+                                onClick={() => handlePlay(sound)}
+                                className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center bg-muted hover:bg-primary/10 transition-colors"
+                              >
+                                {playingId === sound.id
+                                  ? <Pause className="h-3 w-3 text-primary" />
+                                  : <Play className="h-3 w-3 text-muted-foreground" />}
+                              </button>
+
+                              {/* Sound info / edit */}
+                              {editingSound === sound.id ? (
+                                <div className="flex-1 flex items-center gap-1.5">
+                                  <input
+                                    className="w-16 h-6 px-1.5 text-[10px] rounded bg-muted border border-border focus:outline-none uppercase"
+                                    value={soundEdits[sound.id]?.shortName || ''}
+                                    onChange={e => setSoundEdits(p => ({ ...p, [sound.id]: { ...p[sound.id], shortName: e.target.value.toUpperCase() } }))}
+                                    maxLength={6}
+                                  />
+                                  <select
+                                    className="flex-1 h-6 px-1 text-[10px] rounded bg-muted border border-border focus:outline-none"
+                                    value={soundEdits[sound.id]?.category || 'sample'}
+                                    onChange={e => setSoundEdits(p => ({ ...p, [sound.id]: { ...p[sound.id], category: e.target.value } }))}
                                   >
-                                    {savingSound === sound.id ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Check className="h-2.5 w-2.5" />}
-                                    Salvar
+                                    {SOUND_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                  </select>
+                                </div>
+                              ) : (
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[10px] font-semibold text-foreground truncate">{sound.short_name}</div>
+                                  <div className="text-[9px] text-muted-foreground truncate">{sound.name}</div>
+                                </div>
+                              )}
+
+                              <div className="text-[9px] text-muted-foreground shrink-0">
+                                {sound.duration_ms > 0 ? `${(sound.duration_ms / 1000).toFixed(1)}s` : '—'}
+                              </div>
+
+                              {/* Preview badge */}
+                              {sound.preview_path && (
+                                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600">PRV</span>
+                              )}
+
+                              {/* Action buttons */}
+                              {editingSound === sound.id ? (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => handleSaveSound(sound.id)}
+                                    disabled={savingSound === sound.id}
+                                    className="h-6 w-6 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20 transition-colors"
+                                  >
+                                    {savingSound === sound.id ? <Loader2 className="h-3 w-3 animate-spin text-primary" /> : <Check className="h-3 w-3 text-primary" />}
                                   </button>
                                   <button
                                     onClick={() => setEditingSound(null)}
-                                    className="px-2 py-0.5 rounded text-[10px] border border-border text-foreground hover:bg-muted"
+                                    className="h-6 w-6 rounded flex items-center justify-center bg-muted hover:bg-muted/80 transition-colors"
                                   >
-                                    <X className="h-2.5 w-2.5" />
+                                    <X className="h-3 w-3 text-muted-foreground" />
                                   </button>
                                 </div>
-                              </div>
-                            ) : (
-                              <p className="text-[10px] text-muted-foreground">
-                                <span className="font-mono bg-muted px-1 rounded mr-1">{sound.short_name}</span>
-                                {sound.preview_path ? '✓ preview' : '✗ sem preview'}
-                                {sound.duration_ms ? ` · ${(sound.duration_ms / 1000).toFixed(1)}s` : ''}
-                              </p>
-                            )}
-                          </div>
-
-                          {!isEditing && (
-                            <div className="flex items-center gap-0.5 shrink-0">
-                              <button title="Editar nome/categoria" onClick={() => startEditSound(sound)}
-                                className="p-1.5 rounded hover:bg-muted transition-colors">
-                                <Pencil className="h-3 w-3 text-muted-foreground" />
-                              </button>
-                              <button title="Enviar preview" disabled={!!uploading}
-                                onClick={() => {
-                                  pendingUploadRef.current = { packId: pack.id, soundId: sound.id, type: 'preview' };
-                                  previewInputRef.current?.click();
-                                }}
-                                className="p-1.5 rounded hover:bg-muted transition-colors disabled:opacity-40">
-                                {uploading?.soundId === sound.id && uploading.type === 'preview'
-                                  ? <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
-                                  : <Eye className="h-3 w-3 text-muted-foreground" />}
-                              </button>
-                              <button title="Excluir som" disabled={!!deletingSound}
-                                onClick={() => handleDeleteSound(sound.id)}
-                                className="p-1.5 rounded hover:bg-destructive/10 transition-colors disabled:opacity-40">
-                                {deletingSound === sound.id
-                                  ? <Loader2 className="h-3 w-3 animate-spin text-destructive" />
-                                  : <Trash2 className="h-3 w-3 text-destructive" />}
-                              </button>
+                              ) : (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={() => startEditSound(sound)}
+                                    className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted transition-colors"
+                                  >
+                                    <Pencil className="h-3 w-3 text-muted-foreground" />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      pendingUploadRef.current = { packId: pack.id, soundId: sound.id, type: 'preview' };
+                                      previewInputRef.current?.click();
+                                    }}
+                                    className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted transition-colors"
+                                    title="Upload preview"
+                                  >
+                                    {uploading?.soundId === sound.id
+                                      ? <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                                      : <Eye className="h-3 w-3 text-muted-foreground" />}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteSound(sound.id)}
+                                    disabled={deletingSound === sound.id}
+                                    className="h-6 w-6 rounded flex items-center justify-center hover:bg-destructive/10 transition-colors"
+                                  >
+                                    {deletingSound === sound.id
+                                      ? <Loader2 className="h-3 w-3 animate-spin text-destructive" />
+                                      : <Trash2 className="h-3 w-3 text-destructive" />}
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          ))}
                         </div>
-                      );
-                    })}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      </>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

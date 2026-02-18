@@ -276,10 +276,37 @@ Deno.serve(async (req) => {
       }
 
       const { data: pack } = await supabase.from('store_packs').select('banner_url').eq('id', packId).single();
-      if (pack?.banner_url && !pack.banner_url.startsWith('http')) {
-        await supabase.storage.from('sound-previews').remove([pack.banner_url]);
+      if (pack?.banner_url) {
+        // banner_url may be a full URL or a storage path
+        const storagePath = pack.banner_url.startsWith('http')
+          ? pack.banner_url.split('/sound-previews/').pop() ?? null
+          : pack.banner_url;
+        if (storagePath) {
+          await supabase.storage.from('sound-previews').remove([storagePath]);
+        }
       }
       const { error } = await supabase.from('store_packs').update({ banner_url: null }).eq('id', packId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+
+    } else if (action === 'remove-icon') {
+      const packId = formData.get('packId') as string;
+      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: pack } = await supabase.from('store_packs').select('icon_name').eq('id', packId).single();
+      if (pack?.icon_name) {
+        const storagePath = pack.icon_name.startsWith('http')
+          ? pack.icon_name.split('/sound-previews/').pop() ?? null
+          : pack.icon_name.startsWith('pack-icons/') ? pack.icon_name : null;
+        if (storagePath) {
+          await supabase.storage.from('sound-previews').remove([storagePath]);
+        }
+      }
+      // Reset to default icon name
+      const defaultIcon = formData.get('defaultIcon') as string || 'drum';
+      const { error } = await supabase.from('store_packs').update({ icon_name: defaultIcon }).eq('id', packId);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
 
