@@ -40,7 +40,9 @@ export function useIsLandscape() {
 
   React.useEffect(() => {
     const check = () => {
-      setIsLandscape(window.innerWidth > window.innerHeight && window.innerHeight <= 600);
+      // Only activate landscape layout for tablets/desktop (height > 500px).
+      // Phones in landscape have height <= ~430px and are excluded intentionally.
+      setIsLandscape(window.innerWidth > window.innerHeight && window.innerHeight > 500);
     };
     check();
     window.addEventListener('resize', check);
