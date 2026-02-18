@@ -47,14 +47,23 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
   const isTablet = useIsTablet();
   
 
-  // Portrait / desktop: pad grid with ambient pads below (skipped on desktop — footer handles them)
+  // Portrait / desktop: pad grid with ambient pads beside (tablet/desktop) or below (mobile)
   if (!isLandscape) {
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-        <div className={`flex-1 flex justify-center min-h-0 overflow-hidden ${focusMode ? 'items-start' : 'items-center'}`}>
-          {padGrid}
+        <div className={`flex-1 flex min-h-0 ${focusMode ? 'items-start' : 'items-center'}`}>
+          {/* Pad grid — takes remaining space */}
+          <div className="flex-1 flex justify-center min-h-0 overflow-hidden">
+            {padGrid}
+          </div>
+          {/* Continuous Pads beside the grid — tablet/desktop portrait only */}
+          {(isTablet || isDesktop) && (
+            <div className="w-[140px] xl:w-[160px] shrink-0 self-center pr-2 pl-1">
+              {ambientPads}
+            </div>
+          )}
         </div>
-        {/* Only render ambient pads below grid on mobile portrait; tablet/desktop show it beside the grid */}
+        {/* Mobile portrait: Continuous Pads below the grid */}
         {!isDesktop && !isTablet && (
           <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
             {ambientPads}
