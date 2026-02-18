@@ -1172,6 +1172,10 @@ const Index = () => {
         )}
         {isTablet && focusMode && (
           <div className="hidden md:flex lg:hidden items-center justify-center gap-3 px-3 py-1.5">
+            {/* Hidden metronome to keep audio alive */}
+            <div className="hidden">
+              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
+            </div>
             <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
             <span className="text-[10px] text-muted-foreground">BPM</span>
             <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
@@ -1187,6 +1191,11 @@ const Index = () => {
 
         {/* Mobile (non-tablet): tab buttons + page content */}
         <div className={`${isTablet ? 'hidden' : 'lg:hidden'} h-full relative flex flex-col`}>
+
+          {/* Metronome always mounted (hidden) to keep audio alive in focus mode */}
+          <div className="hidden">
+            <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
+          </div>
 
           {focusMode ? (
             /* Focus mode: minimized bar with BPM + key + play/pause */

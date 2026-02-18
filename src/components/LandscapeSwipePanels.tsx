@@ -75,6 +75,8 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
         {focusMode ? (
           /* Focus mode: BPM bar + ultra-compact ambient pads */
           <div className="flex flex-col flex-1 min-h-0">
+            {/* Hidden metronome to keep audio alive */}
+            <div className="hidden">{metronome}</div>
             <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-border/30 shrink-0">
               <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
               <span className="text-[10px] text-muted-foreground">BPM</span>
