@@ -454,11 +454,13 @@ const Index = () => {
     toast.success('Todos os pads redefinidos!');
   }, []);
 
+  // Set of native pad IDs (not custom sounds) - only apply AI config to these
+  const nativePadIds = new Set(defaultPads.map((p) => p.id));
+
   const handleApplySpotifyConfig = useCallback((config: any) => {
     // Save track name and key
     if (config.trackName) {
       setSpotifyTrackName(config.trackName);
-      // Extract just the song name (before " - artist")
       const songOnly = config.trackName.split(' - ')[0] || config.trackName;
       setSpotifySongName(songOnly);
       setShowSavePrompt(true);
@@ -468,15 +470,17 @@ const Index = () => {
     if (config.bpm) setBpm(Math.round(config.bpm));
     // Apply time signature
     if (config.timeSignature) setTimeSignature(config.timeSignature);
-    // Apply pad configs
+    // Apply pad configs — only to native pads (not custom imported sounds)
     if (config.pads) {
       const newVolumes: Record<string, number> = { ...padVolumes };
       const newPans: Record<string, number> = { ...padPans };
       const newEffects: Record<string, PadEffects> = { ...padEffects };
 
       for (const [padId, cfg] of Object.entries(config.pads) as [string, any][]) {
+        // Skip if this pad has a custom imported sound
+        if (!nativePadIds.has(padId)) continue;
+        if (customSounds[padId]) continue;
         if (cfg.volume != null) newVolumes[padId] = cfg.volume;
-        // Pan always stays at center - Spotify AI should not change pan
         newPans[padId] = 0;
         setPadPan(padId, 0);
         newEffects[padId] = {
@@ -497,7 +501,31 @@ const Index = () => {
       saveAllEffects(newEffects);
     }
 
-  }, [padVolumes, padPans, padEffects]);
+  }, [padVolumes, padPans, padEffects, customSounds]);
+
+  // Add song from Music AI to setlist directly (without AI pad config)
+  const handleMusicAIAddToSetlist = useCallback(async (song: { name: string; artist: string }, bpm: number, key: string | null) => {
+    const name = song.name;
+    if (key) setSpotifyKey(key);
+    setBpm(bpm);
+    const newSong: import('@/lib/sounds').SetlistSong = {
+      id: Date.now().toString(),
+      name,
+      bpm,
+      timeSignature,
+      pads: defaultPads,
+      padVolumes: {},
+      padNames: {},
+      padPans: {},
+      padEffects: {},
+      customSounds: {},
+    };
+    const result = await createSetlist(name, [newSong]);
+    if (result) {
+      setCurrentSongId(result.id);
+      setSpotifyTrackName(`${song.name} - ${song.artist}`);
+    }
+  }, [timeSignature, createSetlist]);
 
   const handleMetronomePanChange = useCallback((pan: number) => {
     setMetronomePanState(pan);
@@ -964,7 +992,9 @@ const Index = () => {
                   timeSignature={timeSignature}
                   onTimeSignatureChange={setTimeSignature}
                   isPlaying={metronomeIsPlaying}
-                  onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+                  onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
+                  songKey={spotifyKey}
+                  onKeyChange={setSpotifyKey} />
                 <div data-tutorial="pan-metronome">
                 <PanControl
                   label="Pan Metrônomo"
@@ -1044,7 +1074,7 @@ const Index = () => {
               </div>
             </div>
             <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
-              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
               <div data-tutorial="pan-metronome">
               <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
@@ -1093,7 +1123,7 @@ const Index = () => {
                   <span className="text-xs font-medium text-primary truncate max-w-[150px]">♪ {spotifyTrackName}</span>
                 )}
               </div>
-              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
               <div data-tutorial="pan-metronome">
                 <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
@@ -1220,7 +1250,7 @@ const Index = () => {
                   </div>
                 </div>
                 <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
-                  <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+                  <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
                   <div data-tutorial="pan-metronome">
                   <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
                   </div>
@@ -1284,6 +1314,7 @@ const Index = () => {
       {/* Music AI Search Sheet (outside menu to persist) */}
       <MusicAISearch
         onApplyConfig={handleApplySpotifyConfig}
+        onAddToSetlist={handleMusicAIAddToSetlist}
         locked={tier !== 'master'}
         externalOpen={spotifySheetOpen}
         onExternalOpenChange={setSpotifySheetOpen}

@@ -12,13 +12,18 @@ interface MetronomeProps {
   isPlaying: boolean;
   onTogglePlay: () => void;
   onBeat?: (beat: number) => void;
+  songKey?: string | null;
+  onKeyChange?: (key: string) => void;
 }
 
 const TIME_SIGNATURES = ['4/4', '3/4', '6/8'];
 
 const Metronome: React.FC<MetronomeProps> = ({
-  bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat
+  bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat, songKey, onKeyChange
 }) => {
+  const [editingKey, setEditingKey] = useState(false);
+  const [editKeyValue, setEditKeyValue] = useState('');
+  const keyInputRef = useRef<HTMLInputElement>(null);
   const [currentBeat, setCurrentBeat] = useState(0);
   const [localBpm, setLocalBpm] = useState(bpm);
   const [editingBpm, setEditingBpm] = useState(false);
@@ -127,8 +132,8 @@ const Metronome: React.FC<MetronomeProps> = ({
         </Button>
       </div>
 
-      {/* Controls row: play + time sigs + beats */}
-      <div className="flex items-center gap-1.5">
+      {/* Controls row: play + time sigs + key + beats */}
+      <div className="flex items-center gap-1.5 flex-wrap">
         <Button
           onClick={onTogglePlay}
           variant="outline"
@@ -139,7 +144,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           {isPlaying ? 'Stop' : 'Play'}
         </Button>
 
-        <div className="flex gap-0.5 ml-2">
+        <div className="flex gap-0.5 ml-1">
           {TIME_SIGNATURES.map((ts) => (
             <Button
               key={ts}
@@ -152,6 +157,39 @@ const Metronome: React.FC<MetronomeProps> = ({
             </Button>
           ))}
         </div>
+
+        {/* Tom (Key) editable field */}
+        {onKeyChange && (
+          <div className="flex items-center gap-1 ml-1">
+            <span className="text-[10px] text-muted-foreground">Tom:</span>
+            {editingKey ? (
+              <input
+                ref={keyInputRef}
+                value={editKeyValue}
+                onChange={(e) => setEditKeyValue(e.target.value.toUpperCase())}
+                onBlur={() => {
+                  setEditingKey(false);
+                  if (editKeyValue.trim()) onKeyChange(editKeyValue.trim());
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { setEditingKey(false); if (editKeyValue.trim()) onKeyChange(editKeyValue.trim()); }
+                  if (e.key === 'Escape') setEditingKey(false);
+                }}
+                className="w-12 h-7 text-[11px] font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none"
+                maxLength={4}
+                placeholder="C#m"
+              />
+            ) : (
+              <button
+                onClick={() => { setEditKeyValue(songKey || ''); setEditingKey(true); setTimeout(() => keyInputRef.current?.select(), 30); }}
+                className={`h-7 px-2 rounded text-[11px] font-bold border transition-colors hover:border-primary ${songKey ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border'}`}
+                title="Clique para editar o tom"
+              >
+                {songKey || '—'}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Beat indicator */}
         <div className="flex gap-1 ml-auto">
