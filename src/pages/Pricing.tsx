@@ -88,18 +88,29 @@ const Pricing = () => {
               const displayPeriod = plan ? plan.period : (t.price > 0 ? '/mês' : '');
               const displayCta = plan ? plan.cta_text : (tierKey === 'free' ? 'Grátis' : `Assinar ${t.name}`);
 
+              const isHighlighted = plan?.highlight && !isCurrent;
+
               return (
                 <div
                   key={tierKey}
-                  className={`relative rounded-xl border-2 p-4 space-y-4 flex flex-col ${
-                    isCurrent ? 'border-primary bg-primary/5' : 'border-border bg-card'
+                  className={`relative rounded-xl border-2 p-4 space-y-4 flex flex-col transition-shadow ${
+                    isCurrent
+                      ? 'border-primary bg-primary/5'
+                      : isHighlighted
+                        ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20 scale-[1.02]'
+                        : 'border-border bg-card'
                   }`}
                 >
-                  {isCurrent && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {/* Badge: plano atual tem prioridade sobre badge_text */}
+                  {isCurrent ? (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
                       SEU PLANO
                     </span>
-                  )}
+                  ) : plan?.badge_text ? (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                      {plan.badge_text}
+                    </span>
+                  ) : null}
 
                   <div className="text-center space-y-1">
                     <div className="flex items-center justify-center gap-1.5 text-foreground">
