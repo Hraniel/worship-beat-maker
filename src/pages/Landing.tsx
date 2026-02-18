@@ -229,17 +229,17 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
   );
 };
 
-// Stats — dynamic styles
+// Stats — dynamic styles (with optional image per stat)
 const Stats = ({ config }: { config: Record<string, string> }) => {
   const bg = config.stats_bg || 'hsl(220 15% 7%)';
   const valueColor = config.stats_value_color || 'hsl(0 0% 100%)';
   const labelColor = config.stats_label_color || 'hsl(0 0% 100% / 0.4)';
 
   const stats = [
-    { value: config.stat_1_value || '12+', label: config.stat_1_label || 'Sons padrão inclusos' },
-    { value: config.stat_2_value || '∞', label: config.stat_2_label || 'Setlists por culto' },
-    { value: config.stat_3_value || 'AI', label: config.stat_3_label || 'Spotify integrado' },
-    { value: config.stat_4_value || 'PWA', label: config.stat_4_label || 'Instale no celular' },
+    { value: config.stat_1_value || '12+', label: config.stat_1_label || 'Sons padrão inclusos', image: config.stat_1_image },
+    { value: config.stat_2_value || '∞', label: config.stat_2_label || 'Setlists por culto', image: config.stat_2_image },
+    { value: config.stat_3_value || 'AI', label: config.stat_3_label || 'Spotify integrado', image: config.stat_3_image },
+    { value: config.stat_4_value || 'PWA', label: config.stat_4_label || 'Instale no celular', image: config.stat_4_image },
   ];
   const pt = config.stats_pt ? `${config.stats_pt}px` : '64px';
   const pb = config.stats_pb ? `${config.stats_pb}px` : '64px';
@@ -249,7 +249,10 @@ const Stats = ({ config }: { config: Record<string, string> }) => {
         variants={stagger}
         className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
         {stats.map((stat, i) => (
-          <motion.div key={stat.label} variants={fadeUp} custom={i}>
+          <motion.div key={stat.label} variants={fadeUp} custom={i} className="flex flex-col items-center">
+            {stat.image && (
+              <img src={stat.image} alt={stat.label} className="w-10 h-10 object-contain mb-3" />
+            )}
             <div className="text-4xl sm:text-5xl font-black mb-2" style={{ color: valueColor }}>{stat.value}</div>
             <div className="text-sm font-medium" style={{ color: labelColor }}>{stat.label}</div>
           </motion.div>
@@ -380,13 +383,20 @@ const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNav
   );
 };
 
-// How it works — dynamic styles
+// How it works — dynamic styles + texts
 const HowItWorks = ({ config }: { config: Record<string, string> }) => {
   const bg = config.howitworks_bg || 'hsl(0 0% 97%)';
   const titleColor = config.howitworks_title_color || 'hsl(220 15% 10%)';
   const stepColor = config.howitworks_step_color || 'hsl(0 0% 0% / 0.06)';
   const itemTitleColor = config.howitworks_item_title_color || 'hsl(220 15% 10%)';
   const itemDescColor = config.howitworks_item_desc_color || 'hsl(220 15% 40%)';
+  const mainTitle = config.how_main_title || 'Do ensaio ao culto em 3 passos';
+
+  const steps = [
+    { step: '01', title: config.how_step_1_title || 'Crie sua Setlist', desc: config.how_step_1_desc || 'Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.' },
+    { step: '02', title: config.how_step_2_title || 'Configure os Sons', desc: config.how_step_2_desc || 'Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.' },
+    { step: '03', title: config.how_step_3_title || 'Toque ao Vivo', desc: config.how_step_3_desc || 'No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.' },
+  ];
 
   return (
     <section style={{ background: bg, paddingTop: config.howitworks_pt ? `${config.howitworks_pt}px` : '80px', paddingBottom: config.howitworks_pb ? `${config.howitworks_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
@@ -394,17 +404,13 @@ const HowItWorks = ({ config }: { config: Record<string, string> }) => {
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Como funciona</motion.p>
           <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
-            Do ensaio ao culto<br />em <span className="text-primary">3 passos</span>
+            {mainTitle}
           </motion.h2>
         </motion.div>
 
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
           className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {[
-            { step: '01', title: 'Crie sua Setlist', desc: 'Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.' },
-            { step: '02', title: 'Configure os Sons', desc: 'Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.' },
-            { step: '03', title: 'Toque ao Vivo', desc: 'No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.' },
-          ].map((item, i) => (
+          {steps.map((item, i) => (
             <motion.div key={item.step} variants={fadeUp} custom={i} className="relative">
               <div className="text-6xl font-black leading-none mb-3" style={{ color: stepColor }}>{item.step}</div>
               <h3 className="text-lg font-bold mb-2" style={{ color: itemTitleColor }}>{item.title}</h3>
@@ -556,10 +562,19 @@ const FinalCTA = ({ navigate, config }: { navigate: ReturnType<typeof useNavigat
   );
 };
 
-// Footer — dynamic styles
+// Footer — dynamic styles + texts + links
 const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
   const bg = config.footer_bg || 'hsl(220 15% 5%)';
   const textColor = config.footer_text_color || 'hsl(0 0% 100% / 0.35)';
+  const tagline = config.footer_tagline || 'A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.';
+  const copyright = config.footer_copyright || 'Glory Pads';
+  const logoUrl = config.footer_logo_url;
+
+  const footerLinks = [
+    { label: config.footer_link_1_label || 'Recursos', href: config.footer_link_1_href || '#recursos' },
+    { label: config.footer_link_2_label || 'Planos', href: config.footer_link_2_href || '#planos' },
+    { label: config.footer_link_3_label || 'Glory Store', href: config.footer_link_3_href || '#sons' },
+  ];
 
   return (
     <footer className="border-t" style={{ background: bg, borderColor: 'hsl(0 0% 100% / 0.06)', paddingTop: config.footer_pt ? `${config.footer_pt}px` : '40px', paddingBottom: config.footer_pb ? `${config.footer_pb}px` : '40px', paddingLeft: '1rem', paddingRight: '1rem' }}>
@@ -567,19 +582,17 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
         <div className="flex flex-col sm:flex-row items-start justify-between gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <img src={logoLight} alt="Glory Pads" className="h-7 w-auto" />
-              <span className="font-bold" style={{ color: 'hsl(0 0% 100%)' }}>Glory Pads</span>
+              {logoUrl ? (
+                <img src={logoUrl} alt={copyright} className="h-7 w-auto" />
+              ) : (
+                <img src={logoLight} alt={copyright} className="h-7 w-auto" />
+              )}
+              <span className="font-bold" style={{ color: 'hsl(0 0% 100%)' }}>{copyright}</span>
             </div>
-            <p className="text-sm max-w-xs" style={{ color: textColor }}>
-              A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.
-            </p>
+            <p className="text-sm max-w-xs" style={{ color: textColor }}>{tagline}</p>
           </div>
           <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm">
-            {[
-              { label: 'Recursos', href: '#recursos' },
-              { label: 'Planos', href: '#planos' },
-              { label: 'Glory Store', href: '#sons' },
-            ].map(l => (
+            {footerLinks.map(l => (
               <a key={l.label} href={l.href} className="transition" style={{ color: textColor }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100%)')}
                 onMouseLeave={e => (e.currentTarget.style.color = textColor)}>
@@ -593,7 +606,7 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
         </div>
         <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"
           style={{ borderColor: 'hsl(0 0% 100% / 0.06)', color: textColor }}>
-          <p>© {new Date().getFullYear()} Glory Pads. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} {copyright}. Todos os direitos reservados.</p>
           <p>Feito com ❤️ para músicos de louvor</p>
         </div>
       </div>
