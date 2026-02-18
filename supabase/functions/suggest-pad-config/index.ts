@@ -5,100 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Convert text to songbpm.com-compatible slug
-function toSlug(text: string): string {
-  return text
-    .toLowerCase()
-    // Normalize accented characters (é→e, ã→a, etc.)
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    // Replace spaces and underscores with hyphens
-    .replace(/[\s_]+/g, "-")
-    // Remove characters that are not letters, numbers, or hyphens
-    .replace(/[^a-z0-9-]/g, "")
-    // Remove duplicate hyphens
-    .replace(/-{2,}/g, "-")
-    // Trim hyphens from edges
-    .replace(/^-+|-+$/g, "");
-}
-
-// Parse key from songbpm.com markdown which uses unicode ♯/♭ symbols
-function parseKey(markdown: string): string | null {
-  // Match patterns like: "Key  G♯/A♭", "Key  C major", "Key  Am", "Key  F♯m"
-  // songbpm.com format: "Key\n\nG♯/A♭\n\nMinor" or inline variants
-  const keyBlockMatch = markdown.match(/Key[\s\S]{0,20}?([A-G][♯♭#b]?)(?:\/[A-G][♯♭#b]?)?\s*(major|minor|maj|min|m\b)?/i);
-  if (!keyBlockMatch) return null;
-
-  let note = keyBlockMatch[1];
-  const modeRaw = keyBlockMatch[2] || "";
-
-  // Convert unicode symbols
-  note = note.replace(/♯/g, "#").replace(/♭/g, "b");
-
-  // Determine if minor — check explicit mode word, or look for "minor" near the key block
-  const isMinor = modeRaw.toLowerCase().startsWith("min") ||
-    /minor/i.test(markdown.slice(0, 1200));
-
-  return isMinor ? `${note}m` : note;
-}
-
-// Scrape songbpm.com using direct URL with artist/track slugs
-async function fetchSongBpm(trackName: string, artist: string): Promise<{ bpm: number | null; key: string | null }> {
-  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-  if (!FIRECRAWL_API_KEY) {
-    console.warn("FIRECRAWL_API_KEY not configured, skipping songbpm.com lookup");
-    return { bpm: null, key: null };
-  }
-
-  try {
-    // Use only the first artist if multiple are listed (e.g. "Bethel Music, Jenn Johnson")
-    const primaryArtist = artist.split(/[,&]/)[0].trim();
-
-    const artistSlug = toSlug(primaryArtist);
-    const trackSlug = toSlug(trackName);
-
-    const directUrl = `https://songbpm.com/@${artistSlug}/${trackSlug}`;
-    console.log(`Fetching songbpm.com direct URL: ${directUrl}`);
-
-    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: directUrl,
-        formats: ["markdown"],
-        onlyMainContent: true,
-        waitFor: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error("Firecrawl error:", response.status);
-      return { bpm: null, key: null };
-    }
-
-    const data = await response.json();
-    const markdown = data.data?.markdown || data.markdown || "";
-
-    console.log("songbpm.com response (first 800 chars):", markdown.slice(0, 800));
-
-    // Extract BPM — page shows pattern like "128\n\nBPM" or "128 BPM"
-    const bpmMatch = markdown.match(/(\d{2,3})\s*\n*\s*BPM/i);
-    const bpm = bpmMatch ? parseInt(bpmMatch[1]) : null;
-
-    // Extract Key using enhanced parser
-    const key = parseKey(markdown);
-
-    console.log(`songbpm.com result → BPM: ${bpm}, Key: ${key}`);
-    return { bpm, key };
-  } catch (err) {
-    console.error("fetchSongBpm error:", err);
-    return { bpm: null, key: null };
-  }
-}
-
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -106,11 +12,12 @@ serve(async (req) => {
     const body = await req.json();
     const trackName = typeof body.trackName === "string" ? body.trackName.slice(0, 300) : "Unknown";
     const artist = typeof body.artist === "string" ? body.artist.slice(0, 300) : "Unknown";
+    // BPM and Key are now pre-fetched from songbpm.com on the frontend
+    const realBpm: number | null = typeof body.bpm === "number" ? body.bpm : null;
+    const realKey: string | null = typeof body.key === "string" ? body.key : null;
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
-    // Fetch real BPM and key from songbpm.com
-    const { bpm: realBpm, key: realKey } = await fetchSongBpm(trackName, artist);
 
     const bpmInfo = realBpm
       ? `BPM REAL (fonte: songbpm.com): ${realBpm}. USE EXATAMENTE ESTE VALOR.`
@@ -121,7 +28,7 @@ serve(async (req) => {
       : `TOM: NÃO encontrado no songbpm.com. Use seu conhecimento musical para estimar com precisão.`;
 
     const systemPrompt = `Você é um especialista em produção musical e bateria para worship/louvor.
-Dado os dados de uma música do Spotify, sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
+Dado os dados de uma música, sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
 
 Os 8 pads disponíveis são (use EXATAMENTE estes IDs):
 1. kick - Bumbo
@@ -247,7 +154,13 @@ Sugira configurações de pads e padrões rítmicos que repliquem fielmente o ac
     if (realBpm) config.bpm = realBpm;
     if (realKey) config.key = realKey;
 
-    return new Response(JSON.stringify({ config, source: { bpm: realBpm ? "songbpm.com" : "ai", key: realKey ? "songbpm.com" : "ai" } }), {
+    return new Response(JSON.stringify({
+      config,
+      source: {
+        bpm: realBpm ? "songbpm.com" : "ai",
+        key: realKey ? "songbpm.com" : "ai",
+      },
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

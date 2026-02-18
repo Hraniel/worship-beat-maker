@@ -6,7 +6,7 @@ import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
 import MixerStrip from '@/components/MixerStrip';
 import SetlistManager from '@/components/SetlistManager';
-import SpotifySearch from '@/components/SpotifySearch';
+import MusicAISearch from '@/components/MusicAISearch';
 import AmbientPads from '@/components/AmbientPads';
 import LandscapeSwipePanels from '@/components/LandscapeSwipePanels';
 import { useIsLandscape, useIsTablet } from '@/hooks/use-mobile';
@@ -20,7 +20,7 @@ import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders } from 'lucide-react';
+import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -705,14 +705,14 @@ const Index = () => {
                       onClick={() => {
                         setMobileMenuOpen(false);
                         if (tier !== 'master') {
-                          toast('🔒 Spotify disponível no plano Master');
+                          toast('🔒 Music AI disponível no plano Master');
                         } else {
                           setTimeout(() => setSpotifySheetOpen(true), 150);
                         }
                       }}
                     >
-                      {tier !== 'master' ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Music className="h-4 w-4 text-muted-foreground" />}
-                      Spotify AI
+                      {tier !== 'master' ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Sparkles className="h-4 w-4 text-muted-foreground" />}
+                      Music AI
                       {tier !== 'master' && <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>}
                     </button>
                     <button onClick={() => { setSettingsTab('audio'); setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
@@ -1281,8 +1281,8 @@ const Index = () => {
         </div>
       )}
 
-      {/* Spotify Search Sheet (outside menu to persist) */}
-      <SpotifySearch
+      {/* Music AI Search Sheet (outside menu to persist) */}
+      <MusicAISearch
         onApplyConfig={handleApplySpotifyConfig}
         locked={tier !== 'master'}
         externalOpen={spotifySheetOpen}
