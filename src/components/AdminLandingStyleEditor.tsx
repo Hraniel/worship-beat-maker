@@ -105,6 +105,11 @@ const STYLE_SECTIONS: StyleSection[] = [
   {
     id: 'howitworks', label: 'Como Funciona', emoji: '📋',
     fields: [
+      { key: 'howitworks_bg', label: 'Fundo', type: 'color' },
+      { key: 'howitworks_title_color', label: 'Cor do Título', type: 'color' },
+      { key: 'howitworks_step_color', label: 'Cor do Número do Passo', type: 'color', hint: 'Suporta transparência (ex: hsl(0 0% 0% / 0.06))' },
+      { key: 'howitworks_item_title_color', label: 'Cor do Título do Passo', type: 'color' },
+      { key: 'howitworks_item_desc_color', label: 'Cor da Descrição do Passo', type: 'color' },
       { key: 'howitworks_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
       { key: 'howitworks_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
@@ -328,6 +333,11 @@ const AdminLandingStyleEditor: React.FC = () => {
       store_title_color: 'hsl(0 0% 100%)',
       store_subtitle_color: 'hsl(0 0% 100% / 0.45)',
       store_pt: '80', store_pb: '112',
+      howitworks_bg: 'hsl(0 0% 97%)',
+      howitworks_title_color: 'hsl(220 15% 10%)',
+      howitworks_step_color: 'hsl(0 0% 0% / 0.06)',
+      howitworks_item_title_color: 'hsl(220 15% 10%)',
+      howitworks_item_desc_color: 'hsl(220 15% 40%)',
       howitworks_pt: '80', howitworks_pb: '112',
       pricing_bg: 'hsl(220 15% 7%)',
       pricing_title_color: 'hsl(0 0% 100%)',
