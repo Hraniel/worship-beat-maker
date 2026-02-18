@@ -7,9 +7,25 @@ import {
   Save, Loader2, Crown, Zap, Lock, Unlock, Plus, Trash2, RefreshCw,
   Music, Mic2, Waves, Sparkles, Activity, Radio, ListMusic, SlidersHorizontal,
   AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp,
+  GripVertical,
 } from 'lucide-react';
 import type { PlanPricing, PlanFeature, FeatureGate } from '@/hooks/useLandingConfig';
 import { invalidateGatesCache } from '@/hooks/useFeatureGates';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // ── Catálogo de funcionalidades do app ──────────────────────────────────────
 const APP_FEATURES_CATALOG: {
@@ -81,6 +97,57 @@ const APP_FEATURES_CATALOG: {
   },
 ];
 
+// ── Sortable plan feature row ────────────────────────────────────────────────
+interface SortablePlanFeatureProps {
+  feat: PlanFeature;
+  saving: string | null;
+  onToggle: (id: string, enabled: boolean) => void;
+  onLabelChange: (id: string, label: string) => void;
+  onLabelSave: (feat: PlanFeature) => void;
+  onDelete: (id: string) => void;
+}
+
+const SortablePlanFeature: React.FC<SortablePlanFeatureProps> = ({
+  feat, saving, onToggle, onLabelChange, onLabelSave, onDelete,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: feat.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.45 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 group">
+      <button
+        {...attributes}
+        {...listeners}
+        className="shrink-0 p-0.5 cursor-grab active:cursor-grabbing text-white/20 hover:text-white/50 transition touch-none"
+        title="Arrastar para reordenar"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <Switch
+        checked={feat.enabled}
+        onCheckedChange={v => onToggle(feat.id, v)}
+        disabled={saving === `feat-${feat.id}`}
+      />
+      <input
+        className="flex-1 h-7 px-2 text-xs bg-transparent border border-transparent hover:border-white/10 focus:border-white/20 rounded text-white focus:outline-none"
+        value={feat.feature_label}
+        onChange={e => onLabelChange(feat.id, e.target.value)}
+        onBlur={() => onLabelSave(feat)}
+      />
+      <button
+        onClick={() => onDelete(feat.id)}
+        className="opacity-0 group-hover:opacity-100 transition p-1 text-red-400 hover:text-red-300"
+      >
+        <Trash2 className="h-3 w-3" />
+      </button>
+    </div>
+  );
+};
+
 const TIER_BADGE: Record<string, { label: string; cls: string }> = {
   free: { label: 'Free', cls: 'bg-gray-700/60 text-gray-300' },
   pro: { label: 'Pro', cls: 'bg-violet-700/60 text-violet-300' },
@@ -112,6 +179,10 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [expandedCatalogCategory, setExpandedCatalogCategory] = useState<string | null>(null);
   const [addingAll, setAddingAll] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
 
   const fetchData = async () => {
     setLoading(true);
@@ -223,6 +294,35 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
       setFeatures(prev => prev.filter(f => f.id !== id));
     } catch (e: any) {
       toast.error(e.message);
+    }
+  };
+
+  const handleFeatureDragEnd = async (tier: string, event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const tierFeats = [...features]
+      .filter(f => f.tier === tier)
+      .sort((a, b) => a.sort_order - b.sort_order);
+
+    const oldIdx = tierFeats.findIndex(f => f.id === active.id);
+    const newIdx = tierFeats.findIndex(f => f.id === over.id);
+    const reordered = arrayMove(tierFeats, oldIdx, newIdx).map((f, i) => ({ ...f, sort_order: i + 1 }));
+
+    setFeatures(prev => [
+      ...prev.filter(f => f.tier !== tier),
+      ...reordered,
+    ]);
+
+    try {
+      await Promise.all(
+        reordered.map(f =>
+          supabase.from('plan_features').update({ sort_order: f.sort_order }).eq('id', f.id)
+        )
+      );
+    } catch (e: any) {
+      toast.error(e.message);
+      fetchData();
     }
   };
 
@@ -407,7 +507,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
       {/* ── FEATURES TAB ─────────────────────────────────────────────────────── */}
       {activeTab === 'features' && (
         <div className="space-y-5">
-          <p className="text-[11px] text-white/40">Defina os recursos visíveis na landing page e na tela de planos para cada nível.</p>
+          <p className="text-[11px] text-white/40">Arraste os recursos para reordenar. Defina os visíveis na landing page e na tela de planos.</p>
           {TIER_ORDER.map(tier => {
             const tierFeatures = features.filter(f => f.tier === tier).sort((a, b) => a.sort_order - b.sort_order);
             const plan = pricing.find(p => p.tier === tier);
@@ -421,22 +521,25 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
                   </button>
                 </div>
 
-                {tierFeatures.map(feat => (
-                  <div key={feat.id} className="flex items-center gap-2 group">
-                    <Switch checked={feat.enabled} onCheckedChange={v => toggleFeature(feat.id, v)}
-                      disabled={saving === `feat-${feat.id}`} />
-                    <input
-                      className="flex-1 h-7 px-2 text-xs bg-transparent border border-transparent hover:border-white/10 focus:border-white/20 rounded text-white focus:outline-none"
-                      value={feat.feature_label}
-                      onChange={e => updateFeatureLabel(feat.id, e.target.value)}
-                      onBlur={() => saveFeatureLabel(feat)}
-                    />
-                    <button onClick={() => deleteFeature(feat.id)}
-                      className="opacity-0 group-hover:opacity-100 transition p-1 text-red-400 hover:text-red-300">
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={e => handleFeatureDragEnd(tier, e)}
+                >
+                  <SortableContext items={tierFeatures.map(f => f.id)} strategy={verticalListSortingStrategy}>
+                    {tierFeatures.map(feat => (
+                      <SortablePlanFeature
+                        key={feat.id}
+                        feat={feat}
+                        saving={saving}
+                        onToggle={toggleFeature}
+                        onLabelChange={updateFeatureLabel}
+                        onLabelSave={saveFeatureLabel}
+                        onDelete={deleteFeature}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
 
                 {addingFeature === tier && (
                   <div className="flex gap-2 mt-2 pt-2 border-t border-white/10">

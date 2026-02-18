@@ -3,9 +3,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   Plus, Trash2, Save, Loader2, Image, X, GripVertical,
-  Eye, EyeOff, ChevronUp, ChevronDown,
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export interface LandingFeature {
   id: string;
@@ -26,6 +40,201 @@ const ICON_OPTIONS = [
 const inputCls = "w-full h-8 px-2.5 text-xs rounded-lg border border-white/10 bg-white/5 text-white focus:outline-none focus:ring-1 focus:ring-violet-500/60 placeholder:text-white/30";
 const labelCls = "text-[10px] font-medium text-white/40 uppercase tracking-wider mb-1 block";
 
+// ── Sortable Feature Card ────────────────────────────────────────────────────
+interface SortableFeatureCardProps {
+  feat: LandingFeature;
+  expandedId: string | null;
+  setExpandedId: (id: string | null) => void;
+  uploadingId: string | null;
+  saving: string | null;
+  onToggleEnabled: (id: string, v: boolean) => void;
+  onDelete: (id: string) => void;
+  onUpdateLocal: (id: string, field: keyof LandingFeature, value: any) => void;
+  onSaveField: (id: string, field: keyof LandingFeature, value: any) => void;
+  onTriggerUpload: (id: string) => void;
+  onRemoveImage: (id: string) => void;
+}
+
+const SortableFeatureCard: React.FC<SortableFeatureCardProps> = ({
+  feat,
+  expandedId,
+  setExpandedId,
+  uploadingId,
+  saving,
+  onToggleEnabled,
+  onDelete,
+  onUpdateLocal,
+  onSaveField,
+  onTriggerUpload,
+  onRemoveImage,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: feat.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  const isExpanded = expandedId === feat.id;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ ...style, border: '1px solid hsl(0 0% 100% / 0.08)', background: 'hsl(0 0% 100% / 0.02)' }}
+      className="rounded-xl overflow-hidden"
+    >
+      {/* Header row */}
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        {/* Drag handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="shrink-0 p-1 rounded cursor-grab active:cursor-grabbing text-white/20 hover:text-white/50 transition touch-none"
+          title="Arrastar para reordenar"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+
+        {/* Preview thumbnail */}
+        <div
+          className="shrink-0 h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center"
+          style={{ background: 'hsl(262 75% 55% / 0.15)', border: '1px solid hsl(262 75% 55% / 0.2)' }}
+        >
+          {feat.image_url
+            ? <img src={feat.image_url} alt="" className="h-full w-full object-cover" />
+            : <span className="text-[10px]" style={{ color: 'hsl(262 75% 65%)' }}>{feat.icon_name?.slice(0, 2)}</span>
+          }
+        </div>
+
+        {/* Title */}
+        <p className="flex-1 text-xs font-medium text-white truncate">{feat.title}</p>
+
+        {/* Controls */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Switch
+            checked={feat.enabled}
+            onCheckedChange={v => onToggleEnabled(feat.id, v)}
+          />
+          <button
+            onClick={() => setExpandedId(isExpanded ? null : feat.id)}
+            className="p-1.5 rounded-lg transition text-white/40 hover:text-white text-xs"
+          >
+            {isExpanded ? '▲' : '▼'}
+          </button>
+          <button
+            onClick={() => onDelete(feat.id)}
+            className="p-1.5 rounded-lg transition text-red-400/60 hover:text-red-400"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded edit form */}
+      {isExpanded && (
+        <div className="px-3 pb-3 space-y-3 border-t" style={{ borderColor: 'hsl(0 0% 100% / 0.06)' }}>
+          <div className="pt-3 space-y-2">
+            {/* Title */}
+            <div>
+              <label className={labelCls}>Título</label>
+              <input
+                className={`${inputCls} flex-1`}
+                value={feat.title}
+                onChange={e => onUpdateLocal(feat.id, 'title', e.target.value)}
+                onBlur={() => onSaveField(feat.id, 'title', feat.title)}
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className={labelCls}>Descrição</label>
+              <textarea
+                className="w-full px-2.5 py-1.5 text-xs rounded-lg resize-none focus:outline-none"
+                style={{
+                  border: '1px solid hsl(0 0% 100% / 0.1)',
+                  background: 'hsl(0 0% 100% / 0.05)',
+                  color: 'hsl(0 0% 100%)',
+                  minHeight: '56px',
+                }}
+                value={feat.description}
+                onChange={e => onUpdateLocal(feat.id, 'description', e.target.value)}
+                onBlur={() => onSaveField(feat.id, 'description', feat.description)}
+              />
+            </div>
+
+            {/* Icon (when no image) */}
+            {!feat.image_url && (
+              <div>
+                <label className={labelCls}>Ícone Lucide</label>
+                <select
+                  className={inputCls}
+                  value={feat.icon_name}
+                  onChange={e => {
+                    onUpdateLocal(feat.id, 'icon_name', e.target.value);
+                    onSaveField(feat.id, 'icon_name', e.target.value);
+                  }}
+                >
+                  {ICON_OPTIONS.map(icon => (
+                    <option key={icon} value={icon}>{icon}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Image upload */}
+            <div>
+              <label className={labelCls}>Foto / Banner (sobrepõe o ícone)</label>
+              {feat.image_url ? (
+                <div className="relative rounded-xl overflow-hidden" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }}>
+                  <img src={feat.image_url} alt={feat.title} className="w-full h-28 object-cover" />
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      onClick={() => onTriggerUpload(feat.id)}
+                      className="p-1.5 rounded-lg text-white"
+                      style={{ background: 'hsl(0 0% 0% / 0.6)' }}
+                      disabled={uploadingId === feat.id}
+                      title="Trocar imagem"
+                    >
+                      {uploadingId === feat.id
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        : <Image className="h-3.5 w-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => onRemoveImage(feat.id)}
+                      className="p-1.5 rounded-lg text-white"
+                      style={{ background: 'hsl(0 75% 40% / 0.7)' }}
+                      title="Remover imagem"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => onTriggerUpload(feat.id)}
+                  disabled={uploadingId === feat.id}
+                  className="w-full h-16 rounded-xl flex flex-col items-center justify-center gap-1 transition"
+                  style={{ border: '1px dashed hsl(0 0% 100% / 0.15)', color: 'hsl(0 0% 100% / 0.4)' }}
+                >
+                  {uploadingId === feat.id
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Image className="h-4 w-4" />}
+                  <span className="text-[10px]">
+                    {uploadingId === feat.id ? 'Enviando...' : 'Upload de imagem (JPG, PNG, WEBP · máx 5MB)'}
+                  </span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Main Component ───────────────────────────────────────────────────────────
 const AdminLandingFeaturesEditor: React.FC = () => {
   const [features, setFeatures] = useState<LandingFeature[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +245,10 @@ const AdminLandingFeaturesEditor: React.FC = () => {
   const [newFeature, setNewFeature] = useState({ title: '', description: '', icon_name: 'Sparkles' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
 
   const fetchFeatures = async () => {
     setLoading(true);
@@ -55,7 +268,6 @@ const AdminLandingFeaturesEditor: React.FC = () => {
 
   useEffect(() => { fetchFeatures(); }, []);
 
-  // ── Save field ──────────────────────────────────────────────────────────────
   const saveField = async (id: string, field: keyof LandingFeature, value: any) => {
     setSaving(`${id}-${field}`);
     try {
@@ -76,45 +288,41 @@ const AdminLandingFeaturesEditor: React.FC = () => {
     setFeatures(prev => prev.map(f => f.id === id ? { ...f, [field]: value } : f));
   };
 
-  // ── Toggle enabled ──────────────────────────────────────────────────────────
   const toggleEnabled = async (id: string, enabled: boolean) => {
     await saveField(id, 'enabled', enabled);
   };
 
-  // ── Move order ──────────────────────────────────────────────────────────────
-  const moveItem = async (id: string, direction: 'up' | 'down') => {
+  // ── Drag end ────────────────────────────────────────────────────────────────
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
     const sorted = [...features].sort((a, b) => a.sort_order - b.sort_order);
-    const idx = sorted.findIndex(f => f.id === id);
-    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+    const oldIdx = sorted.findIndex(f => f.id === active.id);
+    const newIdx = sorted.findIndex(f => f.id === over.id);
+    const reordered = arrayMove(sorted, oldIdx, newIdx);
 
-    const a = sorted[idx];
-    const b = sorted[swapIdx];
-    const newA = { ...a, sort_order: b.sort_order };
-    const newB = { ...b, sort_order: a.sort_order };
-
-    setFeatures(prev => prev.map(f =>
-      f.id === a.id ? newA : f.id === b.id ? newB : f
-    ));
+    // Assign new sort_order values
+    const updated = reordered.map((f, i) => ({ ...f, sort_order: i + 1 }));
+    setFeatures(updated);
 
     try {
-      await Promise.all([
-        supabase.from('landing_features').update({ sort_order: newA.sort_order }).eq('id', a.id),
-        supabase.from('landing_features').update({ sort_order: newB.sort_order }).eq('id', b.id),
-      ]);
+      await Promise.all(
+        updated.map(f =>
+          supabase.from('landing_features').update({ sort_order: f.sort_order }).eq('id', f.id)
+        )
+      );
     } catch (e: any) {
       toast.error(e.message);
       fetchFeatures();
     }
   };
 
-  // ── Delete ──────────────────────────────────────────────────────────────────
   const deleteFeature = async (id: string) => {
     if (!confirm('Remover este card de recurso?')) return;
     try {
       const feat = features.find(f => f.id === id);
       if (feat?.image_url) {
-        // Remove from storage
         const path = feat.image_url.split('/landing-assets/')[1];
         if (path) await supabase.storage.from('landing-assets').remove([path]);
       }
@@ -126,7 +334,6 @@ const AdminLandingFeaturesEditor: React.FC = () => {
     }
   };
 
-  // ── Add new ─────────────────────────────────────────────────────────────────
   const addFeature = async () => {
     if (!newFeature.title.trim()) { toast.error('Digite um título'); return; }
     setSaving('new');
@@ -152,7 +359,6 @@ const AdminLandingFeaturesEditor: React.FC = () => {
     }
   };
 
-  // ── Upload image ────────────────────────────────────────────────────────────
   const triggerUpload = (id: string) => {
     setUploadTargetId(id);
     fileInputRef.current?.click();
@@ -171,7 +377,6 @@ const AdminLandingFeaturesEditor: React.FC = () => {
       const ext = file.name.split('.').pop();
       const path = `features/${uploadTargetId}-${Date.now()}.${ext}`;
 
-      // Remove old image if exists
       const feat = features.find(f => f.id === uploadTargetId);
       if (feat?.image_url) {
         const oldPath = feat.image_url.split('/landing-assets/')[1];
@@ -184,9 +389,7 @@ const AdminLandingFeaturesEditor: React.FC = () => {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from('landing-assets').getPublicUrl(path);
-      const publicUrl = urlData.publicUrl;
-
-      await saveField(uploadTargetId, 'image_url', publicUrl);
+      await saveField(uploadTargetId, 'image_url', urlData.publicUrl);
       toast.success('Imagem enviada!');
     } catch (e: any) {
       toast.error(e.message || 'Erro no upload');
@@ -219,7 +422,6 @@ const AdminLandingFeaturesEditor: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      {/* Hidden file input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -229,162 +431,32 @@ const AdminLandingFeaturesEditor: React.FC = () => {
       />
 
       <p className="text-[11px]" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>
-        Gerencie os cards da seção "Recursos" da landing page. Você pode usar ícone Lucide ou fazer upload de uma foto/banner.
+        Arraste os cards para reordenar. Use ícone Lucide ou faça upload de uma foto/banner.
       </p>
 
-      {/* Feature cards */}
-      <div className="space-y-2">
-        {sorted.map((feat, idx) => {
-          const isExpanded = expandedId === feat.id;
-          return (
-            <div key={feat.id}
-              className="rounded-xl overflow-hidden"
-              style={{ border: '1px solid hsl(0 0% 100% / 0.08)', background: 'hsl(0 0% 100% / 0.02)' }}>
-
-              {/* Header row */}
-              <div className="flex items-center gap-2 px-3 py-2.5">
-                {/* Order buttons */}
-                <div className="flex flex-col gap-0.5 shrink-0">
-                  <button onClick={() => moveItem(feat.id, 'up')} disabled={idx === 0}
-                    className="p-0.5 rounded text-white/30 hover:text-white/70 disabled:opacity-20 transition">
-                    <ChevronUp className="h-3 w-3" />
-                  </button>
-                  <button onClick={() => moveItem(feat.id, 'down')} disabled={idx === sorted.length - 1}
-                    className="p-0.5 rounded text-white/30 hover:text-white/70 disabled:opacity-20 transition">
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </div>
-
-                {/* Preview thumbnail */}
-                <div className="shrink-0 h-8 w-8 rounded-lg overflow-hidden flex items-center justify-center"
-                  style={{ background: 'hsl(262 75% 55% / 0.15)', border: '1px solid hsl(262 75% 55% / 0.2)' }}>
-                  {feat.image_url
-                    ? <img src={feat.image_url} alt="" className="h-full w-full object-cover" />
-                    : <span className="text-[10px]" style={{ color: 'hsl(262 75% 65%)' }}>{feat.icon_name?.slice(0, 2)}</span>
-                  }
-                </div>
-
-                {/* Title */}
-                <p className="flex-1 text-xs font-medium text-white truncate">{feat.title}</p>
-
-                {/* Controls */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <Switch
-                    checked={feat.enabled}
-                    onCheckedChange={v => toggleEnabled(feat.id, v)}
-                  />
-                  <button
-                    onClick={() => setExpandedId(isExpanded ? null : feat.id)}
-                    className="p-1.5 rounded-lg transition text-white/40 hover:text-white"
-                  >
-                    {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  </button>
-                  <button onClick={() => deleteFeature(feat.id)}
-                    className="p-1.5 rounded-lg transition text-red-400/60 hover:text-red-400">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Expanded edit form */}
-              {isExpanded && (
-                <div className="px-3 pb-3 space-y-3 border-t" style={{ borderColor: 'hsl(0 0% 100% / 0.06)' }}>
-                  <div className="pt-3 space-y-2">
-                    {/* Title */}
-                    <div>
-                      <label className={labelCls}>Título</label>
-                      <div className="flex gap-2">
-                        <input className={`${inputCls} flex-1`} value={feat.title}
-                          onChange={e => updateLocal(feat.id, 'title', e.target.value)}
-                          onBlur={() => saveField(feat.id, 'title', feat.title)} />
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <div>
-                      <label className={labelCls}>Descrição</label>
-                      <textarea
-                        className="w-full px-2.5 py-1.5 text-xs rounded-lg resize-none focus:outline-none"
-                        style={{
-                          border: '1px solid hsl(0 0% 100% / 0.1)',
-                          background: 'hsl(0 0% 100% / 0.05)',
-                          color: 'hsl(0 0% 100%)',
-                          minHeight: '56px',
-                        }}
-                        value={feat.description}
-                        onChange={e => updateLocal(feat.id, 'description', e.target.value)}
-                        onBlur={() => saveField(feat.id, 'description', feat.description)}
-                      />
-                    </div>
-
-                    {/* Icon name (se não tem imagem) */}
-                    {!feat.image_url && (
-                      <div>
-                        <label className={labelCls}>Ícone Lucide</label>
-                        <select
-                          className={inputCls}
-                          value={feat.icon_name}
-                          onChange={e => { updateLocal(feat.id, 'icon_name', e.target.value); saveField(feat.id, 'icon_name', e.target.value); }}
-                        >
-                          {ICON_OPTIONS.map(icon => (
-                            <option key={icon} value={icon}>{icon}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Image upload */}
-                    <div>
-                      <label className={labelCls}>Foto / Banner (sobrepõe o ícone)</label>
-                      {feat.image_url ? (
-                        <div className="relative rounded-xl overflow-hidden" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }}>
-                          <img src={feat.image_url} alt={feat.title}
-                            className="w-full h-28 object-cover" />
-                          <div className="absolute top-2 right-2 flex gap-1">
-                            <button
-                              onClick={() => triggerUpload(feat.id)}
-                              className="p-1.5 rounded-lg text-white"
-                              style={{ background: 'hsl(0 0% 0% / 0.6)' }}
-                              disabled={uploadingId === feat.id}
-                              title="Trocar imagem"
-                            >
-                              {uploadingId === feat.id
-                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                : <Image className="h-3.5 w-3.5" />}
-                            </button>
-                            <button
-                              onClick={() => removeImage(feat.id)}
-                              className="p-1.5 rounded-lg text-white"
-                              style={{ background: 'hsl(0 75% 40% / 0.7)' }}
-                              title="Remover imagem"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => triggerUpload(feat.id)}
-                          disabled={uploadingId === feat.id}
-                          className="w-full h-16 rounded-xl flex flex-col items-center justify-center gap-1 transition"
-                          style={{ border: '1px dashed hsl(0 0% 100% / 0.15)', color: 'hsl(0 0% 100% / 0.4)' }}
-                        >
-                          {uploadingId === feat.id
-                            ? <Loader2 className="h-4 w-4 animate-spin" />
-                            : <Image className="h-4 w-4" />}
-                          <span className="text-[10px]">
-                            {uploadingId === feat.id ? 'Enviando...' : 'Upload de imagem (JPG, PNG, WEBP · máx 5MB)'}
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {/* Sortable list */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={sorted.map(f => f.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {sorted.map(feat => (
+              <SortableFeatureCard
+                key={feat.id}
+                feat={feat}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                uploadingId={uploadingId}
+                saving={saving}
+                onToggleEnabled={toggleEnabled}
+                onDelete={deleteFeature}
+                onUpdateLocal={updateLocal}
+                onSaveField={saveField}
+                onTriggerUpload={triggerUpload}
+                onRemoveImage={removeImage}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* Add new card */}
       {addingNew ? (
@@ -422,7 +494,8 @@ const AdminLandingFeaturesEditor: React.FC = () => {
               {saving === 'new' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
               Criar
             </button>
-            <button onClick={() => { setAddingNew(false); setNewFeature({ title: '', description: '', icon_name: 'Sparkles' }); }}
+            <button
+              onClick={() => { setAddingNew(false); setNewFeature({ title: '', description: '', icon_name: 'Sparkles' }); }}
               className="h-7 px-3 text-xs rounded-lg transition"
               style={{ color: 'hsl(0 0% 100% / 0.4)', border: '1px solid hsl(0 0% 100% / 0.1)' }}>
               Cancelar
