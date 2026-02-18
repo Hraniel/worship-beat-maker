@@ -39,7 +39,6 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 const SECTION_GROUPS = [
-  { label: 'Estatísticas', keys: ['stat_1_value', 'stat_1_label', 'stat_2_value', 'stat_2_label', 'stat_3_value', 'stat_3_label', 'stat_4_value', 'stat_4_label'] },
   { label: 'Seção Recursos', keys: ['features_title', 'features_subtitle'] },
   { label: 'Seção Loja', keys: ['store_title', 'store_subtitle'] },
   { label: 'Seção Planos', keys: ['plans_title', 'plans_subtitle', 'show_pricing'] },
@@ -526,21 +525,41 @@ const AdminLandingEditor: React.FC = () => {
             />
           </div>
 
-          {/* Stats imagens */}
+          {/* Stats — textos + imagens */}
           <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Estatísticas — Imagens</p>
-            <p className="text-[9px]" style={mutedStyle}>Cada imagem aparece acima do valor da estatística (40×40px, PNG transparente).</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Estatísticas</p>
+            <p className="text-[9px]" style={mutedStyle}>Edite valor, rótulo e imagem de cada estatística. A imagem aparece acima do valor (40×40px).</p>
             {[1, 2, 3, 4].map(n => (
-              <ImageUploadField
-                key={n}
-                keyPrefix={`stat_${n}_image`}
-                label={`Imagem — Stat ${n}`}
-                hint="Tamanho sugerido: 120×120px (PNG transparente)"
-                value={getVal(`stat_${n}_image`)}
-                onChange={v => setVal(`stat_${n}_image`, v)}
-                onSave={() => saveKey(`stat_${n}_image`)}
-                saving={saving === `stat_${n}_image`}
-              />
+              <div key={n} className="space-y-2 pb-4" style={{ borderBottom: n < 4 ? '1px solid hsl(0 0% 100% / 0.06)' : 'none' }}>
+                <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Estatística {n}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Valor</label>
+                    <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                      value={getVal(`stat_${n}_value`)}
+                      onChange={e => setVal(`stat_${n}_value`, e.target.value)}
+                      onBlur={() => saveKey(`stat_${n}_value`)}
+                      placeholder="Ex: 10k+" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Rótulo</label>
+                    <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                      value={getVal(`stat_${n}_label`)}
+                      onChange={e => setVal(`stat_${n}_label`, e.target.value)}
+                      onBlur={() => saveKey(`stat_${n}_label`)}
+                      placeholder="Ex: Usuários ativos" />
+                  </div>
+                </div>
+                <ImageUploadField
+                  keyPrefix={`stat_${n}_image`}
+                  label="Imagem (opcional)"
+                  hint="Tamanho sugerido: 120×120px (PNG transparente)"
+                  value={getVal(`stat_${n}_image`)}
+                  onChange={v => setVal(`stat_${n}_image`, v)}
+                  onSave={() => saveKey(`stat_${n}_image`)}
+                  saving={saving === `stat_${n}_image`}
+                />
+              </div>
             ))}
           </div>
 
