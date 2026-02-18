@@ -1033,7 +1033,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-[18vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[28vh] md:max-h-none lg:max-h-none'}`}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-[18vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[32vh] md:max-h-none lg:max-h-none overflow-visible'}`}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1207,10 +1207,10 @@ const Index = () => {
               </div>
 
               {/* Page content — no scroll, controlled by footerPage state */}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-visible">
                 {footerPage === 0 ? (
                   /* Mixer page */
-                  <div className="h-full flex items-center p-1.5">
+                  <div className="h-full flex items-end pb-1 px-1.5 pt-2">
                     <div className="w-full" data-tutorial="volume-master">
                       <MixerStrip channels={[
                         { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: handleMetronomeVolChange },
