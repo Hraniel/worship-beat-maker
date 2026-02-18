@@ -253,6 +253,7 @@ Deno.serve(async (req) => {
       const tag = formData.get('tag') as string;
       const name = formData.get('name') as string;
       const description = formData.get('description') as string;
+      const publishAt = formData.get('publishAt') as string | null;
 
       if (!packId) {
         return new Response(JSON.stringify({ error: 'Missing packId' }), { status: 400, headers: corsHeaders });
@@ -262,10 +263,36 @@ Deno.serve(async (req) => {
       if (tag !== undefined) updateData.tag = tag || null;
       if (name) updateData.name = name;
       if (description) updateData.description = description;
+      if (publishAt !== undefined) updateData.publish_at = publishAt || null;
 
       const { error } = await supabase.from('store_packs').update(updateData).eq('id', packId);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+
+    } else if (action === 'duplicate-pack') {
+      const packId = formData.get('packId') as string;
+      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: original } = await supabase.from('store_packs').select('*').eq('id', packId).single();
+      if (!original) {
+        return new Response(JSON.stringify({ error: 'Pack not found' }), { status: 404, headers: corsHeaders });
+      }
+
+      const { data: newPack, error: insertErr } = await supabase.from('store_packs').insert({
+        name: `${original.name} (Cópia)`,
+        description: original.description,
+        category: original.category,
+        icon_name: original.icon_name,
+        color: original.color,
+        price_cents: original.price_cents,
+        is_available: false,
+        tag: null,
+      }).select('id').single();
+
+      if (insertErr) throw insertErr;
+      return new Response(JSON.stringify({ success: true, packId: newPack.id }), { headers: corsHeaders });
 
     } else {
       return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: corsHeaders });

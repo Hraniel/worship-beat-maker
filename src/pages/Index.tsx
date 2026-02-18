@@ -20,7 +20,7 @@ import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
-import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles } from 'lucide-react';
+import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles, MonitorPlay } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ import PanControl from '@/components/PanControl';
 import TutorialGuide from '@/components/TutorialGuide';
 import SettingsDialog, { loadAudioSettings, type AudioSettings } from '@/components/SettingsDialog';
 import UpdateBanner from '@/components/UpdateBanner';
+import PerformanceMode from '@/components/PerformanceMode';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
@@ -99,6 +100,7 @@ const Index = () => {
   const [metronomePan, setMetronomePanState] = useState(0);
   const [masterPanState, setMasterPanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [performanceModeOpen, setPerformanceModeOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [footerPage, setFooterPage] = useState(0);
   const [faderPage, setFaderPage] = useState(0); // controlled by buttons 1 / 2
@@ -715,6 +717,19 @@ const Index = () => {
 
   return (
     <div className="flex flex-col bg-background overflow-hidden" style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)', boxSizing: 'border-box' }} onPointerDown={initAudio}>
+      {/* Performance Mode overlay */}
+      {performanceModeOpen && (
+        <PerformanceMode
+          songs={songs}
+          currentSongId={currentSongId}
+          bpm={bpm}
+          spotifyKey={spotifyKey}
+          metronomeIsPlaying={metronomeIsPlaying}
+          onTogglePlay={() => setMetronomeIsPlaying(p => !p)}
+          onLoadSong={handleLoadSong}
+          onClose={() => setPerformanceModeOpen(false)}
+        />
+      )}
       <UpdateBanner show={needRefresh} onUpdate={async () => { await updateServiceWorker(true); window.location.reload(); }} />
       {/* Header */}
       {!focusMode ? (
@@ -779,6 +794,11 @@ const Index = () => {
                     <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                     </button>
+                    {currentSongId && songs.length > 0 && (
+                      <button onClick={() => { setPerformanceModeOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                        <MonitorPlay className="h-4 w-4 text-muted-foreground" /> Modo Performance
+                      </button>
+                    )}
                     <button onClick={() => { setEditMode(p => !p); setMobileMenuOpen(false); }} className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? 'text-primary font-medium bg-primary/10' : 'text-foreground hover:bg-muted'}`}>
                       <Settings2 className="h-4 w-4" /> {editMode ? 'Sair do modo edição' : 'Modo Edição'}
                     </button>

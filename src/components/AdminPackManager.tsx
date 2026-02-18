@@ -4,9 +4,14 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Upload, Trash2, Plus, Loader2, Music, ChevronDown, ChevronUp,
-  Eye, Package, Pencil, Check, X, Settings, Play, Pause, GripVertical, Save, Image
+  Eye, Package, Pencil, Check, X, Settings, Play, Pause, GripVertical, Save, Image,
+  Copy, Bell, BarChart2, Users, Calendar,
 } from 'lucide-react';
 import { StorePackData } from '@/hooks/useStorePacks';
+import AdminAnalytics from '@/components/AdminAnalytics';
+import AdminUserManager from '@/components/AdminUserManager';
+import { broadcastPushNotification } from '@/lib/push-notifications';
+
 
 const PACK_CATEGORIES = [
   'Snare', 'Kick', 'Toms', 'Hi-Hat & Pratos', 'Percussão',
@@ -64,6 +69,7 @@ interface BatchProgress {
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
+  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users'>('packs');
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -77,6 +83,8 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   const [localOrder, setLocalOrder] = useState<Record<string, SortableSound[]>>({});
   const [savingOrder, setSavingOrder] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ packId: string; index: number } | null>(null);
+  const [cloningPack, setCloningPack] = useState<string | null>(null);
+  const [notifyingPack, setNotifyingPack] = useState<string | null>(null);
   const dragSoundRef = useRef<{ packId: string; index: number } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -88,7 +96,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   // Pack edit form
   const [packEdit, setPackEdit] = useState<Record<string, {
-    isAvailable: boolean; priceCents: number; tag: string; name: string; description: string;
+    isAvailable: boolean; priceCents: number; tag: string; name: string; description: string; publishAt: string;
   }>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -381,6 +389,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       fd.append('tag', edit.tag);
       fd.append('name', edit.name);
       fd.append('description', edit.description);
+      fd.append('publishAt', edit.publishAt || '');
       await invokeAdmin(fd);
       toast.success('Pack atualizado!');
       setEditingPack(null);
@@ -389,6 +398,36 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       toast.error(e.message || 'Erro ao atualizar pack');
     }
   };
+
+  const handleDuplicatePack = async (packId: string) => {
+    setCloningPack(packId);
+    try {
+      const fd = new FormData();
+      fd.append('action', 'duplicate-pack');
+      fd.append('packId', packId);
+      await invokeAdmin(fd);
+      toast.success('Pack duplicado! Veja ao final da lista.');
+      onRefresh();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao duplicar pack');
+    } finally {
+      setCloningPack(null);
+    }
+  };
+
+  const handleNotifyUsers = async (packName: string) => {
+    setNotifyingPack(packName);
+    try {
+      await broadcastPushNotification('🎵 Novo Pack Disponível!', `"${packName}" já está na Glory Store. Confira agora!`);
+      toast.success(`Notificação enviada para todos os usuários!`);
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao enviar notificação');
+    } finally {
+      setNotifyingPack(null);
+    }
+  };
+
+
 
   const startEditPack = (pack: StorePackData) => {
     setPackEdit(prev => ({
@@ -399,6 +438,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         tag: pack.tag || '',
         name: pack.name,
         description: pack.description,
+        publishAt: (pack as any).publish_at ? new Date((pack as any).publish_at).toISOString().slice(0, 16) : '',
       }
     }));
     setEditingPack(pack.id);
@@ -453,13 +493,47 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Settings className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-foreground">Painel Admin — Glory Store</h2>
+          <h2 className="text-sm font-semibold text-foreground">Painel Admin</h2>
         </div>
-        <Button size="sm" onClick={() => setShowCreatePack(v => !v)}
-          className="h-7 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
-          <Plus className="h-3 w-3 mr-1" /> Novo Pack
-        </Button>
+        {activeTab === 'packs' && (
+          <Button size="sm" onClick={() => setShowCreatePack(v => !v)}
+            className="h-7 px-3 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Plus className="h-3 w-3 mr-1" /> Novo Pack
+          </Button>
+        )}
       </div>
+
+      {/* Tab bar */}
+      <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
+        {([
+          { id: 'packs', label: 'Packs', icon: Music },
+          { id: 'analytics', label: 'Analytics', icon: BarChart2 },
+          { id: 'users', label: 'Usuários', icon: Users },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 h-7 rounded-md text-xs font-medium transition-colors ${
+              activeTab === id
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Icon className="h-3 w-3" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Analytics tab */}
+      {activeTab === 'analytics' && <AdminAnalytics />}
+
+      {/* Users tab */}
+      {activeTab === 'users' && <AdminUserManager />}
+
+      {/* Packs tab content starts below */}
+      {activeTab === 'packs' && (
+      <>
 
       {/* Create Pack Form */}
       {showCreatePack && (
@@ -591,6 +665,30 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                         : <Image className="h-3.5 w-3.5 text-muted-foreground" />}
                     </button>
                   )}
+                  {/* Clone button */}
+                  <button
+                    onClick={() => handleDuplicatePack(pack.id)}
+                    disabled={cloningPack === pack.id}
+                    className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                    title="Duplicar pack"
+                  >
+                    {cloningPack === pack.id
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+                  </button>
+                  {/* Notify button — only for available packs */}
+                  {pack.is_available && (
+                    <button
+                      onClick={() => handleNotifyUsers(pack.name)}
+                      disabled={notifyingPack === pack.name}
+                      className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
+                      title="Notificar usuários sobre este pack"
+                    >
+                      {notifyingPack === pack.name
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                        : <Bell className="h-3.5 w-3.5 text-primary" />}
+                    </button>
+                  )}
                   <button onClick={() => startEditPack(pack)}
                     className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Editar pack">
                     <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
@@ -649,6 +747,17 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                       className="rounded" />
                     <span className="text-xs text-foreground">Pack disponível para compra</span>
                   </label>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+                      <Calendar className="h-2.5 w-2.5" /> Publicar automaticamente em (opcional)
+                    </p>
+                    <input
+                      type="datetime-local"
+                      className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none"
+                      value={packEdit[pack.id].publishAt}
+                      onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], publishAt: e.target.value } }))}
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <Button size="sm" onClick={() => handleUpdatePack(pack.id)}
                       className="flex-1 h-7 text-xs bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -826,8 +935,11 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           );
         })}
       </div>
+      </>
+      )}
     </div>
   );
 };
 
 export default AdminPackManager;
+

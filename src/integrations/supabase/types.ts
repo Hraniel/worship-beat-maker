@@ -82,11 +82,40 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: {
+          auth_key: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth_key: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth_key?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       setlists: {
         Row: {
           created_at: string
           id: string
+          is_public: boolean | null
           name: string
+          share_token: string | null
           songs: Json
           sort_order: number
           updated_at: string
@@ -95,7 +124,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_public?: boolean | null
           name: string
+          share_token?: string | null
           songs?: Json
           sort_order?: number
           updated_at?: string
@@ -104,7 +135,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_public?: boolean | null
           name?: string
+          share_token?: string | null
           songs?: Json
           sort_order?: number
           updated_at?: string
@@ -124,6 +157,7 @@ export type Database = {
           is_available: boolean
           name: string
           price_cents: number
+          publish_at: string | null
           tag: string | null
         }
         Insert: {
@@ -137,6 +171,7 @@ export type Database = {
           is_available?: boolean
           name: string
           price_cents?: number
+          publish_at?: string | null
           tag?: string | null
         }
         Update: {
@@ -150,6 +185,7 @@ export type Database = {
           is_available?: boolean
           name?: string
           price_cents?: number
+          publish_at?: string | null
           tag?: string | null
         }
         Relationships: []
