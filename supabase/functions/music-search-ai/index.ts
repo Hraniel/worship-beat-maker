@@ -51,7 +51,7 @@ Não inclua explicações, texto extra ou markdown. Apenas o JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -76,7 +76,10 @@ Não inclua explicações, texto extra ou markdown. Apenas o JSON.`;
     }
 
     const aiData = await response.json();
-    const content = aiData.choices?.[0]?.message?.content || "";
+    let content = aiData.choices?.[0]?.message?.content || "";
+
+    // Strip markdown code fences if present
+    content = content.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
 
     // Extract JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
