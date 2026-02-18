@@ -1,94 +1,115 @@
 
-## Edição do Hero da Landing Page no Admin
+## Reorganizar layout Desktop/Tablet: Faders → Metrônomo → Continuous Pads
 
-### O que o usuário quer
+### O que precisa mudar
 
-Adicionar no painel admin uma forma de editar a seção superior da landing page (Hero) — que inclui o badge, título, subtítulo, cores, tamanho do texto e espaçamento — com salvamento automático (sem botão de publicar), igual ao `AdminPricingManager`.
+A solicitação é para **desktop e tablet apenas** (não altera mobile):
 
-### Diagnóstico do estado atual
+1. **Inverter posição**: Continuous Pads sobem acima dos Faders → agora Faders ficam primeiro, Continuous Pads ficam por último
+2. **Metrônomo completo abaixo dos Faders**: Em vez do bloco minimizável atual, exibir o `<Metronome>` completo direto (sem header de collapse, já expandido)
+3. **Remover mini-bar do metrônomo**: A barra compacta `BPM · 4/4 · ▶` que aparece na aba Mix do landscape e no tablet será removida
 
-A edição do Hero está **fragmentada em duas abas diferentes**:
-- **Aba "Textos"**: edita `hero_badge`, `hero_title`, `hero_subtitle` (com save por campo via onBlur)
-- **Aba "Estilos"**: edita `hero_bg`, `hero_title_color`, `hero_title_size`, `hero_subtitle_color`, `hero_badge_bg`, `hero_badge_color`, `hero_pt`, `hero_pb` (accordion "🦸 Hero")
-
-Não há uma tela unificada para editar tudo do Hero de uma vez. A solução é criar uma **nova aba dedicada "Hero"** no `AdminLandingEditor`, reunindo todos os campos com salvamento automático (onBlur salva no banco imediatamente, sem botão de publicar).
-
----
-
-### Estrutura da nova aba "Hero"
-
-A nova aba ficará entre "Textos" e "Recursos" e terá 3 grupos visuais:
-
-**Grupo 1 — Conteúdo**
-- Badge (texto do badge)
-- Título principal
-- Subtítulo
-
-**Grupo 2 — Cores & Tipografia**
-- Cor de fundo da seção (`hero_bg`)
-- Cor do título (`hero_title_color`)
-- Tamanho do título (`hero_title_size`) — select com opções XS a 8XL
-- Cor do subtítulo (`hero_subtitle_color`)
-- Fundo do badge (`hero_badge_bg`)
-- Cor do texto do badge (`hero_badge_color`)
-
-**Grupo 3 — Espaçamento**
-- Padding top (`hero_pt`) — select 0px–128px
-- Padding bottom (`hero_pb`) — select 0px–128px
-
-Cada campo salva **automaticamente no banco** ao perder o foco (`onBlur`) — exatamente como o `AdminPricingManager` faz com os planos. Sem botão de publicar, sem rascunho. A landing page reflete as mudanças instantaneamente para todos os visitantes.
+A sequência final para desktop e tablet será:
+```text
+[Faders (MixerStrip)]
+        ↓
+[Metrônomo completo]
+        ↓
+[Continuous Pads (AmbientPads)]
+```
 
 ---
 
-### Campos de cor reutilizando o ColorField
+### Onde estão os 3 contextos de layout
 
-O `AdminLandingStyleEditor` já tem um componente `ColorField` que:
-- Mostra um color picker nativo + input de texto HSL + preview de swatch
-- Suporta transparência (`hsl(... / 0.5)`)
-- Salva ao `onBlur`
+#### 1. Desktop (`lg:block` — `hidden lg:block`)
+**Arquivo**: `src/pages/Index.tsx`, linhas ~1159–1258
 
-Esse componente será **extraído para um arquivo utilitário compartilhado** ou simplesmente replicado inline na nova aba com a mesma lógica de auto-save.
+Sequência atual:
+- Faders (`MixerStrip`)
+- Metronome (collapsible com header)
+- Continuous Pads
+
+Mudança:
+- Faders (`MixerStrip`) — sem alteração
+- Metrônomo completo sem header de collapse (só `<Metronome>` + `<PanControl>` dentro de um card)
+- Continuous Pads (`<AmbientPads>`)
+- **Remover** o header colapsável atual do metronome
+
+#### 2. Tablet (`md:block lg:hidden` — linhas ~1261–1320)
+**Arquivo**: `src/pages/Index.tsx`, linhas ~1260–1320
+
+Sequência atual:
+- Faders
+- Metronome (full, sem header de collapse neste contexto)
+- Continuous Pads
+
+A sequência já está correta neste contexto! Mas ainda há uma **mini-barra de metrônomo** abaixo dos faders na aba Mix do landscape (dentro de `LandscapeSwipePanels`). Essa barra precisa ser removida.
+
+#### 3. Landscape sidebar (Mix tab dentro de `LandscapeSwipePanels`)
+**Arquivo**: `src/components/LandscapeSwipePanels.tsx`, linhas ~127–152
+
+Sequência atual na aba Mix:
+- Ambient Pads (topo)
+- Faders
+- Mini-bar BPM/metrônomo (bottom)
+
+Mudança:
+- Faders (topo)
+- Metrônomo completo abaixo
+- Continuous Pads (bottom)
+- **Remover** a mini-bar inferior
+
+O `mixer` prop recebido já contém faders + continuous pads dentro dele (definido em `Index.tsx` nas linhas ~1046–1087). A abordagem mais limpa é remover os continuous pads do prop `mixer` em `Index.tsx` e passá-los via `ambientPads`, e ajustar `LandscapeSwipePanels` para renderizar: faders → metronome → ambient pads.
 
 ---
 
-### Mudanças nos arquivos
+### Mudanças técnicas
 
-#### `src/components/AdminLandingEditor.tsx`
+#### `src/components/LandscapeSwipePanels.tsx`
 
-1. Adicionar nova tab `'hero'` ao array `TABS` (ícone: `Layout` ou `ImageIcon`)
-2. Adicionar `type ActiveTab = 'textos' | 'hero' | 'recursos' | 'estilos'`
-3. Renderizar o conteúdo da nova aba com 3 grupos:
-   - **Conteúdo**: inputs de texto com onBlur → saveKey (reutiliza lógica já existente)
-   - **Cores**: componente ColorField inline (lógica de hsl copiada do StyleEditor)
-   - **Espaçamento**: selects com as mesmas opções de padding do StyleEditor (0–128px)
-4. A função `saveKey` já existe e funciona com upsert — pode ser reutilizada para todos os campos, **incluindo os de cor e espaçamento** desde que a chave exista no banco
+Na aba **Mix** (não-focus), alterar a ordem:
+- **Remover** `<div>` de ambient pads do topo da aba Mix
+- **Remover** mini-bar BPM/metrônomo do bottom
+- **Adicionar** o conteúdo do `metronome` prop abaixo dos faders
+- **Adicionar** ambient pads abaixo do metronome
 
-#### `src/components/AdminLandingStyleEditor.tsx`
+A prop `metronome` já existe e é passada de `Index.tsx` — basta usá-la aqui na aba Mix.
 
-- Remover o accordion "🦸 Hero" (id `'hero'`) da lista `STYLE_SECTIONS`, pois esses campos agora são editados na aba dedicada
-- Isso evita duplicidade de edição
+#### `src/pages/Index.tsx` — Bloco Desktop (`hidden lg:block`)
 
-#### Nenhum arquivo de banco, migration ou Landing.tsx precisa ser alterado
+1. Remover o bloco de metronome com header colapsável (linhas ~1213–1245)
+2. Adicionar card de metrônomo sem collapse logo após os faders:
+```tsx
+<div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+  {spotifyTrackName && (
+    <div className="px-3 py-1 border-b border-border/50">
+      <span className="text-xs font-medium text-primary">♪ {spotifyTrackName}</span>
+    </div>
+  )}
+  <Metronome bpm={bpm} ... />
+  <PanControl ... />
+</div>
+```
+3. AmbientPads permanece abaixo do metronome (sem mudança de posição)
 
-O `Landing.tsx` já lê todos os campos `hero_*` do config e os aplica dinamicamente. O `useLandingConfig` já busca tudo de `landing_config`. Nenhuma mudança necessária.
+#### `src/pages/Index.tsx` — Bloco Tablet (`md:block lg:hidden`, linhas ~1260–1320)
+
+A sequência atual (Faders → Metronome → AmbientPads) já está correta. Apenas:
+- Verificar se o metronome no tablet tem header de collapse → se tiver, simplificar para exibição direta
+- Confirmar que não há mini-bar de BPM extra aqui
+
+#### `src/pages/Index.tsx` — prop `mixer` para `LandscapeSwipePanels` (linhas ~1046–1087)
+
+Atualmente, o `mixer` prop contém faders **e** continuous pads embaixo. Para a nova ordem funcionar no landscape, os continuous pads serão removidos do `mixer` prop (já que serão renderizados no `LandscapeSwipePanels` após o metronome).
 
 ---
 
-### Comportamento do salvamento
-
-Igual ao `AdminPricingManager`:
-- Input perde foco (`onBlur`) → `saveKey(key)` chama `supabase.from('landing_config').update(...)` → toast "Salvo!"
-- Color picker muda → `onChange` atualiza estado local → ao fechar/perder foco → `onBlur` salva
-- Select muda → `onChange` imediatamente chama `saveKey` (já que não tem campo de texto intermediário)
-- A landing page reflete as mudanças em tempo real para todos os visitantes
-
----
-
-### Resumo das alterações
+### Resumo de arquivos alterados
 
 | Arquivo | Mudança |
 |---|---|
-| `src/components/AdminLandingEditor.tsx` | Nova aba "Hero" com todos os campos textuais + cores + espaçamento, auto-save por onBlur |
-| `src/components/AdminLandingStyleEditor.tsx` | Remove accordion "Hero" (evita duplicidade) |
+| `src/pages/Index.tsx` | Desktop: remove header colapsável do met, add met full abaixo dos faders. Remove AmbientPads do interior do `mixer` prop. |
+| `src/components/LandscapeSwipePanels.tsx` | Aba Mix: remove ambient pads do topo e mini-bar do bottom; adiciona metronome completo + ambient pads abaixo dos faders. |
 
-Sem migrations, sem alterações no banco, sem mudanças no `Landing.tsx`.
+Nenhuma mudança no layout mobile (abas Mix/Met do footer continuam iguais).
