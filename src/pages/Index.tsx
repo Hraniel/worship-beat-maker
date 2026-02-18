@@ -1176,9 +1176,8 @@ const Index = () => {
           {/* Mixer Strip */}
           {!focusMode &&
           <div data-tutorial="volume-master">
-            {/* Fader page buttons 1 / 2 */}
+            {/* Fader page buttons */}
             <div className="flex items-center gap-1 mb-1">
-              <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
               {([0, 1, 2] as const).map((p) => (
                 <button
                   key={p}
@@ -1211,14 +1210,7 @@ const Index = () => {
           </div>
           }
 
-          {/* Continuous Pads — below faders, above metronome */}
-          {!focusMode && (
-            <div data-tutorial="ambient-pads">
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
-          )}
-
-          {/* Metronome */}
+          {/* Metronome — below faders */}
           <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
             <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
             onClick={() => setMetronomeOpen((prev) => !prev)}>
@@ -1251,7 +1243,13 @@ const Index = () => {
               </div>
             </div>
           </div>
-          {/* Continuous Pads in focus mode - below metronome */}
+
+          {/* Continuous Pads — below metronome */}
+          {!focusMode && (
+            <div data-tutorial="ambient-pads">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
+          )}
           {focusMode && (
             <div className="mt-1" data-tutorial="ambient-pads">
               <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
@@ -1259,14 +1257,12 @@ const Index = () => {
           )}
         </div>
 
-        {/* Tablet: Faders (paginated) + Continuous Pads below, Metronome below */}
+        {/* Tablet: Faders → Metrônomo → Continuous Pads (sem botões Mix/Met) */}
         {isTablet && !focusMode && (
           <div className="hidden md:block lg:hidden p-1.5 space-y-1.5">
-            {/* Faders with page buttons 1 / 2 */}
+            {/* Faders with page buttons */}
             <div className="w-full" data-tutorial="volume-master">
-              {/* Fader page buttons */}
               <div className="flex items-center gap-1 mb-1">
-                <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
                 {([0, 1, 2] as const).map((p) => (
                   <button
                     key={p}
@@ -1299,11 +1295,7 @@ const Index = () => {
                 ]}
               />
             </div>
-            {/* Continuous Pads - below faders */}
-            <div data-tutorial="ambient-pads">
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
-            {/* Metronome below */}
+            {/* Metronome — below faders */}
             <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
               <div className="flex items-center justify-between px-3 py-1 border-b border-border/50">
                 <div className="flex items-center gap-1.5">
@@ -1320,6 +1312,10 @@ const Index = () => {
               <div data-tutorial="pan-metronome">
                 <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
+            </div>
+            {/* Continuous Pads — below metronome */}
+            <div data-tutorial="ambient-pads">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
             </div>
           </div>
         )}
