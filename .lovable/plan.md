@@ -1,122 +1,137 @@
 
-# Diagnóstico definitivo: por que os Continuous Pads não aparecem
+# Dois pedidos em um plano
 
-## Causa raiz real
+---
 
-A abordagem atual embute os `<AmbientPads>` **dentro do prop `padGrid`**, dentro de um div com `w-full h-full flex items-center justify-center overflow-hidden`. O problema é que:
+## Pedido 1: Reestruturação do fluxo de Eventos no Repertório
 
-1. O `LandscapeSwipePanels` em modo portrait envolve o `padGrid` num div com `flex-1 flex justify-center min-h-0 overflow-hidden`
-2. O `padGrid` em si tem `w-full h-full` — logo preenche todo o espaço disponível
-3. `PadGrid` dentro dele usa `maxWidth` para se auto-limitar, mas o container externo continua `w-full`
-4. Os `AmbientPads` ficam numa `div` à direita dentro desse container `w-full`, mas **o `overflow-hidden` no nível do `LandscapeSwipePanels` corta qualquer coisa que ultrapasse a área visível**
-5. Além disso, o preview roda a ~757px, abaixo do breakpoint de 768px — então `isTablet` retorna `false` e `isDesktop` retorna `false`, fazendo a condição `(isTablet || isDesktop) && !isLandscape` ser sempre `false` no ambiente de preview
+### Problema atual
 
-## Solução correta
-
-Em vez de colocar os `<AmbientPads>` dentro do `padGrid` prop (que fica dentro de containers com `overflow-hidden`), renderizá-los **no nível do `LandscapeSwipePanels`** como um painel irmão do grid, em modo portrait para tablet/desktop.
-
-O `LandscapeSwipePanels` já conhece `isTablet` e `isDesktop` internamente. A mudança é:
-
-**No branch portrait (`!isLandscape`) do `LandscapeSwipePanels`:**
+No `SetlistManager`, a lista de "setlists" do banco é mapeada em `songs` assim (linhas 610–616 de `Index.tsx`):
 
 ```text
-ANTES:
-  <div flex-col>
-    <div flex-1> {padGrid} </div>        ← padGrid contém PadGrid + AmbientPads
-    {!isDesktop && !isTablet && ambientPads}  ← mobile only
-  </div>
-
-DEPOIS:
-  <div flex-col>
-    <div flex-1 flex-row>               ← linha horizontal
-      <div flex-1> {padGrid} </div>     ← apenas PadGrid, sem overflow-hidden no nível do row
-      {(isTablet || isDesktop) && (
-        <div w-[150px] shrink-0>        ← AmbientPads ao lado
-          {ambientPads}
-        </div>
-      )}
-    </div>
-    {!isDesktop && !isTablet && (
-      <div shrink-0>  {ambientPads} </div>  ← mobile: abaixo
-    )}
-  </div>
+cada setlist → uma entrada na lista de músicas da UI
 ```
 
-Isso move a lógica de exibição lado-a-lado para **dentro** do `LandscapeSwipePanels`, onde há controle total do layout, sem depender de `overflow-hidden` externo.
+O `CreateEventForm` pega `setlists` (que são coleções) e lista-as como se fossem músicas individuais para associar ao evento. Resultado: ao criar um evento, só é possível associar **uma coleção inteira** por vez — não músicas avulsas.
 
-## Mudanças nos arquivos
+### Solução: Inverter o fluxo
 
-### `src/components/LandscapeSwipePanels.tsx`
+**Fluxo novo:**
+1. Usuário cria o evento (nome + data) → evento salvo imediatamente
+2. Evento aparece expandido com um painel "+ Adicionar música"
+3. Usuário seleciona músicas da sua lista de setlists para adicionar ao evento, uma a uma
+4. O evento armazena um array de `song_ids` (ou os dados inline) no campo `setlist_id` → precisamos estender o modelo do evento
 
-No branch `!isLandscape` (portrait), substituir o layout atual por:
+### Mudança de modelo de dados
 
-```tsx
-if (!isLandscape) {
-  return (
-    <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-      <div className={`flex-1 flex min-h-0 gap-2 ${focusMode ? 'items-start' : 'items-center'}`}>
-        {/* Pad grid — ocupa o espaço restante */}
-        <div className="flex-1 flex justify-center min-h-0 overflow-hidden">
-          {padGrid}
-        </div>
-        {/* Continuous Pads ao lado — só tablet/desktop portrait */}
-        {(isTablet || isDesktop) && (
-          <div className="w-[150px] xl:w-[170px] shrink-0 self-center pr-2">
-            {ambientPads}
-          </div>
-        )}
-      </div>
-      {/* Mobile portrait: Continuous Pads abaixo do grid */}
-      {!isDesktop && !isTablet && (
-        <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
-          {ambientPads}
-        </div>
-      )}
-    </div>
-  );
-}
+O campo `setlist_id` (UUID) atual só permite associar **uma** setlist. Precisamos mudar para um campo `song_ids` (array de texto/JSONB) que armazena múltiplos IDs de músicas.
+
+**Migration SQL necessária:**
+```sql
+-- Adicionar coluna songs_data JSONB ao evento (armazena snapshot das músicas selecionadas)
+ALTER TABLE public.setlist_events 
+ADD COLUMN IF NOT EXISTS songs_data JSONB DEFAULT '[]'::jsonb;
 ```
 
-### `src/pages/Index.tsx`
+O campo `setlist_id` continua existindo (retrocompatibilidade), mas o novo campo `songs_data` guarda o snapshot das músicas selecionadas para o evento.
 
-1. **Remover `<AmbientPads>` de dentro do `padGrid` prop** (linhas 1014–1019) — não é mais necessário lá, pois o `LandscapeSwipePanels` gerencia o posicionamento
-2. **Restaurar o `ambientPads` prop** para passar `<AmbientPads>` diretamente (não só o botão de foco), pois agora o `LandscapeSwipePanels` usa esse prop também no modo portrait tablet/desktop:
+### Mudanças nos componentes
 
-```tsx
-ambientPads={
-  <div data-tutorial="ambient-pads" className="...">
-    {/* Botão de foco (mobile portrait) */}
-    {!isTablet && !isDesktop && currentSongId && !editMode && (
-      <button onClick={toggleFocusMode} ...>
-        {focusMode ? 'Sair' : 'Foco'}
-      </button>
-    )}
-    {/* Pads: só mobile portrait — tablet/desktop gerenciado pelo LandscapeSwipePanels */}
-    {!isTablet && !isDesktop && (
-      <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-    )}
-  </div>
-}
+**`src/hooks/useSetlistEvents.ts`**
+- Adicionar `songs_data` à interface `SetlistEvent`
+- Adicionar função `addSongToEvent(eventId, song)` que faz `UPDATE setlist_events SET songs_data = songs_data || [song]`
+- Adicionar função `removeSongFromEvent(eventId, songId)` que remove a música do array JSONB
+- Atualizar `createEvent` para receber apenas `name` e `event_date` (sem `setlist_id` obrigatório)
+
+**`src/components/SetlistManager.tsx`**
+
+Refatorar completamente o `EventCard` e o `CreateEventForm`:
+
+1. **`CreateEventForm` simplificado**: apenas campo `Nome do evento` + campo `Data` + botão Criar. Remove o `<select>` de setlists.
+
+2. **`EventCard` com gerenciamento de músicas interno:**
+   - Quando expandido, mostra lista das músicas salvas no evento (de `songs_data`)
+   - Botão "+ Adicionar música" abre um `<select>` inline com todas as músicas disponíveis no `songs` do usuário
+   - Cada música adicionada aparece listada com botão de remover
+   - Drag-and-drop para reordenar as músicas do evento (usando `@dnd-kit`)
+
+3. **Fluxo UX:**
+```text
+[Seção Eventos]
+  → botão "Novo" → form simples (nome + data) → Criar
+
+[Evento criado]
+  ┌─ Culto Domingo | 23/02 ─────────────────────┐
+  │  [editar] [deletar]                          │
+  │  Compartilhar: [Privado ▼]                   │
+  │  ▼ expandir                                  │
+  │    1. Amazing Grace (90 BPM · Ré)  [×]       │
+  │    2. Oceans (75 BPM · Lá)         [×]       │
+  │    [+ Adicionar música ▼]                    │
+  └──────────────────────────────────────────────┘
 ```
 
-Mas na verdade a forma mais limpa é passar o `<AmbientPads>` **diretamente** como `ambientPads` prop e deixar o `LandscapeSwipePanels` decidir onde e quando renderizá-lo (landscape → no painel mix; portrait tablet/desktop → ao lado do grid; portrait mobile → abaixo do grid).
+---
 
-O botão de foco pode ser mantido separadamente no `ambientPads` prop apenas para mobile, ou movido para outro lugar.
+## Pedido 2: Atualizar catálogo de Gates e conteúdo do painel/landing
 
-## Plano de implementação
+### Novos recursos desenvolvidos que precisam aparecer nos Gates
 
-**Arquivo 1: `src/components/LandscapeSwipePanels.tsx`**
-- No branch `!isLandscape`, criar um flex-row com `padGrid` à esquerda e `ambientPads` à direita (condicionado a `isTablet || isDesktop`)
-- Para mobile, manter `ambientPads` abaixo do grid como antes
+As funcionalidades implementadas recentemente que ainda não têm entrada no catálogo de `APP_FEATURES_CATALOG` do `AdminPricingManager.tsx`:
 
-**Arquivo 2: `src/pages/Index.tsx`**
-- Remover o bloco de `AmbientPads` de dentro do `padGrid` prop (retornar ao `padGrid` contendo apenas o `<PadGrid>`)
-- Ajustar o `ambientPads` prop para passar `<AmbientPads panDisabled={...} />` diretamente
-- Manter o botão de foco separado do `ambientPads` prop (ele pode ir junto com `ambientPads` para mobile, ou ser extraído para o footer mobile)
+| Feature | Gate Key sugerido | Tier | Onde adicionar |
+|---|---|---|---|
+| Eventos de Setlist | `setlist_events` | pro | categoria "Setlists" |
+| Compartilhamento de Eventos | `share_event` | pro | categoria "Setlists" |
+| Continuous Pads ao lado do grid | já coberto por `ambient_pads` | — | — |
+
+**`src/components/AdminPricingManager.tsx`** — adicionar ao `APP_FEATURES_CATALOG` na categoria `Setlists`:
+```ts
+{ key: 'setlist_events', label: 'Eventos de Setlist', description: 'Criar e organizar eventos com data e músicas', tier: 'pro' },
+{ key: 'share_event', label: 'Compartilhar evento', description: 'Gerar link público de evento com repertório', tier: 'pro' },
+```
+
+### Atualizar textos do `SECTION_LABELS` no `AdminLandingEditor.tsx`
+
+Adicionar os novos textos de seção para o editor de landing:
+- `how_it_works_title`: título da seção "Como Funciona"  
+- `how_it_works_subtitle`: subtítulo
+
+### Atualizar `LandingPreviewDrawer` se necessário
+
+Verificar se a prévia da landing renderiza os novos recursos de eventos/pads.
+
+---
+
+## Arquivos a modificar
+
+### Schema (migration)
+- Adicionar `songs_data JSONB DEFAULT '[]'` em `setlist_events`
+
+### Código
+1. **`src/hooks/useSetlistEvents.ts`** — interface + `addSongToEvent` + `removeSongFromEvent` + simplificar `createEvent`
+2. **`src/components/SetlistManager.tsx`** — `CreateEventForm` simplificado + `EventCard` com gerenciamento inline de músicas (add/remove/reorder)
+3. **`src/components/AdminPricingManager.tsx`** — adicionar `setlist_events` e `share_event` ao catálogo
+4. **`src/components/AdminLandingEditor.tsx`** — adicionar chaves de seção novas ao `SECTION_LABELS`
+
+---
 
 ## Resultado esperado
 
-- **Mobile portrait**: AmbientPads abaixo do grid ✓
-- **Tablet portrait (768–1024px)**: AmbientPads ao lado direito do grid, sem corte ✓
-- **Desktop portrait (1024px+)**: AmbientPads ao lado direito do grid, sem corte ✓
-- **Landscape tablet/desktop**: AmbientPads dentro do painel Mix (comportamento existente) ✓
+**Fluxo de eventos:**
+```text
+ANTES: Criar evento → escolher UMA setlist → evento criado com 1 setlist
+
+DEPOIS: 
+  1. Criar evento (nome + data) → evento criado vazio
+  2. Abrir evento → botão "+ Adicionar música"
+  3. Selecionar músicas da lista → adicionadas uma a uma
+  4. Reordenar ou remover músicas dentro do evento
+```
+
+**Painel admin:**
+- Dois novos gates disponíveis para ativar/desativar: `setlist_events` e `share_event`
+- Editor da landing com chaves novas disponíveis
+
+**Sem breaking changes**: campo `setlist_id` mantido para retrocompatibilidade; `songs_data` é adicionado como nova coluna JSONB.
