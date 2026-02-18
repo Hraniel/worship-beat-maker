@@ -35,6 +35,19 @@ export function useIsTablet() {
   return isTablet;
 }
 
+export function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = React.useState(false);
+
+  React.useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= TABLET_BREAKPOINT);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  return isDesktop;
+}
+
 export function useIsLandscape() {
   const [isLandscape, setIsLandscape] = React.useState(false);
 
