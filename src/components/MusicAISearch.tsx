@@ -12,6 +12,7 @@ interface AISongResult {
   bpm: number | null;
   key: string | null;
   mode: string;
+  source?: string | null;
 }
 
 interface SpotifyTrack {
@@ -356,30 +357,43 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
             {/* Search results */}
             {!selectedSong && results.length > 0 && (
               <div className="space-y-1">
-                {results.map((r, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleAnalyze(r)}
-                    className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors text-left border border-border/50"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{r.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{r.artist}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-foreground">{r.bpm}</span>
-                        <span className="text-[10px] text-muted-foreground ml-0.5">BPM</span>
+                {results.map((r, i) => {
+                  const sourceDomain = r.source ? (() => { try { return new URL(r.source).hostname.replace('www.', ''); } catch { return null; } })() : null;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleAnalyze(r)}
+                      className="w-full flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors text-left border border-border/50"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{r.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{r.artist}</p>
+                        {sourceDomain && (
+                          <p className="text-[10px] text-primary/60 truncate mt-0.5">📌 {sourceDomain}</p>
+                        )}
                       </div>
-                      {r.key && (
-                        <div className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">
-                          {r.key}
-                        </div>
-                      )}
-                      <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                  </button>
-                ))}
+                      <div className="flex items-center gap-2 shrink-0 pt-0.5">
+                        {r.bpm ? (
+                          <div className="text-right">
+                            <span className="text-sm font-bold text-foreground">{r.bpm}</span>
+                            <span className="text-[10px] text-muted-foreground ml-0.5">BPM</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-muted-foreground">BPM?</span>
+                        )}
+                        {r.key ? (
+                          <div className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">
+                            {r.key}
+                          </div>
+                        ) : (
+                          <div className="bg-muted text-muted-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
+                            Tom?
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
