@@ -114,6 +114,7 @@ export type Database = {
       }
       store_packs: {
         Row: {
+          banner_url: string | null
           category: string
           color: string
           created_at: string
@@ -126,6 +127,7 @@ export type Database = {
           tag: string | null
         }
         Insert: {
+          banner_url?: string | null
           category: string
           color?: string
           created_at?: string
@@ -138,6 +140,7 @@ export type Database = {
           tag?: string | null
         }
         Update: {
+          banner_url?: string | null
           category?: string
           color?: string
           created_at?: string

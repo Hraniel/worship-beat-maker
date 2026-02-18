@@ -22,6 +22,7 @@ export interface StorePackData {
   price_cents: number;
   sounds: PackSound[];
   purchased: boolean;
+  banner_url: string | null;
 }
 
 export function useStorePacks() {
@@ -87,6 +88,7 @@ export function useStorePacks() {
         price_cents: p.price_cents,
         sounds: soundsByPack.get(p.id) || [],
         purchased: purchasedIds.has(p.id),
+        banner_url: (p as any).banner_url ?? null,
       }));
 
       setPacks(result);

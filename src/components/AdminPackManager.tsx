@@ -39,7 +39,7 @@ interface AdminPackManagerProps {
 interface UploadingState {
   packId: string;
   soundId?: string;
-  type: 'full' | 'preview' | 'icon';
+  type: 'full' | 'preview' | 'icon' | 'banner';
 }
 
 interface SoundEdit {
@@ -94,7 +94,8 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewInputRef = useRef<HTMLInputElement>(null);
   const iconInputRef = useRef<HTMLInputElement>(null);
-  const pendingUploadRef = useRef<{ packId: string; soundId?: string; type: 'full' | 'preview' | 'icon' } | null>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
+  const pendingUploadRef = useRef<{ packId: string; soundId?: string; type: 'full' | 'preview' | 'icon' | 'banner' } | null>(null);
 
   // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -302,15 +303,28 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       fd.append('action', 'upload-icon');
       fd.append('file', file);
       fd.append('packId', packId);
-      const result = await invokeAdmin(fd);
+      await invokeAdmin(fd);
       toast.success('Ícone atualizado!');
-      // Update local packEdit if editing
-      if (packEdit[packId]) {
-        // icon is stored in icon_name
-      }
       onRefresh();
     } catch (e: any) {
       toast.error(e.message || 'Erro ao enviar ícone');
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleUploadBanner = async (file: File, packId: string) => {
+    setUploading({ packId, type: 'banner' });
+    try {
+      const fd = new FormData();
+      fd.append('action', 'upload-banner');
+      fd.append('file', file);
+      fd.append('packId', packId);
+      await invokeAdmin(fd);
+      toast.success('Banner atualizado!');
+      onRefresh();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao enviar banner');
     } finally {
       setUploading(null);
     }
@@ -426,6 +440,14 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           e.target.value = '';
         }}
       />
+      <input ref={bannerInputRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          const meta = pendingUploadRef.current;
+          if (file && meta) handleUploadBanner(file, meta.packId);
+          e.target.value = '';
+        }}
+      />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -498,9 +520,34 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           const iconUrl = isIconImage && !pack.icon_name.startsWith('http')
             ? `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${pack.icon_name}`
             : pack.icon_name;
+          const hasBanner = !!(pack as any).banner_url;
+          const bannerDisplayUrl = hasBanner
+            ? ((pack as any).banner_url.startsWith('http')
+                ? (pack as any).banner_url
+                : `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${(pack as any).banner_url}`)
+            : null;
 
           return (
             <div key={pack.id} className="bg-card border border-border rounded-xl overflow-hidden">
+              {/* Banner preview (admin) */}
+              {hasBanner && (
+                <div className="relative h-20 w-full overflow-hidden bg-muted">
+                  <img src={bannerDisplayUrl!} alt="banner" className="w-full h-full object-cover" />
+                  <button
+                    className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-white transition-colors"
+                    onClick={() => {
+                      pendingUploadRef.current = { packId: pack.id, type: 'banner' };
+                      bannerInputRef.current?.click();
+                    }}
+                  >
+                    {uploading?.packId === pack.id && uploading.type === 'banner'
+                      ? <Loader2 className="h-3 w-3 animate-spin" />
+                      : <Image className="h-3 w-3" />}
+                    Trocar banner
+                  </button>
+                </div>
+              )}
+
               {/* Pack header */}
               <div className="flex items-center gap-3 p-3">
                 {/* Icon - clickable to upload new image */}
@@ -529,6 +576,21 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                   <p className="text-[10px] text-muted-foreground">{pack.category} · {pack.sounds.length} sons · {pack.is_available ? `R$ ${(pack.price_cents / 100).toFixed(2)}` : 'Oculto'}</p>
                 </div>
                 <div className="flex items-center gap-1">
+                  {/* Banner upload button */}
+                  {!hasBanner && (
+                    <button
+                      onClick={() => {
+                        pendingUploadRef.current = { packId: pack.id, type: 'banner' };
+                        bannerInputRef.current?.click();
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                      title="Adicionar banner de capa"
+                    >
+                      {uploading?.packId === pack.id && uploading.type === 'banner'
+                        ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                        : <Image className="h-3.5 w-3.5 text-muted-foreground" />}
+                    </button>
+                  )}
                   <button onClick={() => startEditPack(pack)}
                     className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="Editar pack">
                     <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
