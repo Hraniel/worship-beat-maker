@@ -3,6 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+export interface EventSong {
+  id: string;
+  name: string;
+  bpm: number;
+  timeSignature: string;
+  key?: string;
+}
+
 export interface SetlistEvent {
   id: string;
   user_id: string;
@@ -11,6 +19,7 @@ export interface SetlistEvent {
   setlist_id: string | null;
   share_token: string | null;
   is_public: boolean;
+  songs_data: EventSong[];
   created_at: string;
   updated_at: string;
 }
@@ -29,7 +38,7 @@ export function useSetlistEvents() {
         .eq('user_id', user.id)
         .order('event_date', { ascending: true });
       if (error) throw error;
-      setEvents((data || []) as unknown as SetlistEvent[]);
+      setEvents(((data || []) as any[]).map(d => ({ ...d, songs_data: d.songs_data || [] })));
     } catch (e) {
       console.error('Failed to fetch setlist events:', e);
     } finally {
@@ -39,16 +48,17 @@ export function useSetlistEvents() {
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
-  const createEvent = useCallback(async (name: string, event_date: string, setlist_id: string | null) => {
+  const createEvent = useCallback(async (name: string, event_date: string) => {
     if (!user) return null;
     try {
       const { data, error } = await supabase
         .from('setlist_events' as any)
-        .insert({ user_id: user.id, name, event_date, setlist_id })
+        .insert({ user_id: user.id, name, event_date, songs_data: [] })
         .select()
         .single();
       if (error) throw error;
-      const ev = data as unknown as SetlistEvent;
+      const raw = data as any;
+      const ev: SetlistEvent = { ...raw, songs_data: raw.songs_data || [] };
       setEvents(prev => [...prev, ev].sort((a, b) => a.event_date.localeCompare(b.event_date)));
       toast.success('Evento criado!');
       return ev;
@@ -105,5 +115,57 @@ export function useSetlistEvents() {
     }
   }, [user]);
 
-  return { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent, togglePublic };
+  const addSongToEvent = useCallback(async (eventId: string, song: EventSong) => {
+    if (!user) return;
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    const newSongs = [...event.songs_data, song];
+    try {
+      const { error } = await supabase
+        .from('setlist_events' as any)
+        .update({ songs_data: newSongs as any })
+        .eq('id', eventId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setEvents(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao adicionar música');
+    }
+  }, [user, events]);
+
+  const removeSongFromEvent = useCallback(async (eventId: string, songId: string) => {
+    if (!user) return;
+    const event = events.find(e => e.id === eventId);
+    if (!event) return;
+    const newSongs = event.songs_data.filter(s => s.id !== songId);
+    try {
+      const { error } = await supabase
+        .from('setlist_events' as any)
+        .update({ songs_data: newSongs as any })
+        .eq('id', eventId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      setEvents(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao remover música');
+    }
+  }, [user, events]);
+
+  const reorderEventSongs = useCallback(async (eventId: string, newSongs: EventSong[]) => {
+    if (!user) return;
+    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
+    try {
+      const { error } = await supabase
+        .from('setlist_events' as any)
+        .update({ songs_data: newSongs as any })
+        .eq('id', eventId)
+        .eq('user_id', user.id);
+      if (error) throw error;
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao reordenar músicas');
+      fetchEvents();
+    }
+  }, [user, fetchEvents]);
+
+  return { events, loading, fetchEvents, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs };
 }

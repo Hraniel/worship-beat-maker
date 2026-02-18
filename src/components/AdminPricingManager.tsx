@@ -68,6 +68,8 @@ const APP_FEATURES_CATALOG: {
     features: [
       { key: 'setlist_manager', label: 'Gerenciador de setlists', description: 'Criar e organizar setlists', tier: 'pro' },
       { key: 'share_setlist', label: 'Compartilhar setlist', description: 'Gerar link público de setlist', tier: 'pro' },
+      { key: 'setlist_events', label: 'Eventos de Setlist', description: 'Criar e organizar eventos com data e músicas', tier: 'pro' },
+      { key: 'share_event', label: 'Compartilhar evento', description: 'Gerar link público de evento com repertório', tier: 'pro' },
       { key: 'performance_mode', label: 'Modo Performance', description: 'Visualização fullscreen para palco', tier: 'master' },
     ],
   },

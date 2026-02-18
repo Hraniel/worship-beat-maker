@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   ListMusic, Plus, Trash2, ChevronRight, GripVertical, Share2, Link2, Eye, EyeOff,
-  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X,
+  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,10 +17,9 @@ import {
   useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { SetlistSong } from '@/lib/sounds';
-import { useSetlistEvents, type SetlistEvent } from '@/hooks/useSetlistEvents';
+import { useSetlistEvents, type SetlistEvent, type EventSong } from '@/hooks/useSetlistEvents';
 
 interface SetlistManagerProps {
   songs: SetlistSong[];
@@ -64,21 +63,63 @@ const SortableItem: React.FC<SortableItemProps> = ({ song, isActive, onLoad, onD
   );
 };
 
-// ── Event card with share support ──────────────────────────────────────────
+// ── Sortable event song item ─────────────────────────────────────────────────
+interface SortableEventSongProps {
+  song: EventSong;
+  index: number;
+  onRemove: () => void;
+}
+
+const SortableEventSong: React.FC<SortableEventSongProps> = ({ song, index, onRemove }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  return (
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 px-3 py-1.5 group">
+      <button className="touch-none p-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
+        {...attributes} {...listeners}>
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <span className="text-[10px] font-bold text-muted-foreground/40 w-4 text-center shrink-0">{index + 1}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-foreground truncate">{song.name}</p>
+        <p className="text-[9px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}</p>
+      </div>
+      {song.key && <span className="text-[9px] font-bold text-primary shrink-0">{song.key}</span>}
+      <button onClick={onRemove}
+        className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 rounded flex items-center justify-center hover:bg-destructive/10 shrink-0">
+        <X className="h-3 w-3 text-destructive" />
+      </button>
+    </div>
+  );
+};
+
+// ── Event card ───────────────────────────────────────────────────────────────
 interface EventCardProps {
   event: SetlistEvent;
-  setlistSongs: SetlistSong[];
+  allSongs: SetlistSong[];
   onTogglePublic: (id: string, pub: boolean) => void;
   onDelete: (id: string) => void;
   onEdit: (id: string, name: string, date: string) => void;
+  onAddSong: (eventId: string, song: EventSong) => void;
+  onRemoveSong: (eventId: string, songId: string) => void;
+  onReorderSongs: (eventId: string, songs: EventSong[]) => void;
 }
 
-const EventCard: React.FC<EventCardProps> = ({ event, setlistSongs, onTogglePublic, onDelete, onEdit }) => {
+const EventCard: React.FC<EventCardProps> = ({
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs,
+}) => {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(event.name);
   const [editDate, setEditDate] = useState(event.event_date);
   const [toggling, setToggling] = useState(false);
+  const [showAddSong, setShowAddSong] = useState(false);
+  const [selectedSongId, setSelectedSongId] = useState('');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const copyLink = () => {
     const url = `${window.location.origin}/s/${event.share_token}`;
@@ -101,8 +142,41 @@ const EventCard: React.FC<EventCardProps> = ({ event, setlistSongs, onTogglePubl
     catch { return d; }
   };
 
+  const handleAddSong = () => {
+    if (!selectedSongId) return;
+    const song = allSongs.find(s => s.id === selectedSongId);
+    if (!song) return;
+    // Prevent duplicates
+    if (event.songs_data.some(es => es.id === song.id)) {
+      toast.error('Música já está no evento');
+      return;
+    }
+    const eventSong: EventSong = {
+      id: song.id,
+      name: song.name,
+      bpm: song.bpm,
+      timeSignature: song.timeSignature,
+      key: song.key,
+    };
+    onAddSong(event.id, eventSong);
+    setSelectedSongId('');
+  };
+
+  const handleDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = event.songs_data.findIndex(s => s.id === active.id);
+    const newIndex = event.songs_data.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    onReorderSongs(event.id, arrayMove(event.songs_data, oldIndex, newIndex));
+  };
+
+  // Songs not yet added to this event
+  const availableSongs = allSongs.filter(s => !event.songs_data.some(es => es.id === s.id));
+
   return (
     <div className="bg-muted/30 border border-border rounded-lg overflow-hidden">
+      {/* Header */}
       <div className="flex items-center gap-2 px-3 py-2.5">
         <button onClick={() => setExpanded(p => !p)} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0">
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -111,15 +185,21 @@ const EventCard: React.FC<EventCardProps> = ({ event, setlistSongs, onTogglePubl
         <div className="flex-1 min-w-0" onClick={() => setExpanded(p => !p)}>
           {editing ? (
             <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
-              <input value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 h-6 px-2 text-xs rounded bg-background border border-input text-foreground" />
-              <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} className="h-6 px-1 text-xs rounded bg-background border border-input text-foreground" />
-              <button onClick={saveEdit} className="h-6 w-6 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20"><Check className="h-3 w-3 text-primary" /></button>
-              <button onClick={() => setEditing(false)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted"><X className="h-3 w-3 text-muted-foreground" /></button>
+              <input value={editName} onChange={e => setEditName(e.target.value)}
+                className="flex-1 h-6 px-2 text-xs rounded bg-background border border-input text-foreground" />
+              <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
+                className="h-6 px-1 text-xs rounded bg-background border border-input text-foreground" />
+              <button onClick={saveEdit} className="h-6 w-6 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20">
+                <Check className="h-3 w-3 text-primary" />
+              </button>
+              <button onClick={() => setEditing(false)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted">
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
             </div>
           ) : (
             <div className="cursor-pointer">
               <p className="text-sm font-semibold text-foreground truncate">{event.name}</p>
-              <p className="text-[10px] text-muted-foreground">{formatDate(event.event_date)} · {setlistSongs.length} músicas</p>
+              <p className="text-[10px] text-muted-foreground">{formatDate(event.event_date)} · {event.songs_data.length} músicas</p>
             </div>
           )}
         </div>
@@ -153,7 +233,8 @@ const EventCard: React.FC<EventCardProps> = ({ event, setlistSongs, onTogglePubl
           )}
         </div>
         {event.is_public && (
-          <button onClick={copyLink} className="w-full flex items-center gap-2 text-xs bg-background border border-border rounded-md px-2 py-1.5 hover:bg-muted transition-colors text-left mt-1.5">
+          <button onClick={copyLink}
+            className="w-full flex items-center gap-2 text-xs bg-background border border-border rounded-md px-2 py-1.5 hover:bg-muted transition-colors text-left mt-1.5">
             <Link2 className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate text-muted-foreground">{window.location.origin}/s/{event.share_token?.slice(0, 8)}…</span>
             <span className="ml-auto text-primary font-medium shrink-0">Copiar</span>
@@ -161,57 +242,95 @@ const EventCard: React.FC<EventCardProps> = ({ event, setlistSongs, onTogglePubl
         )}
       </div>
 
-      {/* Songs list */}
+      {/* Songs list (expanded) */}
       {expanded && (
         <div className="border-t border-border/40">
-          {setlistSongs.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground text-center py-3">Nenhuma música no repertório</p>
+          {event.songs_data.length === 0 ? (
+            <p className="text-[11px] text-muted-foreground text-center py-3">Nenhuma música adicionada</p>
           ) : (
-            <div className="divide-y divide-border/30">
-              {setlistSongs.map((song, idx) => (
-                <div key={song.id} className="flex items-center gap-2 px-3 py-2">
-                  <span className="text-[10px] font-bold text-muted-foreground/40 w-4 text-center shrink-0">{idx + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-foreground truncate">{song.name}</p>
-                    <p className="text-[9px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}</p>
-                  </div>
-                  {song.key && <span className="text-[9px] font-bold text-primary shrink-0">{song.key}</span>}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={event.songs_data.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                <div className="divide-y divide-border/30">
+                  {event.songs_data.map((song, idx) => (
+                    <SortableEventSong
+                      key={song.id}
+                      song={song}
+                      index={idx}
+                      onRemove={() => onRemoveSong(event.id, song.id)}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+              </SortableContext>
+            </DndContext>
           )}
+
+          {/* Add song row */}
+          <div className="px-3 py-2 border-t border-border/40">
+            {showAddSong ? (
+              <div className="flex gap-1.5">
+                <select
+                  value={selectedSongId}
+                  onChange={e => setSelectedSongId(e.target.value)}
+                  className="flex-1 h-7 px-2 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none">
+                  <option value="">— Selecionar música —</option>
+                  {availableSongs.length === 0
+                    ? <option disabled value="">Nenhuma música disponível</option>
+                    : availableSongs.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} ({s.bpm} BPM{s.key ? ` · ${s.key}` : ''})</option>
+                    ))
+                  }
+                </select>
+                <button
+                  onClick={handleAddSong}
+                  disabled={!selectedSongId}
+                  className="h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
+                  Adicionar
+                </button>
+                <button
+                  onClick={() => { setShowAddSong(false); setSelectedSongId(''); }}
+                  className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted">
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddSong(true)}
+                className="w-full flex items-center justify-center gap-1.5 h-7 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-dashed border-border/60">
+                <Plus className="h-3 w-3" /> Adicionar música
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-// ── Create event form ──────────────────────────────────────────────────────
+// ── Create event form (simplified) ───────────────────────────────────────────
 interface CreateEventFormProps {
-  setlists: { id: string; name: string; songs: SetlistSong[] }[];
-  onSubmit: (name: string, date: string, setlistId: string | null) => void;
+  onSubmit: (name: string, date: string) => void;
   onCancel: () => void;
 }
 
-const CreateEventForm: React.FC<CreateEventFormProps> = ({ setlists, onSubmit, onCancel }) => {
+const CreateEventForm: React.FC<CreateEventFormProps> = ({ onSubmit, onCancel }) => {
   const [name, setName] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedSetlistId, setSelectedSetlistId] = useState<string>('');
   return (
     <div className="bg-muted/30 border border-primary/20 rounded-lg p-3 space-y-2.5">
       <p className="text-xs font-semibold text-foreground">Novo Evento</p>
-      <Input placeholder="Nome do evento (ex: Culto Domingo)" value={name} onChange={e => setName(e.target.value)} className="h-8 text-xs bg-background" />
-      <input type="date" value={date} onChange={e => setDate(e.target.value)}
+      <Input
+        placeholder="Nome do evento (ex: Culto Domingo)"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && name.trim() && onSubmit(name.trim(), date)}
+        className="h-8 text-xs bg-background" />
+      <input
+        type="date"
+        value={date}
+        onChange={e => setDate(e.target.value)}
         className="w-full h-8 px-3 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none" />
-      {setlists.length > 0 && (
-        <select value={selectedSetlistId} onChange={e => setSelectedSetlistId(e.target.value)}
-          className="w-full h-8 px-3 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none">
-          <option value="">— Selecionar repertório existente —</option>
-          {setlists.map(s => <option key={s.id} value={s.id}>{s.name} ({s.songs.length} músicas)</option>)}
-        </select>
-      )}
       <div className="flex gap-2">
-        <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => onSubmit(name.trim(), date, selectedSetlistId || null)} disabled={!name.trim()}>
+        <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => onSubmit(name.trim(), date)} disabled={!name.trim()}>
           <Plus className="h-3.5 w-3.5 mr-1" /> Criar
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCancel}>Cancelar</Button>
@@ -221,12 +340,12 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({ setlists, onSubmit, o
 };
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
-  songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder, setlists = [], activeSetlistId,
+  songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder,
 }) => {
   const [newName, setNewName] = useState('');
   const [open, setOpen] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const { events, createEvent, updateEvent, deleteEvent, togglePublic } = useSetlistEvents();
+  const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = useSetlistEvents();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -246,15 +365,9 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     onReorder?.(arrayMove(songs, oldIndex, newIndex).map((s) => s.id));
   };
 
-  const handleCreateEvent = async (name: string, date: string, setlistId: string | null) => {
-    await createEvent(name, date, setlistId);
-    setShowCreateEvent(false);
-  };
-
-  const getEventSongs = (event: SetlistEvent): SetlistSong[] => {
-    if (!event.setlist_id) return [];
-    const sl = setlists.find(s => s.id === event.setlist_id);
-    return sl?.songs || [];
+  const handleCreateEvent = async (name: string, date: string) => {
+    const ev = await createEvent(name, date);
+    if (ev) setShowCreateEvent(false);
   };
 
   return (
@@ -283,7 +396,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             </Button>
           </div>
 
-          {/* Songs in current setlist */}
+          {/* Songs list */}
           <div className="space-y-1">
             {songs.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">Nenhuma música salva ainda</p>
@@ -312,7 +425,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             </div>
 
             {showCreateEvent && (
-              <CreateEventForm setlists={setlists} onSubmit={handleCreateEvent} onCancel={() => setShowCreateEvent(false)} />
+              <CreateEventForm onSubmit={handleCreateEvent} onCancel={() => setShowCreateEvent(false)} />
             )}
 
             {events.length === 0 && !showCreateEvent && (
@@ -323,10 +436,13 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
               <EventCard
                 key={event.id}
                 event={event}
-                setlistSongs={getEventSongs(event)}
+                allSongs={songs}
                 onTogglePublic={togglePublic}
                 onDelete={deleteEvent}
                 onEdit={(id, name, date) => updateEvent(id, { name, event_date: date })}
+                onAddSong={addSongToEvent}
+                onRemoveSong={removeSongFromEvent}
+                onReorderSongs={reorderEventSongs}
               />
             ))}
           </div>

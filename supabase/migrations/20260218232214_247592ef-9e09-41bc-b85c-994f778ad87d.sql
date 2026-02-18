@@ -1,0 +1,1 @@
+ALTER TABLE public.setlist_events ADD COLUMN IF NOT EXISTS songs_data JSONB DEFAULT '[]'::jsonb;
