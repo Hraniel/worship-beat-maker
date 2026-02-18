@@ -35,20 +35,32 @@ export interface FeatureGate {
   description: string | null;
 }
 
+export interface LandingFeature {
+  id: string;
+  title: string;
+  description: string;
+  icon_name: string;
+  image_url: string | null;
+  sort_order: number;
+  enabled: boolean;
+}
+
 export function useLandingConfig() {
   const [config, setConfig] = useState<LandingConfig>({});
   const [pricing, setPricing] = useState<PlanPricing[]>([]);
   const [features, setFeatures] = useState<PlanFeature[]>([]);
   const [gates, setGates] = useState<FeatureGate[]>([]);
+  const [landingFeatures, setLandingFeatures] = useState<LandingFeature[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = async () => {
     try {
-      const [configRes, pricingRes, featuresRes, gatesRes] = await Promise.all([
+      const [configRes, pricingRes, featuresRes, gatesRes, landingFeaturesRes] = await Promise.all([
         supabase.from('landing_config').select('*').order('config_key'),
         supabase.from('plan_pricing').select('*').order('price_brl'),
         supabase.from('plan_features').select('*').order('sort_order'),
         supabase.from('feature_gates').select('*').order('gate_label'),
+        supabase.from('landing_features').select('*').order('sort_order'),
       ]);
 
       if (configRes.data) {
@@ -59,6 +71,7 @@ export function useLandingConfig() {
       if (pricingRes.data) setPricing(pricingRes.data as PlanPricing[]);
       if (featuresRes.data) setFeatures(featuresRes.data as PlanFeature[]);
       if (gatesRes.data) setGates(gatesRes.data as FeatureGate[]);
+      if (landingFeaturesRes.data) setLandingFeatures(landingFeaturesRes.data as LandingFeature[]);
     } catch (e) {
       console.error('Failed to load landing config', e);
     } finally {
@@ -66,7 +79,20 @@ export function useLandingConfig() {
     }
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => {
+    fetchAll();
 
-  return { config, pricing, features, gates, loading, refetch: fetchAll };
+    // Realtime: atualiza cards de recursos em tempo real
+    const channel = supabase
+      .channel('landing_features_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'landing_features' }, () => {
+        fetchAll();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { config, pricing, features, gates, landingFeatures, loading, refetch: fetchAll };
 }

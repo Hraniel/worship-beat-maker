@@ -101,6 +101,42 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_features: {
+        Row: {
+          created_at: string
+          description: string
+          enabled: boolean
+          icon_name: string
+          id: string
+          image_url: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          icon_name?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          icon_name?: string
+          id?: string
+          image_url?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pack_sounds: {
         Row: {
           category: string
