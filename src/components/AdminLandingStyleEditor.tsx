@@ -58,19 +58,6 @@ const PADDING_OPTIONS = [
 
 const STYLE_SECTIONS: StyleSection[] = [
   {
-    id: 'hero', label: 'Hero', emoji: '🦸',
-    fields: [
-      { key: 'hero_bg', label: 'Fundo', type: 'color' },
-      { key: 'hero_title_color', label: 'Cor do Título', type: 'color' },
-      { key: 'hero_title_size', label: 'Tamanho do Título', type: 'select', options: TEXT_SIZES },
-      { key: 'hero_subtitle_color', label: 'Cor do Subtítulo', type: 'color' },
-      { key: 'hero_badge_bg', label: 'Fundo do Badge', type: 'color', hint: 'Suporta transparência (ex: hsl(262 75% 55% / 0.06))' },
-      { key: 'hero_badge_color', label: 'Cor do texto do Badge', type: 'color' },
-      { key: 'hero_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
-      { key: 'hero_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
-    ],
-  },
-  {
     id: 'stats', label: 'Estatísticas', emoji: '📊',
     fields: [
       { key: 'stats_bg', label: 'Fundo', type: 'color' },
@@ -257,7 +244,7 @@ const AdminLandingStyleEditor: React.FC = () => {
   const [rows, setRows] = useState<ConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  const [openSection, setOpenSection] = useState<string | null>('hero');
+  const [openSection, setOpenSection] = useState<string | null>('stats');
 
   const fetchData = async () => {
     setLoading(true);
