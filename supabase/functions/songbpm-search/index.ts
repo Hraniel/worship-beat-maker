@@ -26,26 +26,35 @@ function parseKey(markdown: string): { key: string; mode: string } | null {
 
 // Extract song name and artist from songbpm.com page markdown
 function parseTrackInfo(markdown: string, url: string): { name: string; artist: string } {
-  // Try to get from URL: /@artist-slug/track-slug
+  // Try to get from URL: /@artist-slug/track-slug or /@artist-slug/track-slug-id4chars
   const urlMatch = url.match(/songbpm\.com\/@([^/]+)\/([^/?#]+)/);
   let name = "";
   let artist = "";
 
   if (urlMatch) {
     // Convert slugs back to readable names
-    const toTitle = (slug: string) =>
-      slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    // Strip trailing ID suffix: last segment of 4-5 chars preceded by a hyphen (e.g. -bxhq3)
+    const toTitle = (slug: string) => {
+      // Remove trailing short ID suffix like -bxhq3 (4-6 alphanumeric chars)
+      const cleaned = slug.replace(/-[a-z0-9]{4,6}$/, "");
+      return cleaned.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    };
     artist = toTitle(urlMatch[1]);
     name = toTitle(urlMatch[2]);
   }
 
   // Try to get from markdown heading (usually more accurate)
+  // songbpm.com headings are typically: "# Song Name" or "## Song Name"
   const headingMatch = markdown.match(/^#{1,2}\s+(.+?)(?:\n|$)/m);
   if (headingMatch) {
-    name = headingMatch[1].trim();
+    const headingName = headingMatch[1].trim();
+    // Only use if it's not a generic site heading
+    if (headingName && !headingName.toLowerCase().includes("songbpm") && headingName.length < 120) {
+      name = headingName;
+    }
   }
 
-  // Try artist from markdown
+  // Try artist from markdown patterns found on songbpm.com pages
   const artistMatch = markdown.match(/(?:by|artist|artista)[:\s]+([^\n]+)/i);
   if (artistMatch) {
     artist = artistMatch[1].trim();
