@@ -105,7 +105,6 @@ Você PRECISA determinar o BPM e tom REAIS desta música usando seu conhecimento
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
       }),
     });
 
