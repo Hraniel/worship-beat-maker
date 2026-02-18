@@ -1145,7 +1145,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-[18vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[32vh] md:max-h-none lg:max-h-none overflow-visible'}`}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[32vh] md:max-h-none lg:max-h-none overflow-visible'}`}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1222,7 +1222,7 @@ const Index = () => {
 
         {/* Tablet: Faders → Metrônomo → Continuous Pads (sem botões Mix/Met) */}
         {isTablet && !focusMode && (
-          <div className="hidden md:block lg:hidden p-1.5 space-y-1.5">
+          <div className="hidden md:block lg:hidden p-1.5 space-y-1.5 overflow-y-auto">
             {/* Faders with page buttons */}
             <div className="w-full" data-tutorial="volume-master">
               <div className="flex items-center gap-1 mb-1">
@@ -1276,6 +1276,10 @@ const Index = () => {
                 <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
             </div>
+            {/* Continuous Pads — abaixo do metrônomo */}
+            <div data-tutorial="ambient-pads" className="pt-1">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
           </div>
         )}
         {isTablet && focusMode && (
@@ -1296,7 +1300,10 @@ const Index = () => {
                 {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </button>
             </div>
-            {/* AmbientPads agora renderizados via LandscapeSwipePanels → prop ambientPads */}
+            {/* Continuous Pads — abaixo da mini-barra no modo foco */}
+            <div data-tutorial="ambient-pads" className="mt-1">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
           </div>
         )}
 
