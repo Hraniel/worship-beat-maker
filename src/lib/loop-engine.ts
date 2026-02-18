@@ -1,5 +1,7 @@
 // Unified clock engine: single timing source for loops AND metronome
 // Both sync to the same 16th-note subdivision grid
+// Uses Web Audio API clock (ctx.currentTime) for drift-free scheduling,
+// which keeps running even when the page is in the background / screen locked.
 
 import { getAudioContext, playSound, playMetronomeClick, getPadPanner } from './audio-engine';
 import type { PadSound } from './sounds';
@@ -23,7 +25,11 @@ let activeLoops: Map<string, ActiveLoop> = new Map();
 let currentSubdivision = 0;
 let timerRef: number | null = null;
 let onSubdivisionCallback: ((sub: number) => void) | null = null;
-let lastTickTime = 0; // timestamp of last tick
+let lastTickTime = 0; // performance.now() of last tick
+
+// Web Audio clock: absolute audio time of the next scheduled tick
+// This is the key to background-safe scheduling.
+let nextTickAudioTime = 0;
 
 let currentBpm = 120;
 let beatsPerBar = 4;
@@ -46,7 +52,7 @@ let onMetronomeBeatCallback: ((beat: number) => void) | null = null;
 
 export function setLoopBpm(bpm: number) {
   currentBpm = bpm;
-  // If running, restart with new timing
+  // If running, restart with new timing; nextTickAudioTime will be reset in startEngine
   if (isRunning) {
     stopEngine();
     startEngine();
@@ -180,15 +186,34 @@ function startEngine() {
   isRunning = true;
   currentSubdivision = 0;
 
+  const ctx = getAudioContext();
+  // Anchor the first tick to the Web Audio clock so scheduling stays
+  // accurate even when the page goes to background / screen locks.
+  nextTickAudioTime = ctx.currentTime;
+
   const scheduleNext = () => {
     if (!isRunning) return;
+
+    const ctx = getAudioContext();
+    // Resume context if the OS suspended it (screen lock, background)
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     tick();
-    // Interval for one 16th note: (60/bpm) / 4 seconds
-    const intervalMs = (60 / currentBpm / 4) * 1000;
-    timerRef = window.setTimeout(scheduleNext, intervalMs);
+
+    // Interval for one 16th note (in seconds)
+    const intervalSec = 60 / currentBpm / 4;
+    // Advance absolute audio time anchor
+    nextTickAudioTime += intervalSec;
+
+    // How many ms to wait until the next tick?
+    // Use ctx.currentTime for a drift-free reference.
+    const delayMs = (nextTickAudioTime - ctx.currentTime) * 1000;
+
+    timerRef = window.setTimeout(scheduleNext, Math.max(0, delayMs));
   };
 
-  getAudioContext();
   scheduleNext();
 }
 
