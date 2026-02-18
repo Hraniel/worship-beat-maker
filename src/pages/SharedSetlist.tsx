@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Music, Download, ChevronRight, Loader2 } from 'lucide-react';
+import { Music, Download, ChevronRight, Loader2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SharedSong {
@@ -15,6 +15,8 @@ interface SharedSetlistData {
   id: string;
   name: string;
   songs: SharedSong[];
+  event_date?: string;
+  is_event?: boolean;
 }
 
 const KEY_COLORS: Record<string, string> = {
@@ -24,6 +26,17 @@ const KEY_COLORS: Record<string, string> = {
   'Gb': 'bg-green-500', 'G': 'bg-teal-500', 'G#': 'bg-cyan-500',
   'Ab': 'bg-cyan-500', 'A': 'bg-blue-500', 'A#': 'bg-indigo-500',
   'Bb': 'bg-indigo-500', 'B': 'bg-violet-500',
+};
+
+const formatEventDate = (dateStr: string) => {
+  try {
+    // date is YYYY-MM-DD — parse as local date
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
 };
 
 const SharedSetlist: React.FC = () => {
@@ -44,6 +57,8 @@ const SharedSetlist: React.FC = () => {
           id: s.id,
           name: s.name,
           songs: (s.songs || []) as SharedSong[],
+          event_date: s.event_date,
+          is_event: s.is_event,
         });
       })
       .catch((e) => setError(e.message || 'Erro ao carregar setlist'))
@@ -76,13 +91,31 @@ const SharedSetlist: React.FC = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          <Music className="h-4 w-4 text-primary-foreground" />
+          {setlist.is_event ? (
+            <Calendar className="h-4 w-4 text-primary-foreground" />
+          ) : (
+            <Music className="h-4 w-4 text-primary-foreground" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-bold text-foreground truncate">{setlist.name}</h1>
-          <p className="text-[10px] text-muted-foreground">{setlist.songs.length} músicas · Somente leitura</p>
+          <p className="text-[10px] text-muted-foreground">
+            {setlist.songs.length} músicas · Somente leitura
+          </p>
         </div>
       </div>
+
+      {/* Event date badge */}
+      {setlist.is_event && setlist.event_date && (
+        <div className="max-w-lg mx-auto px-4 pt-4">
+          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2">
+            <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="text-xs font-medium text-primary capitalize">
+              {formatEventDate(setlist.event_date)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Songs */}
       <div className="max-w-lg mx-auto px-4 py-4 space-y-2">

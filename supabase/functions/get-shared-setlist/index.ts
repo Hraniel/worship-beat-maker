@@ -17,6 +17,41 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+    // 1. Try setlist_events first (token from a scheduled event)
+    const { data: eventData, error: eventError } = await supabase
+      .from('setlist_events')
+      .select('id, name, event_date, share_token, is_public, setlist_id')
+      .eq('share_token', token)
+      .eq('is_public', true)
+      .maybeSingle();
+
+    if (eventError) throw eventError;
+
+    if (eventData) {
+      // Load the linked setlist songs
+      let songs: any[] = [];
+      if (eventData.setlist_id) {
+        const { data: setlistData, error: setlistError } = await supabase
+          .from('setlists')
+          .select('songs')
+          .eq('id', eventData.setlist_id)
+          .maybeSingle();
+        if (setlistError) throw setlistError;
+        songs = (setlistData?.songs as any[]) || [];
+      }
+
+      return new Response(JSON.stringify({
+        setlist: {
+          id: eventData.id,
+          name: eventData.name,
+          songs,
+          event_date: eventData.event_date,
+          is_event: true,
+        },
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // 2. Fallback: try plain setlist token
     const { data, error } = await supabase
       .from('setlists')
       .select('id, name, songs, is_public, share_token')
@@ -25,9 +60,13 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) return new Response(JSON.stringify({ error: 'Setlist not found or not public' }), { status: 404, headers: corsHeaders });
+    if (!data) {
+      return new Response(JSON.stringify({ error: 'Setlist not found or not public' }), { status: 404, headers: corsHeaders });
+    }
 
-    return new Response(JSON.stringify({ setlist: data }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ setlist: data }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (err: any) {
     console.error('get-shared-setlist error:', err);
     return new Response(JSON.stringify({ error: err.message || 'Internal error' }), { status: 500, headers: corsHeaders });
