@@ -12,6 +12,7 @@ import PanControl from './PanControl';
 import PadColorPicker, { type PadColor, padColorToHsl } from './PadColorPicker';
 import { type PadEffects, DEFAULT_EFFECTS, getEffectInput, applyEffects, hasActiveEffects } from '@/lib/audio-effects';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { useFeatureGates, type GateCheckResult } from '@/hooks/useFeatureGates';
 import { toast } from 'sonner';
 import StoreImportPicker from './StoreImportPicker';
 
@@ -42,13 +43,14 @@ interface DrumPadProps {
   customSoundsCount?: number;
   onResetPad?: (padId: string) => void;
   onResetAllPads?: () => void;
+  onGateBlocked?: (gateKey: string) => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
   isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled, customSoundsCount = 0,
   onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange,
-  onResetPad, onResetAllPads
+  onResetPad, onResetAllPads, onGateBlocked
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -63,18 +65,24 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
   const { tier, tierConfig } = useSubscription();
+  const { canAccess } = useFeatureGates();
 
   const isPro = tier === 'pro' || tier === 'master';
   const isMaster = tier === 'master';
 
-  const goToPricing = useCallback((feature: string) => {
-    toast('🔒 Recurso disponível nos planos pagos', { description: `Desbloqueie ${feature} assinando um plano.` });
-    navigate('/pricing');
-  }, [navigate]);
+  const goToPricing = useCallback((gateKey: string, feature: string) => {
+    const result = canAccess(gateKey);
+    if (!result.allowed && result.gate && onGateBlocked) {
+      onGateBlocked(gateKey);
+    } else {
+      toast('🔒 Recurso disponível nos planos pagos', { description: `Desbloqueie ${feature} assinando um plano.` });
+      navigate('/pricing');
+    }
+  }, [canAccess, onGateBlocked, navigate]);
 
   const trigger = useCallback(() => {
     if (isLocked) {
-      goToPricing('este pad');
+      goToPricing('unlimited_pads', 'este pad');
       return;
     }
     if (pad.isLoop && onToggleLoop) {
@@ -153,10 +161,10 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const sizes = textSizes[padSize];
 
   // Locked feature row component
-  const LockedRow = ({ label, feature }: { label: string; feature: string }) => (
+  const LockedRow = ({ label, gateKey, feature }: { label: string; gateKey: string; feature: string }) => (
     <button
       className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
-      onClick={() => goToPricing(feature)}
+      onClick={() => goToPricing(gateKey, feature)}
     >
       <Lock className="h-3.5 w-3.5" />
       {label}
@@ -164,10 +172,10 @@ const DrumPad: React.FC<DrumPadProps> = ({
     </button>
   );
 
-  const LockedMasterRow = ({ label, feature }: { label: string; feature: string }) => (
+  const LockedMasterRow = ({ label, gateKey, feature }: { label: string; gateKey: string; feature: string }) => (
     <button
       className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
-      onClick={() => goToPricing(feature)}
+      onClick={() => goToPricing(gateKey, feature)}
     >
       <Lock className="h-3.5 w-3.5" />
       {label}
@@ -283,7 +291,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 </ZoomPopup>
               </div>
             ) : (
-              <LockedRow label="Volume individual" feature="volume individual" />
+              <LockedRow label="Volume individual" gateKey="individual_volume" feature="volume individual" />
             )}
 
             {/* Pan - Pro feature */}
@@ -296,7 +304,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 disabled={panDisabled}
               />
             ) : (
-              <LockedRow label="Pan (L/R)" feature="controle de panorâmica" />
+              <LockedRow label="Pan (L/R)" gateKey="pan_control" feature="controle de panorâmica" />
             )}
 
             <div className="h-px bg-border" />
@@ -496,7 +504,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 )}
               </>
             ) : (
-              <LockedMasterRow label="Efeitos de áudio" feature="efeitos de áudio" />
+              <LockedMasterRow label="Efeitos de áudio" gateKey="pad_effects" feature="efeitos de áudio" />
             )}
           </div>
         </>

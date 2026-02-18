@@ -20,6 +20,8 @@ import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
+import { useFeatureGates } from '@/hooks/useFeatureGates';
+import UpgradeGateModal, { type UpgradeGatePayload } from '@/components/UpgradeGateModal';
 import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles, MonitorPlay } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -66,6 +68,7 @@ function padSizeToTextSize(size: number): 'sm' | 'md' | 'lg' {
 const Index = () => {
   const { signOut } = useAuth();
   const { tier } = useSubscription();
+  const { canAccess } = useFeatureGates();
   const isLandscape = useIsLandscape();
   const isTablet = useIsTablet();
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
@@ -103,9 +106,24 @@ const Index = () => {
   const [performanceModeOpen, setPerformanceModeOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [footerPage, setFooterPage] = useState(0);
-  const [faderPage, setFaderPage] = useState(0); // controlled by buttons 1 / 2
+  const [faderPage, setFaderPage] = useState(0);
   const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
+
+  // Helper: try access and show modal if blocked
+  const tryAccess = useCallback((gateKey: string): boolean => {
+    const result = canAccess(gateKey);
+    if (!result.allowed && result.gate) {
+      setUpgradeGate({
+        gateKey: result.gate.gate_key,
+        gateLabel: result.gate.gate_label,
+        requiredTier: result.gate.required_tier,
+        description: result.gate.description,
+      });
+    }
+    return result.allowed;
+  }, [canAccess]);
   
   const [padColors, setPadColors] = useState<Record<string, PadColor>>(() => {
     try { const d = localStorage.getItem('drum-pads-pad-colors'); return d ? JSON.parse(d) : {}; } catch { return {}; }
@@ -795,7 +813,11 @@ const Index = () => {
                       <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                     </button>
                     {currentSongId && songs.length > 0 && (
-                      <button onClick={() => { setPerformanceModeOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <button onClick={() => {
+                        setMobileMenuOpen(false);
+                        if (!tryAccess('performance_mode')) return;
+                        setPerformanceModeOpen(true);
+                      }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                         <MonitorPlay className="h-4 w-4 text-muted-foreground" /> Modo Performance
                       </button>
                     )}
@@ -806,16 +828,12 @@ const Index = () => {
                       className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       onClick={() => {
                         setMobileMenuOpen(false);
-                        if (tier !== 'master') {
-                          toast('🔒 Music AI disponível no plano Master');
-                        } else {
-                          setTimeout(() => setSpotifySheetOpen(true), 150);
-                        }
+                        if (!tryAccess('spotify_ai')) return;
+                        setTimeout(() => setSpotifySheetOpen(true), 150);
                       }}
                     >
-                      {tier !== 'master' ? <Lock className="h-4 w-4 text-muted-foreground" /> : <Sparkles className="h-4 w-4 text-muted-foreground" />}
+                      <Sparkles className="h-4 w-4 text-muted-foreground" />
                       Music AI
-                      {tier !== 'master' && <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>}
                     </button>
                     <button onClick={() => { setSettingsTab('audio'); setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
@@ -974,6 +992,17 @@ const Index = () => {
                 focusMode={focusMode}
                 onResetPad={handleResetPad}
                 onResetAllPads={handleResetAllPads}
+                onGateBlocked={(gateKey) => {
+                  const result = canAccess(gateKey);
+                  if (!result.allowed && result.gate) {
+                    setUpgradeGate({
+                      gateKey: result.gate.gate_key,
+                      gateLabel: result.gate.gate_label,
+                      requiredTier: result.gate.required_tier,
+                      description: result.gate.description,
+                    });
+                  }
+                }}
               />
             </div>
           }
@@ -1528,7 +1557,7 @@ const Index = () => {
       <MusicAISearch
         onApplyConfig={handleApplySpotifyConfig}
         onAddToSetlist={handleMusicAIAddToSetlist}
-        locked={tier !== 'master'}
+        locked={!canAccess('spotify_ai').allowed}
         externalOpen={spotifySheetOpen}
         onExternalOpenChange={setSpotifySheetOpen}
       />
@@ -1540,6 +1569,9 @@ const Index = () => {
         onStartTutorial={(sectionId) => { if (startTutorialRef.current) startTutorialRef.current(sectionId); }}
         initialTab={settingsTab}
       />
+
+      {/* Feature Gate Upgrade Modal */}
+      <UpgradeGateModal payload={upgradeGate} onClose={() => setUpgradeGate(null)} />
     </div>);
 
 };

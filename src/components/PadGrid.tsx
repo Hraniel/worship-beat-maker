@@ -33,12 +33,13 @@ interface PadGridProps {
   onPadColorChange: (padId: string, color: PadColor) => void;
   onResetPad?: (padId: string) => void;
   onResetAllPads?: () => void;
+  onGateBlocked?: (gateKey: string) => void;
 }
 
 const PadGrid: React.FC<PadGridProps> = ({
   pads, padVolumes, activeLoops, customSounds, padSize, padScale = 65, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free', focusMode,
   onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange,
-  onResetPad, onResetAllPads
+  onResetPad, onResetAllPads, onGateBlocked
 }) => {
   const maxPads = TIERS[tier].maxPads;
 
@@ -85,6 +86,7 @@ const PadGrid: React.FC<PadGridProps> = ({
           customSoundsCount={customSoundsCount}
           onResetPad={onResetPad}
           onResetAllPads={onResetAllPads}
+          onGateBlocked={onGateBlocked}
         />
       ))}
     </div>
