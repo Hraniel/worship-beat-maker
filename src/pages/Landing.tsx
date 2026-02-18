@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useBodyScroll } from '@/hooks/useBodyScroll';
 import logoDark from '@/assets/logo-dark.png';
 import { Music, Headphones, Zap, Crown, Check, X, ChevronDown, Layers, Sparkles, Volume2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -84,6 +85,7 @@ const plans = [
 
 const Landing = () => {
   const navigate = useNavigate();
+  useBodyScroll();
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-y-auto overflow-x-hidden">
