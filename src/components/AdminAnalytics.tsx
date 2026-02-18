@@ -1,10 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   LineChart, Line, CartesianGrid, PieChart, Pie, Legend,
 } from 'recharts';
-import { TrendingUp, ShoppingBag, DollarSign, Package, Users, CreditCard, Zap, Crown } from 'lucide-react';
+import {
+  TrendingUp, ShoppingBag, DollarSign, Package, Users, CreditCard,
+  Zap, Crown, Radio, AlertCircle, MessageSquare,
+} from 'lucide-react';
 
 interface Purchase {
   pack_id: string;
@@ -22,6 +25,14 @@ interface SubscriptionStats {
   pro_count: number;
   master_count: number;
   total_mrr: number;
+}
+
+interface CancellationReason {
+  id: string;
+  reason: string;
+  detail: string | null;
+  tier_at_cancellation: string | null;
+  created_at: string;
 }
 
 type Period = 'week' | 'month' | 'year' | 'all';
@@ -50,22 +61,52 @@ const AdminAnalytics: React.FC = () => {
   const [subLoading, setSubLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<Period>('month');
+  const [onlineCount, setOnlineCount] = useState(0);
+  const [cancellations, setCancellations] = useState<CancellationReason[]>([]);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const [{ data: purchaseData }, { data: packData }] = await Promise.all([
+        const [{ data: purchaseData }, { data: packData }, { data: cancelData }] = await Promise.all([
           supabase.from('user_purchases').select('pack_id, user_id, purchased_at'),
           supabase.from('store_packs').select('id, name, price_cents'),
+          supabase.from('cancellation_reasons' as any).select('*').order('created_at', { ascending: false }).limit(50),
         ]);
         setPurchases(purchaseData || []);
         setPacks(packData || []);
+        setCancellations((cancelData as any[]) || []);
       } catch (e) {
         console.error('Analytics error:', e);
       } finally {
         setLoading(false);
       }
     })();
+  }, []);
+
+  // Real-time online users via Supabase Presence
+  useEffect(() => {
+    const channel = supabase.channel('admin-presence-tracker', {
+      config: { presence: { key: 'admin-observer' } },
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        // Count unique users (excluding the admin observer itself)
+        const count = Object.keys(state).filter(k => k !== 'admin-observer').length;
+        setOnlineCount(count);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ role: 'admin-observer', timestamp: new Date().toISOString() });
+        }
+      });
+
+    channelRef.current = channel;
+    return () => {
+      channel.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -121,7 +162,6 @@ const AdminAnalytics: React.FC = () => {
     return { packStats, totalPurchases, totalRevenue, totalBuyers: userSet.size };
   }, [filteredPurchases, packs]);
 
-  // Revenue over time for line chart
   const revenueOverTime = useMemo(() => {
     const packMap = new Map(packs.map(p => [p.id, p]));
     const byDate = new Map<string, number>();
@@ -134,6 +174,17 @@ const AdminAnalytics: React.FC = () => {
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([date, revenue]) => ({ date, revenue: parseFloat(revenue.toFixed(2)) }));
   }, [filteredPurchases, packs, period]);
+
+  // Cancellation reasons aggregated
+  const cancellationStats = useMemo(() => {
+    const counts = new Map<string, number>();
+    cancellations.forEach(c => {
+      counts.set(c.reason, (counts.get(c.reason) || 0) + 1);
+    });
+    return Array.from(counts.entries())
+      .sort(([, a], [, b]) => b - a)
+      .map(([reason, count]) => ({ reason: reason.length > 20 ? reason.slice(0, 20) + '…' : reason, count }));
+  }, [cancellations]);
 
   const PERIOD_LABELS: Record<Period, string> = {
     week: 'Semana', month: 'Mês', year: 'Ano', all: 'Tudo',
@@ -162,6 +213,19 @@ const AdminAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      {/* Online users banner */}
+      <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-2.5">
+        <Radio className="h-4 w-4 text-emerald-400 animate-pulse" />
+        <p className="text-xs font-semibold text-emerald-400">
+          {onlineCount} usuário{onlineCount !== 1 ? 's' : ''} online agora
+        </p>
+        <div className="ml-auto flex gap-1">
+          {Array.from({ length: Math.min(onlineCount, 5) }).map((_, i) => (
+            <div key={i} className="h-2 w-2 rounded-full bg-emerald-400" />
+          ))}
+        </div>
+      </div>
+
       {/* Period filter chips */}
       <div className="flex items-center gap-1.5">
         <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1">Período:</span>
@@ -273,6 +337,44 @@ const AdminAnalytics: React.FC = () => {
           <p className="text-xs text-muted-foreground text-center py-2">Dados de assinatura indisponíveis</p>
         )}
       </div>
+
+      {/* Cancellation reasons */}
+      {cancellations.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className="h-4 w-4 text-orange-400" />
+            <p className="text-xs font-semibold text-foreground">Motivos de Cancelamento</p>
+            <span className="ml-auto text-[10px] text-muted-foreground">{cancellations.length} total</span>
+          </div>
+          {cancellationStats.length > 0 && (
+            <ResponsiveContainer width="100%" height={120}>
+              <BarChart data={cancellationStats} margin={{ top: 2, right: 4, left: -20, bottom: 0 }}>
+                <XAxis dataKey="reason" tick={{ fontSize: 8, fill: 'hsl(215 15% 55%)' }} />
+                <YAxis tick={{ fontSize: 8, fill: 'hsl(215 15% 55%)' }} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{ background: 'hsl(240 8% 10%)', border: '1px solid hsl(240 6% 18%)', borderRadius: 8, fontSize: 10 }}
+                  labelStyle={{ color: 'hsl(210 20% 92%)' }}
+                />
+                <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                  {cancellationStats.map((_, i) => (
+                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+          {/* Recent details */}
+          <div className="mt-3 space-y-1.5 max-h-32 overflow-y-auto">
+            {cancellations.slice(0, 8).map(c => (
+              <div key={c.id} className="flex items-start gap-2">
+                <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">{c.reason}</span>
+                {c.detail && <span className="text-[10px] text-muted-foreground truncate">{c.detail}</span>}
+                <span className="ml-auto text-[9px] text-muted-foreground shrink-0">{new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Bar chart */}
       <div className="bg-card border border-border rounded-xl p-4">

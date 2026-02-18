@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          channels: string[]
+          created_at: string
+          id: string
+          message: string
+          sent_by: string
+          target: string
+          target_user_id: string | null
+          title: string
+        }
+        Insert: {
+          channels?: string[]
+          created_at?: string
+          id?: string
+          message: string
+          sent_by: string
+          target?: string
+          target_user_id?: string | null
+          title: string
+        }
+        Update: {
+          channels?: string[]
+          created_at?: string
+          id?: string
+          message?: string
+          sent_by?: string
+          target?: string
+          target_user_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      cancellation_reasons: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          reason: string
+          tier_at_cancellation: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason: string
+          tier_at_cancellation?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          reason?: string
+          tier_at_cancellation?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_suggestions: {
         Row: {
           created_at: string
@@ -74,6 +134,36 @@ export type Database = {
           id?: string
           required_tier?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      granted_tiers: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_by: string
+          id: string
+          note: string | null
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_by: string
+          id?: string
+          note?: string | null
+          tier?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_by?: string
+          id?: string
+          note?: string | null
+          tier?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -463,6 +553,71 @@ export type Database = {
             columns: ["suggestion_id"]
             isOneToOne: false
             referencedRelation: "community_suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_bans: {
+        Row: {
+          ban_type: string
+          banned_by: string
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          ip_address: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          ban_type?: string
+          banned_by: string
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          ban_type?: string
+          banned_by?: string
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          ip_address?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_notification_reads: {
+        Row: {
+          id: string
+          notification_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          notification_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          notification_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_reads_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "admin_notifications"
             referencedColumns: ["id"]
           },
         ]

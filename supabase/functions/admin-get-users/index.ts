@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
     const body = req.method === 'GET' ? null : await req.json().catch(() => null);
     const action = body?.action;
 
-    if (action === 'promote' || action === 'demote' || action === 'promote-moderator' || action === 'demote-moderator' || action === 'remove-roles') {
+    // ── Role management ─────────────────────────────────────────────────────────
+    if (['promote', 'demote', 'promote-moderator', 'demote-moderator', 'remove-roles'].includes(action)) {
       const targetUserId = body.userId;
       if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
         return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
@@ -46,8 +47,110 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
-    // List users via admin API
-    const { data: { users }, error: usersErr } = await supabase.auth.admin.listUsers({ perPage: 200 });
+    // ── Delete user ──────────────────────────────────────────────────────────────
+    if (action === 'delete-user') {
+      const targetUserId = body.userId;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      const { error } = await supabase.auth.admin.deleteUser(targetUserId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    // ── Resend verification email ────────────────────────────────────────────────
+    if (action === 'resend-verification') {
+      const { email } = body;
+      if (!email || typeof email !== 'string' || email.length > 320) {
+        return new Response(JSON.stringify({ error: 'Invalid email' }), { status: 400, headers: corsHeaders });
+      }
+      // Use generateLink with type signup to trigger email resend
+      const { error } = await supabase.auth.admin.generateLink({
+        type: 'signup',
+        email: email.trim().toLowerCase(),
+      });
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    // ── Update credentials (email or password) ───────────────────────────────────
+    if (action === 'update-credentials') {
+      const targetUserId = body.userId;
+      const newEmail = body.email;
+      const newPassword = body.password;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      const updates: Record<string, string> = {};
+      if (newEmail && typeof newEmail === 'string' && newEmail.length <= 320) updates.email = newEmail.trim().toLowerCase();
+      if (newPassword && typeof newPassword === 'string' && newPassword.length >= 6 && newPassword.length <= 128) updates.password = newPassword;
+      if (Object.keys(updates).length === 0) {
+        return new Response(JSON.stringify({ error: 'No valid updates' }), { status: 400, headers: corsHeaders });
+      }
+      const { error } = await supabase.auth.admin.updateUserById(targetUserId, updates);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    // ── Ban user ─────────────────────────────────────────────────────────────────
+    if (action === 'ban-user') {
+      const { userId: targetUserId, email, banType, reason, days, ip } = body;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      if (!reason || typeof reason !== 'string' || reason.length > 500) {
+        return new Response(JSON.stringify({ error: 'Invalid reason' }), { status: 400, headers: corsHeaders });
+      }
+      const expiresAt = banType === 'temporary' && days && days > 0
+        ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+        : null;
+      
+      await supabase.from('user_bans').insert({
+        user_id: targetUserId,
+        email: email || '',
+        ip_address: ip || null,
+        reason,
+        banned_by: user.id,
+        ban_type: banType || 'permanent',
+        expires_at: expiresAt,
+      });
+
+      // Also ban in Supabase Auth (disable user)
+      await supabase.auth.admin.updateUserById(targetUserId, { ban_duration: banType === 'temporary' && days ? `${days * 24}h` : '876000h' });
+
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    // ── Grant free tier ──────────────────────────────────────────────────────────
+    if (action === 'grant-tier') {
+      const { userId: targetUserId, tier, note } = body;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      if (!['pro', 'master'].includes(tier)) {
+        return new Response(JSON.stringify({ error: 'Invalid tier' }), { status: 400, headers: corsHeaders });
+      }
+      await supabase.from('granted_tiers').upsert({
+        user_id: targetUserId,
+        tier,
+        granted_by: user.id,
+        note: note || null,
+      }, { onConflict: 'user_id' });
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    // ── Revoke free tier ──────────────────────────────────────────────────────────
+    if (action === 'revoke-tier') {
+      const targetUserId = body.userId;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      await supabase.from('granted_tiers').delete().eq('user_id', targetUserId);
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    // ── List users ───────────────────────────────────────────────────────────────
+    const { data: { users: authUsers }, error: usersErr } = await supabase.auth.admin.listUsers({ perPage: 200 });
     if (usersErr) throw usersErr;
 
     // Fetch all purchases grouped by user
@@ -60,7 +163,17 @@ Deno.serve(async (req) => {
     const adminSet = new Set(roles?.filter(r => r.role === 'admin').map(r => r.user_id) || []);
     const modSet = new Set(roles?.filter(r => r.role === 'moderator').map(r => r.user_id) || []);
 
-    const result = users.map(u => ({
+    // Fetch bans
+    const { data: bans } = await supabase.from('user_bans').select('user_id, expires_at');
+    const banMap = new Map<string, string | null>();
+    bans?.forEach(b => banMap.set(b.user_id, b.expires_at));
+
+    // Fetch granted tiers
+    const { data: grants } = await supabase.from('granted_tiers').select('user_id, tier');
+    const grantMap = new Map<string, string>();
+    grants?.forEach(g => grantMap.set(g.user_id, g.tier));
+
+    const result = authUsers.map(u => ({
       id: u.id,
       email: u.email,
       created_at: u.created_at,
@@ -68,6 +181,9 @@ Deno.serve(async (req) => {
       purchase_count: purchaseMap.get(u.id) || 0,
       is_admin: adminSet.has(u.id),
       is_moderator: modSet.has(u.id),
+      is_banned: banMap.has(u.id),
+      ban_expires_at: banMap.get(u.id) ?? null,
+      granted_tier: grantMap.get(u.id) ?? null,
     }));
 
     return new Response(JSON.stringify({ users: result }), { headers: corsHeaders });
