@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Volume2, Headphones, Crown, HelpCircle, Store, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
+import { useIsLandscape } from '@/hooks/use-mobile';
 
 const SETTINGS_KEY = 'drum-pads-audio-settings';
 
@@ -122,6 +123,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState('audio');
   const navigate = useNavigate();
+  const isLandscape = useIsLandscape();
 
   useEffect(() => {
     if (open) {
@@ -139,32 +141,36 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm w-[calc(100vw-2rem)] mx-auto">
+      <DialogContent className={
+        isLandscape
+          ? "w-full h-full max-w-full max-h-full rounded-none mx-0 overflow-y-auto"
+          : "max-w-sm w-[calc(100vw-2rem)] mx-auto"
+      }>
         <DialogHeader>
           <DialogTitle className="text-base">Configurações</DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
-            <TabsTrigger value="audio" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+          <TabsList className="w-full flex-wrap justify-center h-auto gap-0.5 p-1">
+            <TabsTrigger value="audio" className="gap-1 text-[11px] px-3 py-1.5">
               <Headphones className="h-3 w-3 shrink-0" />
-              <span className="truncate">Áudio</span>
+              Áudio
             </TabsTrigger>
-            <TabsTrigger value="store" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+            <TabsTrigger value="store" className="gap-1 text-[11px] px-3 py-1.5">
               <Store className="h-3 w-3 shrink-0" />
-              <span className="truncate">Loja</span>
+              Loja
             </TabsTrigger>
-            <TabsTrigger value="plans" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+            <TabsTrigger value="plans" className="gap-1 text-[11px] px-3 py-1.5">
               <Crown className="h-3 w-3 shrink-0" />
-              <span className="truncate">Planos</span>
+              Planos
             </TabsTrigger>
-            <TabsTrigger value="guide" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+            <TabsTrigger value="guide" className="gap-1 text-[11px] px-3 py-1.5">
               <HelpCircle className="h-3 w-3 shrink-0" />
-              <span className="truncate">Guia</span>
+              Guia
             </TabsTrigger>
-            <TabsTrigger value="about" className="flex-1 gap-1 text-[11px] px-1.5 py-1.5 min-w-0">
+            <TabsTrigger value="about" className="gap-1 text-[11px] px-3 py-1.5">
               <Info className="h-3 w-3 shrink-0" />
-              <span className="truncate">Sobre</span>
+              Sobre
             </TabsTrigger>
           </TabsList>
 
