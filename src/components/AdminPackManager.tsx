@@ -94,9 +94,27 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
     return json;
   };
 
+  const getAudioDurationMs = (file: File): Promise<number> => {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const audio = new Audio(url);
+      audio.addEventListener('loadedmetadata', () => {
+        const ms = Math.round(audio.duration * 1000);
+        URL.revokeObjectURL(url);
+        resolve(isFinite(ms) ? ms : 0);
+      });
+      audio.addEventListener('error', () => {
+        URL.revokeObjectURL(url);
+        resolve(0);
+      });
+    });
+  };
+
   const handleUploadSound = async (file: File, packId: string) => {
     setUploading({ packId, type: 'full' });
     try {
+      const durationMs = await getAudioDurationMs(file);
+
       const fd = new FormData();
       fd.append('action', 'upload');
       fd.append('file', file);
@@ -105,9 +123,10 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       fd.append('shortName', file.name.slice(0, 3).toUpperCase());
       fd.append('category', 'sample');
       fd.append('isPreview', 'false');
+      fd.append('durationMs', String(durationMs));
 
       await invokeAdmin(fd);
-      toast.success('Som enviado com sucesso!');
+      toast.success(`Som enviado! Duração: ${(durationMs / 1000).toFixed(1)}s`);
       onRefresh();
     } catch (e: any) {
       toast.error(e.message || 'Erro ao enviar som');

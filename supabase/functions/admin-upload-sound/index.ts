@@ -54,6 +54,7 @@ Deno.serve(async (req) => {
       const shortName = formData.get('shortName') as string;
       const category = formData.get('category') as string;
       const isPreview = formData.get('isPreview') === 'true';
+      const durationMs = parseInt(formData.get('durationMs') as string || '0', 10);
 
       if (!file || !packId || !soundName) {
         return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders });
@@ -85,7 +86,7 @@ Deno.serve(async (req) => {
             short_name: shortName || soundName.slice(0, 3).toUpperCase(),
             category: category || 'sample',
             file_path: filePath,
-            duration_ms: 0,
+            duration_ms: isNaN(durationMs) ? 0 : durationMs,
           })
           .select('id')
           .single();
