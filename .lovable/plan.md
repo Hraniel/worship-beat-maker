@@ -1,54 +1,70 @@
 
-## Sincronização automática dos Feature Gates
+## Plano de Padronização — Settings Dialog (Desktop e Tablet)
 
-### Problema atual
+### Diagnóstico do problema
 
-O hook `useFeatureGates` usa um cache estático em memória (variáveis `cachedGates` e `cachePromise` fora do componente). Os dados são buscados **uma única vez** no carregamento do app e nunca mais atualizados automaticamente. A função `invalidateGatesCache` existe mas nunca é chamada.
+A edição anterior introduziu dois problemas no `SettingsDialog.tsx`:
 
-Resultado: alterações feitas no admin só aparecem para o usuário após um reload manual da página.
+1. **Textos menores que o necessário**: as abas (TabsTrigger) foram reduzidas para `text-[10px] sm:text-[11px]`, quando o padrão original era `text-xs` (12px). Os títulos de seção também ficaram em `text-[11px]`, abaixo do padrão.
 
-### Solução: Realtime via banco de dados
+2. **Containers com `max-w-xs` forçados**: todas as abas (Áudio, Loja, Planos, Guia, Sobre) receberam `max-w-xs mx-auto`, o que cria uma caixa estreita descentrada dentro de um diálogo que já tem seu próprio tamanho fixo (`max-w-sm` / `max-w-md`).
 
-Adicionar um listener de **Realtime** do Lovable Cloud na tabela `feature_gates`. Sempre que um admin inserir, atualizar ou deletar um gate, todos os clientes conectados (usuários com o app aberto) recebem a atualização instantaneamente — **sem precisar recarregar a página ou fazer deploy**.
+3. **Dialog não aumenta para desktop**: o diálogo continua em `max-w-sm sm:max-w-md`, que é pequeno para telas maiores. No desktop/tablet, poderia ter um tamanho mais confortável (`sm:max-w-lg`).
 
-### Fluxo técnico
+---
 
-```text
-Admin salva gate no painel
-        ↓
-UPDATE na tabela feature_gates (banco)
-        ↓
-Banco emite evento Realtime (INSERT/UPDATE/DELETE)
-        ↓
-useFeatureGates recebe evento via canal Supabase
-        ↓
-Invalida cache + refetch dos gates
-        ↓
-Todos os canAccess() em todos os componentes reagem imediatamente
+### O que será corrigido
+
+#### 1. Dialog — tamanho padronizado
+
+```
+mobile:  max-w-sm  (atual — mantém)
+tablet/desktop:  max-w-lg  (aumenta de md → lg)
+landscape fullscreen: sem mudança
 ```
 
-### Arquivos a modificar
+#### 2. Abas (TabsTrigger) — tamanho de texto unificado
 
-**1. `src/hooks/useFeatureGates.ts`**
+Remover `text-[10px] sm:text-[11px]` → usar `text-xs` em todas as abas (padrão Tailwind, 12px). Ícones permanecem `h-3.5 w-3.5`.
 
-- Remover o cache estático em memória (que impede atualização)
-- Adicionar `useEffect` com `supabase.channel('feature_gates')` para ouvir eventos `postgres_changes` na tabela `feature_gates`
-- Quando qualquer evento chegar (`INSERT`, `UPDATE`, `DELETE`), fazer refetch dos gates
-- Garantir cleanup do canal ao desmontar
+#### 3. Containers de conteúdo — sem `max-w-xs` artificial
 
-**2. `src/components/AdminPricingManager.tsx`**
+Todas as abas passam a usar `w-full` com padding interno, sem restrição de largura forçada que cria aspecto "espremido".
 
-- Chamar `invalidateGatesCache()` após salvar, editar ou deletar qualquer gate
-- Isso garante que se o próprio admin (que tem o app aberto) alterar um gate, o cache local seja limpo imediatamente antes do Realtime chegar
+Aba por aba:
 
-### O que o admin ganha
+| Aba | Antes | Depois |
+|-----|-------|--------|
+| Áudio | `max-w-sm mx-auto` | `w-full` — cards ocupam a largura do dialog |
+| Loja | `max-w-xs mx-auto` | `w-full max-w-sm mx-auto` — centralizado mas mais folgado |
+| Planos | `max-w-xs mx-auto` | `w-full max-w-sm mx-auto` |
+| Guia | `max-w-xs mx-auto` | `w-full` — lista ocupa a largura total |
+| Sobre | `max-w-xs mx-auto` | `w-full max-w-sm mx-auto` |
 
-- Salva um gate → em segundos todos os usuários com o app aberto veem o bloqueio ativo (ou removido) sem nenhuma ação adicional
-- Sem necessidade de deploy ou reload
-- Totalmente transparente para o usuário final
+#### 4. Títulos de seção — padronizados em `text-xs` (não `text-[11px]`)
 
-### Detalhes técnicos
+Labels como "Glory Store", "Planos e Assinatura", "Guia Prático", "Sobre": `text-xs font-semibold`.
 
-- A tabela `feature_gates` já tem RLS com `SELECT` público, então o canal Realtime funciona sem autenticação especial
-- Será necessário habilitar a tabela `feature_gates` para publicação Realtime via migration SQL (`ALTER PUBLICATION supabase_realtime ADD TABLE public.feature_gates`)
-- O refetch após evento Realtime limpa e reconstrói o cache, mantendo consistência entre todas as instâncias do hook no mesmo app
+#### 5. Botões de ação (Loja/Planos) — tamanho adequado
+
+Botões "Acessar a Loja" e "Gerenciar plano": de `text-xs py-1.5` para `text-sm py-2 px-5` — mais clicáveis e proporcionais.
+
+#### 6. Aba "Sobre" — texto legível
+
+- Título `Glory Pads`: de `text-xs` → `text-sm font-bold`
+- Versão: de `text-[10px]` → `text-xs`
+- Descrição: de `text-xs` → `text-sm`
+
+---
+
+### Arquivos alterados
+
+- **`src/components/SettingsDialog.tsx`** — único arquivo a ser editado
+
+### O que NÃO muda
+
+- Layout landscape (fullscreen) — já está correto
+- Componente `StereoOption` — já usa tamanhos bons (`text-sm` no label, `text-xs` nos botões)
+- Lógica de estado e callbacks — sem alterações
+- Layout do `Index.tsx` — fora do escopo desta padronização
+
