@@ -108,27 +108,34 @@ const VuTicks: React.FC<{ volume: number; flash: number; height?: number }> = ({
 const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ channel, faderHeight = FADER_HEIGHT }) => {
   const [dragging, setDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
+  const draggingRef = useRef(false);
+  const onChangeRef = useRef(channel.onChange);
   const flash = usePadHitFlash(channel.id);
+
+  // Keep ref in sync so callbacks always call latest onChange without stale closure
+  useEffect(() => { onChangeRef.current = channel.onChange; }, [channel.onChange]);
 
   const updateVolume = useCallback((clientY: number) => {
     if (!trackRef.current) return;
     const rect = trackRef.current.getBoundingClientRect();
     const y = Math.max(0, Math.min(1, (rect.bottom - clientY) / rect.height));
-    channel.onChange(y);
-  }, [channel]);
+    onChangeRef.current(y);
+  }, []);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    draggingRef.current = true;
     setDragging(true);
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     updateVolume(e.clientY);
   }, [updateVolume]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!dragging) return;
+    if (!draggingRef.current) return;
     updateVolume(e.clientY);
-  }, [dragging, updateVolume]);
+  }, [updateVolume]);
 
   const handlePointerUp = useCallback(() => {
+    draggingRef.current = false;
     setDragging(false);
   }, []);
 
