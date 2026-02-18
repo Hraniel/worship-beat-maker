@@ -2,16 +2,24 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
-import { useLandingConfig } from '@/hooks/useLandingConfig';
+import { useLandingConfig, type LandingFeature } from '@/hooks/useLandingConfig';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import {
   Music, Headphones, Zap, Crown, Check, X, ChevronDown,
   Layers, Sparkles, Volume2, ArrowRight, Drum, AudioWaveform,
   Waves, ListMusic, SlidersHorizontal, Cpu, Smartphone,
+  Star, Radio, Mic2, Search, BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TIERS } from '@/lib/tiers';
+
+// Map icon name string → Lucide component
+const ICON_MAP: Record<string, React.ElementType> = {
+  Drum, ListMusic, SlidersHorizontal, Cpu, Waves, AudioWaveform,
+  Headphones, Smartphone, Sparkles, Music, Volume2, Layers,
+  Zap, Star, Radio, Mic2, Search, BarChart3, Crown,
+};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -22,16 +30,8 @@ const fadeUp = {
 };
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
 
-const features = [
-  { icon: Drum, title: 'Pads Profissionais', desc: 'Sons reais de bateria, pads e efeitos — 12 sons inclusos gratuitamente, com Glory Store para expandir.' },
-  { icon: ListMusic, title: 'Setlists Organizadas', desc: 'Crie setlists por culto com pads e configurações salvas automaticamente. Compartilhe com um link.' },
-  { icon: SlidersHorizontal, title: 'Mixer Completo', desc: 'Volume individual, pan estéreo e equalização por pad no plano Master.' },
-  { icon: Cpu, title: 'Spotify AI', desc: 'Detecta o tom e BPM da música no Spotify e configura os pads automaticamente — plano Master.' },
-  { icon: Waves, title: 'Continuous Pads', desc: 'Texturas sonoras contínuas em qualquer tom para criar atmosferas imersivas no louvor.' },
-  { icon: AudioWaveform, title: 'Loop Engine', desc: 'Sistema de loops sincronizado com metrônomo e BPM. Grave e dispare loops em tempo real.' },
-  { icon: Headphones, title: 'Efeitos de Áudio', desc: 'Reverb, delay e compressão por pad para moldar cada som ao ambiente do culto.' },
-  { icon: Smartphone, title: 'PWA — Instale no Celular', desc: 'Funciona como app nativo no iPhone e Android. Sem loja, sem espera — instale direto do navegador.' },
-];
+
+
 
 const categories = [
   { name: 'Kick & Bumbo', color: '0 75% 55%', icon: '🥁' },
@@ -230,46 +230,71 @@ const Stats = ({ config }: { config: Record<string, string> }) => {
 };
 
 // Features — WHITE
-const Features = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => (
-  <section id="recursos" className="py-20 sm:py-28 px-4" style={{ background: 'hsl(0 0% 97%)' }}>
-    <div className="max-w-6xl mx-auto">
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
-        <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Recursos</motion.p>
-        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-foreground mb-4">
-          {config.features_title || 'Tudo que você precisa para o louvor'}
-        </motion.h2>
-        <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-lg mx-auto">
-          {config.features_subtitle || 'Desenvolvido por músicos de louvor, para músicos de louvor.'}
-        </motion.p>
-      </motion.div>
+const Features = ({
+  navigate, config, landingFeatures,
+}: {
+  navigate: ReturnType<typeof useNavigate>;
+  config: Record<string, string>;
+  landingFeatures: LandingFeature[];
+}) => {
+  const visible = landingFeatures.filter(f => f.enabled).sort((a, b) => a.sort_order - b.sort_order);
 
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {features.map((f, i) => (
-          <motion.div key={f.title} variants={fadeUp} custom={i}
-            className="group rounded-2xl border p-6 hover:shadow-md transition-all duration-300"
-            style={{ border: '1px solid hsl(0 0% 0% / 0.07)', background: 'hsl(0 0% 100%)' }}>
-            <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4 transition"
-              style={{ background: 'hsl(var(--primary) / 0.08)' }}>
-              <f.icon className="h-5 w-5 text-primary" />
-            </div>
-            <h3 className="font-semibold text-foreground mb-2 text-sm">{f.title}</h3>
-            <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
-          </motion.div>
-        ))}
-      </motion.div>
+  return (
+    <section id="recursos" className="py-20 sm:py-28 px-4" style={{ background: 'hsl(0 0% 97%)' }}>
+      <div className="max-w-6xl mx-auto">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Recursos</motion.p>
+          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-foreground mb-4">
+            {config.features_title || 'Tudo que você precisa para o louvor'}
+          </motion.h2>
+          <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-lg mx-auto">
+            {config.features_subtitle || 'Desenvolvido por músicos de louvor, para músicos de louvor.'}
+          </motion.p>
+        </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}
-        className="mt-12 text-center">
-        <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
-          className="bg-foreground text-background hover:bg-foreground/85 text-base px-8 py-5 rounded-xl font-semibold">
-          Experimente grátis
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Button>
-      </motion.div>
-    </div>
-  </section>
-);
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {visible.map((f, i) => {
+            const IconComponent = ICON_MAP[f.icon_name] ?? Sparkles;
+            return (
+              <motion.div key={f.id} variants={fadeUp} custom={i}
+                className="group rounded-2xl overflow-hidden hover:shadow-md transition-all duration-300"
+                style={{ border: '1px solid hsl(0 0% 0% / 0.07)', background: 'hsl(0 0% 100%)' }}>
+                {/* Banner image or icon header */}
+                {f.image_url ? (
+                  <div className="w-full h-32 overflow-hidden">
+                    <img src={f.image_url} alt={f.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  </div>
+                ) : (
+                  <div className="px-6 pt-6 pb-2">
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4 transition"
+                      style={{ background: 'hsl(var(--primary) / 0.08)' }}>
+                      <IconComponent className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                )}
+                <div className={f.image_url ? 'px-6 pb-6 pt-4' : 'px-6 pb-6'}>
+                  <h3 className="font-semibold text-foreground mb-2 text-sm">{f.title}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{f.description}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}
+          className="mt-12 text-center">
+          <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
+            className="bg-foreground text-background hover:bg-foreground/85 text-base px-8 py-5 rounded-xl font-semibold">
+            Experimente grátis
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
 
 // Sound categories — DARK
 const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => (
@@ -510,7 +535,7 @@ const Footer = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
 const Landing = () => {
   const navigate = useNavigate();
   useBodyScroll();
-  const { config, pricing, features, loading } = useLandingConfig();
+  const { config, pricing, features, landingFeatures, loading } = useLandingConfig();
 
   return (
     <div className="overflow-y-auto overflow-x-hidden">
@@ -529,7 +554,7 @@ const Landing = () => {
       <Divider fromLight={false} />
 
       {/* WHITE features */}
-      <Features navigate={navigate} config={config} />
+      <Features navigate={navigate} config={config} landingFeatures={landingFeatures} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} />

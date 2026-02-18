@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type } from 'lucide-react';
+import AdminLandingFeaturesEditor from './AdminLandingFeaturesEditor';
 
 interface ConfigRow {
   id: string;
@@ -46,6 +47,7 @@ const AdminLandingEditor: React.FC = () => {
   const [rows, setRows] = useState<ConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'textos' | 'recursos'>('textos');
 
   const fetchData = async () => {
     setLoading(true);
@@ -108,7 +110,27 @@ const AdminLandingEditor: React.FC = () => {
   const showPricing = getVal('show_pricing') === 'true';
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {/* Tabs */}
+      <div className="flex bg-white/5 rounded-lg p-0.5 gap-0.5">
+        <button
+          onClick={() => setActiveTab('textos')}
+          className={`flex-1 h-7 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === 'textos' ? 'bg-violet-600 text-white shadow-sm' : 'text-white/50 hover:text-white'}`}
+        >
+          <Type className="h-3 w-3" /> Textos & Config
+        </button>
+        <button
+          onClick={() => setActiveTab('recursos')}
+          className={`flex-1 h-7 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === 'recursos' ? 'bg-violet-600 text-white shadow-sm' : 'text-white/50 hover:text-white'}`}
+        >
+          <LayoutGrid className="h-3 w-3" /> Cards Recursos
+        </button>
+      </div>
+
+      {activeTab === 'recursos' && <AdminLandingFeaturesEditor />}
+
+      {activeTab === 'textos' && (
+      <div className="space-y-5">
       <p className="text-[11px]" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>
         Edite o conteúdo textual da landing page. As alterações ficam visíveis imediatamente.
       </p>
@@ -195,6 +217,8 @@ const AdminLandingEditor: React.FC = () => {
       >
         <RefreshCw className="h-3 w-3" /> Atualizar dados
       </button>
+      </div>
+      )}
     </div>
   );
 };
