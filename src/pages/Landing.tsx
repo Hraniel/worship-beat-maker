@@ -373,34 +373,42 @@ const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNav
   );
 };
 
-// How it works — WHITE (static section)
-const HowItWorks = ({ config }: { config: Record<string, string> }) => (
-  <section style={{ background: 'hsl(0 0% 97%)', paddingTop: config.howitworks_pt ? `${config.howitworks_pt}px` : '80px', paddingBottom: config.howitworks_pb ? `${config.howitworks_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-    <div className="max-w-4xl mx-auto">
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
-        <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Como funciona</motion.p>
-        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-foreground mb-4">
-          Do ensaio ao culto<br />em <span className="text-primary">3 passos</span>
-        </motion.h2>
-      </motion.div>
+// How it works — dynamic styles
+const HowItWorks = ({ config }: { config: Record<string, string> }) => {
+  const bg = config.howitworks_bg || 'hsl(0 0% 97%)';
+  const titleColor = config.howitworks_title_color || 'hsl(220 15% 10%)';
+  const stepColor = config.howitworks_step_color || 'hsl(0 0% 0% / 0.06)';
+  const itemTitleColor = config.howitworks_item_title_color || 'hsl(220 15% 10%)';
+  const itemDescColor = config.howitworks_item_desc_color || 'hsl(220 15% 40%)';
 
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        {[
-          { step: '01', title: 'Crie sua Setlist', desc: 'Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.' },
-          { step: '02', title: 'Configure os Sons', desc: 'Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.' },
-          { step: '03', title: 'Toque ao Vivo', desc: 'No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.' },
-        ].map((item, i) => (
-          <motion.div key={item.step} variants={fadeUp} custom={i} className="relative">
-            <div className="text-6xl font-black leading-none mb-3" style={{ color: 'hsl(0 0% 0% / 0.06)' }}>{item.step}</div>
-            <h3 className="text-lg font-bold text-foreground mb-2">{item.title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-          </motion.div>
-        ))}
-      </motion.div>
-    </div>
-  </section>
-);
+  return (
+    <section style={{ background: bg, paddingTop: config.howitworks_pt ? `${config.howitworks_pt}px` : '80px', paddingBottom: config.howitworks_pb ? `${config.howitworks_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
+      <div className="max-w-4xl mx-auto">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Como funciona</motion.p>
+          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
+            Do ensaio ao culto<br />em <span className="text-primary">3 passos</span>
+          </motion.h2>
+        </motion.div>
+
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {[
+            { step: '01', title: 'Crie sua Setlist', desc: 'Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.' },
+            { step: '02', title: 'Configure os Sons', desc: 'Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.' },
+            { step: '03', title: 'Toque ao Vivo', desc: 'No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.' },
+          ].map((item, i) => (
+            <motion.div key={item.step} variants={fadeUp} custom={i} className="relative">
+              <div className="text-6xl font-black leading-none mb-3" style={{ color: stepColor }}>{item.step}</div>
+              <h3 className="text-lg font-bold mb-2" style={{ color: itemTitleColor }}>{item.title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: itemDescColor }}>{item.desc}</p>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
 // Pricing — dynamic styles
 const Pricing = ({
