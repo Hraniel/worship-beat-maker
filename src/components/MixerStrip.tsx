@@ -155,7 +155,7 @@ const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ chan
         {/* Fader track */}
         <div
           ref={trackRef}
-          className="relative w-[5px] rounded-full touch-none cursor-pointer"
+          className="relative z-10 w-[5px] rounded-full touch-none cursor-pointer"
           style={{ height: `${faderHeight}px`, backgroundColor: 'hsl(var(--muted))' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
