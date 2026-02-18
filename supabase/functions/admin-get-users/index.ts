@@ -27,15 +27,21 @@ Deno.serve(async (req) => {
     const body = req.method === 'GET' ? null : await req.json().catch(() => null);
     const action = body?.action;
 
-    if (action === 'promote' || action === 'demote') {
+    if (action === 'promote' || action === 'demote' || action === 'promote-moderator' || action === 'demote-moderator' || action === 'remove-roles') {
       const targetUserId = body.userId;
       if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
         return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
       }
       if (action === 'promote') {
         await supabase.from('user_roles').upsert({ user_id: targetUserId, role: 'admin' }, { onConflict: 'user_id,role' });
-      } else {
+      } else if (action === 'demote') {
         await supabase.from('user_roles').delete().eq('user_id', targetUserId).eq('role', 'admin');
+      } else if (action === 'promote-moderator') {
+        await supabase.from('user_roles').upsert({ user_id: targetUserId, role: 'moderator' }, { onConflict: 'user_id,role' });
+      } else if (action === 'demote-moderator') {
+        await supabase.from('user_roles').delete().eq('user_id', targetUserId).eq('role', 'moderator');
+      } else if (action === 'remove-roles') {
+        await supabase.from('user_roles').delete().eq('user_id', targetUserId);
       }
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
@@ -49,9 +55,10 @@ Deno.serve(async (req) => {
     const purchaseMap = new Map<string, number>();
     purchases?.forEach(p => purchaseMap.set(p.user_id, (purchaseMap.get(p.user_id) || 0) + 1));
 
-    // Fetch all admin roles
-    const { data: roles } = await supabase.from('user_roles').select('user_id, role').eq('role', 'admin');
-    const adminSet = new Set(roles?.map(r => r.user_id) || []);
+    // Fetch all roles (admin + moderator)
+    const { data: roles } = await supabase.from('user_roles').select('user_id, role');
+    const adminSet = new Set(roles?.filter(r => r.role === 'admin').map(r => r.user_id) || []);
+    const modSet = new Set(roles?.filter(r => r.role === 'moderator').map(r => r.user_id) || []);
 
     const result = users.map(u => ({
       id: u.id,
@@ -60,6 +67,7 @@ Deno.serve(async (req) => {
       last_sign_in_at: u.last_sign_in_at,
       purchase_count: purchaseMap.get(u.id) || 0,
       is_admin: adminSet.has(u.id),
+      is_moderator: modSet.has(u.id),
     }));
 
     return new Response(JSON.stringify({ users: result }), { headers: corsHeaders });

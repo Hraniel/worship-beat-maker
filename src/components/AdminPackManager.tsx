@@ -607,18 +607,39 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
               {hasBanner && (
                 <div className="relative h-20 w-full overflow-hidden bg-muted">
                   <img src={bannerDisplayUrl!} alt="banner" className="w-full h-full object-cover" />
-                  <button
-                    className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-white transition-colors"
-                    onClick={() => {
-                      pendingUploadRef.current = { packId: pack.id, type: 'banner' };
-                      bannerInputRef.current?.click();
-                    }}
-                  >
-                    {uploading?.packId === pack.id && uploading.type === 'banner'
-                      ? <Loader2 className="h-3 w-3 animate-spin" />
-                      : <Image className="h-3 w-3" />}
-                    Trocar banner
-                  </button>
+                  <div className="absolute top-1.5 right-1.5 flex gap-1">
+                    <button
+                      className="bg-black/60 hover:bg-black/80 rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-white transition-colors"
+                      onClick={() => {
+                        pendingUploadRef.current = { packId: pack.id, type: 'banner' };
+                        bannerInputRef.current?.click();
+                      }}
+                    >
+                      {uploading?.packId === pack.id && uploading.type === 'banner'
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <Image className="h-3 w-3" />}
+                      Trocar
+                    </button>
+                    <button
+                      className="bg-red-600/80 hover:bg-red-600 rounded-lg px-2 py-1 flex items-center gap-1 text-[10px] text-white transition-colors"
+                      onClick={async () => {
+                        if (!confirm('Remover banner deste pack?')) return;
+                        try {
+                          const fd = new FormData();
+                          fd.append('action', 'remove-banner');
+                          fd.append('packId', pack.id);
+                          await invokeAdmin(fd);
+                          toast.success('Banner removido!');
+                          onRefresh();
+                        } catch (e: any) {
+                          toast.error(e.message || 'Erro ao remover banner');
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Remover
+                    </button>
+                  </div>
                 </div>
               )}
 

@@ -259,8 +259,14 @@ const Dashboard = () => {
 
         {/* Admin Panel */}
         {isAdmin && showAdmin && (
-          <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-            <AdminPackManager packs={displayPacks} onRefresh={refetch} />
+          <div className="mb-8 rounded-2xl overflow-hidden border border-indigo-500/20 shadow-lg">
+            <div className="bg-gradient-to-r from-indigo-950/80 to-violet-950/60 px-4 py-3 border-b border-indigo-500/20 flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-indigo-400" />
+              <span className="text-sm font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Painel Administrativo</span>
+            </div>
+            <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 p-4">
+              <AdminPackManager packs={displayPacks} onRefresh={refetch} />
+            </div>
           </div>
         )}
 
