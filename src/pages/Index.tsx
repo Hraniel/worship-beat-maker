@@ -881,8 +881,20 @@ const Index = () => {
       <main className="flex-1 flex flex-col overflow-hidden min-h-0 lg:min-h-0">
         <LandscapeSwipePanels
           focusMode={focusMode}
+          bpm={bpm}
+          onBpmChange={setBpm}
+          timeSignature={timeSignature}
+          onTimeSignatureChange={setTimeSignature}
+          metronomeIsPlaying={metronomeIsPlaying}
+          onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
+          spotifyKey={spotifyKey}
+          onKeyChange={setSpotifyKey}
+          metronomePan={metronomePan}
+          onMetronomePanChange={handleMetronomePanChange}
+          metronomePanDisabled={audioSettings.metronomeStereo === 'mono'}
+          spotifyTrackName={spotifyTrackName}
           padGrid={
-            <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center">
+            <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center min-w-0 min-h-0 overflow-hidden">
               <PadGrid
                 isMasterTier={tier === 'master'}
                 tier={tier}
