@@ -4,9 +4,87 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
-  Save, Loader2, Crown, Zap, Lock, Unlock, Settings, Plus, Trash2, RefreshCw
+  Save, Loader2, Crown, Zap, Lock, Unlock, Plus, Trash2, RefreshCw,
+  Music, Mic2, Waves, Sparkles, Activity, Radio, ListMusic, SlidersHorizontal,
+  AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import type { PlanPricing, PlanFeature, FeatureGate } from '@/hooks/useLandingConfig';
+
+// ── Catálogo de funcionalidades do app ──────────────────────────────────────
+const APP_FEATURES_CATALOG: {
+  category: string;
+  icon: React.ReactNode;
+  features: { key: string; label: string; description: string; tier: 'free' | 'pro' | 'master' }[];
+}[] = [
+  {
+    category: 'Pads & Sons',
+    icon: <Drum className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'unlimited_pads', label: 'Pads ilimitados', description: 'Acesso a mais de 4 pads simultâneos', tier: 'pro' },
+      { key: 'import_audio', label: 'Importar áudio personalizado', description: 'Carregar sons próprios nos pads', tier: 'pro' },
+      { key: 'pad_color_picker', label: 'Personalização de cor dos pads', description: 'Escolher cor de cada pad individualmente', tier: 'pro' },
+      { key: 'store_packs', label: 'Loja de packs de sons', description: 'Comprar e usar packs premium', tier: 'free' },
+    ],
+  },
+  {
+    category: 'Efeitos de Áudio',
+    icon: <AudioWaveform className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'audio_effects', label: 'Efeitos de áudio (Master)', description: 'Reverb, delay e compressor master', tier: 'master' },
+      { key: 'pad_effects', label: 'Efeitos por pad', description: 'Configurar efeitos individualmente por pad', tier: 'master' },
+      { key: 'individual_volume', label: 'Volume individual por pad', description: 'Controle de volume separado por pad', tier: 'pro' },
+      { key: 'pan_control', label: 'Controle de pan por pad', description: 'Panorâmica estéreo por pad', tier: 'pro' },
+    ],
+  },
+  {
+    category: 'Metrônomo & BPM',
+    icon: <Activity className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'metronome', label: 'Metrônomo', description: 'Metrônomo com click e compassos', tier: 'free' },
+      { key: 'bpm_guide', label: 'Guia de BPM', description: 'Sugestões de BPM por estilo', tier: 'free' },
+      { key: 'loop_engine', label: 'Loop Engine', description: 'Reprodução em loop sincronizado', tier: 'pro' },
+    ],
+  },
+  {
+    category: 'Setlists',
+    icon: <ListMusic className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'setlist_manager', label: 'Gerenciador de setlists', description: 'Criar e organizar setlists', tier: 'pro' },
+      { key: 'share_setlist', label: 'Compartilhar setlist', description: 'Gerar link público de setlist', tier: 'pro' },
+      { key: 'performance_mode', label: 'Modo Performance', description: 'Visualização fullscreen para palco', tier: 'master' },
+    ],
+  },
+  {
+    category: 'Busca & Integração',
+    icon: <Search className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'spotify_search', label: 'Busca no Spotify', description: 'Buscar músicas e detectar BPM via Spotify', tier: 'pro' },
+      { key: 'spotify_ai', label: 'Busca com IA (Spotify + AI)', description: 'Detecção inteligente de configuração de pads', tier: 'master' },
+      { key: 'music_ai_search', label: 'Sugestão de pads por IA', description: 'Configuração automática de pads via IA', tier: 'master' },
+    ],
+  },
+  {
+    category: 'Pads Ambientes',
+    icon: <Waves className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'ambient_pads', label: 'Pads Ambientes', description: 'Sons atmosféricos contínuos para worship', tier: 'pro' },
+    ],
+  },
+  {
+    category: 'Customização Visual',
+    icon: <Palette className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'zoom_popup', label: 'Zoom nos pads', description: 'Ampliar visualização do pad em toque', tier: 'free' },
+      { key: 'landscape_swipe', label: 'Painéis deslizantes (landscape)', description: 'Navegar entre painéis no modo paisagem', tier: 'pro' },
+    ],
+  },
+];
+
+const TIER_BADGE: Record<string, { label: string; cls: string }> = {
+  free: { label: 'Free', cls: 'bg-gray-700/60 text-gray-300' },
+  pro: { label: 'Pro', cls: 'bg-violet-700/60 text-violet-300' },
+  master: { label: 'Master', cls: 'bg-amber-700/60 text-amber-300' },
+};
 
 const TIER_ORDER = ['free', 'pro', 'master'] as const;
 const TIER_COLORS: Record<string, string> = {
@@ -30,6 +108,8 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const [addingGate, setAddingGate] = useState(false);
   const [newFeature, setNewFeature] = useState<Record<string, { feature_key: string; feature_label: string }>>({});
   const [addingFeature, setAddingFeature] = useState<string | null>(null);
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [expandedCatalogCategory, setExpandedCatalogCategory] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -353,11 +433,91 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-[11px] text-white/40">Defina qual plano é necessário para acessar cada área do app.</p>
-            <button onClick={() => setAddingGate(v => !v)}
-              className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300">
-              <Plus className="h-3 w-3" /> Novo gate
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setCatalogOpen(v => !v)}
+                className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 transition">
+                {catalogOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                Catálogo
+              </button>
+              <button onClick={() => setAddingGate(v => !v)}
+                className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition">
+                <Plus className="h-3 w-3" /> Novo gate
+              </button>
+            </div>
           </div>
+
+          {/* ── Catálogo visual de funcionalidades ─────────────────────────── */}
+          {catalogOpen && (
+            <div className="border border-amber-700/30 rounded-xl p-3 space-y-2 bg-amber-950/10">
+              <p className="text-[10px] font-semibold text-amber-300 uppercase tracking-wider mb-2">
+                Catálogo de funcionalidades do app
+              </p>
+              <p className="text-[10px] text-white/40 mb-3">
+                Clique em qualquer funcionalidade para pré-preencher o formulário de novo gate.
+              </p>
+              <div className="space-y-1.5">
+                {APP_FEATURES_CATALOG.map(cat => {
+                  const isOpen = expandedCatalogCategory === cat.category;
+                  return (
+                    <div key={cat.category} className="border border-white/8 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedCatalogCategory(isOpen ? null : cat.category)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-white/5 transition"
+                      >
+                        <div className="flex items-center gap-2 text-white/70">
+                          {cat.icon}
+                          <span className="text-xs font-medium">{cat.category}</span>
+                          <span className="text-[10px] text-white/30">({cat.features.length})</span>
+                        </div>
+                        {isOpen
+                          ? <ChevronUp className="h-3 w-3 text-white/30" />
+                          : <ChevronDown className="h-3 w-3 text-white/30" />
+                        }
+                      </button>
+                      {isOpen && (
+                        <div className="border-t border-white/8 divide-y divide-white/5">
+                          {cat.features.map(feat => {
+                            const alreadyAdded = gates.some(g => g.gate_key === feat.key);
+                            const badge = TIER_BADGE[feat.tier];
+                            return (
+                              <div key={feat.key}
+                                className={`flex items-center justify-between px-3 py-2 gap-3 transition ${alreadyAdded ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'}`}
+                                onClick={() => {
+                                  if (alreadyAdded) return;
+                                  setNewGate({
+                                    gate_key: feat.key,
+                                    gate_label: feat.label,
+                                    required_tier: feat.tier,
+                                    description: feat.description,
+                                  });
+                                  setAddingGate(true);
+                                  setCatalogOpen(false);
+                                }}
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-white truncate">{feat.label}</span>
+                                    {alreadyAdded && (
+                                      <span className="text-[9px] text-green-400 shrink-0">✓ já adicionado</span>
+                                    )}
+                                  </div>
+                                  <p className="text-[10px] text-white/35 truncate">{feat.description}</p>
+                                  <p className="text-[9px] text-white/20 font-mono mt-0.5">{feat.key}</p>
+                                </div>
+                                <span className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${badge.cls}`}>
+                                  {badge.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {addingGate && (
             <div className="border border-violet-700/40 rounded-xl p-3 space-y-2 bg-violet-950/20">
@@ -385,7 +545,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
 
           <div className="space-y-2">
             {gates.map(gate => (
-              <div key={gate.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/8 bg-white/3 group">
+              <div key={gate.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/8 bg-white/[0.03] group">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-white truncate">{gate.gate_label}</p>
                   {gate.description && <p className="text-[10px] text-white/40 truncate">{gate.description}</p>}
