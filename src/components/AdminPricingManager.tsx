@@ -110,6 +110,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const [addingFeature, setAddingFeature] = useState<string | null>(null);
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [expandedCatalogCategory, setExpandedCatalogCategory] = useState<string | null>(null);
+  const [addingAll, setAddingAll] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -258,6 +259,30 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
       toast.error(e.message);
     } finally {
       setSaving(null);
+    }
+  };
+
+  const addAllGates = async () => {
+    const allFeatures = APP_FEATURES_CATALOG.flatMap(cat => cat.features);
+    const missing = allFeatures.filter(f => !gates.some(g => g.gate_key === f.key));
+    if (missing.length === 0) { toast.info('Todos os gates já estão cadastrados!'); return; }
+    setAddingAll(true);
+    try {
+      const { error } = await supabase.from('feature_gates').insert(
+        missing.map(f => ({
+          gate_key: f.key,
+          gate_label: f.label,
+          required_tier: f.tier,
+          description: f.description,
+        }))
+      );
+      if (error) throw error;
+      toast.success(`${missing.length} gate(s) adicionado(s) com sucesso!`);
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setAddingAll(false);
     }
   };
 
@@ -438,6 +463,11 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
                 className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 transition">
                 {catalogOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                 Catálogo
+              </button>
+              <button onClick={addAllGates} disabled={addingAll}
+                className="flex items-center gap-1 text-[10px] text-green-400 hover:text-green-300 disabled:opacity-50 transition">
+                {addingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                Adicionar todos
               </button>
               <button onClick={() => setAddingGate(v => !v)}
                 className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition">
