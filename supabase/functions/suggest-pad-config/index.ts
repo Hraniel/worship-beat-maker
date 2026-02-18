@@ -100,7 +100,7 @@ Você PRECISA determinar o BPM e tom REAIS desta música usando seu conhecimento
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "openai/gpt-5",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
