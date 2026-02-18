@@ -454,32 +454,47 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
                   <div>
                     <label className={labelCls}>Nome do Plano</label>
                     <input className={inputCls} value={plan.name}
-                      onChange={e => updatePricing(tier, 'name', e.target.value)} />
+                      onChange={e => updatePricing(tier, 'name', e.target.value)}
+                      onBlur={() => savePricing(tier)} />
                   </div>
                   <div>
                     <label className={labelCls}>Preço (R$)</label>
                     <input className={inputCls} type="number" step="0.01" min="0" value={plan.price_brl}
-                      onChange={e => updatePricing(tier, 'price_brl', parseFloat(e.target.value) || 0)} />
+                      onChange={e => updatePricing(tier, 'price_brl', parseFloat(e.target.value) || 0)}
+                      onBlur={() => savePricing(tier)} />
                   </div>
                   <div>
                     <label className={labelCls}>Período</label>
                     <input className={inputCls} placeholder="/mês" value={plan.period}
-                      onChange={e => updatePricing(tier, 'period', e.target.value)} />
+                      onChange={e => updatePricing(tier, 'period', e.target.value)}
+                      onBlur={() => savePricing(tier)} />
                   </div>
                   <div>
                     <label className={labelCls}>Texto do Botão (CTA)</label>
                     <input className={inputCls} value={plan.cta_text}
-                      onChange={e => updatePricing(tier, 'cta_text', e.target.value)} />
+                      onChange={e => updatePricing(tier, 'cta_text', e.target.value)}
+                      onBlur={() => savePricing(tier)} />
                   </div>
                   <div>
                     <label className={labelCls}>Badge (ex: "Mais popular")</label>
                     <input className={inputCls} placeholder="Opcional" value={plan.badge_text || ''}
-                      onChange={e => updatePricing(tier, 'badge_text', e.target.value)} />
+                      onChange={e => updatePricing(tier, 'badge_text', e.target.value)}
+                      onBlur={() => savePricing(tier)} />
                   </div>
                   <div>
                     <label className={labelCls}>Destaque visual (card maior)</label>
                     <div className="flex items-center gap-2 mt-1.5">
-                      <Switch checked={plan.highlight} onCheckedChange={v => updatePricing(tier, 'highlight', v)} />
+                      <Switch checked={plan.highlight} onCheckedChange={async v => {
+                        updatePricing(tier, 'highlight', v);
+                        setSaving(`pricing-${tier}`);
+                        try {
+                          const { error } = await supabase.from('plan_pricing').update({ highlight: v }).eq('tier', tier);
+                          if (error) toast.error(error.message);
+                          else { toast.success('Salvo!'); onRefresh?.(); }
+                        } finally {
+                          setSaving(null);
+                        }
+                      }} />
                       <span className="text-xs text-white/50">{plan.highlight ? 'Sim' : 'Não'}</span>
                     </div>
                   </div>
@@ -488,12 +503,14 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
                       <div>
                         <label className={labelCls}>Máx. de Pads (999 = ilimitado)</label>
                         <input className={inputCls} type="number" min="1" value={plan.max_pads}
-                          onChange={e => updatePricing(tier, 'max_pads', parseInt(e.target.value) || 4)} />
+                          onChange={e => updatePricing(tier, 'max_pads', parseInt(e.target.value) || 4)}
+                          onBlur={() => savePricing(tier)} />
                       </div>
                       <div>
                         <label className={labelCls}>Máx. de Imports (999 = ilimitado)</label>
                         <input className={inputCls} type="number" min="1" value={plan.max_imports}
-                          onChange={e => updatePricing(tier, 'max_imports', parseInt(e.target.value) || 3)} />
+                          onChange={e => updatePricing(tier, 'max_imports', parseInt(e.target.value) || 3)}
+                          onBlur={() => savePricing(tier)} />
                       </div>
                     </>
                   )}
