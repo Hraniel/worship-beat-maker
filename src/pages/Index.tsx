@@ -101,6 +101,7 @@ const Index = () => {
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [footerPage, setFooterPage] = useState(0);
+  const [faderPage, setFaderPage] = useState(0); // controlled by buttons 1 / 2
   const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   
@@ -1245,9 +1246,9 @@ const Index = () => {
             </div>
           ) : (
             <>
-              {/* Tab bar: Mix | Met | 1 | 2 */}
+              {/* Tab bar: Mix | Met   |   1 | 2 (fader pages, only on Mix) */}
               <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
-                {/* Mix / Met tabs on the left */}
+                {/* Mix / Met tabs */}
                 {(['Mix', 'Met'] as const).map((label, i) => (
                   <button
                     key={i}
@@ -1268,18 +1269,18 @@ const Index = () => {
                 {/* Spacer */}
                 <div className="flex-1" />
 
-                {/* Page buttons 1 and 2 on the right */}
-                {([1, 2] as const).map((num) => (
+                {/* Fader page buttons — only visible when Mix tab is active */}
+                {footerPage === 0 && ([0, 1] as const).map((p) => (
                   <button
-                    key={num}
-                    onClick={() => setFooterPage(num + 1)}
+                    key={p}
+                    onClick={() => setFaderPage(p)}
                     className={`relative w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
-                      footerPage === num + 1
+                      faderPage === p
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                   >
-                    {num}
+                    {p + 1}
                   </button>
                 ))}
               </div>
@@ -1292,7 +1293,10 @@ const Index = () => {
                   {/* Faders */}
                   <div className="flex-1 flex items-end pb-0 px-1.5 pt-2">
                     <div className="w-full" data-tutorial="volume-master">
-                      <MixerStrip channels={[
+                      <MixerStrip
+                        controlledPage={faderPage}
+                        onControlledPageChange={setFaderPage}
+                        channels={[
                         { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: handleMetronomeVolChange },
                         { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
                         ...defaultPads.slice(0, 9).map((pad) => ({
@@ -1367,16 +1371,6 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* === PAGE 1 (button "1") === placeholder */}
-                <div className={footerPage === 2 ? 'h-full flex items-center justify-center p-4' : 'hidden'}>
-                  <span className="text-xs text-muted-foreground">Página 1</span>
-                </div>
-
-                {/* === PAGE 2 (button "2") === placeholder */}
-                <div className={footerPage === 3 ? 'h-full flex items-center justify-center p-4' : 'hidden'}>
-                  <span className="text-xs text-muted-foreground">Página 2</span>
                 </div>
 
               </div>

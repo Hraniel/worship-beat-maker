@@ -15,6 +15,9 @@ interface MixerStripProps {
   channels: FaderChannel[];
   showAll?: boolean;
   compactFaderHeight?: number;
+  /** When provided, page is controlled externally (e.g. buttons 1/2 in footer) */
+  controlledPage?: number;
+  onControlledPageChange?: (page: number) => void;
 }
 
 const FADER_HEIGHT = 110;
@@ -208,10 +211,14 @@ const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ chan
 
 const MOBILE_PAGE_SIZE = 4;
 
-const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFaderHeight }) => {
-  const [page, setPage] = useState(0);
+const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFaderHeight, controlledPage, onControlledPageChange }) => {
+  const [internalPage, setInternalPage] = useState(0);
   const [direction, setDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Use external page when controlled, otherwise internal
+  const isControlled = controlledPage !== undefined;
+  const page = isControlled ? controlledPage : internalPage;
 
   const fixedStart = channels.slice(0, 2);
   const fixedEnd = channels.slice(-1);
@@ -222,8 +229,12 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFader
 
   const goToPage = useCallback((newPage: number) => {
     setDirection(newPage > page ? 1 : -1);
-    setPage(newPage);
-  }, [page]);
+    if (isControlled) {
+      onControlledPageChange?.(newPage);
+    } else {
+      setInternalPage(newPage);
+    }
+  }, [page, isControlled, onControlledPageChange]);
 
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
@@ -294,8 +305,8 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFader
         ))}
       </div>
 
-      {/* Page nav — buttons only, no swipe */}
-      {totalPages > 1 && (
+      {/* Page nav — only shown when NOT controlled externally (buttons 1/2 handle it in that case) */}
+      {!isControlled && totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
             onClick={() => goToPage(Math.max(0, page - 1))}
