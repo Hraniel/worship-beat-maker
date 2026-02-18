@@ -170,6 +170,35 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
 
+    } else if (action === 'upload-icon') {
+      const file = formData.get('file') as File;
+      const packId = formData.get('packId') as string;
+
+      if (!file || !packId) {
+        return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400, headers: corsHeaders });
+      }
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'png';
+      const filePath = `pack-icons/${packId}.${ext}`;
+      const arrayBuffer = await file.arrayBuffer();
+
+      // Upsert (overwrite) existing icon
+      const { error: uploadErr } = await supabase.storage
+        .from('sound-previews')
+        .upload(filePath, arrayBuffer, { contentType: file.type, upsert: true });
+
+      if (uploadErr) throw uploadErr;
+
+      // Store path in icon_name field
+      const { error: updateErr } = await supabase
+        .from('store_packs')
+        .update({ icon_name: filePath })
+        .eq('id', packId);
+
+      if (updateErr) throw updateErr;
+
+      return new Response(JSON.stringify({ success: true, filePath }), { headers: corsHeaders });
+
     } else if (action === 'create-pack') {
       const name = formData.get('name') as string;
       const description = formData.get('description') as string;
