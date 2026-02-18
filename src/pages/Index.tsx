@@ -942,6 +942,11 @@ const Index = () => {
                   </button>
                 )}
               </div>
+            ) : isLandscape ? (
+              /* On landscape mobile: compact ambient pads for Mix tab */
+              <div data-tutorial="ambient-pads" className="w-full px-1">
+                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+              </div>
             ) : (
               <div data-tutorial="ambient-pads" className="w-full h-full flex flex-col items-center justify-end px-2 pb-2">
                 {currentSongId && !editMode && (
