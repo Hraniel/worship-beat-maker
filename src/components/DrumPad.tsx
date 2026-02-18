@@ -189,17 +189,23 @@ const DrumPad: React.FC<DrumPadProps> = ({
           ${isLooping ? 'animate-loop-border' : ''}
         `}
         style={{
-          backgroundColor: customColor
-            ? (isActive ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.5 * colorOpacity})` : `hsl(${colorHsl} / ${0.15 * colorOpacity})`)
-            : (isActive ? colorRef(0.45) : isLooping ? colorRef(0.3) : colorRef(0.1)),
-          borderColor: customColor
-            ? (isActive ? `hsl(${colorHsl} / ${0.9 * colorOpacity})` : isLooping ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : `hsl(${colorHsl} / ${0.35 * colorOpacity})`)
-            : (isActive ? colorRef(0.7) : isLooping ? colorRef(0.5) : colorRef(0.25)),
-          boxShadow: isActive
-            ? `0 0 24px ${colorRef(0.35)}, inset 0 0 12px ${colorRef(0.15)}`
+          background: isActive
+            ? (customColor ? `hsl(${colorHsl} / ${0.25 * colorOpacity})` : 'hsl(0 0% 22%)')
             : isLooping
-            ? `0 0 14px ${colorRef(0.25)}`
-            : `inset 0 1px 0 ${colorRef(0.08)}`,
+            ? (customColor ? `hsl(${colorHsl} / ${0.12 * colorOpacity})` : colorRef(0.08))
+            : 'linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 5%) 100%)',
+          borderColor: isActive
+            ? (customColor ? `hsl(${colorHsl} / ${0.9 * colorOpacity})` : 'hsl(0 0% 80%)')
+            : isLooping
+            ? (customColor ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : colorRef(0.5))
+            : 'hsl(0 0% 20%)',
+          boxShadow: isActive
+            ? (customColor
+                ? `0 0 24px hsl(${colorHsl} / ${0.45 * colorOpacity}), inset 0 0 12px hsl(${colorHsl} / ${0.15 * colorOpacity})`
+                : '0 0 20px hsl(0 0% 100% / 0.25), inset 0 0 10px hsl(0 0% 100% / 0.08)')
+            : isLooping
+            ? (customColor ? `0 0 14px hsl(${colorHsl} / ${0.3 * colorOpacity})` : `0 0 14px ${colorRef(0.25)}`)
+            : 'inset 0 1px 0 hsl(0 0% 100% / 0.04), inset 0 -2px 4px hsl(0 0% 0% / 0.4)',
         }}
       >
         {editMode && (
