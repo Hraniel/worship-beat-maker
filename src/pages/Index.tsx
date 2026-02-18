@@ -265,6 +265,11 @@ const Index = () => {
     return () => stopAllLoops();
   }, []);
 
+  // Auto-save key to current song whenever spotifyKey changes
+  const autoSaveKeyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSaveCurrentSongRef = useRef<(() => Promise<void>) | null>(null);
+
+
   // Load custom sounds from IndexedDB
   const customSoundsLoadedRef = useRef(false);
   const loadCustomSounds = useCallback(async () => {
@@ -513,6 +518,7 @@ const Index = () => {
       name,
       bpm,
       timeSignature,
+      key: key || null,
       pads: defaultPads,
       padVolumes: {},
       padNames: {},
@@ -567,6 +573,7 @@ const Index = () => {
       name: setlist.name,
       bpm,
       timeSignature,
+      key: spotifyKey,
       pads: defaultPads,
       padVolumes: { ...padVolumes },
       padNames: { ...padNames },
@@ -580,7 +587,20 @@ const Index = () => {
       await saveCustomSoundsForSong(currentSongId, customPadIds);
     }
     await updateSetlist(currentSongId, [updatedSong]);
-  }, [currentSongId, bpm, timeSignature, padVolumes, padNames, padPans, padEffects, customSounds, setlists, updateSetlist]);
+  }, [currentSongId, bpm, timeSignature, spotifyKey, padVolumes, padNames, padPans, padEffects, customSounds, setlists, updateSetlist]);
+
+  // Keep ref updated so key-change effect calls the latest closure
+  useEffect(() => { autoSaveCurrentSongRef.current = autoSaveCurrentSong; }, [autoSaveCurrentSong]);
+
+  // When key changes and there's an active song, debounce-save it
+  useEffect(() => {
+    if (!currentSongId) return;
+    if (autoSaveKeyRef.current) clearTimeout(autoSaveKeyRef.current);
+    autoSaveKeyRef.current = setTimeout(() => {
+      autoSaveCurrentSongRef.current?.();
+    }, 600);
+    return () => { if (autoSaveKeyRef.current) clearTimeout(autoSaveKeyRef.current); };
+  }, [spotifyKey, currentSongId]);
 
   const handleSaveSong = useCallback(async (name: string) => {
     const song: SetlistSong = {
@@ -588,6 +608,7 @@ const Index = () => {
       name,
       bpm,
       timeSignature,
+      key: spotifyKey,
       pads: defaultPads,
       padVolumes: { ...padVolumes },
       padNames: { ...padNames },
@@ -604,7 +625,7 @@ const Index = () => {
       }
       setCurrentSongId(result.id);
     }
-  }, [bpm, timeSignature, padVolumes, padNames, padPans, padEffects, customSounds, createSetlist]);
+  }, [bpm, timeSignature, spotifyKey, padVolumes, padNames, padPans, padEffects, customSounds, createSetlist]);
 
   const handleLoadSong = useCallback(async (song: SetlistSong) => {
     // Auto-save current song first
@@ -615,6 +636,8 @@ const Index = () => {
     // Load the new song
     setBpm(song.bpm);
     setTimeSignature(song.timeSignature);
+    setSpotifyKey(song.key ?? null);
+    setSpotifyTrackName(song.key ? `${song.name} · ${song.key}` : song.name);
     setPadVolumes(song.padVolumes || {});
     setCurrentSongId(songSetlistId);
     stopAllLoops();

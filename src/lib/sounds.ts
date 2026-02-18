@@ -63,6 +63,7 @@ export interface SetlistSong {
   name: string;
   bpm: number;
   timeSignature: string;
+  key?: string | null;
   pads: PadSound[];
   padVolumes: Record<string, number>;
   padNames?: Record<string, string>;
