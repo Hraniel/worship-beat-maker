@@ -1,6 +1,6 @@
 import React from 'react';
 import { Play, Pause } from 'lucide-react';
-import { useIsLandscape, useIsDesktop } from '@/hooks/use-mobile';
+import { useIsLandscape, useIsDesktop, useIsTablet } from '@/hooks/use-mobile';
 
 interface LandscapeSwipePanelsProps {
   padGrid: React.ReactNode;
@@ -44,6 +44,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
 }) => {
   const isLandscape = useIsLandscape();
   const isDesktop = useIsDesktop();
+  const isTablet = useIsTablet();
   
 
   // Portrait / desktop: pad grid with ambient pads below (skipped on desktop — footer handles them)
@@ -53,8 +54,8 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
         <div className={`flex-1 flex justify-center min-h-0 overflow-hidden ${focusMode ? 'items-start' : 'items-center'}`}>
           {padGrid}
         </div>
-        {/* Only render ambient pads here for mobile/tablet portrait; desktop footer renders them */}
-        {!isDesktop && (
+        {/* Only render ambient pads below grid on mobile portrait; tablet/desktop show it beside the grid */}
+        {!isDesktop && !isTablet && (
           <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
             {ambientPads}
           </div>

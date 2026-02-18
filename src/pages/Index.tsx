@@ -970,7 +970,7 @@ const Index = () => {
           metronomePanDisabled={audioSettings.metronomeStereo === 'mono'}
           spotifyTrackName={spotifyTrackName}
           padGrid={
-            <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center min-w-0 min-h-0 overflow-hidden">
+            <div data-tutorial="pad-grid" className="w-full h-full flex items-center justify-center gap-3 min-w-0 min-h-0 overflow-hidden">
               <PadGrid
                 isMasterTier={tier === 'master'}
                 tier={tier}
@@ -1011,6 +1011,12 @@ const Index = () => {
                   }
                 }}
               />
+              {/* Continuous Pads ao lado do grid — só tablet/desktop portrait */}
+              {(isTablet || isDesktop) && !isLandscape && (
+                <div className="w-[130px] xl:w-[150px] shrink-0 self-center">
+                  <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+                </div>
+              )}
             </div>
           }
           ambientPads={
@@ -1018,8 +1024,7 @@ const Index = () => {
               /* On landscape: ambient pads handled inside LandscapeSwipePanels Mix tab */
               <div className="hidden" />
             ) : (
-              /* Mobile portrait + tablet portrait: show focus button + ambient pads below grid */
-              /* Desktop: LandscapeSwipePanels will skip rendering this (isDesktop=true) */
+              /* All portrait: show focus button. AmbientPads rendered beside PadGrid (above) for tablet/desktop */
               <div data-tutorial="ambient-pads" className="w-full flex flex-col items-center px-2 pb-1 gap-1">
                 {currentSongId && !editMode && (
                   <button
@@ -1032,7 +1037,8 @@ const Index = () => {
                     {focusMode ? 'Sair' : 'Foco'}
                   </button>
                 )}
-                {(isTablet || !isDesktop) && (
+                {/* Only show AmbientPads below grid on mobile portrait; tablet/desktop show it beside the grid */}
+                {!isTablet && !isDesktop && (
                   <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
                 )}
               </div>
@@ -1214,10 +1220,7 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Continuous Pads — always visible below metronome, inside and outside focus mode */}
-          <div data-tutorial="ambient-pads">
-            <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-          </div>
+          {/* Continuous Pads: now rendered beside the PadGrid in the main area (padGrid prop) */}
         </div>
 
         {/* Tablet: Faders → Metrônomo → Continuous Pads (sem botões Mix/Met) */}
@@ -1276,10 +1279,7 @@ const Index = () => {
                 <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
             </div>
-            {/* Continuous Pads — abaixo do metrônomo */}
-            <div data-tutorial="ambient-pads" className="pt-1">
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
+            {/* Continuous Pads: now rendered beside the PadGrid in the main area */}
           </div>
         )}
         {isTablet && focusMode && (
@@ -1300,10 +1300,7 @@ const Index = () => {
                 {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </button>
             </div>
-            {/* Continuous Pads — abaixo da mini-barra no modo foco */}
-            <div data-tutorial="ambient-pads" className="mt-1">
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
+            {/* Continuous Pads: now rendered beside the PadGrid in the main area */}
           </div>
         )}
 
