@@ -12,8 +12,6 @@ serve(async (req) => {
     const body = await req.json();
     const trackName = typeof body.trackName === "string" ? body.trackName.slice(0, 300) : "Unknown";
     const artist = typeof body.artist === "string" ? body.artist.slice(0, 300) : "Unknown";
-    const features = body.features && typeof body.features === "object" ? body.features : {};
-    const analysis = body.analysis && typeof body.analysis === "object" ? body.analysis : null;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -57,10 +55,9 @@ Exemplos de padrões comuns em worship:
 Para os pads de loop (loop-worship-1 e loop-worship-2), use pattern vazio [].
 
 IMPORTANTE - BPM e TOM:
-- Se os dados de áudio do Spotify fornecerem BPM e tonalidade, use-os.
-- Se NÃO houver dados de áudio disponíveis (endpoints deprecados), você DEVE estimar o BPM e o tom baseado no seu conhecimento da música.
-- Use seu conhecimento musical para determinar o BPM correto e a tonalidade da música.
-- Para músicas famosas, você provavelmente sabe o BPM e tom corretos. USE ESSE CONHECIMENTO.
+- Você DEVE usar seu conhecimento musical interno para determinar o BPM e o tom CORRETOS da música.
+- NÃO invente valores. Para músicas conhecidas, você SABE o BPM e tom reais. USE ESSE CONHECIMENTO.
+- Se não conhecer a música exata, analise o artista, gênero e estilo para dar a melhor estimativa possível.
 - A tonalidade deve ser no formato: "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" seguido de "m" para menor. Ex: "Am", "D", "F#m"
 
 Também sugira:
@@ -91,85 +88,9 @@ Responda APENAS com JSON válido usando esta estrutura exata:
   }
 }`;
 
-    let userPrompt = `Música: "${trackName}" de ${artist}`;
+    const userPrompt = `Música: "${trackName}" de ${artist}
 
-    // Add Spotify features if available
-    const hasFeatures = features && Object.keys(features).length > 0 && features.tempo;
-    if (hasFeatures) {
-      userPrompt += `\n\nDados do Spotify Audio Features:
-- Tempo/BPM: ${features.tempo}
-- Energia: ${features.energy} (0-1)
-- Danceability: ${features.danceability} (0-1)
-- Valence (positividade): ${features.valence} (0-1)
-- Acousticness: ${features.acousticness} (0-1)
-- Instrumentalness: ${features.instrumentalness} (0-1)
-- Loudness: ${features.loudness} dB
-- Key: ${features.key ?? "desconhecida"}
-- Mode: ${features.mode === 1 ? "maior" : features.mode === 0 ? "menor" : "desconhecido"}
-- Time Signature: ${features.time_signature}`;
-    } else {
-      userPrompt += `\n\nNOTA: Os dados de áudio do Spotify não estão disponíveis para esta música. Use seu conhecimento musical para determinar o BPM, tom e estilo corretos desta música.`;
-    }
-
-    // Add real audio analysis data if available
-    if (analysis) {
-      if (analysis.track) {
-        userPrompt += `\n\nAnálise de Áudio Real (Track):
-- Tempo real: ${analysis.track.tempo} BPM (confiança: ${analysis.track.tempo_confidence})
-- Compasso real: ${analysis.track.time_signature} (confiança: ${analysis.track.time_signature_confidence})
-- Tonalidade: ${analysis.track.key} (confiança: ${analysis.track.key_confidence})
-- Modo: ${analysis.track.mode === 1 ? "maior" : "menor"} (confiança: ${analysis.track.mode_confidence})
-- Loudness geral: ${analysis.track.loudness} dB`;
-      }
-
-      if (analysis.sections?.length) {
-        userPrompt += `\n\nSeções da Música (${analysis.sections.length} seções):`;
-        for (const s of analysis.sections.slice(0, 8)) {
-          userPrompt += `\n- ${s.start}s (${s.duration}s): loudness=${s.loudness}dB, tempo=${s.tempo}, key=${s.key}, sig=${s.time_signature}`;
-        }
-      }
-
-      if (analysis.segments?.length) {
-        const avgTimbre = [0, 0, 0, 0, 0, 0];
-        let count = 0;
-        for (const seg of analysis.segments) {
-          if (seg.timbre) {
-            for (let i = 0; i < 6; i++) avgTimbre[i] += seg.timbre[i] || 0;
-            count++;
-          }
-        }
-        if (count > 0) {
-          for (let i = 0; i < 6; i++) avgTimbre[i] = Math.round(avgTimbre[i] / count * 10) / 10;
-          userPrompt += `\n\nAnálise de Timbre (média dos primeiros ${count} segmentos):
-- Timbre[0] (loudness/brilho): ${avgTimbre[0]}
-- Timbre[1] (brilho/escuridão): ${avgTimbre[1]}
-- Timbre[2] (flatness): ${avgTimbre[2]}
-- Timbre[3] (ataque forte/suave): ${avgTimbre[3]}
-- Timbre[4] (5th MFCC): ${avgTimbre[4]}
-- Timbre[5] (6th MFCC): ${avgTimbre[5]}
-Use estes valores para calibrar EQ e reverb dos pads.`;
-        }
-
-        const loudnesses = analysis.segments.map((s: any) => s.loudness_max);
-        const maxLoud = Math.max(...loudnesses);
-        const minLoud = Math.min(...loudnesses);
-        userPrompt += `\n- Dinâmica: ${minLoud}dB a ${maxLoud}dB (range: ${Math.round((maxLoud - minLoud) * 10) / 10}dB)`;
-      }
-
-      if (analysis.beats?.length) {
-        const avgBeatDuration = analysis.beats.reduce((sum: number, b: any) => sum + b.duration, 0) / analysis.beats.length;
-        userPrompt += `\n\nBatidas detectadas: ${analysis.beats.length} primeiras
-- Duração média entre batidas: ${Math.round(avgBeatDuration * 1000)}ms
-- BPM calculado pelas batidas: ${Math.round(60 / avgBeatDuration)}`;
-      }
-
-      if (analysis.bars?.length) {
-        const avgBarDuration = analysis.bars.reduce((sum: number, b: any) => sum + b.duration, 0) / analysis.bars.length;
-        userPrompt += `\n- Duração média do compasso: ${Math.round(avgBarDuration * 1000)}ms`;
-      }
-    }
-
-    userPrompt += `\n\nCom base em TODOS estes dados (ou no seu conhecimento musical se os dados não estiverem disponíveis), sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música. Lembre-se: use EXATAMENTE os IDs de pad listados acima.`;
+Você PRECISA determinar o BPM e tom REAIS desta música usando seu conhecimento musical. Para músicas conhecidas, forneça os valores exatos. Sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música. Use EXATAMENTE os IDs de pad listados acima.`;
 
     // Call Lovable AI Gateway
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

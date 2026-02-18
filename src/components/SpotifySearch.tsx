@@ -224,19 +224,11 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
     setAnalyzing(true);
 
     try {
-      setAnalysisStep('Obtendo dados de áudio...');
-      const { data: featuresData, error: featuresError } = await supabase.functions.invoke('spotify-search', {
-        body: { trackId: track.id },
-      });
-      if (featuresError) throw featuresError;
-
-      setAnalysisStep('IA analisando timbres e efeitos...');
+      setAnalysisStep('IA analisando música...');
       const { data: aiData, error: aiError } = await supabase.functions.invoke('suggest-pad-config', {
         body: {
           trackName: track.name,
           artist: track.artist,
-          features: featuresData?.features,
-          analysis: featuresData?.analysis,
         },
       });
       if (aiError) throw aiError;
