@@ -13,7 +13,7 @@ const UpdateBanner = ({ show, onUpdate }: UpdateBannerProps) => {
   if (!show || dismissed) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] animate-in slide-in-from-top duration-300">
+    <div className="fixed top-0 left-0 right-0 z-[60] animate-in slide-in-from-top duration-300" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card border-b border-primary/30 shadow-lg">
         <div className="flex items-center gap-2 min-w-0">
           <RefreshCw className="h-4 w-4 text-primary shrink-0 animate-spin" style={{ animationDuration: '3s' }} />
