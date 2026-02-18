@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Search, Music, Loader2, Sparkles, Check, X, Zap, Lock, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { Search, Music, Loader2, Sparkles, Check, X, Zap, Lock, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
@@ -362,49 +362,65 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
               <div className="space-y-1.5">
                 {results.map((r, i) => {
                   const sourceDomain = r.source ? (() => { try { return new URL(r.source).hostname.replace('www.', ''); } catch { return null; } })() : null;
+                  const spotifyUrl = r.spotifyId ? `https://open.spotify.com/track/${r.spotifyId}` : null;
                   return (
-                    <button
-                      key={i}
-                      onClick={() => handleAnalyze(r)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors text-left border border-border/50"
-                    >
-                      {/* Album cover */}
-                      <div className="w-12 h-12 rounded-md shrink-0 overflow-hidden bg-muted flex items-center justify-center">
-                        {r.albumCover ? (
-                          <img src={r.albumCover} alt={r.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <Music className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
+                    <div key={i} className="relative rounded-lg border border-border/50 hover:bg-muted/60 transition-colors">
+                      <button
+                        onClick={() => handleAnalyze(r)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-left pr-10"
+                      >
+                        {/* Album cover */}
+                        <div className="w-12 h-12 rounded-md shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+                          {r.albumCover ? (
+                            <img src={r.albumCover} alt={r.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Music className="h-5 w-5 text-muted-foreground" />
+                          )}
+                        </div>
 
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{r.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{r.artist}</p>
-                        {sourceDomain && (
-                          <p className="text-[10px] text-primary/60 truncate mt-0.5">📌 {sourceDomain}</p>
-                        )}
-                      </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{r.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{r.artist}</p>
+                          {sourceDomain && (
+                            <p className="text-[10px] text-primary/60 truncate mt-0.5">📌 {sourceDomain}</p>
+                          )}
+                        </div>
 
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        {r.bpm ? (
-                          <div className="text-right">
-                            <span className="text-sm font-bold text-foreground">{r.bpm}</span>
-                            <span className="text-[10px] text-muted-foreground ml-0.5">BPM</span>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-muted-foreground">BPM?</span>
-                        )}
-                        {r.key ? (
-                          <div className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">
-                            {r.key}
-                          </div>
-                        ) : (
-                          <div className="bg-muted text-muted-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
-                            Tom?
-                          </div>
-                        )}
-                      </div>
-                    </button>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          {r.bpm ? (
+                            <div className="text-right">
+                              <span className="text-sm font-bold text-foreground">{r.bpm}</span>
+                              <span className="text-[10px] text-muted-foreground ml-0.5">BPM</span>
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">BPM?</span>
+                          )}
+                          {r.key ? (
+                            <div className="bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded">
+                              {r.key}
+                            </div>
+                          ) : (
+                            <div className="bg-muted text-muted-foreground text-[10px] font-bold px-1.5 py-0.5 rounded">
+                              Tom?
+                            </div>
+                          )}
+                        </div>
+                      </button>
+
+                      {/* Open in Spotify button */}
+                      {spotifyUrl && (
+                        <a
+                          href={spotifyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute top-2 right-2 p-1.5 rounded-md text-[#1DB954] hover:bg-[#1DB954]/10 transition-colors"
+                          title="Abrir no Spotify"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -433,9 +449,17 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
                     {selectedSong.key && (
                       <span className="text-[10px] bg-primary/10 text-primary px-1 rounded font-bold">{selectedSong.key}</span>
                     )}
-                    <span className="text-[10px] text-primary/70 font-medium flex items-center gap-0.5">
-                      <Sparkles className="h-2.5 w-2.5" /> IA
-                    </span>
+                    {selectedSong.spotifyId && (
+                      <a
+                        href={`https://open.spotify.com/track/${selectedSong.spotifyId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="flex items-center gap-0.5 text-[10px] text-[#1DB954] hover:underline font-medium"
+                      >
+                        <ExternalLink className="h-2.5 w-2.5" /> Spotify
+                      </a>
+                    )}
                   </div>
                 </div>
                 <Button
