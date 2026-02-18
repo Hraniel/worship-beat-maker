@@ -1,82 +1,54 @@
 
-# Redesign Visual dos Pads: Aparência de Pad Real
+## Sincronização automática dos Feature Gates
 
-## O que muda
+### Problema atual
 
-Os pads atualmente têm o fundo colorido como identidade visual base (fundo com 10% de opacidade da cor do pad). A proposta é inverter essa lógica:
+O hook `useFeatureGates` usa um cache estático em memória (variáveis `cachedGates` e `cachePromise` fora do componente). Os dados são buscados **uma única vez** no carregamento do app e nunca mais atualizados automaticamente. A função `invalidateGatesCache` existe mas nunca é chamada.
 
-- **Fundo nativo:** preto sólido com textura de pad real (gradiente escuro, bordas sutis, sombra interna)
-- **Borda nativa:** cinza escuro neutro, sem cor
-- **Efeito de batida:** flash branco (sem cor personalizada)
-- **Quando cor customizada está definida:** só o efeito da batida usa a cor — o fundo permanece preto
-- **Loop ativo:** borda pulsante usa a cor do pad (para diferenciar loops ativos)
-- **Indicador de atividade (ponto):** permanece com cor primary
+Resultado: alterações feitas no admin só aparecem para o usuário após um reload manual da página.
 
----
+### Solução: Realtime via banco de dados
 
-## Detalhes técnicos — `src/components/DrumPad.tsx`
+Adicionar um listener de **Realtime** do Lovable Cloud na tabela `feature_gates`. Sempre que um admin inserir, atualizar ou deletar um gate, todos os clientes conectados (usuários com o app aberto) recebem a atualização instantaneamente — **sem precisar recarregar a página ou fazer deploy**.
 
-### Estado de repouso (idle)
-```
-backgroundColor: 'hsl(0 0% 7%)'            ← quase preto, mais escuro que o fundo
-borderColor: 'hsl(0 0% 20%)'              ← cinza escuro neutro
-boxShadow: 'inset 0 1px 0 hsl(0 0% 100% / 0.04),
-            inset 0 -2px 4px hsl(0 0% 0% / 0.4)'   ← sombra interna dá profundidade de pad
-```
+### Fluxo técnico
 
-### Estado ativo (hit) — efeito branco nativo, ou cor se customizada
-```
-backgroundColor: customColor
-  ? `hsl(${colorHsl} / 0.25)`     ← usa cor customizada com opacidade baixa
-  : 'hsl(0 0% 22%)'               ← branco/cinza claro sem cor
-
-borderColor: customColor
-  ? `hsl(${colorHsl} / 0.9)`
-  : 'hsl(0 0% 80%)'               ← borda quase branca no hit
-
-boxShadow: customColor
-  ? `0 0 24px hsl(${colorHsl} / 0.45), inset 0 0 12px hsl(${colorHsl} / 0.15)`
-  : '0 0 20px hsl(0 0% 100% / 0.25), inset 0 0 10px hsl(0 0% 100% / 0.08)'   ← glow branco
+```text
+Admin salva gate no painel
+        ↓
+UPDATE na tabela feature_gates (banco)
+        ↓
+Banco emite evento Realtime (INSERT/UPDATE/DELETE)
+        ↓
+useFeatureGates recebe evento via canal Supabase
+        ↓
+Invalida cache + refetch dos gates
+        ↓
+Todos os canAccess() em todos os componentes reagem imediatamente
 ```
 
-### Estado looping — mantém cor para diferenciar
-```
-backgroundColor: customColor
-  ? `hsl(${colorHsl} / 0.12)`
-  : colorRef(0.08)                ← leve cor de fundo para indicar loop ativo
+### Arquivos a modificar
 
-borderColor usa a cor (animate-loop-border já existe no CSS)
-```
+**1. `src/hooks/useFeatureGates.ts`**
 
-### Texto do pad
-- Permanece `text-foreground` (branco/cinza claro)
-- Quando ativo: adicionar `text-white` para contrastar com o flash branco
+- Remover o cache estático em memória (que impede atualização)
+- Adicionar `useEffect` com `supabase.channel('feature_gates')` para ouvir eventos `postgres_changes` na tabela `feature_gates`
+- Quando qualquer evento chegar (`INSERT`, `UPDATE`, `DELETE`), fazer refetch dos gates
+- Garantir cleanup do canal ao desmontar
 
-### Textura de pad real
-Adicionar no `style` do botão:
-```
-background: `linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 5%) 100%)`
-```
-Sobrescrito quando ativo ou em loop.
+**2. `src/components/AdminPricingManager.tsx`**
 
----
+- Chamar `invalidateGatesCache()` após salvar, editar ou deletar qualquer gate
+- Isso garante que se o próprio admin (que tem o app aberto) alterar um gate, o cache local seja limpo imediatamente antes do Realtime chegar
 
-## Resultado visual esperado
+### O que o admin ganha
 
-| Estado | Fundo | Borda | Glow |
-|--------|-------|-------|------|
-| Idle (sem cor) | Preto gradiente | Cinza escuro | Sombra interna sutil |
-| Idle (com cor) | Preto gradiente | Cinza escuro | Sombra interna sutil |
-| Ativo (sem cor) | Cinza claro | Branco | Glow branco |
-| Ativo (com cor) | Cor com 25% opacidade | Cor intensa | Glow colorido |
-| Loop ativo | Cor com 8% opacidade | Cor pulsante | Animação loop-border |
+- Salva um gate → em segundos todos os usuários com o app aberto veem o bloqueio ativo (ou removido) sem nenhuma ação adicional
+- Sem necessidade de deploy ou reload
+- Totalmente transparente para o usuário final
 
----
+### Detalhes técnicos
 
-## Arquivo modificado
-
-| Arquivo | Mudança |
-|---|---|
-| `src/components/DrumPad.tsx` | Linhas 191–203: reescrever `style` do botão com novo esquema de cores |
-
-Nenhuma migração, nenhum novo arquivo, nenhuma mudança de CSS global necessária. A `animate-pad-pulse` e `animate-loop-border` já existem no `index.css` e continuam funcionando.
+- A tabela `feature_gates` já tem RLS com `SELECT` público, então o canal Realtime funciona sem autenticação especial
+- Será necessário habilitar a tabela `feature_gates` para publicação Realtime via migration SQL (`ALTER PUBLICATION supabase_realtime ADD TABLE public.feature_gates`)
+- O refetch após evento Realtime limpa e reconstrói o cache, mantendo consistência entre todas as instâncias do hook no mesmo app
