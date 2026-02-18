@@ -310,6 +310,50 @@ export type Database = {
         }
         Relationships: []
       }
+      setlist_events: {
+        Row: {
+          created_at: string | null
+          event_date: string
+          id: string
+          is_public: boolean | null
+          name: string
+          setlist_id: string | null
+          share_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_date: string
+          id?: string
+          is_public?: boolean | null
+          name: string
+          setlist_id?: string | null
+          share_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_date?: string
+          id?: string
+          is_public?: boolean | null
+          name?: string
+          setlist_id?: string | null
+          share_token?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "setlist_events_setlist_id_fkey"
+            columns: ["setlist_id"]
+            isOneToOne: false
+            referencedRelation: "setlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       setlists: {
         Row: {
           created_at: string

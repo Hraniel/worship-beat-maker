@@ -41,7 +41,7 @@ const titleSizeClass = (size: string) => {
   return map[size] ?? 'text-5xl sm:text-7xl';
 };
 
-const categories = [
+const DEFAULT_CATEGORIES = [
   { name: 'Kick & Bumbo', color: '0 75% 55%', icon: '🥁' },
   { name: 'Snare', color: '30 85% 55%', icon: '🪘' },
   { name: 'Hi-Hat & Pratos', color: '50 80% 50%', icon: '🎵' },
@@ -353,20 +353,27 @@ const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNav
 
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
           className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {categories.map((cat, i) => (
-            <motion.div key={cat.name} variants={fadeUp} custom={i}
-              className="group relative rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+          {DEFAULT_CATEGORIES.map((def, i) => {
+            const name = config[`store_cat_${i}_name`] || def.name;
+            const icon = config[`store_cat_${i}_emoji`] || def.icon;
+            const link = config[`store_cat_${i}_link`] || '/auth?mode=signup';
+            const catImage = config[`store_cat_${i}_image`];
+            return (
+            <motion.div key={i} variants={fadeUp} custom={i}
+              className="group relative rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden"
               style={{
-                border: `1px solid hsl(${cat.color} / 0.2)`,
-                background: `linear-gradient(145deg, hsl(${cat.color} / 0.08) 0%, ${bg} 100%)`,
+                border: `1px solid hsl(${def.color} / 0.2)`,
+                background: `linear-gradient(145deg, hsl(${def.color} / 0.08) 0%, ${bg} 100%)`,
               }}
-              onClick={() => navigate('/auth?mode=signup')}>
-              <div className="text-3xl mb-3">{cat.icon}</div>
-              <h3 className="font-bold text-lg mb-1" style={{ color: titleColor }}>{cat.name}</h3>
-              <p className="text-xs" style={{ color: subtitleColor }}>Pack disponível na loja</p>
-              <div className="mt-2 h-1 w-8 rounded-full" style={{ background: `hsl(${cat.color})` }} />
+              onClick={() => navigate(link)}>
+              {catImage && <img src={catImage} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" />}
+              <div className="relative text-3xl mb-3">{icon}</div>
+              <h3 className="relative font-bold text-lg mb-1" style={{ color: titleColor }}>{name}</h3>
+              <p className="relative text-xs" style={{ color: subtitleColor }}>Pack disponível na loja</p>
+              <div className="relative mt-2 h-1 w-8 rounded-full" style={{ background: `hsl(${def.color})` }} />
             </motion.div>
-          ))}
+            );
+          })}
         </motion.div>
       </div>
     </section>
