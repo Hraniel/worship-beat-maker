@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useBodyScroll } from '@/hooks/useBodyScroll';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,6 +91,7 @@ const STATIC_PACKS: StorePackData[] = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  useBodyScroll();
   const { user, signOut } = useAuth();
   const { tier, subscriptionEnd, loading } = useSubscription();
   const { packs: dbPacks, loading: packsLoading, refetch } = useStorePacks();

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useBodyScroll } from '@/hooks/useBodyScroll';
 import { supabase } from '@/integrations/supabase/client';
 import { useStorePacks } from '@/hooks/useStorePacks';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ const LUCIDE_ICON_MAP: Record<string, React.ReactNode> = {
 const PackDetail: React.FC = () => {
   const { packId } = useParams<{ packId: string }>();
   const navigate = useNavigate();
+  useBodyScroll();
   const { packs, loading } = useStorePacks();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
