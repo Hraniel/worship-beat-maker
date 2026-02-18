@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
 import PackCard from '@/components/PackCard';
+import AdminPackManager from '@/components/AdminPackManager';
 import { useStorePacks, StorePackData } from '@/hooks/useStorePacks';
+import { useAdminRole } from '@/hooks/useAdminRole';
 import {
   Crown, Zap, Play, LogOut, Store,
   User, Mail, Calendar, Loader2,
   ChevronDown, Drum, Waves, Sparkles, Music, Headphones,
-  Volume2, Layers, AudioWaveform, Star, Lock
+  Volume2, Layers, AudioWaveform, Star, Lock, ShieldCheck
 } from 'lucide-react';
 
 const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
@@ -23,25 +25,48 @@ const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: str
 
 // Static fallback packs (shown when DB has no packs yet)
 const STATIC_PACKS: StorePackData[] = [
-  { id: 'worship-strings', name: 'Worship Strings', description: 'Texturas de cordas atmosféricas em todas as 12 tonalidades.', category: 'Worship Pads', icon_name: 'waves', color: 'bg-indigo-500', tag: 'Novo', is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'warm-pads', name: 'Warm Pads', description: 'Pads quentes e envolventes em todas as tonalidades.', category: 'Worship Pads', icon_name: 'headphones', color: 'bg-amber-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-drums-dry', name: 'Worship Drums Dry', description: 'Kit completo de bateria seca para worship.', category: 'Drums', icon_name: 'drum', color: 'bg-rose-500', tag: 'Popular', is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-drums-reverb', name: 'Worship Drums Reverb', description: 'Bateria com reverb hall profundo para worship atmosférico.', category: 'Drums', icon_name: 'drum', color: 'bg-purple-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-percussion', name: 'Worship Percussion', description: 'Percussão orgânica para adoração.', category: 'Percussion', icon_name: 'layers', color: 'bg-teal-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'electronic-worship', name: 'Electronic Worship', description: 'Sons eletrônicos modernos para cultos contemporâneos.', category: 'Effects', icon_name: 'sparkles', color: 'bg-violet-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'cinematic-risers', name: 'Cinematic Risers', description: 'Risers e transições cinematográficas para momentos épicos.', category: 'Effects', icon_name: 'volume-2', color: 'bg-pink-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-strings', name: 'Worship Strings', description: 'Texturas de cordas atmosféricas em todas as 12 tonalidades.', category: 'Continuous Pads', icon_name: 'waves', color: 'bg-indigo-500', tag: 'Novo', is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'warm-pads', name: 'Warm Pads', description: 'Pads quentes e envolventes em todas as tonalidades.', category: 'Continuous Pads', icon_name: 'headphones', color: 'bg-amber-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-drums-dry', name: 'Worship Kick Dry', description: 'Kicks secos e precisos para worship.', category: 'Kick', icon_name: 'drum', color: 'bg-rose-500', tag: 'Popular', is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-snare-dry', name: 'Worship Snare Dry', description: 'Snares secos com punch para worship.', category: 'Snare', icon_name: 'drum', color: 'bg-orange-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-drums-reverb', name: 'Worship Drums Reverb', description: 'Bateria com reverb hall profundo para worship atmosférico.', category: 'Kick', icon_name: 'drum', color: 'bg-purple-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-toms', name: 'Worship Toms', description: 'Tons graves e marcantes para momentos épicos.', category: 'Toms', icon_name: 'layers', color: 'bg-yellow-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-percussion', name: 'Worship Percussion', description: 'Percussão orgânica: chocalhos, pandeiros e más.', category: 'Percussão', icon_name: 'layers', color: 'bg-teal-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'loops-4-4', name: 'Loops 4/4 Worship', description: 'Padrões rítmicos em 4/4 para cultos contemporâneos.', category: 'Loops 4/4', icon_name: 'audio-waveform', color: 'bg-blue-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'loops-3-4', name: 'Loops 3/4 Worship', description: 'Valsas e waltz para hinos em 3/4.', category: 'Loops 3/4', icon_name: 'audio-waveform', color: 'bg-cyan-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'loops-6-8', name: 'Loops 6/8 Worship', description: 'Groove suave em 6/8 para momentos de adoração.', category: 'Loops 6/8', icon_name: 'audio-waveform', color: 'bg-sky-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'fx-super-low', name: 'Super Low FX', description: 'Sub-graves e explosões de baixo frequência para impacto.', category: 'Efeitos Super Low', icon_name: 'volume-2', color: 'bg-red-600', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'fx-riser-dry', name: 'Risers Seco', description: 'Crescentes com corte seco e impactante.', category: 'Efeitos Crescente Seco', icon_name: 'sparkles', color: 'bg-pink-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'fx-riser-fade', name: 'Risers Fade', description: 'Crescentes suaves com fade final para transições.', category: 'Efeitos Crescente Fade', icon_name: 'sparkles', color: 'bg-fuchsia-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
 ];
 
-const categories = ['Todos', 'Worship Pads', 'Drums', 'Percussion', 'Effects'];
+const STORE_CATEGORIES = [
+  'Todos',
+  'Kick',
+  'Snare',
+  'Toms',
+  'Hi-Hat & Pratos',
+  'Percussão',
+  'Loops 4/4',
+  'Loops 3/4',
+  'Loops 6/8',
+  'Continuous Pads',
+  'Efeitos Super Low',
+  'Efeitos Crescente Seco',
+  'Efeitos Crescente Fade',
+  'Outros',
+];
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { tier, subscriptionEnd, loading } = useSubscription();
   const { packs: dbPacks, loading: packsLoading, refetch } = useStorePacks();
+  const { isAdmin } = useAdminRole();
   const [portalLoading, setPortalLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Todos');
+  const [showAdmin, setShowAdmin] = useState(false);
 
   const badge = tierBadge[tier];
 
@@ -90,6 +115,20 @@ const Dashboard = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {isAdmin && (
+              <button
+                onClick={() => setShowAdmin(v => !v)}
+                className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg border transition-colors text-xs font-medium ${
+                  showAdmin
+                    ? 'bg-amber-50 border-amber-300 text-amber-700'
+                    : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+                }`}
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Admin</span>
+              </button>
+            )}
+
             <Button
               size="sm"
               onClick={() => navigate('/app')}
@@ -127,6 +166,12 @@ const Dashboard = () => {
                         <Calendar className="h-3 w-3 shrink-0" />
                         Membro desde {user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '—'}
                       </div>
+                      {isAdmin && (
+                        <div className="flex items-center gap-1.5 text-xs text-amber-600">
+                          <ShieldCheck className="h-3 w-3 shrink-0" />
+                          <span>Administrador</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="h-px bg-gray-100" />
@@ -171,6 +216,14 @@ const Dashboard = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-6 sm:py-10">
+
+        {/* Admin Panel */}
+        {isAdmin && showAdmin && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <AdminPackManager packs={displayPacks} onRefresh={refetch} />
+          </div>
+        )}
+
         {/* Store header */}
         <div className="mb-8">
           <div className="flex items-center gap-2.5 mb-1">
@@ -184,7 +237,7 @@ const Dashboard = () => {
 
         {/* Category tabs */}
         <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
-          {categories.map(cat => (
+          {STORE_CATEGORIES.map(cat => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}

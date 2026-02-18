@@ -334,76 +334,72 @@ const DrumPad: React.FC<DrumPadProps> = ({
               </button>
             )}
 
-            {/* Import sound - not for loop pads */}
-            {!pad.isLoop && (
-              <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="audio/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      onImportSound?.(pad.id, file);
-                      setShowMenu(false);
-                    }
-                    e.target.value = '';
-                  }}
-                />
-                {(() => {
-                  const maxImports = tierConfig.maxImports;
-                  const atLimit = !hasCustomSound && customSoundsCount >= maxImports;
-                  if (atLimit) {
-                    return (
-                      <button
-                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
-                        onClick={() => toast.info(`Limite de ${maxImports} importações atingido`, { description: 'Remova um som customizado ou faça upgrade.' })}
-                      >
-                        <Lock className="h-3.5 w-3.5" />
-                        Importar som
-                        <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
-                      </button>
-                    );
+            {/* Import sound - available for ALL pads including loops */}
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    onImportSound?.(pad.id, file);
+                    setShowMenu(false);
                   }
+                  e.target.value = '';
+                }}
+              />
+              {(() => {
+                const maxImports = tierConfig.maxImports;
+                const atLimit = !hasCustomSound && customSoundsCount >= maxImports;
+                if (atLimit) {
                   return (
                     <button
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
-                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
+                      onClick={() => toast.info(`Limite de ${maxImports} importações atingido`, { description: 'Remova um som customizado ou faça upgrade.' })}
                     >
-                      <Upload className="h-3.5 w-3.5" />
-                      Importar som
+                      <Lock className="h-3.5 w-3.5" />
+                      Importar som {pad.isLoop ? '(loop)' : ''}
                       <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
                     </button>
                   );
-                })()}
-              </>
-            )}
+                }
+                return (
+                  <button
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Importar som {pad.isLoop ? '(loop)' : ''}
+                    <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
+                  </button>
+                );
+              })()}
+            </>
 
-            {/* Import from Glory Store - not for loop pads */}
-            {!pad.isLoop && (
-              <>
-                <button
-                  className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
-                    showStorePicker ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
-                  }`}
-                  onClick={() => setShowStorePicker(prev => !prev)}
-                >
-                  <Store className="h-3.5 w-3.5" />
-                  Importar da Glory Store
-                </button>
-                {showStorePicker && (
-                  <StoreImportPicker
-                    onSelect={(soundId, soundName, arrayBuffer) => {
-                      onImportStoreSound?.(pad.id, soundName, arrayBuffer);
-                      setShowStorePicker(false);
-                      setShowMenu(false);
-                    }}
-                    onClose={() => setShowStorePicker(false)}
-                  />
-                )}
-              </>
-            )}
+            {/* Import from Glory Store - available for ALL pads including loops */}
+            <>
+              <button
+                className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                  showStorePicker ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
+                }`}
+                onClick={() => setShowStorePicker(prev => !prev)}
+              >
+                <Store className="h-3.5 w-3.5" />
+                Importar da Glory Store
+              </button>
+              {showStorePicker && (
+                <StoreImportPicker
+                  onSelect={(soundId, soundName, arrayBuffer) => {
+                    onImportStoreSound?.(pad.id, soundName, arrayBuffer);
+                    setShowStorePicker(false);
+                    setShowMenu(false);
+                  }}
+                  onClose={() => setShowStorePicker(false)}
+                />
+              )}
+            </>
 
             {hasCustomSound && (
               <button
