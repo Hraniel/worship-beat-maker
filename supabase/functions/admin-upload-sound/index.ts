@@ -269,6 +269,20 @@ Deno.serve(async (req) => {
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
 
+    } else if (action === 'remove-banner') {
+      const packId = formData.get('packId') as string;
+      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
+      }
+
+      const { data: pack } = await supabase.from('store_packs').select('banner_url').eq('id', packId).single();
+      if (pack?.banner_url && !pack.banner_url.startsWith('http')) {
+        await supabase.storage.from('sound-previews').remove([pack.banner_url]);
+      }
+      const { error } = await supabase.from('store_packs').update({ banner_url: null }).eq('id', packId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+
     } else if (action === 'duplicate-pack') {
       const packId = formData.get('packId') as string;
       if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {

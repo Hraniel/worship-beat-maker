@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar } from 'lucide-react';
+import { Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar, ChevronDown, ShieldCheck } from 'lucide-react';
+
+type AppRole = 'admin' | 'moderator';
 
 interface UserRow {
   id: string;
@@ -11,12 +13,20 @@ interface UserRow {
   last_sign_in_at: string | null;
   purchase_count: number;
   is_admin: boolean;
+  is_moderator: boolean;
 }
+
+const ROLE_OPTIONS: { role: AppRole | null; label: string; description: string }[] = [
+  { role: 'admin', label: 'Admin', description: 'Acesso total ao painel' },
+  { role: 'moderator', label: 'Moderador', description: 'Acesso de moderação' },
+  { role: null, label: 'Remover cargo', description: 'Volta a usuário padrão' },
+];
 
 const AdminUserManager: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -43,15 +53,20 @@ const AdminUserManager: React.FC = () => {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  const toggleAdmin = async (user: UserRow) => {
+  const assignRole = async (user: UserRow, role: AppRole | null) => {
     setTogglingId(user.id);
+    setOpenDropdown(null);
     try {
       const { data: session } = await supabase.auth.getSession();
       const token = session?.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const action = user.is_admin ? 'demote' : 'promote';
+      let action: string;
+      if (role === 'admin') action = 'promote';
+      else if (role === 'moderator') action = 'promote-moderator';
+      else action = 'remove-roles';
+
       const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-get-users`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -60,13 +75,20 @@ const AdminUserManager: React.FC = () => {
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || 'Erro');
 
-      toast.success(user.is_admin ? `${user.email} rebaixado` : `${user.email} promovido a admin`);
+      const roleLabel = role === 'admin' ? 'Admin' : role === 'moderator' ? 'Moderador' : 'cargo removido';
+      toast.success(`${user.email}: ${roleLabel}`);
       fetchUsers();
     } catch (e: any) {
-      toast.error(e.message || 'Erro ao alterar role');
+      toast.error(e.message || 'Erro ao alterar cargo');
     } finally {
       setTogglingId(null);
     }
+  };
+
+  const getCurrentRoleLabel = (user: UserRow) => {
+    if (user.is_admin) return 'Admin';
+    if (user.is_moderator) return 'Mod';
+    return null;
   };
 
   if (loading) {
@@ -87,42 +109,99 @@ const AdminUserManager: React.FC = () => {
         </Button>
       </div>
 
+      {/* Role legend */}
+      <div className="flex gap-3 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold">ADMIN</span>
+          <span>Acesso total</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full font-semibold">MOD</span>
+          <span>Moderador</span>
+        </div>
+      </div>
+
       <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
         {users.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-6">Nenhum usuário encontrado</p>
         )}
-        {users.map((user) => (
-          <div key={user.id} className="flex items-center gap-3 px-3 py-2.5">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
-                {user.is_admin && (
-                  <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold shrink-0">ADMIN</span>
+        {users.map((user) => {
+          const roleLabel = getCurrentRoleLabel(user);
+          return (
+            <div key={user.id} className="flex items-center gap-3 px-3 py-2.5">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
+                  {user.is_admin && (
+                    <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold shrink-0">ADMIN</span>
+                  )}
+                  {user.is_moderator && (
+                    <span className="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full font-semibold shrink-0">MOD</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                    <ShoppingBag className="h-2.5 w-2.5" /> {user.purchase_count} compras
+                  </span>
+                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                    <Calendar className="h-2.5 w-2.5" /> {new Date(user.created_at).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Role dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenDropdown(prev => prev === user.id ? null : user.id)}
+                  disabled={togglingId === user.id}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors border ${
+                    user.is_admin
+                      ? 'border-primary/30 text-primary hover:bg-primary/10'
+                      : user.is_moderator
+                        ? 'border-blue-500/30 text-blue-400 hover:bg-blue-500/10'
+                        : 'border-border text-muted-foreground hover:bg-muted'
+                  }`}
+                >
+                  {togglingId === user.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-3 w-3" />
+                      {roleLabel || 'Cargo'}
+                      <ChevronDown className="h-2.5 w-2.5" />
+                    </>
+                  )}
+                </button>
+
+                {openDropdown === user.id && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setOpenDropdown(null)} />
+                    <div className="absolute right-0 top-8 z-20 w-44 bg-popover border border-border rounded-xl shadow-xl overflow-hidden">
+                      {ROLE_OPTIONS.map(({ role, label, description }) => (
+                        <button
+                          key={label}
+                          onClick={() => assignRole(user, role)}
+                          className={`w-full flex flex-col items-start px-3 py-2 text-left transition-colors hover:bg-muted ${
+                            (role === 'admin' && user.is_admin) || (role === 'moderator' && user.is_moderator)
+                              ? 'bg-muted'
+                              : ''
+                          }`}
+                        >
+                          <span className={`text-[11px] font-medium ${
+                            role === null ? 'text-destructive' :
+                            role === 'admin' ? 'text-primary' :
+                            'text-blue-400'
+                          }`}>{label}</span>
+                          <span className="text-[9px] text-muted-foreground">{description}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
                 )}
               </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                  <ShoppingBag className="h-2.5 w-2.5" /> {user.purchase_count} compras
-                </span>
-                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                  <Calendar className="h-2.5 w-2.5" /> {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                </span>
-              </div>
             </div>
-            <button
-              onClick={() => toggleAdmin(user)}
-              disabled={togglingId === user.id}
-              className={`p-1.5 rounded-lg transition-colors ${user.is_admin ? 'hover:bg-destructive/10 text-destructive' : 'hover:bg-primary/10 text-muted-foreground hover:text-primary'}`}
-              title={user.is_admin ? 'Remover admin' : 'Promover a admin'}
-            >
-              {togglingId === user.id
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                : user.is_admin
-                  ? <ShieldOff className="h-3.5 w-3.5" />
-                  : <Shield className="h-3.5 w-3.5" />}
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
