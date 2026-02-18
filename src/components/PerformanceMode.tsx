@@ -27,6 +27,8 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
 }) => {
   const [fullscreen, setFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
 
   const currentIndex = songs.findIndex(s => s.id === currentSongId);
   const currentSong = currentIndex >= 0 ? songs[currentIndex] : null;
@@ -52,6 +54,24 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [goNext, goPrev, onClose, onTogglePlay]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    const dy = e.changedTouches[0].clientY - touchStartY.current;
+    // Only trigger if horizontal swipe is dominant and long enough
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 60) {
+      if (dx < 0) goNext();  // swipe left → next
+      else goPrev();          // swipe right → prev
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  }, [goNext, goPrev]);
 
   const toggleFullscreen = useCallback(async () => {
     try {
@@ -84,6 +104,8 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
         width: '100dvw',
         height: '100dvh',
       }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Top bar */}
       <div
