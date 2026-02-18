@@ -974,10 +974,9 @@ const Index = () => {
                 )}
               </div>
             ) : isLandscape ? (
-              /* On landscape mobile: compact ambient pads for Mix tab */
-              <div data-tutorial="ambient-pads" className="w-full px-1">
-                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-              </div>
+              /* On landscape: ambient pads are shown inside the mixer prop below faders; nothing extra here */
+              <div className="hidden" />
+
             ) : (
               <div data-tutorial="ambient-pads" className="w-full h-full flex flex-col items-center justify-end px-2 pb-2">
                 {currentSongId && !editMode && (
@@ -997,8 +996,28 @@ const Index = () => {
           }
           mixer={
             !focusMode ? (
-              <div data-tutorial="volume-master">
-                <MixerStrip channels={[
+              <div data-tutorial="volume-master" className="flex flex-col gap-1">
+                {/* Fader page buttons 1 / 2 */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
+                  {([0, 1] as const).map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setFaderPage(p)}
+                      className={`w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
+                        faderPage === p
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      {p + 1}
+                    </button>
+                  ))}
+                </div>
+                <MixerStrip
+                  controlledPage={faderPage}
+                  onControlledPageChange={setFaderPage}
+                  channels={[
                   { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: handleMetronomeVolChange },
                   { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
                   ...defaultPads.slice(0, 9).map((pad) => ({
@@ -1010,9 +1029,14 @@ const Index = () => {
                   })),
                   { id: 'master', label: 'Master', shortLabel: 'Master', volume: masterVolume, onChange: setMasterVol },
                 ]} />
+                {/* Continuous Pads below faders */}
+                <div data-tutorial="ambient-pads" className="pt-1 border-t border-border/30">
+                  <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+                </div>
               </div>
             ) : undefined
           }
+
           metronome={
             <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
               <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
@@ -1103,7 +1127,27 @@ const Index = () => {
           {/* Mixer Strip */}
           {!focusMode &&
           <div data-tutorial="volume-master">
-            <MixerStrip channels={[
+            {/* Fader page buttons 1 / 2 */}
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
+              {([0, 1] as const).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setFaderPage(p)}
+                  className={`w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
+                    faderPage === p
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {p + 1}
+                </button>
+              ))}
+            </div>
+            <MixerStrip
+              controlledPage={faderPage}
+              onControlledPageChange={setFaderPage}
+              channels={[
               { id: 'metronome', label: 'Metrônomo', shortLabel: 'Metrônomo', volume: metronomeVol, onChange: handleMetronomeVolChange },
               { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
               ...defaultPads.slice(0, 9).map((pad) => ({
@@ -1166,13 +1210,31 @@ const Index = () => {
           )}
         </div>
 
-        {/* Tablet: Faders (full width) + Continuous Pads below, Metronome below */}
+        {/* Tablet: Faders (paginated) + Continuous Pads below, Metronome below */}
         {isTablet && !focusMode && (
           <div className="hidden md:block lg:hidden p-1.5 space-y-1.5">
-            {/* Faders - full width */}
+            {/* Faders with page buttons 1 / 2 */}
             <div className="w-full" data-tutorial="volume-master">
+              {/* Fader page buttons */}
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[9px] text-muted-foreground mr-auto">Mix</span>
+                {([0, 1] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setFaderPage(p)}
+                    className={`w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
+                      faderPage === p
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                  >
+                    {p + 1}
+                  </button>
+                ))}
+              </div>
               <MixerStrip
-                showAll
+                controlledPage={faderPage}
+                onControlledPageChange={setFaderPage}
                 compactFaderHeight={80}
                 channels={[
                   { id: 'metronome', label: 'Metrônomo', shortLabel: 'MET', volume: metronomeVol, onChange: handleMetronomeVolChange },
