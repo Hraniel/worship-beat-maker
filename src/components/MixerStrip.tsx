@@ -257,7 +257,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFader
   if (showAll) {
     return (
       <div className="flex flex-col gap-1">
-        <div ref={containerRef} className="flex items-end gap-0.5 px-1 py-1.5 bg-card rounded-lg border border-border">
+        <div ref={containerRef} className="flex items-start gap-0.5 px-1 pt-2 pb-1 bg-card rounded-lg border border-border overflow-visible">
           {channels.map((ch) => (
             <div key={ch.id} className="flex-1 min-w-0">
               <Fader channel={ch} faderHeight={fHeight} />
@@ -270,7 +270,7 @@ const MixerStrip: React.FC<MixerStripProps> = ({ channels, showAll, compactFader
 
   return (
     <div className="flex flex-col gap-1">
-      <div ref={containerRef} className="flex items-end gap-1 px-2 py-2 bg-card rounded-lg border border-border">
+      <div ref={containerRef} className="flex items-start gap-1 px-2 pt-2 pb-1 bg-card rounded-lg border border-border overflow-visible">
         {/* Fixed: MET + PAD */}
         {fixedStart.map((ch) => (
           <div key={ch.id} className="flex-1 min-w-0">

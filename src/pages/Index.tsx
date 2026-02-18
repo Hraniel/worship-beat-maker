@@ -1172,10 +1172,11 @@ const Index = () => {
         <div className={`${isTablet ? 'hidden' : 'lg:hidden'} h-full relative flex flex-col`}>
 
           {focusMode ? (
-            /* Focus mode: minimized bar with BPM + play/pause only */
+            /* Focus mode: minimized bar with BPM + key + play/pause */
             <div className="flex items-center justify-center gap-3 px-3 py-1.5">
               <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
               <span className="text-[10px] text-muted-foreground">BPM</span>
+              {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
               <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
               <button
                 type="button"
@@ -1190,17 +1191,17 @@ const Index = () => {
             <>
               {/* Page tab buttons */}
               <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
-                {[0, 1].map((i) => (
+                {(['Mix', 'Met'] as const).map((label, i) => (
                   <button
                     key={i}
                     onClick={() => setFooterPage(i)}
-                    className={`w-5 h-5 rounded text-[10px] font-bold transition-colors ${
+                    className={`px-2 h-5 rounded text-[9px] font-bold transition-colors ${
                       footerPage === i
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                   >
-                    {i + 1}
+                    {label}
                   </button>
                 ))}
               </div>
