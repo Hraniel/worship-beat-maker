@@ -77,11 +77,19 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
-      style={{ background: 'hsl(240 10% 4%)' }}
+      className="fixed z-50 flex flex-col items-center justify-center"
+      style={{
+        background: 'hsl(240 10% 4%)',
+        top: 0, left: 0, right: 0, bottom: 0,
+        width: '100dvw',
+        height: '100dvh',
+      }}
     >
       {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pt-6 pb-2">
+      <div
+        className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pb-2"
+        style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}
+      >
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground font-medium">
             {currentIndex + 1} / {songs.length}
@@ -143,7 +151,10 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
       </div>
 
       {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-6 pb-8">
+      <div
+        className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-6"
+        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+      >
         {/* Prev */}
         <button
           onClick={goPrev}
@@ -180,7 +191,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
       </div>
 
       {/* Song list dots */}
-      <div className="absolute bottom-32 left-0 right-0 flex justify-center gap-1.5">
+      <div className="absolute left-0 right-0 flex justify-center gap-1.5" style={{ bottom: 'calc(8rem + env(safe-area-inset-bottom, 0px))' }}>
         {songs.map((s, i) => (
           <button
             key={s.id}
