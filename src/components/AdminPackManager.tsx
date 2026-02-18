@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Upload, Trash2, Plus, Loader2, Music, ChevronDown, ChevronUp,
-  Eye, Package, Pencil, Check, X, Settings, Play, Pause, GripVertical, Save
+  Eye, Package, Pencil, Check, X, Settings, Play, Pause, GripVertical, Save, Image
 } from 'lucide-react';
 import { StorePackData } from '@/hooks/useStorePacks';
 
@@ -39,7 +39,7 @@ interface AdminPackManagerProps {
 interface UploadingState {
   packId: string;
   soundId?: string;
-  type: 'full' | 'preview';
+  type: 'full' | 'preview' | 'icon';
 }
 
 interface SoundEdit {
@@ -54,11 +54,19 @@ interface SortableSound {
   preview_path: string | null;
   duration_ms: number;
   category?: string;
+  file_path?: string;
+}
+
+interface BatchProgress {
+  total: number;
+  done: number;
+  current: string;
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
   const [deletingSound, setDeletingSound] = useState<string | null>(null);
   const [showCreatePack, setShowCreatePack] = useState(false);
   const [editingPack, setEditingPack] = useState<string | null>(null);
@@ -66,12 +74,10 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   const [editingSound, setEditingSound] = useState<string | null>(null);
   const [soundEdits, setSoundEdits] = useState<Record<string, SoundEdit>>({});
   const [savingSound, setSavingSound] = useState<string | null>(null);
-  // local order per pack: packId -> array of sounds
   const [localOrder, setLocalOrder] = useState<Record<string, SortableSound[]>>({});
   const [savingOrder, setSavingOrder] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<{ packId: string; index: number } | null>(null);
   const dragSoundRef = useRef<{ packId: string; index: number } | null>(null);
-
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // New pack form
@@ -82,12 +88,13 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   // Pack edit form
   const [packEdit, setPackEdit] = useState<Record<string, {
-    isAvailable: boolean; priceCents: number; tag: string;
+    isAvailable: boolean; priceCents: number; tag: string; name: string; description: string;
   }>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewInputRef = useRef<HTMLInputElement>(null);
-  const pendingUploadRef = useRef<{ packId: string; soundId?: string; type: 'full' | 'preview' } | null>(null);
+  const iconInputRef = useRef<HTMLInputElement>(null);
+  const pendingUploadRef = useRef<{ packId: string; soundId?: string; type: 'full' | 'preview' | 'icon' } | null>(null);
 
   // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -119,35 +126,25 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       audio.addEventListener('error', () => { URL.revokeObjectURL(url); resolve(0); });
     });
 
-  // Get the effective sounds list (local order if set, else from pack)
   const getSounds = (pack: StorePackData): SortableSound[] =>
     localOrder[pack.id] ?? (pack.sounds as SortableSound[]);
 
   // ─── Audio preview ────────────────────────────────────────────────────────
 
   const handlePlay = useCallback(async (sound: SortableSound) => {
-    // Stop any currently playing
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
       audioRef.current = null;
     }
-    if (playingId === sound.id) {
-      setPlayingId(null);
-      return;
-    }
+    if (playingId === sound.id) { setPlayingId(null); return; }
 
-    // Prefer preview_path (public bucket), fallback to signed URL for file_path
     let url: string | null = null;
-
     if (sound.preview_path) {
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       url = `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${sound.preview_path}`;
     } else {
-      // Generate signed URL from private bucket via supabase client
-      const { data } = await supabase.storage
-        .from('sound-packs')
-        .createSignedUrl((sound as any).file_path || '', 60);
+      const { data } = await supabase.storage.from('sound-packs').createSignedUrl(sound.file_path || '', 60);
       url = data?.signedUrl ?? null;
     }
 
@@ -163,7 +160,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   // ─── Sound inline edit ────────────────────────────────────────────────────
 
-  const startEditSound = (sound: SortableSound & { file_path?: string }) => {
+  const startEditSound = (sound: SortableSound) => {
     setSoundEdits(prev => ({
       ...prev,
       [sound.id]: { shortName: sound.short_name, category: (sound as any).category || 'sample' },
@@ -207,9 +204,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
     e.preventDefault();
     const drag = dragSoundRef.current;
     if (!drag || drag.packId !== pack.id || drag.index === dropIndex) {
-      setDragOver(null);
-      dragSoundRef.current = null;
-      return;
+      setDragOver(null); dragSoundRef.current = null; return;
     }
     const sounds = [...getSounds(pack)];
     const [moved] = sounds.splice(drag.index, 1);
@@ -240,27 +235,40 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   // ─── Upload handlers ───────────────────────────────────────────────────────
 
-  const handleUploadSound = async (file: File, packId: string) => {
+  // Batch upload: multiple files
+  const handleUploadSounds = async (files: File[], packId: string) => {
     setUploading({ packId, type: 'full' });
-    try {
-      const durationMs = await getAudioDurationMs(file);
-      const fd = new FormData();
-      fd.append('action', 'upload');
-      fd.append('file', file);
-      fd.append('packId', packId);
-      fd.append('soundName', file.name.replace(/\.[^.]+$/, ''));
-      fd.append('shortName', file.name.slice(0, 3).toUpperCase());
-      fd.append('category', 'sample');
-      fd.append('isPreview', 'false');
-      fd.append('durationMs', String(durationMs));
-      await invokeAdmin(fd);
-      toast.success(`Som enviado! Duração: ${(durationMs / 1000).toFixed(1)}s`);
-      onRefresh();
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao enviar som');
-    } finally {
-      setUploading(null);
+    setBatchProgress({ total: files.length, done: 0, current: files[0]?.name || '' });
+    let success = 0;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setBatchProgress({ total: files.length, done: i, current: file.name });
+      try {
+        const durationMs = await getAudioDurationMs(file);
+        const fd = new FormData();
+        fd.append('action', 'upload');
+        fd.append('file', file);
+        fd.append('packId', packId);
+        fd.append('soundName', file.name.replace(/\.[^.]+$/, ''));
+        fd.append('shortName', file.name.slice(0, 3).toUpperCase());
+        fd.append('category', 'sample');
+        fd.append('isPreview', 'false');
+        fd.append('durationMs', String(durationMs));
+        await invokeAdmin(fd);
+        success++;
+      } catch (e: any) {
+        toast.error(`Erro em "${file.name}": ${e.message}`);
+      }
     }
+    setBatchProgress(null);
+    setUploading(null);
+    if (success > 0) {
+      toast.success(files.length === 1
+        ? `Som enviado! Duração: ${((await getAudioDurationMs(files[0])) / 1000).toFixed(1)}s`
+        : `${success} de ${files.length} sons enviados com sucesso!`
+      );
+    }
+    onRefresh();
   };
 
   const handleUploadPreview = async (file: File, packId: string, soundId: string) => {
@@ -282,6 +290,27 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       onRefresh();
     } catch (e: any) {
       toast.error(e.message || 'Erro ao enviar preview');
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const handleUploadIcon = async (file: File, packId: string) => {
+    setUploading({ packId, type: 'icon' });
+    try {
+      const fd = new FormData();
+      fd.append('action', 'upload-icon');
+      fd.append('file', file);
+      fd.append('packId', packId);
+      const result = await invokeAdmin(fd);
+      toast.success('Ícone atualizado!');
+      // Update local packEdit if editing
+      if (packEdit[packId]) {
+        // icon is stored in icon_name
+      }
+      onRefresh();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao enviar ícone');
     } finally {
       setUploading(null);
     }
@@ -336,6 +365,8 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       fd.append('isAvailable', String(edit.isAvailable));
       fd.append('priceCents', String(edit.priceCents));
       fd.append('tag', edit.tag);
+      fd.append('name', edit.name);
+      fd.append('description', edit.description);
       await invokeAdmin(fd);
       toast.success('Pack atualizado!');
       setEditingPack(null);
@@ -346,7 +377,16 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   };
 
   const startEditPack = (pack: StorePackData) => {
-    setPackEdit(prev => ({ ...prev, [pack.id]: { isAvailable: pack.is_available, priceCents: pack.price_cents, tag: pack.tag || '' } }));
+    setPackEdit(prev => ({
+      ...prev,
+      [pack.id]: {
+        isAvailable: pack.is_available,
+        priceCents: pack.price_cents,
+        tag: pack.tag || '',
+        name: pack.name,
+        description: pack.description,
+      }
+    }));
     setEditingPack(pack.id);
   };
 
@@ -357,11 +397,16 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   return (
     <div className="space-y-4">
       {/* Hidden file inputs */}
-      <input ref={fileInputRef} type="file" accept="audio/*" className="hidden"
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*"
+        multiple
+        className="hidden"
         onChange={(e) => {
-          const file = e.target.files?.[0];
+          const files = Array.from(e.target.files || []);
           const meta = pendingUploadRef.current;
-          if (file && meta) handleUploadSound(file, meta.packId);
+          if (files.length > 0 && meta) handleUploadSounds(files, meta.packId);
           e.target.value = '';
         }}
       />
@@ -370,6 +415,14 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           const file = e.target.files?.[0];
           const meta = pendingUploadRef.current;
           if (file && meta?.soundId) handleUploadPreview(file, meta.packId, meta.soundId);
+          e.target.value = '';
+        }}
+      />
+      <input ref={iconInputRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          const meta = pendingUploadRef.current;
+          if (file && meta) handleUploadIcon(file, meta.packId);
           e.target.value = '';
         }}
       />
@@ -440,13 +493,36 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         {dbPacks.map(pack => {
           const sounds = getSounds(pack);
           const hasUnsavedOrder = !!localOrder[pack.id];
+          const isIconImage = pack.icon_name?.startsWith('pack-icons/') || pack.icon_name?.startsWith('http');
+          const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+          const iconUrl = isIconImage && !pack.icon_name.startsWith('http')
+            ? `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${pack.icon_name}`
+            : pack.icon_name;
 
           return (
             <div key={pack.id} className="bg-card border border-border rounded-xl overflow-hidden">
               {/* Pack header */}
               <div className="flex items-center gap-3 p-3">
-                <div className={`h-8 w-8 rounded-lg ${pack.color} flex items-center justify-center shrink-0`}>
-                  <Package className="h-4 w-4 text-white" />
+                {/* Icon - clickable to upload new image */}
+                <div
+                  className={`h-8 w-8 rounded-lg ${isIconImage ? '' : pack.color} flex items-center justify-center shrink-0 overflow-hidden relative group cursor-pointer`}
+                  onClick={() => {
+                    pendingUploadRef.current = { packId: pack.id, type: 'icon' };
+                    iconInputRef.current?.click();
+                  }}
+                  title="Clique para trocar a imagem do ícone"
+                >
+                  {isIconImage ? (
+                    <img src={iconUrl} alt={pack.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <Package className="h-4 w-4 text-white" />
+                  )}
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    {uploading?.packId === pack.id && uploading.type === 'icon'
+                      ? <Loader2 className="h-3 w-3 animate-spin text-white" />
+                      : <Image className="h-3 w-3 text-white" />}
+                  </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{pack.name}</p>
@@ -470,6 +546,26 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
               {editingPack === pack.id && packEdit[pack.id] && (
                 <div className="px-3 pb-3 border-t border-border pt-3 space-y-2">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Configurações do Pack</p>
+
+                  {/* Name & Description */}
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Nome</p>
+                    <input
+                      className="w-full h-8 px-2 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                      value={packEdit[pack.id].name}
+                      onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], name: e.target.value } }))}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground mb-0.5">Descrição</p>
+                    <textarea
+                      rows={2}
+                      className="w-full px-2 py-1.5 text-xs rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                      value={packEdit[pack.id].description}
+                      onChange={e => setPackEdit(prev => ({ ...prev, [pack.id]: { ...prev[pack.id], description: e.target.value } }))}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">Preço (centavos)</p>
@@ -517,7 +613,9 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                       {uploading?.packId === pack.id && uploading.type === 'full'
                         ? <Loader2 className="h-3 w-3 animate-spin mr-1" />
                         : <Upload className="h-3 w-3 mr-1" />}
-                      Enviar novo som
+                      {batchProgress && uploading?.packId === pack.id
+                        ? `${batchProgress.done + 1}/${batchProgress.total} — ${batchProgress.current.slice(0, 20)}`
+                        : 'Enviar sons (múltiplos)'}
                     </Button>
                     {hasUnsavedOrder && (
                       <Button size="sm" disabled={savingOrder === pack.id}
@@ -530,6 +628,22 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                       </Button>
                     )}
                   </div>
+
+                  {/* Batch progress bar */}
+                  {batchProgress && uploading?.packId === pack.id && (
+                    <div className="px-3 py-2 border-b border-border">
+                      <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                        <span>Enviando {batchProgress.current.slice(0, 30)}...</span>
+                        <span>{batchProgress.done}/{batchProgress.total}</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full transition-all"
+                          style={{ width: `${(batchProgress.done / batchProgress.total) * 100}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {/* Sounds list */}
                   <div className="divide-y divide-border max-h-80 overflow-y-auto">
@@ -550,12 +664,10 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                           onDragEnd={() => { setDragOver(null); dragSoundRef.current = null; }}
                           className={`flex items-start gap-2 px-3 py-2 transition-colors ${isDragTarget ? 'bg-primary/10 border-t-2 border-primary' : 'hover:bg-muted/30'}`}
                         >
-                          {/* Drag handle */}
                           <div className="mt-1 cursor-grab active:cursor-grabbing text-muted-foreground/40 shrink-0">
                             <GripVertical className="h-3.5 w-3.5" />
                           </div>
 
-                          {/* Play button */}
                           <button
                             onClick={() => handlePlay(sound)}
                             className="mt-0.5 p-1 rounded-full hover:bg-primary/10 transition-colors shrink-0"
@@ -566,7 +678,6 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                               : <Play className="h-3 w-3 text-muted-foreground" />}
                           </button>
 
-                          {/* Sound info / edit */}
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-foreground truncate">{sound.name}</p>
                             {isEditing ? (
@@ -618,15 +729,12 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                             )}
                           </div>
 
-                          {/* Actions */}
                           {!isEditing && (
                             <div className="flex items-center gap-0.5 shrink-0">
-                              {/* Edit sound */}
-                              <button title="Editar nome/categoria" onClick={() => startEditSound(sound as any)}
+                              <button title="Editar nome/categoria" onClick={() => startEditSound(sound)}
                                 className="p-1.5 rounded hover:bg-muted transition-colors">
                                 <Pencil className="h-3 w-3 text-muted-foreground" />
                               </button>
-                              {/* Upload preview */}
                               <button title="Enviar preview" disabled={!!uploading}
                                 onClick={() => {
                                   pendingUploadRef.current = { packId: pack.id, soundId: sound.id, type: 'preview' };
@@ -637,7 +745,6 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                                   ? <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                                   : <Eye className="h-3 w-3 text-muted-foreground" />}
                               </button>
-                              {/* Delete */}
                               <button title="Excluir som" disabled={!!deletingSound}
                                 onClick={() => handleDeleteSound(sound.id)}
                                 className="p-1.5 rounded hover:bg-destructive/10 transition-colors disabled:opacity-40">

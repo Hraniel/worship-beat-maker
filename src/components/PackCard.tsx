@@ -7,7 +7,7 @@ import {
   Drum, Waves, Sparkles, Headphones, Volume2, Layers, AudioWaveform, Lock
 } from 'lucide-react';
 
-const ICON_MAP: Record<string, React.ReactNode> = {
+const LUCIDE_ICON_MAP: Record<string, React.ReactNode> = {
   drum: <Drum className="h-5 w-5" />,
   waves: <Waves className="h-5 w-5" />,
   music: <Music className="h-5 w-5" />,
@@ -52,24 +52,15 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const handlePreview = useCallback(async (sound: PackSound) => {
-    // Stop current
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
-
-    if (playingId === sound.id) {
-      setPlayingId(null);
-      return;
-    }
-
+    if (playingId === sound.id) { setPlayingId(null); return; }
     if (!sound.preview_path) return;
 
     try {
-      const { data } = supabase.storage
-        .from('sound-previews')
-        .getPublicUrl(sound.preview_path);
-
+      const { data } = supabase.storage.from('sound-previews').getPublicUrl(sound.preview_path);
       const audio = new Audio(data.publicUrl);
       audio.onended = () => setPlayingId(null);
       audioRef.current = audio;
@@ -84,9 +75,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
   const handlePurchase = async () => {
     setPurchasing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('purchase-pack', {
-        body: { packId: pack.id },
-      });
+      const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
       if (error) throw error;
       toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
       onPurchased();
@@ -97,7 +86,15 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
     }
   };
 
-  const icon = ICON_MAP[pack.icon_name] || <Music className="h-5 w-5" />;
+  // Resolve icon: Lucide icon key OR custom image (stored as path or full URL)
+  const isImageIcon = pack.icon_name?.startsWith('pack-icons/') || pack.icon_name?.startsWith('http');
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const imageIconUrl = isImageIcon
+    ? (pack.icon_name.startsWith('http')
+        ? pack.icon_name
+        : `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${pack.icon_name}`)
+    : null;
+  const lucideIcon = LUCIDE_ICON_MAP[pack.icon_name] || <Music className="h-5 w-5" />;
 
   return (
     <div className="group relative bg-white rounded-2xl border border-gray-200/80 p-4 hover:shadow-lg hover:border-gray-300 transition-all duration-200">
@@ -106,8 +103,10 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
           {pack.tag}
         </span>
       )}
-      <div className={`h-11 w-11 rounded-xl ${pack.color} flex items-center justify-center mb-3 text-white shadow-sm`}>
-        {icon}
+      <div className={`h-11 w-11 rounded-xl ${isImageIcon ? '' : pack.color} flex items-center justify-center mb-3 ${isImageIcon ? '' : 'text-white'} shadow-sm overflow-hidden`}>
+        {isImageIcon ? (
+          <img src={imageIconUrl!} alt={pack.name} className="h-full w-full object-cover" />
+        ) : lucideIcon}
       </div>
       <h3 className="font-semibold text-sm text-gray-900 mb-1">{pack.name}</h3>
       <p className="text-xs text-gray-500 leading-relaxed mb-3">{pack.description}</p>
@@ -148,21 +147,13 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
       {expanded && (
         <div className="space-y-1 mb-3 max-h-48 overflow-y-auto">
           {pack.sounds.map(sound => (
-            <div
-              key={sound.id}
-              className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-colors"
-            >
+            <div key={sound.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-colors">
               <span className="text-xs text-gray-700 truncate flex-1">{sound.name}</span>
               {sound.preview_path && (
-                <button
-                  onClick={() => handlePreview(sound)}
-                  className="p-1 rounded-full hover:bg-gray-200 transition-colors"
-                >
-                  {playingId === sound.id ? (
-                    <Square className="h-3 w-3 text-violet-600" />
-                  ) : (
-                    <Play className="h-3 w-3 text-gray-500" />
-                  )}
+                <button onClick={() => handlePreview(sound)} className="p-1 rounded-full hover:bg-gray-200 transition-colors">
+                  {playingId === sound.id
+                    ? <Square className="h-3 w-3 text-violet-600" />
+                    : <Play className="h-3 w-3 text-gray-500" />}
                 </button>
               )}
             </div>
@@ -172,12 +163,8 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
       {/* Action button */}
       {pack.is_available && !pack.purchased && (
-        <Button
-          size="sm"
-          onClick={handlePurchase}
-          disabled={purchasing}
-          className="w-full h-8 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white"
-        >
+        <Button size="sm" onClick={handlePurchase} disabled={purchasing}
+          className="w-full h-8 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white">
           {purchasing ? (
             <Loader2 className="h-3 w-3 animate-spin" />
           ) : (

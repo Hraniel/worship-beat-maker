@@ -13,8 +13,8 @@ import { useAdminRole } from '@/hooks/useAdminRole';
 import {
   Crown, Zap, Play, LogOut, Store,
   User, Mail, Calendar, Loader2,
-  ChevronDown, Drum, Waves, Sparkles, Music, Headphones,
-  Volume2, Layers, AudioWaveform, Star, Lock, ShieldCheck
+  ChevronDown, ChevronRight, Drum, Waves, Sparkles, Music, Headphones,
+  Volume2, Layers, AudioWaveform, Star, Lock, ShieldCheck, Filter
 } from 'lucide-react';
 
 const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
@@ -22,6 +22,54 @@ const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: str
   pro: { label: 'Pro', icon: <Zap className="h-3 w-3" />, cls: 'bg-violet-100 text-violet-700' },
   master: { label: 'Master', icon: <Crown className="h-3 w-3" />, cls: 'bg-amber-100 text-amber-700' },
 };
+
+// Category groups for sidebar
+const CATEGORY_GROUPS = [
+  {
+    label: 'Todos',
+    key: 'Todos',
+    icon: <Music className="h-3.5 w-3.5" />,
+    children: [],
+  },
+  {
+    label: 'Bateria',
+    key: 'drums',
+    icon: <Drum className="h-3.5 w-3.5" />,
+    children: ['Kick', 'Snare', 'Toms', 'Hi-Hat & Pratos', 'Percussão'],
+  },
+  {
+    label: 'Loops',
+    key: 'loops',
+    icon: <AudioWaveform className="h-3.5 w-3.5" />,
+    children: ['Loops 4/4', 'Loops 3/4', 'Loops 6/8'],
+  },
+  {
+    label: 'Pads',
+    key: 'Continuous Pads',
+    icon: <Waves className="h-3.5 w-3.5" />,
+    children: [],
+  },
+  {
+    label: 'Efeitos',
+    key: 'efeitos',
+    icon: <Sparkles className="h-3.5 w-3.5" />,
+    children: ['Efeitos Super Low', 'Efeitos Crescente Seco', 'Efeitos Crescente Fade'],
+  },
+  {
+    label: 'Outros',
+    key: 'Outros',
+    icon: <Layers className="h-3.5 w-3.5" />,
+    children: [],
+  },
+];
+
+// Flat list for horizontal mobile tabs
+const MOBILE_CATEGORIES = [
+  'Todos', 'Kick', 'Snare', 'Toms', 'Hi-Hat & Pratos', 'Percussão',
+  'Loops 4/4', 'Loops 3/4', 'Loops 6/8',
+  'Continuous Pads', 'Efeitos Super Low', 'Efeitos Crescente Seco',
+  'Efeitos Crescente Fade', 'Outros',
+];
 
 // Static fallback packs (shown when DB has no packs yet)
 const STATIC_PACKS: StorePackData[] = [
@@ -40,23 +88,6 @@ const STATIC_PACKS: StorePackData[] = [
   { id: 'fx-riser-fade', name: 'Risers Fade', description: 'Crescentes suaves com fade final para transições.', category: 'Efeitos Crescente Fade', icon_name: 'sparkles', color: 'bg-fuchsia-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
 ];
 
-const STORE_CATEGORIES = [
-  'Todos',
-  'Kick',
-  'Snare',
-  'Toms',
-  'Hi-Hat & Pratos',
-  'Percussão',
-  'Loops 4/4',
-  'Loops 3/4',
-  'Loops 6/8',
-  'Continuous Pads',
-  'Efeitos Super Low',
-  'Efeitos Crescente Seco',
-  'Efeitos Crescente Fade',
-  'Outros',
-];
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -67,15 +98,13 @@ const Dashboard = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [showAdmin, setShowAdmin] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ drums: true, loops: false, efeitos: false });
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   const badge = tierBadge[tier];
 
-  // Merge DB packs with static fallbacks
   const displayPacks = dbPacks.length > 0
-    ? [
-        ...dbPacks,
-        ...STATIC_PACKS.filter(sp => !dbPacks.some(dp => dp.name === sp.name)),
-      ]
+    ? [...dbPacks, ...STATIC_PACKS.filter(sp => !dbPacks.some(dp => dp.name === sp.name))]
     : STATIC_PACKS;
 
   const handleManageSubscription = async () => {
@@ -104,11 +133,33 @@ const Dashboard = () => {
     ? displayPacks
     : displayPacks.filter(p => p.category === activeCategory);
 
+  // Select category and auto-expand its parent group
+  const handleSelectCategory = (cat: string) => {
+    setActiveCategory(cat);
+    setShowMobileFilter(false);
+    // Auto-expand group
+    for (const g of CATEGORY_GROUPS) {
+      if (g.children.includes(cat)) {
+        setExpandedGroups(prev => ({ ...prev, [g.key]: true }));
+      }
+    }
+  };
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Is a category within this group active?
+  const isGroupActive = (group: typeof CATEGORY_GROUPS[0]) => {
+    if (group.key === activeCategory) return true;
+    return group.children.includes(activeCategory);
+  };
+
   return (
     <div className="min-h-screen bg-[#f8f8fa] text-gray-900">
       {/* Top bar */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
             <img src={logoDark} alt="Logo" className="h-7 w-auto" />
             <span className="font-bold text-sm text-gray-900 hidden sm:inline">Glory Pads</span>
@@ -119,21 +170,15 @@ const Dashboard = () => {
               <button
                 onClick={() => setShowAdmin(v => !v)}
                 className={`flex items-center gap-1.5 h-8 px-2.5 rounded-lg border transition-colors text-xs font-medium ${
-                  showAdmin
-                    ? 'bg-amber-50 border-amber-300 text-amber-700'
-                    : 'border-gray-200 hover:bg-gray-50 text-gray-600'
+                  showAdmin ? 'bg-amber-50 border-amber-300 text-amber-700' : 'border-gray-200 hover:bg-gray-50 text-gray-600'
                 }`}
               >
                 <ShieldCheck className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Admin</span>
               </button>
             )}
-
-            <Button
-              size="sm"
-              onClick={() => navigate('/app')}
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-3 text-xs font-medium gap-1.5"
-            >
+            <Button size="sm" onClick={() => navigate('/app')}
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-3 text-xs font-medium gap-1.5">
               <Play className="h-3 w-3" />
               Abrir App
             </Button>
@@ -173,20 +218,15 @@ const Dashboard = () => {
                         </div>
                       )}
                     </div>
-
                     <div className="h-px bg-gray-100" />
-
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assinatura</span>
                         <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
-                          {badge.icon}
-                          {badge.label}
+                          {badge.icon}{badge.label}
                         </span>
                       </div>
-                      {formattedEnd && (
-                        <p className="text-[11px] text-gray-400">Renova em {formattedEnd}</p>
-                      )}
+                      {formattedEnd && <p className="text-[11px] text-gray-400">Renova em {formattedEnd}</p>}
                       {tier === 'free' ? (
                         <Button onClick={() => { setMenuOpen(false); navigate('/pricing'); }} size="sm" className="w-full h-8 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white">
                           <Zap className="h-3 w-3 mr-1" /> Fazer upgrade
@@ -197,13 +237,9 @@ const Dashboard = () => {
                         </Button>
                       )}
                     </div>
-
                     <div className="h-px bg-gray-100" />
-
-                    <button
-                      onClick={handleSignOut}
-                      className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
-                    >
+                    <button onClick={handleSignOut}
+                      className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
                       <LogOut className="h-3.5 w-3.5" />
                       Sair da conta
                     </button>
@@ -215,7 +251,7 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-6 sm:py-10">
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
 
         {/* Admin Panel */}
         {isAdmin && showAdmin && (
@@ -225,48 +261,174 @@ const Dashboard = () => {
         )}
 
         {/* Store header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-2.5 mb-1">
             <Store className="h-5 w-5 text-gray-400" />
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Glory Store</h1>
           </div>
           <p className="text-sm text-gray-500 max-w-lg">
-            Descubra novos sons, packs e texturas para elevar seu louvor. Cada pack inclui sons exclusivos prontos para usar.
+            Descubra novos sons, packs e texturas para elevar seu louvor.
           </p>
         </div>
 
-        {/* Category tabs */}
-        <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
-          {STORE_CATEGORIES.map(cat => (
+        {/* Mobile: horizontal tabs + filter button */}
+        <div className="lg:hidden mb-5">
+          <div className="flex gap-2 items-center">
+            {/* Filter toggle */}
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                activeCategory === cat
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              onClick={() => setShowMobileFilter(v => !v)}
+              className={`shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium border transition-colors ${
+                showMobileFilter ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600'
               }`}
             >
-              {cat}
+              <Filter className="h-3 w-3" />
+              Filtrar
             </button>
-          ))}
+            {/* Scrollable tabs */}
+            <div className="flex gap-1.5 overflow-x-auto pb-0.5 flex-1 scrollbar-none">
+              {MOBILE_CATEGORIES.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => handleSelectCategory(cat)}
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-colors shrink-0 ${
+                    activeCategory === cat
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile expanded filter panel */}
+          {showMobileFilter && (
+            <div className="mt-3 bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Categorias</p>
+              <div className="space-y-1">
+                {CATEGORY_GROUPS.map(group => (
+                  <div key={group.key}>
+                    <button
+                      onClick={() => group.children.length > 0 ? toggleGroup(group.key) : handleSelectCategory(group.key)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        isGroupActive(group) ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {group.icon}
+                        {group.label}
+                      </div>
+                      {group.children.length > 0 && (
+                        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedGroups[group.key] ? 'rotate-90' : ''}`} />
+                      )}
+                    </button>
+                    {group.children.length > 0 && expandedGroups[group.key] && (
+                      <div className="ml-4 mt-1 space-y-0.5">
+                        {group.children.map(child => (
+                          <button
+                            key={child}
+                            onClick={() => handleSelectCategory(child)}
+                            className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                              activeCategory === child ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            }`}
+                          >
+                            {child}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Loading */}
-        {packsLoading && (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-          </div>
-        )}
+        {/* Desktop layout: sidebar + grid */}
+        <div className="hidden lg:flex gap-8">
+          {/* Vertical sidebar */}
+          <aside className="w-52 shrink-0">
+            <div className="sticky top-20 bg-white rounded-2xl border border-gray-200 p-3 space-y-0.5">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-2">Categorias</p>
+              {CATEGORY_GROUPS.map(group => (
+                <div key={group.key}>
+                  <button
+                    onClick={() => group.children.length > 0 ? toggleGroup(group.key) : handleSelectCategory(group.key)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      isGroupActive(group) ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {group.icon}
+                      <span>{group.label}</span>
+                    </div>
+                    {group.children.length > 0 && (
+                      <ChevronRight className={`h-3.5 w-3.5 transition-transform opacity-60 ${expandedGroups[group.key] ? 'rotate-90' : ''}`} />
+                    )}
+                  </button>
+                  {group.children.length > 0 && expandedGroups[group.key] && (
+                    <div className="ml-3 mt-0.5 mb-1 space-y-0.5 border-l border-gray-100 pl-3">
+                      {group.children.map(child => (
+                        <button
+                          key={child}
+                          onClick={() => handleSelectCategory(child)}
+                          className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                            activeCategory === child
+                              ? 'text-gray-900 font-semibold bg-gray-100'
+                              : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {child}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </aside>
 
-        {/* Packs grid */}
-        {!packsLoading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredPacks.map(pack => (
-              <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
-            ))}
+          {/* Pack grid */}
+          <div className="flex-1 min-w-0">
+            {packsLoading && (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            )}
+            {!packsLoading && (
+              <>
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-sm text-gray-500">
+                    <span className="font-semibold text-gray-900">{activeCategory}</span>
+                    {' '}· {filteredPacks.length} {filteredPacks.length === 1 ? 'pack' : 'packs'}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredPacks.map(pack => (
+                    <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-        )}
+        </div>
+
+        {/* Mobile pack grid */}
+        <div className="lg:hidden">
+          {packsLoading && (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+            </div>
+          )}
+          {!packsLoading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {filteredPacks.map(pack => (
+                <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Coming soon banner */}
         <div className="mt-10 text-center py-10 px-4">
