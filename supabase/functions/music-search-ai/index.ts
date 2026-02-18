@@ -78,7 +78,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         query: searchQuery,
-        limit: 8,
+        limit: 5,
         scrapeOptions: {
           formats: ["markdown"],
         },
@@ -102,10 +102,10 @@ serve(async (req) => {
       });
     }
 
-    // Build context from search results
+    // Build context from search results (trimmed for speed)
     const context = searchResults.map((r: any, i: number) => {
       const content = r.markdown || r.content || "";
-      const trimmed = content.substring(0, 1500);
+      const trimmed = content.substring(0, 800);
       return `--- Fonte ${i + 1}: ${r.url || "desconhecida"} ---\n${r.title || ""}\n${trimmed}`;
     }).join("\n\n");
 

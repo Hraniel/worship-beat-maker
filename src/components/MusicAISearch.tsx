@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Search, Music, Loader2, Sparkles, Check, X, Zap, Lock, Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, ExternalLink } from 'lucide-react';
+import { Search, Music, Loader2, Sparkles, Check, X, Zap, Lock, Play, Pause, SkipBack, SkipForward, Volume2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
@@ -17,17 +17,6 @@ interface AISongResult {
   previewUrl?: string | null;
   spotifyId?: string | null;
 }
-
-interface SpotifyTrack {
-  id: string;
-  name: string;
-  artist: string;
-  album: string;
-  image: string;
-  duration_ms: number;
-  preview_url: string | null;
-}
-
 interface PadConfig {
   volume: number;
   eqLow: number;
@@ -107,11 +96,8 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
   const [suggestion, setSuggestion] = useState<SuggestedConfig | null>(null);
   const [dataSource, setDataSource] = useState<{ bpm: string; key: string } | null>(null);
 
-  // Spotify preview state
-  const [spotifyQuery, setSpotifyQuery] = useState('');
-  const [spotifySearching, setSpotifySearching] = useState(false);
-  const [spotifyTracks, setSpotifyTracks] = useState<SpotifyTrack[]>([]);
-  const [previewTrackId, setPreviewTrackId] = useState<string | null>(null);
+  // Preview state (uses previewUrl directly from search results)
+  const [previewId, setPreviewId] = useState<string | null>(null);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewProgress, setPreviewProgress] = useState(0);
 
@@ -127,14 +113,6 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
   // Refresh usage on open
   useEffect(() => { if (open) setUsage(getUsageStats()); }, [open]);
 
-  // Auto-populate Spotify search from selected song
-  useEffect(() => {
-    if (selectedSong) {
-      setSpotifyQuery(`${selectedSong.name} ${selectedSong.artist}`);
-      setSpotifyTracks([]);
-    }
-  }, [selectedSong]);
-
   const stopPreview = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
@@ -146,7 +124,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
       progressInterval.current = null;
     }
     setPreviewPlaying(false);
-    setPreviewTrackId(null);
+    setPreviewId(null);
     setPreviewProgress(0);
   }, []);
 
@@ -160,26 +138,26 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
     }, 200);
   }, []);
 
-  const togglePreview = useCallback((track: SpotifyTrack) => {
-    if (!track.preview_url) return;
-    if (previewTrackId === track.id && previewPlaying) {
+  // Toggle preview using id + previewUrl directly from search result
+  const togglePreview = useCallback((id: string, previewUrl: string) => {
+    if (previewId === id && previewPlaying) {
       audioRef.current?.pause();
       setPreviewPlaying(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
       return;
     }
-    if (previewTrackId === track.id && !previewPlaying && audioRef.current) {
+    if (previewId === id && !previewPlaying && audioRef.current) {
       audioRef.current.play();
       setPreviewPlaying(true);
       startProgressTracking();
       return;
     }
     stopPreview();
-    const audio = new Audio(track.preview_url);
+    const audio = new Audio(previewUrl);
     audioRef.current = audio;
-    setPreviewTrackId(track.id);
+    setPreviewId(id);
     setPreviewProgress(0);
-    audio.play();
+    audio.play().catch(() => toast.error('Erro ao tocar preview.'));
     setPreviewPlaying(true);
     startProgressTracking();
     audio.onended = () => {
@@ -187,7 +165,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
       setPreviewProgress(0);
       if (progressInterval.current) clearInterval(progressInterval.current);
     };
-  }, [previewTrackId, previewPlaying, stopPreview, startProgressTracking]);
+  }, [previewId, previewPlaying, stopPreview, startProgressTracking]);
 
   const seekPreview = useCallback((delta: number) => {
     if (audioRef.current) {
@@ -195,13 +173,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
     }
   }, []);
 
-  const formatDuration = (ms: number) => {
-    const m = Math.floor(ms / 60000);
-    const s = Math.floor((ms % 60000) / 1000);
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // --- songbpm.com search ---
+  // --- AI search ---
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
     setSearching(true);
@@ -209,6 +181,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
     setSelectedSong(null);
     setSuggestion(null);
     setDataSource(null);
+    stopPreview();
 
     try {
       const { data, error } = await supabase.functions.invoke('music-search-ai', {
@@ -225,7 +198,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
     } finally {
       setSearching(false);
     }
-  }, [query]);
+  }, [query, stopPreview]);
 
   // --- AI analysis ---
   const handleAnalyze = useCallback(async (song: AISongResult) => {
@@ -258,29 +231,6 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
     }
   }, []);
 
-  // --- Spotify preview search ---
-  const handleSpotifySearch = useCallback(async () => {
-    if (!spotifyQuery.trim()) return;
-    setSpotifySearching(true);
-    setSpotifyTracks([]);
-    stopPreview();
-
-    try {
-      const { data, error } = await supabase.functions.invoke('spotify-search', {
-        body: { query: spotifyQuery.trim() },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setSpotifyTracks(data.tracks || []);
-      if (!data.tracks?.length) toast.info('Nenhuma música encontrada no Spotify.');
-    } catch (e) {
-      console.error('Spotify search error:', e);
-      toast.error('Erro ao buscar no Spotify.');
-    } finally {
-      setSpotifySearching(false);
-    }
-  }, [spotifyQuery, stopPreview]);
-
   // --- Apply config ---
   const handleApply = useCallback(() => {
     if (!suggestion) return;
@@ -295,9 +245,9 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
     setResults([]);
     setSelectedSong(null);
     setSuggestion(null);
-    setSpotifyTracks([]);
-    setSpotifyQuery('');
-  }, [suggestion, selectedSong, onApplyConfig]);
+    stopPreview();
+  }, [suggestion, selectedSong, onApplyConfig, stopPreview]);
+
 
   return (
     <Sheet open={locked ? false : open} onOpenChange={(v) => { if (!locked) setOpen(v); }}>
@@ -342,7 +292,7 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
           {/* ── Section 1: AI song search ── */}
           <div className="space-y-2">
             <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-              1. Buscar música com IA
+              Buscar música
             </p>
             <div className="flex gap-2">
               <Input
@@ -407,19 +357,30 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
                         </div>
                       </button>
 
-                      {/* Open in Spotify button */}
-                      {spotifyUrl && (
-                        <a
-                          href={spotifyUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="absolute top-2 right-2 p-1.5 rounded-md text-[#1DB954] hover:bg-[#1DB954]/10 transition-colors"
-                          title="Abrir no Spotify"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
-                      )}
+                      {/* Preview + Spotify buttons */}
+                      <div className="absolute top-2 right-2 flex items-center gap-1">
+                        {r.previewUrl && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); togglePreview(r.spotifyId || String(i), r.previewUrl!); }}
+                            className={`p-1.5 rounded-md transition-colors ${previewId === (r.spotifyId || String(i)) && previewPlaying ? 'text-primary bg-primary/10' : 'text-muted-foreground hover:text-primary hover:bg-primary/10'}`}
+                            title="Ouvir preview 30s"
+                          >
+                            {previewId === (r.spotifyId || String(i)) && previewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                          </button>
+                        )}
+                        {spotifyUrl && (
+                          <a
+                            href={spotifyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-md text-[#1DB954] hover:bg-[#1DB954]/10 transition-colors"
+                            title="Abrir no Spotify"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -462,12 +423,23 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
                     )}
                   </div>
                 </div>
-                <Button
-                  variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                  onClick={() => { setSelectedSong(null); setSuggestion(null); setDataSource(null); }}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {selectedSong.previewUrl && (
+                    <button
+                      onClick={() => togglePreview(selectedSong.spotifyId || 'selected', selectedSong.previewUrl!)}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${previewId === (selectedSong.spotifyId || 'selected') && previewPlaying ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-primary hover:text-primary-foreground'}`}
+                      title="Ouvir preview 30s"
+                    >
+                      {previewId === (selectedSong.spotifyId || 'selected') && previewPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-0.5" />}
+                    </button>
+                  )}
+                  <Button
+                    variant="ghost" size="icon" className="h-7 w-7 shrink-0"
+                    onClick={() => { setSelectedSong(null); setSuggestion(null); setDataSource(null); stopPreview(); }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
 
               {/* Analyzing spinner */}
@@ -553,90 +525,35 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
             </div>
           )}
 
-          {/* ── Section 2: Spotify preview (shows after song selected) ── */}
-          {selectedSong && (
-            <div className="space-y-2 border-t border-border/50 pt-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
-                2. Ouvir preview no Spotify <span className="normal-case font-normal">(opcional)</span>
+          {/* ── Preview player bar (shown when a result has active preview) ── */}
+          {previewId && (
+            <div className="border-t border-border/50 pt-3 space-y-1.5">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                <Volume2 className="h-3 w-3" /> Preview Spotify (30s)
               </p>
-              <div className="flex gap-2">
-                <Input
-                  value={spotifyQuery}
-                  onChange={(e) => setSpotifyQuery(e.target.value)}
-                  placeholder="Buscar no Spotify..."
-                  onKeyDown={(e) => e.key === 'Enter' && handleSpotifySearch()}
-                  className="flex-1"
-                />
-                <Button onClick={handleSpotifySearch} disabled={spotifySearching || !spotifyQuery.trim()} size="icon" variant="outline">
-                  {spotifySearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                </Button>
-              </div>
-
-              {spotifyTracks.length > 0 && (
-                <div className="space-y-1">
-                  {spotifyTracks.map((track) => {
-                    const isActive = previewTrackId === track.id;
-                    return (
-                      <div key={track.id} className={`rounded-lg transition-colors ${isActive ? 'bg-muted' : 'hover:bg-muted/50'}`}>
-                        <div className="flex items-center gap-3 w-full p-2 text-left">
-                          {track.image ? (
-                            <img src={track.image} alt="" className="w-9 h-9 rounded object-cover shrink-0" />
-                          ) : (
-                            <div className="w-9 h-9 rounded bg-muted flex items-center justify-center shrink-0">
-                              <Music className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className={`text-xs font-medium truncate ${isActive ? 'text-primary' : ''}`}>{track.name}</p>
-                            <p className="text-[10px] text-muted-foreground truncate">{track.artist}</p>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground shrink-0 mr-1">
-                            {formatDuration(track.duration_ms)}
-                          </span>
-                      {track.preview_url ? (
-                            <button
-                              onClick={() => togglePreview(track)}
-                              className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors ${isActive && previewPlaying ? 'bg-primary text-primary-foreground' : 'bg-muted/80 text-foreground hover:bg-primary hover:text-primary-foreground'}`}
-                              title="Ouvir preview 30s"
-                            >
-                              {isActive && previewPlaying ? (
-                                <Pause className="h-3 w-3" />
-                              ) : (
-                                <Play className="h-3 w-3 ml-0.5" />
-                              )}
-                            </button>
-                          ) : (
-                            <div className="shrink-0 w-7 h-7 flex items-center justify-center" title="Preview não disponível no Spotify">
-                              <VolumeX className="h-3 w-3 text-muted-foreground/50" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Mini player bar */}
-                        {isActive && (
-                          <div className="flex items-center gap-2 px-3 pb-2.5">
-                            <button onClick={() => seekPreview(-5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                              <SkipBack className="h-3 w-3" />
-                            </button>
-                            <button onClick={() => togglePreview(track)} className={`p-1 rounded-full transition-colors ${previewPlaying ? 'text-primary' : 'text-foreground'}`}>
-                              {previewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
-                            </button>
-                            <button onClick={() => seekPreview(5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                              <SkipForward className="h-3 w-3" />
-                            </button>
-                            <div className="flex-1 h-1.5 bg-muted-foreground/20 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-primary rounded-full transition-all duration-200"
-                                style={{ width: `${previewProgress}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+              <div className="flex items-center gap-2 bg-muted/40 rounded-lg px-3 py-2">
+                <button onClick={() => seekPreview(-5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <SkipBack className="h-3 w-3" />
+                </button>
+                <button
+                  onClick={() => {
+                    const active = results.find(r => r.spotifyId === previewId) || selectedSong;
+                    if (active?.previewUrl) togglePreview(previewId, active.previewUrl);
+                  }}
+                  className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+                >
+                  {previewPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3 ml-0.5" />}
+                </button>
+                <button onClick={() => seekPreview(5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <SkipForward className="h-3 w-3" />
+                </button>
+                <div className="flex-1 h-1.5 bg-muted-foreground/20 rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full transition-all duration-200" style={{ width: `${previewProgress}%` }} />
                 </div>
-              )}
+                <button onClick={stopPreview} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
             </div>
           )}
         </div>
