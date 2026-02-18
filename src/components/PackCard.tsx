@@ -1,11 +1,13 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Play, Square, Download, Check, Loader2, Music,
-  Drum, Waves, Sparkles, Headphones, Volume2, Layers, AudioWaveform, Lock
+  Drum, Waves, Sparkles, Headphones, Volume2, Layers, AudioWaveform, Lock, ChevronRight
 } from 'lucide-react';
+import { StorePackData } from '@/hooks/useStorePacks';
 
 const LUCIDE_ICON_MAP: Record<string, React.ReactNode> = {
   drum: <Drum className="h-5 w-5" />,
@@ -18,40 +20,21 @@ const LUCIDE_ICON_MAP: Record<string, React.ReactNode> = {
   layers: <Layers className="h-5 w-5" />,
 };
 
-interface PackSound {
-  id: string;
-  name: string;
-  short_name: string;
-  preview_path: string | null;
-  duration_ms: number;
-}
-
-interface StorePackData {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  icon_name: string;
-  color: string;
-  tag: string | null;
-  is_available: boolean;
-  price_cents: number;
-  sounds: PackSound[];
-  purchased: boolean;
-}
-
 interface PackCardProps {
   pack: StorePackData;
   onPurchased: () => void;
 }
 
 const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
-  const [expanded, setExpanded] = useState(false);
+  const navigate = useNavigate();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const handlePreview = useCallback(async (sound: PackSound) => {
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+  const handlePreview = useCallback(async (e: React.MouseEvent, sound: { id: string; preview_path: string | null }) => {
+    e.stopPropagation();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -72,7 +55,8 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
     }
   }, [playingId]);
 
-  const handlePurchase = async () => {
+  const handlePurchase = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     setPurchasing(true);
     try {
       const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
@@ -86,9 +70,15 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
     }
   };
 
-  // Resolve icon: Lucide icon key OR custom image (stored as path or full URL)
+  const handleCardClick = () => {
+    // Only navigate if it's a real DB pack (UUID length)
+    if (pack.id.length === 36) {
+      navigate(`/store/${pack.id}`);
+    }
+  };
+
+  // Resolve icon
   const isImageIcon = pack.icon_name?.startsWith('pack-icons/') || pack.icon_name?.startsWith('http');
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const imageIconUrl = isImageIcon
     ? (pack.icon_name.startsWith('http')
         ? pack.icon_name
@@ -96,91 +86,108 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
     : null;
   const lucideIcon = LUCIDE_ICON_MAP[pack.icon_name] || <Music className="h-5 w-5" />;
 
-  return (
-    <div className="group relative bg-white rounded-2xl border border-gray-200/80 p-4 hover:shadow-lg hover:border-gray-300 transition-all duration-200">
-      {pack.tag && (
-        <span className="absolute top-3 right-3 text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-          {pack.tag}
-        </span>
-      )}
-      <div className={`h-11 w-11 rounded-xl ${isImageIcon ? '' : pack.color} flex items-center justify-center mb-3 ${isImageIcon ? '' : 'text-white'} shadow-sm overflow-hidden`}>
-        {isImageIcon ? (
-          <img src={imageIconUrl!} alt={pack.name} className="h-full w-full object-cover" />
-        ) : lucideIcon}
-      </div>
-      <h3 className="font-semibold text-sm text-gray-900 mb-1">{pack.name}</h3>
-      <p className="text-xs text-gray-500 leading-relaxed mb-3">{pack.description}</p>
+  // Resolve banner
+  const hasBanner = !!pack.banner_url;
+  const bannerUrl = hasBanner
+    ? (pack.banner_url!.startsWith('http')
+        ? pack.banner_url!
+        : `https://${projectId}.supabase.co/storage/v1/object/public/sound-previews/${pack.banner_url}`)
+    : null;
 
-      {/* Sound count + status */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <Music className="h-3 w-3 text-gray-400" />
-          <span className="text-[11px] text-gray-400 font-medium">{pack.sounds.length} sons</span>
+  return (
+    <div
+      className="group relative bg-white rounded-2xl border border-gray-200/80 hover:shadow-lg hover:border-gray-300 transition-all duration-200 overflow-hidden cursor-pointer"
+      onClick={handleCardClick}
+    >
+      {/* Banner or color header */}
+      {hasBanner ? (
+        <div className="w-full h-32 overflow-hidden">
+          <img src={bannerUrl!} alt={pack.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
-        {pack.purchased ? (
-          <div className="flex items-center gap-1 text-emerald-600">
-            <Check className="h-3 w-3" />
-            <span className="text-[11px] font-medium">Adquirido</span>
+      ) : (
+        <div className={`w-full h-24 ${pack.color} flex items-center justify-center`}>
+          <div className="text-white/80">
+            {imageIconUrl
+              ? <img src={imageIconUrl} alt={pack.name} className="h-10 w-10 rounded-xl object-cover" />
+              : <div className="text-white opacity-60">{lucideIcon}</div>
+            }
           </div>
-        ) : pack.is_available ? (
-          <span className="text-[11px] font-medium text-violet-600">
-            {pack.price_cents === 0 ? 'Grátis' : `R$ ${(pack.price_cents / 100).toFixed(2)}`}
+        </div>
+      )}
+
+      {/* Card body */}
+      <div className="p-4">
+        {pack.tag && (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 mb-2 inline-block">
+            {pack.tag}
           </span>
-        ) : (
-          <div className="flex items-center gap-1 text-gray-400">
-            <Lock className="h-3 w-3" />
-            <span className="text-[11px] font-medium">Em breve</span>
+        )}
+
+        {/* Icon when there's a banner */}
+        {hasBanner && (
+          <div className={`h-9 w-9 rounded-xl ${isImageIcon ? '' : pack.color} flex items-center justify-center mb-2 ${isImageIcon ? '' : 'text-white'} shadow-sm overflow-hidden`}>
+            {isImageIcon
+              ? <img src={imageIconUrl!} alt={pack.name} className="h-full w-full object-cover" />
+              : lucideIcon}
           </div>
         )}
-      </div>
 
-      {/* Expand sounds */}
-      {pack.is_available && pack.sounds.length > 0 && (
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="text-[11px] text-violet-600 font-medium hover:underline mb-2"
-        >
-          {expanded ? 'Ocultar sons' : 'Ver sons'}
-        </button>
-      )}
+        <h3 className="font-semibold text-sm text-gray-900 mb-1 leading-snug">{pack.name}</h3>
+        <p className="text-xs text-gray-500 leading-relaxed mb-3 line-clamp-2">{pack.description}</p>
 
-      {expanded && (
-        <div className="space-y-1 mb-3 max-h-48 overflow-y-auto">
-          {pack.sounds.map(sound => (
-            <div key={sound.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-colors">
-              <span className="text-xs text-gray-700 truncate flex-1">{sound.name}</span>
-              {sound.preview_path && (
-                <button onClick={() => handlePreview(sound)} className="p-1 rounded-full hover:bg-gray-200 transition-colors">
-                  {playingId === sound.id
-                    ? <Square className="h-3 w-3 text-violet-600" />
-                    : <Play className="h-3 w-3 text-gray-500" />}
-                </button>
-              )}
+        {/* Sound count + status */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5">
+            <Music className="h-3 w-3 text-gray-400" />
+            <span className="text-[11px] text-gray-400 font-medium">{pack.sounds.length} sons</span>
+          </div>
+          {pack.purchased ? (
+            <div className="flex items-center gap-1 text-emerald-600">
+              <Check className="h-3 w-3" />
+              <span className="text-[11px] font-medium">Adquirido</span>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Action button */}
-      {pack.is_available && !pack.purchased && (
-        <Button size="sm" onClick={handlePurchase} disabled={purchasing}
-          className="w-full h-8 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white">
-          {purchasing ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : pack.is_available ? (
+            <span className="text-[11px] font-medium text-violet-600">
+              {pack.price_cents === 0 ? 'Grátis' : `R$ ${(pack.price_cents / 100).toFixed(2)}`}
+            </span>
           ) : (
-            <>
-              <Download className="h-3 w-3 mr-1" />
-              {pack.price_cents === 0 ? 'Obter Grátis' : 'Comprar'}
-            </>
+            <div className="flex items-center gap-1 text-gray-400">
+              <Lock className="h-3 w-3" />
+              <span className="text-[11px] font-medium">Em breve</span>
+            </div>
           )}
-        </Button>
-      )}
-
-      {pack.purchased && (
-        <div className="text-center text-[11px] text-emerald-600 font-medium py-1">
-          ✓ Disponível nos seus pads
         </div>
-      )}
+
+        {/* Action button */}
+        {pack.is_available && !pack.purchased ? (
+          <Button
+            size="sm"
+            onClick={handlePurchase}
+            disabled={purchasing}
+            className="w-full h-8 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white"
+          >
+            {purchasing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <>
+                <Download className="h-3 w-3 mr-1" />
+                {pack.price_cents === 0 ? 'Obter Grátis' : 'Comprar'}
+              </>
+            )}
+          </Button>
+        ) : pack.purchased ? (
+          <div className="text-center text-[11px] text-emerald-600 font-medium py-1 flex items-center justify-center gap-1">
+            ✓ Disponível nos seus pads
+          </div>
+        ) : pack.id.length === 36 ? (
+          <button
+            onClick={handleCardClick}
+            className="w-full flex items-center justify-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 py-1 transition-colors"
+          >
+            Ver detalhes <ChevronRight className="h-3 w-3" />
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 };

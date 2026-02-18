@@ -14,7 +14,7 @@ import {
   Crown, Zap, Play, LogOut, Store,
   User, Mail, Calendar, Loader2,
   ChevronDown, ChevronRight, Drum, Waves, Sparkles, Music, Headphones,
-  Volume2, Layers, AudioWaveform, Star, Lock, ShieldCheck, Filter
+  Volume2, Layers, AudioWaveform, Star, Lock, ShieldCheck, Filter, Search, X
 } from 'lucide-react';
 
 const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
@@ -73,19 +73,19 @@ const MOBILE_CATEGORIES = [
 
 // Static fallback packs (shown when DB has no packs yet)
 const STATIC_PACKS: StorePackData[] = [
-  { id: 'worship-strings', name: 'Worship Strings', description: 'Texturas de cordas atmosféricas em todas as 12 tonalidades.', category: 'Continuous Pads', icon_name: 'waves', color: 'bg-indigo-500', tag: 'Novo', is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'warm-pads', name: 'Warm Pads', description: 'Pads quentes e envolventes em todas as tonalidades.', category: 'Continuous Pads', icon_name: 'headphones', color: 'bg-amber-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-drums-dry', name: 'Worship Kick Dry', description: 'Kicks secos e precisos para worship.', category: 'Kick', icon_name: 'drum', color: 'bg-rose-500', tag: 'Popular', is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-snare-dry', name: 'Worship Snare Dry', description: 'Snares secos com punch para worship.', category: 'Snare', icon_name: 'drum', color: 'bg-orange-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-drums-reverb', name: 'Worship Drums Reverb', description: 'Bateria com reverb hall profundo para worship atmosférico.', category: 'Kick', icon_name: 'drum', color: 'bg-purple-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-toms', name: 'Worship Toms', description: 'Tons graves e marcantes para momentos épicos.', category: 'Toms', icon_name: 'layers', color: 'bg-yellow-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'worship-percussion', name: 'Worship Percussion', description: 'Percussão orgânica: chocalhos, pandeiros e más.', category: 'Percussão', icon_name: 'layers', color: 'bg-teal-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'loops-4-4', name: 'Loops 4/4 Worship', description: 'Padrões rítmicos em 4/4 para cultos contemporâneos.', category: 'Loops 4/4', icon_name: 'audio-waveform', color: 'bg-blue-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'loops-3-4', name: 'Loops 3/4 Worship', description: 'Valsas e waltz para hinos em 3/4.', category: 'Loops 3/4', icon_name: 'audio-waveform', color: 'bg-cyan-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'loops-6-8', name: 'Loops 6/8 Worship', description: 'Groove suave em 6/8 para momentos de adoração.', category: 'Loops 6/8', icon_name: 'audio-waveform', color: 'bg-sky-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'fx-super-low', name: 'Super Low FX', description: 'Sub-graves e explosões de baixo frequência para impacto.', category: 'Efeitos Super Low', icon_name: 'volume-2', color: 'bg-red-600', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'fx-riser-dry', name: 'Risers Seco', description: 'Crescentes com corte seco e impactante.', category: 'Efeitos Crescente Seco', icon_name: 'sparkles', color: 'bg-pink-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
-  { id: 'fx-riser-fade', name: 'Risers Fade', description: 'Crescentes suaves com fade final para transições.', category: 'Efeitos Crescente Fade', icon_name: 'sparkles', color: 'bg-fuchsia-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false },
+  { id: 'worship-strings', name: 'Worship Strings', description: 'Texturas de cordas atmosféricas em todas as 12 tonalidades.', category: 'Continuous Pads', icon_name: 'waves', color: 'bg-indigo-500', tag: 'Novo', is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'warm-pads', name: 'Warm Pads', description: 'Pads quentes e envolventes em todas as tonalidades.', category: 'Continuous Pads', icon_name: 'headphones', color: 'bg-amber-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'worship-drums-dry', name: 'Worship Kick Dry', description: 'Kicks secos e precisos para worship.', category: 'Kick', icon_name: 'drum', color: 'bg-rose-500', tag: 'Popular', is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'worship-snare-dry', name: 'Worship Snare Dry', description: 'Snares secos com punch para worship.', category: 'Snare', icon_name: 'drum', color: 'bg-orange-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'worship-drums-reverb', name: 'Worship Drums Reverb', description: 'Bateria com reverb hall profundo para worship atmosférico.', category: 'Kick', icon_name: 'drum', color: 'bg-purple-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'worship-toms', name: 'Worship Toms', description: 'Tons graves e marcantes para momentos épicos.', category: 'Toms', icon_name: 'layers', color: 'bg-yellow-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'worship-percussion', name: 'Worship Percussion', description: 'Percussão orgânica: chocalhos, pandeiros e más.', category: 'Percussão', icon_name: 'layers', color: 'bg-teal-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'loops-4-4', name: 'Loops 4/4 Worship', description: 'Padrões rítmicos em 4/4 para cultos contemporâneos.', category: 'Loops 4/4', icon_name: 'audio-waveform', color: 'bg-blue-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'loops-3-4', name: 'Loops 3/4 Worship', description: 'Valsas e waltz para hinos em 3/4.', category: 'Loops 3/4', icon_name: 'audio-waveform', color: 'bg-cyan-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'loops-6-8', name: 'Loops 6/8 Worship', description: 'Groove suave em 6/8 para momentos de adoração.', category: 'Loops 6/8', icon_name: 'audio-waveform', color: 'bg-sky-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'fx-super-low', name: 'Super Low FX', description: 'Sub-graves e explosões de baixo frequência para impacto.', category: 'Efeitos Super Low', icon_name: 'volume-2', color: 'bg-red-600', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'fx-riser-dry', name: 'Risers Seco', description: 'Crescentes com corte seco e impactante.', category: 'Efeitos Crescente Seco', icon_name: 'sparkles', color: 'bg-pink-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
+  { id: 'fx-riser-fade', name: 'Risers Fade', description: 'Crescentes suaves com fade final para transições.', category: 'Efeitos Crescente Fade', icon_name: 'sparkles', color: 'bg-fuchsia-500', tag: null, is_available: false, price_cents: 0, sounds: [], purchased: false, banner_url: null },
 ];
 
 const Dashboard = () => {
@@ -100,6 +100,7 @@ const Dashboard = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ drums: true, loops: false, efeitos: false });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const badge = tierBadge[tier];
 
@@ -129,9 +130,12 @@ const Dashboard = () => {
     ? new Date(subscriptionEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
 
-  const filteredPacks = activeCategory === 'Todos'
-    ? displayPacks
-    : displayPacks.filter(p => p.category === activeCategory);
+  const filteredPacks = displayPacks.filter(p => {
+    const matchesCategory = activeCategory === 'Todos' || p.category === activeCategory;
+    const q = searchQuery.toLowerCase().trim();
+    const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
+    return matchesCategory && matchesSearch;
+  });
 
   // Select category and auto-expand its parent group
   const handleSelectCategory = (cat: string) => {
@@ -266,9 +270,28 @@ const Dashboard = () => {
             <Store className="h-5 w-5 text-gray-400" />
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Glory Store</h1>
           </div>
-          <p className="text-sm text-gray-500 max-w-lg">
+          <p className="text-sm text-gray-500 max-w-lg mb-4">
             Descubra novos sons, packs e texturas para elevar seu louvor.
           </p>
+          {/* Search bar */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar packs por nome ou descrição..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full h-10 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Mobile: horizontal tabs + filter button */}
