@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import PackDetail from "./pages/PackDetail";
+import SharedSetlist from "./pages/SharedSetlist";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,7 @@ const App = () => (
                 <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/store/:packId" element={<ProtectedRoute><PackDetail /></ProtectedRoute>} />
+                <Route path="/s/:token" element={<SharedSetlist />} />
                 <Route path="/install" element={<Install />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
