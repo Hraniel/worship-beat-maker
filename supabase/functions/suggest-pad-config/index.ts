@@ -5,6 +5,66 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Scrape songbpm.com to get real BPM and key for a track
+async function fetchSongBpm(trackName: string, artist: string): Promise<{ bpm: number | null; key: string | null }> {
+  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+  if (!FIRECRAWL_API_KEY) {
+    console.warn("FIRECRAWL_API_KEY not configured, skipping songbpm.com lookup");
+    return { bpm: null, key: null };
+  }
+
+  try {
+    // Search songbpm.com for the track
+    const query = `${trackName} ${artist}`;
+    const searchUrl = `https://songbpm.com/searches?q=${encodeURIComponent(query)}`;
+
+    console.log(`Searching songbpm.com: ${searchUrl}`);
+
+    const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: searchUrl,
+        formats: ["markdown"],
+        onlyMainContent: true,
+        waitFor: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("Firecrawl error:", response.status);
+      return { bpm: null, key: null };
+    }
+
+    const data = await response.json();
+    const markdown = data.data?.markdown || data.markdown || "";
+
+    console.log("songbpm.com response (first 800 chars):", markdown.slice(0, 800));
+
+    // Extract BPM from the markdown — songbpm.com shows "XXX BPM" near song results
+    const bpmMatch = markdown.match(/(\d{2,3})\s*BPM/i);
+    const bpm = bpmMatch ? parseInt(bpmMatch[1]) : null;
+
+    // Extract key — songbpm.com shows keys like "A minor", "C major", "F# minor"
+    const keyMatch = markdown.match(/([A-G][#b]?)\s*(major|minor|maj|min)/i);
+    let key: string | null = null;
+    if (keyMatch) {
+      const note = keyMatch[1];
+      const mode = keyMatch[2].toLowerCase();
+      key = mode.startsWith("min") ? `${note}m` : note;
+    }
+
+    console.log(`songbpm.com result → BPM: ${bpm}, Key: ${key}`);
+    return { bpm, key };
+  } catch (err) {
+    console.error("fetchSongBpm error:", err);
+    return { bpm: null, key: null };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -15,8 +75,19 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    // Fetch real BPM and key from songbpm.com
+    const { bpm: realBpm, key: realKey } = await fetchSongBpm(trackName, artist);
+
+    const bpmInfo = realBpm
+      ? `BPM REAL (fonte: songbpm.com): ${realBpm}. USE EXATAMENTE ESTE VALOR.`
+      : `BPM: NÃO encontrado no songbpm.com. Use seu conhecimento musical para estimar com precisão.`;
+
+    const keyInfo = realKey
+      ? `TOM REAL (fonte: songbpm.com): ${realKey}. USE EXATAMENTE ESTE VALOR.`
+      : `TOM: NÃO encontrado no songbpm.com. Use seu conhecimento musical para estimar com precisão.`;
+
     const systemPrompt = `Você é um especialista em produção musical e bateria para worship/louvor.
-Dado os dados de uma música do Spotify (incluindo análise de áudio real quando disponível), sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
+Dado os dados de uma música do Spotify, sugira configurações para 8 pads de bateria que repliquem fielmente o estilo rítmico e sonoro da música.
 
 Os 8 pads disponíveis são (use EXATAMENTE estes IDs):
 1. kick - Bumbo
@@ -54,15 +125,15 @@ Exemplos de padrões comuns em worship:
 
 Para os pads de loop (loop-worship-1 e loop-worship-2), use pattern vazio [].
 
-IMPORTANTE - BPM e TOM:
-- Você DEVE usar seu conhecimento musical interno para determinar o BPM e o tom CORRETOS da música.
-- NÃO invente valores. Para músicas conhecidas, você SABE o BPM e tom reais. USE ESSE CONHECIMENTO.
-- Se não conhecer a música exata, analise o artista, gênero e estilo para dar a melhor estimativa possível.
-- A tonalidade deve ser no formato: "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" seguido de "m" para menor. Ex: "Am", "D", "F#m"
+CRÍTICO - BPM e TOM:
+${bpmInfo}
+${keyInfo}
+Quando os valores reais estão fornecidos acima, você DEVE usá-los no JSON de resposta exatamente como informados. Não altere esses valores.
+A tonalidade deve ser no formato: "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" seguido de "m" para menor. Ex: "Am", "D", "F#m"
 
 Também sugira:
-- bpm: o BPM correto da música (priorize dados reais, depois seu conhecimento)
-- key: a tonalidade correta da música (ex: "C", "Am", "D#m")
+- bpm: o BPM exato (use o valor real fornecido acima quando disponível)
+- key: a tonalidade exata (use o valor real fornecido acima quando disponível)
 - timeSignature: "4/4", "3/4" ou "6/8"
 - recommendedLoop: "loop-worship-1" ou "loop-worship-2" (qual loop usar)
 - description: breve descrição do estilo rítmico sugerido (max 2 frases)
@@ -78,11 +149,11 @@ Responda APENAS com JSON válido usando esta estrutura exata:
   "patternName": string,
   "pads": {
     "kick": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": number[] },
-    "snare": { ... },
-    "hihat-closed": { ... },
-    "hihat-open": { ... },
-    "crash": { ... },
-    "clap": { ... },
+    "snare": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": number[] },
+    "hihat-closed": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": number[] },
+    "hihat-open": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": number[] },
+    "crash": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": number[] },
+    "clap": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": number[] },
     "loop-worship-1": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": [] },
     "loop-worship-2": { "volume": number, "eqLow": number, "eqMid": number, "eqHigh": number, "reverb": number, "delay": number, "delayTime": number, "pattern": [] }
   }
@@ -90,9 +161,12 @@ Responda APENAS com JSON válido usando esta estrutura exata:
 
     const userPrompt = `Música: "${trackName}" de ${artist}
 
-Você PRECISA determinar o BPM e tom REAIS desta música usando seu conhecimento musical. Para músicas conhecidas, forneça os valores exatos. Sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música. Use EXATAMENTE os IDs de pad listados acima.`;
+${realBpm ? `BPM CONFIRMADO pelo songbpm.com: ${realBpm}` : "BPM: use seu conhecimento musical."}
+${realKey ? `TOM CONFIRMADO pelo songbpm.com: ${realKey}` : "TOM: use seu conhecimento musical."}
 
-    // Call Lovable AI Gateway
+Sugira configurações de pads e padrões rítmicos que repliquem fielmente o acompanhamento de bateria desta música. Use EXATAMENTE os IDs de pad listados acima.`;
+
+    // Call Lovable AI Gateway with GPT-5
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -119,8 +193,8 @@ Você PRECISA determinar o BPM e tom REAIS desta música usando seu conhecimento
       });
     }
     if (!response.ok) {
-      const body = await response.text();
-      console.error("AI gateway error:", response.status, body);
+      const errBody = await response.text();
+      console.error("AI gateway error:", response.status, errBody);
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
@@ -134,7 +208,12 @@ Você PRECISA determinar o BPM e tom REAIS desta música usando seu conhecimento
     }
 
     const config = JSON.parse(jsonMatch[0]);
-    return new Response(JSON.stringify({ config }), {
+
+    // Override BPM/key with real values if found
+    if (realBpm) config.bpm = realBpm;
+    if (realKey) config.key = realKey;
+
+    return new Response(JSON.stringify({ config, source: { bpm: realBpm ? "songbpm.com" : "ai", key: realKey ? "songbpm.com" : "ai" } }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
