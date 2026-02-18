@@ -174,13 +174,13 @@ const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ chan
           />
           {/* Thumb */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 w-3.5 h-[6px] rounded-[1px]"
+            className="absolute left-1/2 -translate-x-1/2 w-7 h-[12px] rounded-[3px]"
             style={{
-              bottom: `calc(${pct}% - 2.5px)`,
+              bottom: `calc(${pct}% - 6px)`,
               backgroundColor: flash > 0.1 ? `hsl(0 0% 100%)` : 'hsl(0 0% 70%)',
               boxShadow: flash > 0.05
                 ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${Math.min(flash, channel.volume) * 0.5})`
-                : '0 1px 2px hsl(0 0% 0% / 0.5)',
+                : '0 1px 3px hsl(0 0% 0% / 0.6)',
             }}
           />
         </div>
