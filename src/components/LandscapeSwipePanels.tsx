@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Pause } from 'lucide-react';
-import { useIsLandscape } from '@/hooks/use-mobile';
+import { useIsLandscape, useIsDesktop } from '@/hooks/use-mobile';
 import Metronome from '@/components/Metronome';
 import PanControl from '@/components/PanControl';
 
@@ -45,18 +45,22 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
   spotifyTrackName,
 }) => {
   const isLandscape = useIsLandscape();
+  const isDesktop = useIsDesktop();
   const [landscapeTab, setLandscapeTab] = useState<0 | 1>(0); // 0=Mix, 1=Met
 
-  // Portrait / desktop: pad grid with ambient pads below
+  // Portrait / desktop: pad grid with ambient pads below (skipped on desktop — footer handles them)
   if (!isLandscape) {
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className={`flex-1 flex justify-center min-h-0 overflow-hidden ${focusMode ? 'items-start' : 'items-center'}`}>
           {padGrid}
         </div>
-        <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
-          {ambientPads}
-        </div>
+        {/* Only render ambient pads here for mobile/tablet portrait; desktop footer renders them */}
+        {!isDesktop && (
+          <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
+            {ambientPads}
+          </div>
+        )}
       </div>
     );
   }

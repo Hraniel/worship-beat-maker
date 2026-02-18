@@ -9,7 +9,7 @@ import SetlistManager from '@/components/SetlistManager';
 import MusicAISearch from '@/components/MusicAISearch';
 import AmbientPads from '@/components/AmbientPads';
 import LandscapeSwipePanels from '@/components/LandscapeSwipePanels';
-import { useIsLandscape, useIsTablet } from '@/hooks/use-mobile';
+import { useIsLandscape, useIsTablet, useIsDesktop } from '@/hooks/use-mobile';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer, setMasterPan, setMetronomePan, setPadPan } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds, saveCustomSoundsForSong, loadCustomSoundsForSong, deleteCustomSoundsForSong } from '@/lib/custom-sound-store';
@@ -71,6 +71,7 @@ const Index = () => {
   const { canAccess } = useFeatureGates();
   const isLandscape = useIsLandscape();
   const isTablet = useIsTablet();
+  const isDesktop = useIsDesktop();
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
@@ -1013,9 +1014,13 @@ const Index = () => {
             </div>
           }
           ambientPads={
-            isTablet ? (
-              /* On tablet, only show focus button here; ambient pads move to footer */
-              <div className="w-full flex justify-center px-2 pb-1">
+            isLandscape ? (
+              /* On landscape: ambient pads handled inside LandscapeSwipePanels Mix tab */
+              <div className="hidden" />
+            ) : (
+              /* Mobile portrait + tablet portrait: show focus button + ambient pads below grid */
+              /* Desktop: LandscapeSwipePanels will skip rendering this (isDesktop=true) */
+              <div data-tutorial="ambient-pads" className="w-full flex flex-col items-center px-2 pb-1 gap-1">
                 {currentSongId && !editMode && (
                   <button
                     onClick={toggleFocusMode}
@@ -1027,25 +1032,9 @@ const Index = () => {
                     {focusMode ? 'Sair' : 'Foco'}
                   </button>
                 )}
-              </div>
-            ) : isLandscape ? (
-              /* On landscape: ambient pads are shown inside the mixer prop below faders; nothing extra here */
-              <div className="hidden" />
-
-            ) : (
-              <div data-tutorial="ambient-pads" className="w-full h-full flex flex-col items-center justify-end px-2 pb-2">
-                {currentSongId && !editMode && (
-                  <button
-                    onClick={toggleFocusMode}
-                    className="flex items-center gap-1 px-3 py-1 mb-1 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors"
-                    title={focusMode ? 'Sair do modo foco' : 'Modo foco'}
-                    data-tutorial="focus-mode"
-                  >
-                    {focusMode ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
-                    {focusMode ? 'Sair' : 'Foco'}
-                  </button>
+                {(isTablet || !isDesktop) && (
+                  <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
                 )}
-                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
               </div>
             )
           }
@@ -1225,17 +1214,10 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Continuous Pads — below metronome */}
-          {!focusMode && (
-            <div data-tutorial="ambient-pads">
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
-          )}
-          {focusMode && (
-            <div className="mt-1" data-tutorial="ambient-pads">
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
-          )}
+          {/* Continuous Pads — always visible below metronome, inside and outside focus mode */}
+          <div data-tutorial="ambient-pads">
+            <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+          </div>
         </div>
 
         {/* Tablet: Faders → Metrônomo → Continuous Pads (sem botões Mix/Met) */}
@@ -1294,10 +1276,6 @@ const Index = () => {
                 <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
               </div>
             </div>
-            {/* Continuous Pads — below metronome */}
-            <div data-tutorial="ambient-pads">
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
           </div>
         )}
         {isTablet && focusMode && (
@@ -1318,7 +1296,7 @@ const Index = () => {
                 {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </button>
             </div>
-            <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            {/* AmbientPads agora renderizados via LandscapeSwipePanels → prop ambientPads */}
           </div>
         )}
 
