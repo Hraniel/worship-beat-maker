@@ -1118,6 +1118,13 @@ const Index = () => {
           </div>
           }
 
+          {/* Continuous Pads — below faders, above metronome */}
+          {!focusMode && (
+            <div data-tutorial="ambient-pads">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
+          )}
+
           {/* Metronome */}
           <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
             <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
@@ -1151,37 +1158,41 @@ const Index = () => {
               </div>
             </div>
           </div>
+          {/* Continuous Pads in focus mode - below metronome */}
+          {focusMode && (
+            <div className="mt-1" data-tutorial="ambient-pads">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
+          )}
         </div>
 
-        {/* Tablet: Continuous Pads (left) + Faders (right) side by side, Metronome below */}
+        {/* Tablet: Faders (full width) + Continuous Pads below, Metronome below */}
         {isTablet && !focusMode && (
           <div className="hidden md:block lg:hidden p-1.5 space-y-1.5">
-            <div className="flex gap-2 items-stretch">
-              {/* Continuous Pads - left side */}
-              <div className="w-[35%] shrink-0 flex items-center" data-tutorial="ambient-pads">
-                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-              </div>
-              {/* Faders - right side, all visible */}
-              <div className="flex-1 min-w-0" data-tutorial="volume-master">
-                <MixerStrip
-                  showAll
-                  compactFaderHeight={80}
-                  channels={[
-                    { id: 'metronome', label: 'Metrônomo', shortLabel: 'MET', volume: metronomeVol, onChange: handleMetronomeVolChange },
-                    { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
-                    ...defaultPads.slice(0, 9).map((pad) => ({
-                      id: pad.id,
-                      label: padNames[pad.id] || pad.name,
-                      shortLabel: (padNames[pad.id] || pad.name).slice(0, 3),
-                      volume: padVolumes[pad.id] ?? 0.7,
-                      onChange: (v: number) => handlePadVolumeChange(pad.id, v),
-                    })),
-                    { id: 'master', label: 'Master', shortLabel: 'MST', volume: masterVolume, onChange: setMasterVol },
-                  ]}
-                />
-              </div>
+            {/* Faders - full width */}
+            <div className="w-full" data-tutorial="volume-master">
+              <MixerStrip
+                showAll
+                compactFaderHeight={80}
+                channels={[
+                  { id: 'metronome', label: 'Metrônomo', shortLabel: 'MET', volume: metronomeVol, onChange: handleMetronomeVolChange },
+                  { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
+                  ...defaultPads.slice(0, 9).map((pad) => ({
+                    id: pad.id,
+                    label: padNames[pad.id] || pad.name,
+                    shortLabel: (padNames[pad.id] || pad.name).slice(0, 3),
+                    volume: padVolumes[pad.id] ?? 0.7,
+                    onChange: (v: number) => handlePadVolumeChange(pad.id, v),
+                  })),
+                  { id: 'master', label: 'Master', shortLabel: 'MST', volume: masterVolume, onChange: setMasterVol },
+                ]}
+              />
             </div>
-            {/* Metronome below both - compact with BPM header + Pan */}
+            {/* Continuous Pads - below faders */}
+            <div data-tutorial="ambient-pads">
+              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+            </div>
+            {/* Metronome below */}
             <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
               <div className="flex items-center justify-between px-3 py-1 border-b border-border/50">
                 <div className="flex items-center gap-1.5">
@@ -1202,21 +1213,24 @@ const Index = () => {
           </div>
         )}
         {isTablet && focusMode && (
-          <div className="hidden md:flex lg:hidden items-center justify-center gap-3 px-3 py-1.5">
+          <div className="hidden md:flex lg:hidden flex-col px-3 py-1.5 gap-1">
             {/* Hidden metronome to keep audio alive */}
             <div className="hidden">
               <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
             </div>
-            <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
-            <span className="text-[10px] text-muted-foreground">BPM</span>
-            <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-            <button
-              type="button"
-              onClick={() => setMetronomeIsPlaying((prev) => !prev)}
-              className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
-            >
-              {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            </button>
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+              <span className="text-[10px] text-muted-foreground">BPM</span>
+              <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+              <button
+                type="button"
+                onClick={() => setMetronomeIsPlaying((prev) => !prev)}
+                className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
+              >
+                {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              </button>
+            </div>
+            <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
           </div>
         )}
 
@@ -1229,20 +1243,25 @@ const Index = () => {
           </div>
 
           {focusMode ? (
-            /* Focus mode: minimized bar with BPM + key + play/pause */
-            <div className="flex items-center justify-center gap-3 px-3 py-1.5">
-              <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
-              <span className="text-[10px] text-muted-foreground">BPM</span>
-              {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-              <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-              <button
-                type="button"
-                onClick={() => setMetronomeIsPlaying((prev) => !prev)}
-                className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
-                title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
-              >
-                {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </button>
+            /* Focus mode: minimized bar with BPM + key + play/pause + ambient pads */
+            <div>
+              <div className="flex items-center justify-center gap-3 px-3 py-1.5">
+                <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+                <span className="text-[10px] text-muted-foreground">BPM</span>
+                {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
+                <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+                <button
+                  type="button"
+                  onClick={() => setMetronomeIsPlaying((prev) => !prev)}
+                  className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
+                  title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
+                >
+                  {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+              </div>
+              <div className="px-2 pb-1">
+                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+              </div>
             </div>
           ) : (
             <>
