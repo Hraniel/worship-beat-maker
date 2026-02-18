@@ -57,9 +57,6 @@ const PAD_LABELS: Record<string, string> = {
 };
 
 
-// In-memory cache for AI suggestions keyed by track ID
-const suggestionCache = new Map<string, SuggestedConfig>();
-
 const USAGE_KEY = 'spotify-ai-usage';
 
 function getUsageStats() {
@@ -211,16 +208,6 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
   const handleSelectTrack = useCallback(async (track: SpotifyTrack) => {
     setSelectedTrack(track);
     setSuggestion(null);
-
-    // Check cache first
-    const cached = suggestionCache.get(track.id);
-    if (cached) {
-      setSuggestion(cached);
-      setUsage(incrementUsage(true));
-      toast.info('Sugestão carregada do cache');
-      return;
-    }
-
     setAnalyzing(true);
 
     try {
@@ -234,8 +221,6 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
       if (aiError) throw aiError;
       if (aiData?.error) throw new Error(aiData.error);
 
-      // Cache the result
-      suggestionCache.set(track.id, aiData.config);
       setSuggestion(aiData.config);
       setUsage(incrementUsage(false));
     } catch (e) {
