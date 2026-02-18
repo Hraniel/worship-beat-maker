@@ -10,6 +10,7 @@ import {
 import { StorePackData } from '@/hooks/useStorePacks';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminUserManager from '@/components/AdminUserManager';
+import AdminSuggestionsManager from '@/components/AdminSuggestionsManager';
 import { broadcastPushNotification } from '@/lib/push-notifications';
 
 
@@ -69,7 +70,7 @@ interface BatchProgress {
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'suggestions'>('packs');
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -504,11 +505,12 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       </div>
 
       {/* Tab bar */}
-      <div className="flex bg-muted rounded-lg p-0.5 gap-0.5">
+      <div className="flex bg-muted rounded-lg p-0.5 gap-0.5 flex-wrap">
         {([
           { id: 'packs', label: 'Packs', icon: Music },
           { id: 'analytics', label: 'Analytics', icon: BarChart2 },
           { id: 'users', label: 'Usuários', icon: Users },
+          { id: 'suggestions', label: 'Sugestões', icon: Bell },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -530,6 +532,9 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
       {/* Users tab */}
       {activeTab === 'users' && <AdminUserManager />}
+
+      {/* Suggestions tab */}
+      {activeTab === 'suggestions' && <AdminSuggestionsManager />}
 
       {/* Packs tab content starts below */}
       {activeTab === 'packs' && (

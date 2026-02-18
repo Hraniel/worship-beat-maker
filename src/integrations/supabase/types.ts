@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      community_suggestions: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          likes_count: number
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          likes_count?: number
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          likes_count?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pack_sounds: {
         Row: {
           category: string
@@ -189,6 +222,35 @@ export type Database = {
           tag?: string | null
         }
         Relationships: []
+      }
+      suggestion_likes: {
+        Row: {
+          created_at: string
+          id: string
+          suggestion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          suggestion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          suggestion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suggestion_likes_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "community_suggestions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_purchases: {
         Row: {
