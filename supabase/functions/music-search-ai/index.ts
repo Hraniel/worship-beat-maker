@@ -56,7 +56,6 @@ Não inclua explicações, texto extra ou markdown. Apenas o JSON.`;
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.3,
       }),
     });
 
