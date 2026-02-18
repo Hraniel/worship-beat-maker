@@ -144,38 +144,39 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
       <DialogContent className={
         isLandscape
           ? "w-full h-full max-w-full max-h-full rounded-none mx-0 overflow-y-auto"
-          : "max-w-sm w-[calc(100vw-2rem)] mx-auto"
+          : "max-w-sm w-[calc(100vw-2rem)] sm:max-w-md mx-auto"
       }>
         <DialogHeader>
-          <DialogTitle className="text-base">Configurações</DialogTitle>
+          <DialogTitle className="text-base text-center sm:text-left">Configurações</DialogTitle>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full flex-wrap justify-center h-auto gap-0.5 p-1">
-            <TabsTrigger value="audio" className="gap-1 text-[11px] px-3 py-1.5">
+            <TabsTrigger value="audio" className="gap-1 text-[10px] sm:text-[11px] px-2 sm:px-3 py-1">
               <Headphones className="h-3 w-3 shrink-0" />
               Áudio
             </TabsTrigger>
-            <TabsTrigger value="store" className="gap-1 text-[11px] px-3 py-1.5">
+            <TabsTrigger value="store" className="gap-1 text-[10px] sm:text-[11px] px-2 sm:px-3 py-1">
               <Store className="h-3 w-3 shrink-0" />
               Loja
             </TabsTrigger>
-            <TabsTrigger value="plans" className="gap-1 text-[11px] px-3 py-1.5">
+            <TabsTrigger value="plans" className="gap-1 text-[10px] sm:text-[11px] px-2 sm:px-3 py-1">
               <Crown className="h-3 w-3 shrink-0" />
               Planos
             </TabsTrigger>
-            <TabsTrigger value="guide" className="gap-1 text-[11px] px-3 py-1.5">
+            <TabsTrigger value="guide" className="gap-1 text-[10px] sm:text-[11px] px-2 sm:px-3 py-1">
               <HelpCircle className="h-3 w-3 shrink-0" />
               Guia
             </TabsTrigger>
-            <TabsTrigger value="about" className="gap-1 text-[11px] px-3 py-1.5">
+            <TabsTrigger value="about" className="gap-1 text-[10px] sm:text-[11px] px-2 sm:px-3 py-1">
               <Info className="h-3 w-3 shrink-0" />
               Sobre
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="audio" className="mt-4">
-            <div className="space-y-3">
+          {/* Audio tab */}
+          <TabsContent value="audio" className="mt-3">
+            <div className="flex flex-col items-center gap-2 sm:gap-3 w-full max-w-sm mx-auto">
               <StereoOption
                 id="pads"
                 label="Pads"
@@ -203,60 +204,63 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             </div>
           </TabsContent>
 
-          <TabsContent value="store" className="mt-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Store className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Glory Store</span>
+          {/* Store tab */}
+          <TabsContent value="store" className="mt-3">
+            <div className="flex flex-col items-center gap-2 text-center max-w-xs mx-auto">
+              <div className="flex items-center gap-1.5">
+                <Store className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Glory Store</span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Descubra novos sons, packs e texturas para elevar seu louvor.
               </p>
               <button
                 onClick={() => { onOpenChange(false); navigate('/dashboard'); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
               >
-                Acessar
+                Acessar a Loja
               </button>
             </div>
           </TabsContent>
 
-          <TabsContent value="plans" className="mt-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Crown className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Planos e Assinatura</span>
+          {/* Plans tab */}
+          <TabsContent value="plans" className="mt-3">
+            <div className="flex flex-col items-center gap-2 text-center max-w-xs mx-auto">
+              <div className="flex items-center gap-1.5">
+                <Crown className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Planos e Assinatura</span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Gerencie sua assinatura e desbloqueie recursos avançados.
               </p>
               <button
                 onClick={() => { sessionStorage.setItem('settings-return-tab', 'plans'); onOpenChange(false); navigate('/pricing'); }}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                className="flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
               >
-                Gerenciar
+                Gerenciar plano
               </button>
             </div>
           </TabsContent>
 
-          <TabsContent value="guide" className="mt-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 mb-2">
-                <HelpCircle className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Guia Prático</span>
+          {/* Guide tab */}
+          <TabsContent value="guide" className="mt-3">
+            <div className="flex flex-col items-center gap-2 max-w-xs mx-auto w-full">
+              <div className="flex items-center gap-1.5">
+                <HelpCircle className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Guia Prático</span>
               </div>
               <button
                 onClick={() => { onOpenChange(false); onStartTutorial?.(); }}
-                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm font-medium text-primary hover:bg-muted rounded-md transition-colors"
+                className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs font-medium text-primary hover:bg-muted rounded-md transition-colors"
               >
                 Tour Completo
               </button>
-              <div className="rounded-lg border border-border bg-muted/20">
+              <div className="rounded-lg border border-border bg-muted/20 w-full">
                 {TUTORIAL_SECTIONS.map(section => (
                   <button
                     key={section.id}
                     onClick={() => { onOpenChange(false); onStartTutorial?.(section.id); }}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors border-b border-border/50 last:border-0"
+                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors border-b border-border/50 last:border-0"
                   >
                     {section.label}
                   </button>
@@ -265,16 +269,17 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             </div>
           </TabsContent>
 
-          <TabsContent value="about" className="mt-4">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Info className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sobre</span>
+          {/* About tab */}
+          <TabsContent value="about" className="mt-3">
+            <div className="flex flex-col items-center gap-2 text-center max-w-xs mx-auto">
+              <div className="flex items-center gap-1.5">
+                <Info className="h-3.5 w-3.5 text-primary" />
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Sobre</span>
               </div>
-              <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-                <h3 className="text-sm font-bold text-foreground">Glory Pads</h3>
-                <p className="text-xs text-muted-foreground">v1.0.0</p>
-                <p className="text-sm text-muted-foreground">
+              <div className="rounded-lg border border-border bg-card p-3 space-y-1 w-full text-left">
+                <h3 className="text-xs font-bold text-foreground">Glory Pads</h3>
+                <p className="text-[10px] text-muted-foreground">v1.0.0</p>
+                <p className="text-xs text-muted-foreground">
                   Pads de louvor profissionais para sua igreja. Configure sons, efeitos e metrônomo para elevar a experiência do seu worship.
                 </p>
               </div>
