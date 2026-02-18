@@ -11,6 +11,8 @@ import { StorePackData } from '@/hooks/useStorePacks';
 import AdminAnalytics from '@/components/AdminAnalytics';
 import AdminUserManager from '@/components/AdminUserManager';
 import AdminSuggestionsManager from '@/components/AdminSuggestionsManager';
+import AdminPricingManager from '@/components/AdminPricingManager';
+import AdminLandingEditor from '@/components/AdminLandingEditor';
 import { broadcastPushNotification } from '@/lib/push-notifications';
 
 
@@ -70,7 +72,7 @@ interface BatchProgress {
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'suggestions'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'suggestions' | 'pricing' | 'landing'>('packs');
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -511,6 +513,8 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           { id: 'analytics', label: 'Analytics', icon: BarChart2 },
           { id: 'users', label: 'Usuários', icon: Users },
           { id: 'suggestions', label: 'Sugestões', icon: Bell },
+          { id: 'pricing', label: 'Planos', icon: Settings },
+          { id: 'landing', label: 'Landing', icon: Eye },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -535,6 +539,12 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
       {/* Suggestions tab */}
       {activeTab === 'suggestions' && <AdminSuggestionsManager />}
+
+      {/* Pricing tab */}
+      {activeTab === 'pricing' && <AdminPricingManager onRefresh={() => {}} />}
+
+      {/* Landing editor tab */}
+      {activeTab === 'landing' && <AdminLandingEditor />}
 
       {/* Packs tab content starts below */}
       {activeTab === 'packs' && (

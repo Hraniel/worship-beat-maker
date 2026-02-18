@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
+import { useLandingConfig } from '@/hooks/useLandingConfig';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import {
@@ -10,6 +11,7 @@ import {
   Waves, ListMusic, SlidersHorizontal, Cpu, Smartphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TIERS } from '@/lib/tiers';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -18,10 +20,8 @@ const fadeUp = {
     transition: { delay: i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] as const },
   }),
 };
-
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
 
-// ── Features ──────────────────────────────────────────────────────────────────
 const features = [
   { icon: Drum, title: 'Pads Profissionais', desc: 'Sons reais de bateria, pads e efeitos — 12 sons inclusos gratuitamente, com Glory Store para expandir.' },
   { icon: ListMusic, title: 'Setlists Organizadas', desc: 'Crie setlists por culto com pads e configurações salvas automaticamente. Compartilhe com um link.' },
@@ -33,89 +33,49 @@ const features = [
   { icon: Smartphone, title: 'PWA — Instale no Celular', desc: 'Funciona como app nativo no iPhone e Android. Sem loja, sem espera — instale direto do navegador.' },
 ];
 
-// ── Plans ─────────────────────────────────────────────────────────────────────
-const plans = [
-  {
-    name: 'Free',
-    price: 'Grátis',
-    period: '',
-    icon: null,
-    highlight: false,
-    cta: 'Começar grátis',
-    features: [
-      { text: '4 pads por setlist', ok: true },
-      { text: '3 imports de sons customizados', ok: true },
-      { text: 'Metrônomo + loops básicos', ok: true },
-      { text: 'Continuous Pads (tons limitados)', ok: true },
-      { text: 'Pads ilimitados', ok: false },
-      { text: 'Volume individual por pad', ok: false },
-      { text: 'Equalização por pad', ok: false },
-      { text: 'Spotify AI', ok: false },
-    ],
-  },
-  {
-    name: 'Pro',
-    price: 'R$19,90',
-    period: '/mês',
-    icon: Zap,
-    highlight: true,
-    cta: 'Assinar Pro',
-    features: [
-      { text: 'Pads ilimitados', ok: true },
-      { text: 'Imports ilimitados', ok: true },
-      { text: 'Metrônomo + loops completos', ok: true },
-      { text: 'Continuous Pads (todos os tons)', ok: true },
-      { text: 'Volume individual por pad', ok: true },
-      { text: 'Glory Store — compra de packs', ok: true },
-      { text: 'Equalização por pad', ok: false },
-      { text: 'Spotify AI', ok: false },
-    ],
-  },
-  {
-    name: 'Master',
-    price: 'R$39,90',
-    period: '/mês',
-    icon: Crown,
-    highlight: false,
-    cta: 'Assinar Master',
-    features: [
-      { text: 'Tudo do Pro', ok: true },
-      { text: 'Equalizador completo por pad', ok: true },
-      { text: 'Reverb e Delay por pad', ok: true },
-      { text: 'Spotify AI', ok: true },
-      { text: 'Glory Store acesso completo', ok: true },
-      { text: 'Suporte prioritário', ok: true },
-      { text: 'Novidades em primeira mão', ok: true },
-    ],
-  },
-];
-
-// ── Sound categories showcased ────────────────────────────────────────────────
 const categories = [
-  { name: 'Kick', color: '0 75% 55%', icon: '🥁' },
+  { name: 'Kick & Bumbo', color: '0 75% 55%', icon: '🥁' },
   { name: 'Snare', color: '30 85% 55%', icon: '🪘' },
-  { name: 'Hi-Hat', color: '50 80% 50%', icon: '🎵' },
+  { name: 'Hi-Hat & Pratos', color: '50 80% 50%', icon: '🎵' },
   { name: 'Loops', color: '262 75% 55%', icon: '🔁' },
-  { name: 'Pads', color: '200 80% 55%', icon: '🎹' },
+  { name: 'Continuous Pads', color: '200 80% 55%', icon: '🎹' },
   { name: 'Efeitos', color: '340 70% 55%', icon: '✨' },
 ];
 
-// ── Nav ───────────────────────────────────────────────────────────────────────
+// Gradient divider between sections
+const Divider = ({ fromLight }: { fromLight: boolean }) => (
+  <div
+    className="w-full h-24 pointer-events-none"
+    style={{
+      background: fromLight
+        ? 'linear-gradient(to bottom, hsl(0 0% 97%), hsl(220 15% 7%))'
+        : 'linear-gradient(to bottom, hsl(220 15% 7%), hsl(0 0% 97%))',
+    }}
+  />
+);
+
+// Nav
 const Nav = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <nav className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-xl border-b border-white/10" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+  <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b"
+    style={{
+      background: 'hsl(0 0% 100% / 0.96)',
+      borderColor: 'hsl(0 0% 0% / 0.08)',
+      paddingTop: 'env(safe-area-inset-top)',
+    }}>
     <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <img src={logoLight} alt="Glory Pads" className="h-8 w-auto" />
-        <span className="font-bold text-lg text-white hidden sm:inline">Glory Pads</span>
+        <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
+        <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
-        <a href="#recursos" className="text-sm text-white/60 hover:text-white transition hidden sm:inline">Recursos</a>
-        <a href="#sons" className="text-sm text-white/60 hover:text-white transition hidden sm:inline">Sons</a>
-        <a href="#planos" className="text-sm text-white/60 hover:text-white transition hidden sm:inline">Planos</a>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="text-white/80 hover:text-white hover:bg-white/10">
+        <a href="#recursos" className="text-sm text-muted-foreground hover:text-foreground transition hidden sm:inline">Recursos</a>
+        <a href="#sons" className="text-sm text-muted-foreground hover:text-foreground transition hidden sm:inline">Sons</a>
+        <a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition hidden sm:inline">Planos</a>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="text-foreground/70 hover:text-foreground">
           Entrar
         </Button>
-        <Button size="sm" onClick={() => navigate('/auth?mode=signup')} className="bg-white text-black hover:bg-white/90 font-semibold">
+        <Button size="sm" onClick={() => navigate('/auth?mode=signup')}
+          className="bg-foreground text-background hover:bg-foreground/90 font-semibold">
           Começar grátis
         </Button>
       </div>
@@ -123,42 +83,48 @@ const Nav = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
   </nav>
 );
 
-// ── Hero (dark) ───────────────────────────────────────────────────────────────
-const Hero = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section className="bg-black relative overflow-hidden" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 7rem)', paddingBottom: '6rem' }}>
-    {/* subtle radial glow */}
-    <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-primary/15 blur-[120px] rounded-full pointer-events-none" />
-
-    <div className="relative max-w-5xl mx-auto px-4 text-center">
+// Hero — WHITE background
+const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => (
+  <section className="relative overflow-hidden" style={{
+    background: 'hsl(0 0% 97%)',
+    paddingTop: 'calc(env(safe-area-inset-top) + 7rem)',
+    paddingBottom: '0',
+  }}>
+    <div className="relative max-w-5xl mx-auto px-4 text-center pb-20">
       <motion.div initial="hidden" animate="visible" variants={stagger}>
         <motion.div variants={fadeUp} custom={0}
-          className="inline-flex items-center gap-2 border border-white/15 rounded-full px-4 py-1.5 mb-6 bg-white/5">
+          className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6"
+          style={{ border: '1px solid hsl(var(--primary) / 0.2)', background: 'hsl(var(--primary) / 0.06)' }}>
           <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs font-medium text-white/70">Spotify AI integrado · PWA nativo</span>
+          <span className="text-xs font-medium text-primary">{config.hero_badge || 'Spotify AI integrado · PWA nativo'}</span>
         </motion.div>
 
         <motion.h1 variants={fadeUp} custom={1}
-          className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-[1.08] mb-6 text-white">
-          Seus pads de{' '}
-          <span className="text-primary">worship</span>
-          <br />na palma da mão
+          className="text-5xl sm:text-7xl font-extrabold tracking-tight leading-[1.08] mb-6 text-foreground">
+          {(config.hero_title || 'Seus pads de worship na palma da mão')
+            .split('worship').map((part, i, arr) => (
+              <React.Fragment key={i}>
+                {part}
+                {i < arr.length - 1 && <span className="text-primary">worship</span>}
+              </React.Fragment>
+            ))}
         </motion.h1>
 
         <motion.p variants={fadeUp} custom={2}
-          className="text-lg sm:text-xl text-white/50 max-w-2xl mx-auto mb-10">
-          Pads profissionais, metrônomo, loops, continuous pads e Glory Store —
-          tudo que o músico de louvor precisa, em um único app.
+          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
+          {config.hero_subtitle || 'Pads profissionais, metrônomo, loops, continuous pads e Glory Store — tudo que o músico de louvor precisa, em um único app.'}
         </motion.p>
 
         <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
-            className="bg-primary hover:bg-primary/90 text-white text-lg px-8 py-6 rounded-xl shadow-[0_0_40px_hsl(var(--primary)/0.4)]">
+            className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-xl"
+            style={{ boxShadow: '0 0 40px hsl(var(--primary) / 0.25)' }}>
             Começar gratuitamente
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
           <Button size="lg" variant="outline" onClick={() => {
             document.getElementById('recursos')?.scrollIntoView({ behavior: 'smooth' });
-          }} className="text-lg px-8 py-6 rounded-xl border-white/20 text-white hover:bg-white/10 hover:text-white">
+          }} className="text-lg px-8 py-6 rounded-xl">
             Ver recursos
             <ChevronDown className="ml-2 h-5 w-5" />
           </Button>
@@ -172,7 +138,11 @@ const Hero = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
         transition={{ delay: 0.5, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
         className="relative max-w-3xl mx-auto mt-16"
       >
-        <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm p-3 sm:p-5 shadow-2xl">
+        <div className="relative rounded-2xl p-3 sm:p-5 shadow-2xl"
+          style={{
+            border: '1px solid hsl(0 0% 0% / 0.1)',
+            background: 'hsl(220 15% 10%)',
+          }}>
           <div className="grid grid-cols-4 gap-2 sm:gap-3">
             {[
               { name: 'KCK', label: 'Kick', color: '0 75% 55%' },
@@ -193,21 +163,17 @@ const Hero = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
                   background: `linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 5%) 100%)`,
                   border: `1.5px solid hsl(${pad.color} / 0.28)`,
                   boxShadow: `0 0 18px hsl(${pad.color} / 0.08), inset 0 1px 0 hsl(0 0% 100% / 0.04)`,
-                }}
-              >
+                }}>
                 <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl" style={{ background: `hsl(${pad.color})` }} />
-                <motion.div
-                  className="absolute inset-0 rounded-xl"
+                <motion.div className="absolute inset-0 rounded-xl"
                   style={{ background: `radial-gradient(circle at center, hsl(${pad.color} / 0.2) 0%, transparent 70%)` }}
                   animate={{ opacity: [0.3, 0.65, 0.3] }}
-                  transition={{ duration: 2 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }}
-                />
+                  transition={{ duration: 2 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }} />
                 <span className="relative text-base sm:text-lg font-bold tracking-wider" style={{ color: `hsl(${pad.color})` }}>{pad.name}</span>
-                <span className="relative text-[9px] sm:text-[10px] text-white/40 mt-0.5">{pad.label}</span>
+                <span className="relative text-[9px] sm:text-[10px] mt-0.5" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>{pad.label}</span>
               </motion.div>
             ))}
           </div>
-          {/* Ambient pads bar */}
           <div className="mt-3 flex gap-1.5">
             {[
               { note: 'C', color: '0 75% 55%' }, { note: 'D', color: '30 85% 55%' },
@@ -222,58 +188,58 @@ const Hero = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
                 }}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.1 + i * 0.06, duration: 0.4 }}
-              >
+                transition={{ delay: 1.1 + i * 0.06, duration: 0.4 }}>
                 <motion.div className="absolute inset-0"
                   style={{ background: `radial-gradient(ellipse at bottom, hsl(${n.color} / 0.28) 0%, transparent 80%)` }}
                   animate={{ opacity: [0.2, 0.55, 0.2] }}
-                  transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut' }}
-                />
+                  transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut' }} />
                 <span className="relative text-[10px] sm:text-xs font-semibold" style={{ color: `hsl(${n.color} / 0.85)` }}>{n.note}</span>
               </motion.div>
             ))}
           </div>
         </div>
-        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-16 bg-primary/15 blur-[60px] rounded-full" />
+        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-16 rounded-full"
+          style={{ background: 'hsl(var(--primary) / 0.15)', filter: 'blur(60px)' }} />
       </motion.div>
     </div>
   </section>
 );
 
-// ── Stats (white) ─────────────────────────────────────────────────────────────
-const Stats = () => (
-  <section className="bg-white py-16 px-4">
-    <motion.div
-      initial="hidden" whileInView="visible" viewport={{ once: true }}
-      variants={stagger}
-      className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center"
-    >
-      {[
-        { value: '12+', label: 'Sons padrão inclusos' },
-        { value: '∞', label: 'Setlists por culto' },
-        { value: 'AI', label: 'Spotify integrado' },
-        { value: 'PWA', label: 'Instale no celular' },
-      ].map((stat, i) => (
-        <motion.div key={stat.label} variants={fadeUp} custom={i}>
-          <div className="text-4xl sm:text-5xl font-black text-black mb-2">{stat.value}</div>
-          <div className="text-sm text-gray-500 font-medium">{stat.label}</div>
-        </motion.div>
-      ))}
-    </motion.div>
-  </section>
-);
+// Stats — DARK
+const Stats = ({ config }: { config: Record<string, string> }) => {
+  const stats = [
+    { value: config.stat_1_value || '12+', label: config.stat_1_label || 'Sons padrão inclusos' },
+    { value: config.stat_2_value || '∞', label: config.stat_2_label || 'Setlists por culto' },
+    { value: config.stat_3_value || 'AI', label: config.stat_3_label || 'Spotify integrado' },
+    { value: config.stat_4_value || 'PWA', label: config.stat_4_label || 'Instale no celular' },
+  ];
+  return (
+    <section className="py-16 px-4" style={{ background: 'hsl(220 15% 7%)' }}>
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }}
+        variants={stagger}
+        className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+        {stats.map((stat, i) => (
+          <motion.div key={stat.label} variants={fadeUp} custom={i}>
+            <div className="text-4xl sm:text-5xl font-black mb-2" style={{ color: 'hsl(0 0% 100%)' }}>{stat.value}</div>
+            <div className="text-sm font-medium" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>{stat.label}</div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+};
 
-// ── Features (dark) ───────────────────────────────────────────────────────────
-const Features = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section id="recursos" className="bg-black py-20 sm:py-28 px-4">
+// Features — WHITE
+const Features = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => (
+  <section id="recursos" className="py-20 sm:py-28 px-4" style={{ background: 'hsl(0 0% 97%)' }}>
     <div className="max-w-6xl mx-auto">
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
         <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Recursos</motion.p>
-        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-white mb-4">
-          Tudo que você precisa<br />para o <span className="text-primary">louvor</span>
+        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-foreground mb-4">
+          {config.features_title || 'Tudo que você precisa para o louvor'}
         </motion.h2>
-        <motion.p variants={fadeUp} custom={2} className="text-white/50 max-w-lg mx-auto">
-          Desenvolvido por músicos de louvor, para músicos de louvor.
+        <motion.p variants={fadeUp} custom={2} className="text-muted-foreground max-w-lg mx-auto">
+          {config.features_subtitle || 'Desenvolvido por músicos de louvor, para músicos de louvor.'}
         </motion.p>
       </motion.div>
 
@@ -281,12 +247,14 @@ const Features = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) =>
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {features.map((f, i) => (
           <motion.div key={f.title} variants={fadeUp} custom={i}
-            className="group rounded-2xl border border-white/8 bg-white/4 p-6 hover:bg-white/8 hover:border-white/15 transition-all duration-300">
-            <div className="h-10 w-10 rounded-xl bg-primary/15 flex items-center justify-center mb-4 group-hover:bg-primary/25 transition">
+            className="group rounded-2xl border p-6 hover:shadow-md transition-all duration-300"
+            style={{ border: '1px solid hsl(0 0% 0% / 0.07)', background: 'hsl(0 0% 100%)' }}>
+            <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4 transition"
+              style={{ background: 'hsl(var(--primary) / 0.08)' }}>
               <f.icon className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="font-semibold text-white mb-2 text-sm">{f.title}</h3>
-            <p className="text-xs text-white/45 leading-relaxed">{f.desc}</p>
+            <h3 className="font-semibold text-foreground mb-2 text-sm">{f.title}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
           </motion.div>
         ))}
       </motion.div>
@@ -294,7 +262,7 @@ const Features = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) =>
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}
         className="mt-12 text-center">
         <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
-          className="bg-white text-black hover:bg-white/90 text-base px-8 py-5 rounded-xl font-semibold">
+          className="bg-foreground text-background hover:bg-foreground/85 text-base px-8 py-5 rounded-xl font-semibold">
           Experimente grátis
           <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
@@ -303,18 +271,18 @@ const Features = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) =>
   </section>
 );
 
-// ── Sound categories (white) ──────────────────────────────────────────────────
-const SoundSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section id="sons" className="bg-white py-20 sm:py-28 px-4">
+// Sound categories — DARK
+const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => (
+  <section id="sons" className="py-20 sm:py-28 px-4" style={{ background: 'hsl(220 15% 7%)' }}>
     <div className="max-w-5xl mx-auto">
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
         <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Glory Store</motion.p>
-        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-black mb-4">
-          Uma biblioteca de sons<br />para cada momento
+        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4"
+          style={{ color: 'hsl(0 0% 100%)' }}>
+          {config.store_title || 'Uma biblioteca de sons para cada momento'}
         </motion.h2>
-        <motion.p variants={fadeUp} custom={2} className="text-gray-500 max-w-lg mx-auto">
-          Sons de bateria secos, com reverb, loops, continuous pads, efeitos crescentes e muito mais.
-          Novos packs chegam todo mês na Glory Store.
+        <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: 'hsl(0 0% 100% / 0.45)' }}>
+          {config.store_subtitle || 'Sons de bateria secos, com reverb, loops, continuous pads, efeitos crescentes e muito mais.'}
         </motion.p>
       </motion.div>
 
@@ -322,15 +290,16 @@ const SoundSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }
         className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {categories.map((cat, i) => (
           <motion.div key={cat.name} variants={fadeUp} custom={i}
-            className="group relative rounded-2xl border border-gray-100 bg-gray-50 p-6 hover:shadow-md transition-all duration-300 cursor-pointer"
-            onClick={() => navigate('/auth?mode=signup')}
-          >
+            className="group relative rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
+            style={{
+              border: `1px solid hsl(${cat.color} / 0.2)`,
+              background: `linear-gradient(145deg, hsl(${cat.color} / 0.08) 0%, hsl(220 15% 5%) 100%)`,
+            }}
+            onClick={() => navigate('/auth?mode=signup')}>
             <div className="text-3xl mb-3">{cat.icon}</div>
-            <h3 className="font-bold text-black text-lg">{cat.name}</h3>
+            <h3 className="font-bold text-lg mb-1" style={{ color: 'hsl(0 0% 100%)' }}>{cat.name}</h3>
+            <p className="text-xs" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>Pack disponível na loja</p>
             <div className="mt-2 h-1 w-8 rounded-full" style={{ background: `hsl(${cat.color})` }} />
-            <span className="absolute bottom-4 right-4 text-xs text-gray-400 group-hover:text-gray-600 transition">
-              Ver packs →
-            </span>
           </motion.div>
         ))}
       </motion.div>
@@ -338,13 +307,13 @@ const SoundSection = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }
   </section>
 );
 
-// ── How it works (dark) ───────────────────────────────────────────────────────
+// How it works — WHITE
 const HowItWorks = () => (
-  <section className="bg-black py-20 sm:py-28 px-4">
+  <section className="py-20 sm:py-28 px-4" style={{ background: 'hsl(0 0% 97%)' }}>
     <div className="max-w-4xl mx-auto">
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
         <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Como funciona</motion.p>
-        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-white mb-4">
+        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-foreground mb-4">
           Do ensaio ao culto<br />em <span className="text-primary">3 passos</span>
         </motion.h2>
       </motion.div>
@@ -357,9 +326,9 @@ const HowItWorks = () => (
           { step: '03', title: 'Toque ao Vivo', desc: 'No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.' },
         ].map((item, i) => (
           <motion.div key={item.step} variants={fadeUp} custom={i} className="relative">
-            <div className="text-6xl font-black text-white/6 mb-3 leading-none">{item.step}</div>
-            <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
-            <p className="text-sm text-white/45 leading-relaxed">{item.desc}</p>
+            <div className="text-6xl font-black leading-none mb-3" style={{ color: 'hsl(0 0% 0% / 0.06)' }}>{item.step}</div>
+            <h3 className="text-lg font-bold text-foreground mb-2">{item.title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
           </motion.div>
         ))}
       </motion.div>
@@ -367,100 +336,126 @@ const HowItWorks = () => (
   </section>
 );
 
-// ── Pricing (white) ───────────────────────────────────────────────────────────
-const Pricing = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section id="planos" className="bg-white py-20 sm:py-28 px-4">
-    <div className="max-w-5xl mx-auto">
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
-        <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Planos</motion.p>
-        <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-black mb-4">
-          Comece grátis.<br />Cresça quando quiser.
-        </motion.h2>
-        <motion.p variants={fadeUp} custom={2} className="text-gray-500 max-w-lg mx-auto">
-          Sem contrato, cancele quando quiser.
-        </motion.p>
-      </motion.div>
+// Pricing — DARK
+const Pricing = ({
+  navigate, config, pricing, features,
+}: {
+  navigate: ReturnType<typeof useNavigate>;
+  config: Record<string, string>;
+  pricing: any[];
+  features: any[];
+}) => {
+  if (config.show_pricing === 'false') return null;
 
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
-        className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-        {plans.map((plan, i) => (
-          <motion.div key={plan.name} variants={fadeUp} custom={i}
-            className={`relative rounded-2xl border-2 p-7 sm:p-8 flex flex-col ${
-              plan.highlight
-                ? 'border-black bg-black text-white shadow-2xl scale-[1.02]'
-                : 'border-gray-100 bg-gray-50'
-            }`}
-          >
-            {plan.highlight && (
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1 rounded-full">
-                Mais popular
-              </span>
-            )}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                {plan.icon && <plan.icon className={`h-5 w-5 ${plan.highlight ? 'text-primary' : 'text-gray-600'}`} />}
-                <h3 className={`text-xl font-bold ${plan.highlight ? 'text-white' : 'text-black'}`}>{plan.name}</h3>
-              </div>
-              <div className={`text-4xl font-black ${plan.highlight ? 'text-white' : 'text-black'}`}>
-                {plan.price}
-                {plan.period && <span className={`text-base font-normal ml-1 ${plan.highlight ? 'text-white/50' : 'text-gray-400'}`}>{plan.period}</span>}
-              </div>
-            </div>
+  const tierOrder = ['free', 'pro', 'master'];
 
-            <ul className="space-y-2.5 flex-1 mb-6">
-              {plan.features.map((f) => (
-                <li key={f.text} className={`flex items-start gap-2.5 text-sm ${
-                  f.ok
-                    ? plan.highlight ? 'text-white' : 'text-gray-800'
-                    : plan.highlight ? 'text-white/25' : 'text-gray-300'
-                }`}>
-                  {f.ok
-                    ? <Check className="h-4 w-4 text-green-400 shrink-0 mt-0.5" />
-                    : <X className="h-4 w-4 shrink-0 mt-0.5" />}
-                  {f.text}
-                </li>
-              ))}
-            </ul>
+  return (
+    <section id="planos" className="py-20 sm:py-28 px-4" style={{ background: 'hsl(220 15% 7%)' }}>
+      <div className="max-w-5xl mx-auto">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Planos</motion.p>
+          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4"
+            style={{ color: 'hsl(0 0% 100%)' }}>
+            {config.plans_title || 'Comece grátis. Cresça quando quiser.'}
+          </motion.h2>
+          <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: 'hsl(0 0% 100% / 0.45)' }}>
+            {config.plans_subtitle || 'Sem contrato, cancele quando quiser.'}
+          </motion.p>
+        </motion.div>
 
-            <Button
-              onClick={() => navigate('/auth?mode=signup')}
-              className={`w-full rounded-xl py-5 font-semibold ${
-                plan.highlight
-                  ? 'bg-white text-black hover:bg-white/90'
-                  : 'bg-black text-white hover:bg-black/85'
-              }`}
-            >
-              {plan.cta}
-            </Button>
-          </motion.div>
-        ))}
-      </motion.div>
-    </div>
-  </section>
-);
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+          {tierOrder.map((tierKey, i) => {
+            const plan = pricing.find(p => p.tier === tierKey);
+            if (!plan) return null;
+            const tierFeats = features.filter(f => f.tier === tierKey).sort((a: any, b: any) => a.sort_order - b.sort_order);
 
-// ── CTA Final (dark) ──────────────────────────────────────────────────────────
-const FinalCTA = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <section className="bg-black py-20 sm:py-28 px-4">
-    <motion.div
-      initial="hidden" whileInView="visible" viewport={{ once: true }}
-      variants={stagger}
-      className="max-w-3xl mx-auto text-center"
-    >
+            return (
+              <motion.div key={tierKey} variants={fadeUp} custom={i}
+                className="relative rounded-2xl p-7 sm:p-8 flex flex-col"
+                style={plan.highlight ? {
+                  background: 'hsl(0 0% 100%)',
+                  border: '2px solid hsl(0 0% 100%)',
+                  transform: 'scale(1.02)',
+                  boxShadow: '0 20px 60px hsl(0 0% 0% / 0.4)',
+                } : {
+                  border: '1px solid hsl(0 0% 100% / 0.1)',
+                  background: 'hsl(0 0% 100% / 0.03)',
+                }}>
+                {plan.badge_text && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full"
+                    style={{ background: 'hsl(var(--primary))', color: 'hsl(0 0% 100%)' }}>
+                    {plan.badge_text}
+                  </span>
+                )}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    {tierKey === 'master' && <Crown className="h-5 w-5" style={{ color: plan.highlight ? 'hsl(var(--primary))' : 'hsl(45 80% 55%)' }} />}
+                    {tierKey === 'pro' && <Zap className="h-5 w-5" style={{ color: plan.highlight ? 'hsl(var(--primary))' : 'hsl(262 75% 65%)' }} />}
+                    <h3 className="text-xl font-bold" style={{ color: plan.highlight ? 'hsl(220 15% 10%)' : 'hsl(0 0% 100%)' }}>{plan.name}</h3>
+                  </div>
+                  <div className="text-4xl font-black" style={{ color: plan.highlight ? 'hsl(220 15% 10%)' : 'hsl(0 0% 100%)' }}>
+                    {plan.price_brl === 0 ? 'Grátis' : `R$${Number(plan.price_brl).toFixed(2)}`}
+                    {plan.period && <span className="text-base font-normal ml-1" style={{ color: plan.highlight ? 'hsl(0 0% 0% / 0.4)' : 'hsl(0 0% 100% / 0.35)' }}>{plan.period}</span>}
+                  </div>
+                </div>
+
+                <ul className="space-y-2.5 flex-1 mb-6">
+                  {tierFeats.map((f: any) => (
+                    <li key={f.feature_key} className="flex items-start gap-2.5 text-sm"
+                      style={{ color: f.enabled ? (plan.highlight ? 'hsl(220 15% 15%)' : 'hsl(0 0% 100%)') : (plan.highlight ? 'hsl(0 0% 0% / 0.2)' : 'hsl(0 0% 100% / 0.2)') }}>
+                      {f.enabled
+                        ? <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: 'hsl(142 70% 50%)' }} />
+                        : <X className="h-4 w-4 shrink-0 mt-0.5" style={{ color: 'hsl(0 0% 50%)' }} />}
+                      {f.feature_label}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  onClick={() => navigate('/auth?mode=signup')}
+                  className="w-full rounded-xl py-5 font-semibold"
+                  style={plan.highlight ? {
+                    background: 'hsl(220 15% 10%)',
+                    color: 'hsl(0 0% 100%)',
+                  } : {
+                    background: 'hsl(0 0% 100% / 0.1)',
+                    color: 'hsl(0 0% 100%)',
+                    border: '1px solid hsl(0 0% 100% / 0.15)',
+                  }}
+                >
+                  {plan.cta_text}
+                </Button>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+// CTA Final — WHITE
+const FinalCTA = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => (
+  <section className="py-20 sm:py-28 px-4" style={{ background: 'hsl(0 0% 97%)' }}>
+    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
+      className="max-w-3xl mx-auto text-center">
       <motion.div variants={fadeUp} custom={0}
-        className="relative rounded-3xl border border-white/10 bg-white/4 p-10 sm:p-16 overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-primary/10 blur-[100px] rounded-full pointer-events-none" />
+        className="relative rounded-3xl p-10 sm:p-16 overflow-hidden"
+        style={{ border: '1px solid hsl(0 0% 0% / 0.07)', background: 'hsl(0 0% 100%)' }}>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full pointer-events-none"
+          style={{ background: 'hsl(var(--primary) / 0.06)', filter: 'blur(100px)' }} />
         <div className="relative">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">Glory Pads</motion.p>
-          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-white mb-5">
-            Pronto para transformar<br />seu louvor?
+          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold text-foreground mb-5">
+            {config.cta_title || 'Pronto para transformar seu louvor?'}
           </motion.h2>
-          <motion.p variants={fadeUp} custom={2} className="text-white/45 mb-8 max-w-md mx-auto">
-            Junte-se a músicos que já usam o Glory Pads para criar momentos de adoração inesquecíveis.
+          <motion.p variants={fadeUp} custom={2} className="text-muted-foreground mb-8 max-w-md mx-auto">
+            {config.cta_subtitle || 'Junte-se a músicos que já usam o Glory Pads para criar momentos de adoração inesquecíveis.'}
           </motion.p>
           <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
-              className="bg-white text-black hover:bg-white/90 text-lg px-10 py-6 rounded-xl font-bold shadow-[0_0_50px_hsl(0_0%_100%/0.15)]">
+              className="bg-foreground text-background hover:bg-foreground/85 text-lg px-10 py-6 rounded-xl font-bold">
               Começar agora — é grátis
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
@@ -471,30 +466,39 @@ const FinalCTA = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) =>
   </section>
 );
 
-// ── Footer (white) ────────────────────────────────────────────────────────────
+// Footer — DARK
 const Footer = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <footer className="bg-white border-t border-gray-100 py-10 px-4">
+  <footer className="border-t py-10 px-4" style={{ background: 'hsl(220 15% 5%)', borderColor: 'hsl(0 0% 100% / 0.06)' }}>
     <div className="max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row items-start justify-between gap-8 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <img src={logoDark} alt="Glory Pads" className="h-7 w-auto" />
-            <span className="font-bold text-black">Glory Pads</span>
+            <img src={logoLight} alt="Glory Pads" className="h-7 w-auto" />
+            <span className="font-bold" style={{ color: 'hsl(0 0% 100%)' }}>Glory Pads</span>
           </div>
-          <p className="text-sm text-gray-400 max-w-xs">
+          <p className="text-sm max-w-xs" style={{ color: 'hsl(0 0% 100% / 0.35)' }}>
             A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm">
-          <a href="#recursos" className="text-gray-500 hover:text-black transition">Recursos</a>
-          <a href="#planos" className="text-gray-500 hover:text-black transition">Planos</a>
-          <a href="#sons" className="text-gray-500 hover:text-black transition">Glory Store</a>
-          <button onClick={() => navigate('/auth')} className="text-left text-gray-500 hover:text-black transition">Entrar</button>
-          <button onClick={() => navigate('/auth?mode=signup')} className="text-left text-gray-500 hover:text-black transition">Criar conta</button>
-          <a href="/install" className="text-gray-500 hover:text-black transition">Instalar app</a>
+          {[
+            { label: 'Recursos', href: '#recursos' },
+            { label: 'Planos', href: '#planos' },
+            { label: 'Glory Store', href: '#sons' },
+          ].map(l => (
+            <a key={l.label} href={l.href} className="transition" style={{ color: 'hsl(0 0% 100% / 0.4)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100%)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'hsl(0 0% 100% / 0.4)')}>
+              {l.label}
+            </a>
+          ))}
+          <button onClick={() => navigate('/auth')} className="text-left transition" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>Entrar</button>
+          <button onClick={() => navigate('/auth?mode=signup')} className="text-left transition" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>Criar conta</button>
+          <a href="/install" className="transition" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>Instalar app</a>
         </div>
       </div>
-      <div className="border-t border-gray-100 pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-400">
+      <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"
+        style={{ borderColor: 'hsl(0 0% 100% / 0.06)', color: 'hsl(0 0% 100% / 0.25)' }}>
         <p>© {new Date().getFullYear()} Glory Pads. Todos os direitos reservados.</p>
         <p>Feito com ❤️ para músicos de louvor</p>
       </div>
@@ -502,21 +506,61 @@ const Footer = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
   </footer>
 );
 
-// ── Root ──────────────────────────────────────────────────────────────────────
+// Root
 const Landing = () => {
   const navigate = useNavigate();
   useBodyScroll();
+  const { config, pricing, features, loading } = useLandingConfig();
 
   return (
-    <div className="text-foreground overflow-y-auto overflow-x-hidden">
+    <div className="overflow-y-auto overflow-x-hidden">
       <Nav navigate={navigate} />
-      <Hero navigate={navigate} />
-      <Stats />
-      <Features navigate={navigate} />
-      <SoundSection navigate={navigate} />
+
+      {/* WHITE hero */}
+      <Hero navigate={navigate} config={config} />
+
+      {/* white → dark gradient */}
+      <Divider fromLight={true} />
+
+      {/* DARK stats */}
+      <Stats config={config} />
+
+      {/* dark → white gradient */}
+      <Divider fromLight={false} />
+
+      {/* WHITE features */}
+      <Features navigate={navigate} config={config} />
+
+      {/* white → dark gradient */}
+      <Divider fromLight={true} />
+
+      {/* DARK sound store */}
+      <SoundSection navigate={navigate} config={config} />
+
+      {/* dark → white gradient */}
+      <Divider fromLight={false} />
+
+      {/* WHITE how it works */}
       <HowItWorks />
-      <Pricing navigate={navigate} />
-      <FinalCTA navigate={navigate} />
+
+      {/* white → dark gradient */}
+      <Divider fromLight={true} />
+
+      {/* DARK pricing (conditional) */}
+      {!loading && (
+        <Pricing navigate={navigate} config={config} pricing={pricing} features={features} />
+      )}
+
+      {/* dark → white gradient */}
+      <Divider fromLight={false} />
+
+      {/* WHITE CTA */}
+      <FinalCTA navigate={navigate} config={config} />
+
+      {/* white → dark gradient */}
+      <Divider fromLight={true} />
+
+      {/* DARK footer */}
       <Footer navigate={navigate} />
     </div>
   );
