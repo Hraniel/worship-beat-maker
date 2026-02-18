@@ -5,6 +5,50 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+let cachedSpotifyToken: { token: string; expiresAt: number } | null = null;
+
+async function getSpotifyToken(): Promise<string | null> {
+  if (cachedSpotifyToken && Date.now() < cachedSpotifyToken.expiresAt) {
+    return cachedSpotifyToken.token;
+  }
+  const clientId = Deno.env.get("SPOTIFY_CLIENT_ID");
+  const clientSecret = Deno.env.get("SPOTIFY_CLIENT_SECRET");
+  if (!clientId || !clientSecret) return null;
+
+  const resp = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
+    },
+    body: "grant_type=client_credentials",
+  });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  cachedSpotifyToken = { token: data.access_token, expiresAt: Date.now() + (data.expires_in - 60) * 1000 };
+  return cachedSpotifyToken.token;
+}
+
+async function fetchSpotifyImage(token: string, name: string, artist: string): Promise<{ image: string | null; previewUrl: string | null; spotifyId: string | null }> {
+  try {
+    const q = encodeURIComponent(`${name} ${artist}`);
+    const resp = await fetch(`https://api.spotify.com/v1/search?q=${q}&type=track&limit=3`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!resp.ok) return { image: null, previewUrl: null, spotifyId: null };
+    const data = await resp.json();
+    const track = data.tracks?.items?.[0];
+    if (!track) return { image: null, previewUrl: null, spotifyId: null };
+    return {
+      image: track.album?.images?.[1]?.url || track.album?.images?.[0]?.url || null,
+      previewUrl: track.preview_url || null,
+      spotifyId: track.id || null,
+    };
+  } catch {
+    return { image: null, previewUrl: null, spotifyId: null };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -71,7 +115,7 @@ Você vai receber resultados de busca na web sobre músicas.
 Sua tarefa é extrair SOMENTE dados REAIS encontrados nas fontes, nunca inventar.
 
 Para cada música encontrada, extraia:
-- name: nome correto da música
+- name: nome correto da música (com acentos e maiúsculas corretos)
 - artist: artista/banda principal
 - bpm: BPM REAL (número inteiro) encontrado na fonte - NUNCA invente
 - key: tonalidade REAL encontrada (ex: "G", "Am", "C", "F#m") - NUNCA invente
@@ -91,20 +135,24 @@ ${context}
 
 Extraia os dados musicais reais (BPM e tonalidade) das fontes acima.`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
+    // Step 2 + Step 3 in parallel: AI parsing and Spotify token fetch
+    const [aiRes, spotifyToken] = await Promise.all([
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+        }),
       }),
-    });
+      getSpotifyToken(),
+    ]);
 
     if (aiRes.status === 429) {
       return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em instantes." }), {
@@ -137,7 +185,7 @@ Extraia os dados musicais reais (BPM e tonalidade) das fontes acima.`;
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
-    const results = (parsed.results || []).map((r: any) => ({
+    const rawResults = (parsed.results || []).map((r: any) => ({
       name: typeof r.name === "string" ? r.name : "Desconhecida",
       artist: typeof r.artist === "string" ? r.artist : "Desconhecido",
       bpm: typeof r.bpm === "number" ? r.bpm : null,
@@ -146,7 +194,26 @@ Extraia os dados musicais reais (BPM e tonalidade) das fontes acima.`;
       source: typeof r.source === "string" ? r.source : null,
     }));
 
-    console.log(`music-search-ai: "${query}" → ${results.length} results with real data`);
+    // Step 3: Enrich with Spotify album covers (parallel)
+    let results = rawResults;
+    if (spotifyToken && rawResults.length > 0) {
+      const enriched = await Promise.all(
+        rawResults.map(async (r: any) => {
+          const spotify = await fetchSpotifyImage(spotifyToken, r.name, r.artist);
+          return {
+            ...r,
+            albumCover: spotify.image,
+            previewUrl: spotify.previewUrl,
+            spotifyId: spotify.spotifyId,
+          };
+        })
+      );
+      results = enriched;
+    } else {
+      results = rawResults.map((r: any) => ({ ...r, albumCover: null, previewUrl: null, spotifyId: null }));
+    }
+
+    console.log(`music-search-ai: "${query}" → ${results.length} results with covers`);
 
     return new Response(JSON.stringify({ results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

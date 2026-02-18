@@ -13,6 +13,9 @@ interface AISongResult {
   key: string | null;
   mode: string;
   source?: string | null;
+  albumCover?: string | null;
+  previewUrl?: string | null;
+  spotifyId?: string | null;
 }
 
 interface SpotifyTrack {
@@ -356,15 +359,24 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
 
             {/* Search results */}
             {!selectedSong && results.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {results.map((r, i) => {
                   const sourceDomain = r.source ? (() => { try { return new URL(r.source).hostname.replace('www.', ''); } catch { return null; } })() : null;
                   return (
                     <button
                       key={i}
                       onClick={() => handleAnalyze(r)}
-                      className="w-full flex items-start justify-between gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors text-left border border-border/50"
+                      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted/60 transition-colors text-left border border-border/50"
                     >
+                      {/* Album cover */}
+                      <div className="w-12 h-12 rounded-md shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+                        {r.albumCover ? (
+                          <img src={r.albumCover} alt={r.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Music className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">{r.name}</p>
                         <p className="text-xs text-muted-foreground truncate">{r.artist}</p>
@@ -372,7 +384,8 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
                           <p className="text-[10px] text-primary/60 truncate mt-0.5">📌 {sourceDomain}</p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0 pt-0.5">
+
+                      <div className="flex flex-col items-end gap-1 shrink-0">
                         {r.bpm ? (
                           <div className="text-right">
                             <span className="text-sm font-bold text-foreground">{r.bpm}</span>
@@ -403,8 +416,12 @@ const MusicAISearch: React.FC<MusicAISearchProps> = ({ onApplyConfig, locked, ex
             <div className="space-y-3">
               {/* Selected card */}
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
-                <div className="w-10 h-10 rounded bg-primary/10 flex items-center justify-center shrink-0">
-                  <Music className="h-5 w-5 text-primary" />
+                <div className="w-12 h-12 rounded-md shrink-0 overflow-hidden bg-muted flex items-center justify-center">
+                  {selectedSong.albumCover ? (
+                    <img src={selectedSong.albumCover} alt={selectedSong.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Music className="h-5 w-5 text-primary" />
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{selectedSong.name}</p>
