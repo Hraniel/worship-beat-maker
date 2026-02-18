@@ -1,70 +1,94 @@
 
-## Plano de Padronização — Settings Dialog (Desktop e Tablet)
+## Edição do Hero da Landing Page no Admin
 
-### Diagnóstico do problema
+### O que o usuário quer
 
-A edição anterior introduziu dois problemas no `SettingsDialog.tsx`:
+Adicionar no painel admin uma forma de editar a seção superior da landing page (Hero) — que inclui o badge, título, subtítulo, cores, tamanho do texto e espaçamento — com salvamento automático (sem botão de publicar), igual ao `AdminPricingManager`.
 
-1. **Textos menores que o necessário**: as abas (TabsTrigger) foram reduzidas para `text-[10px] sm:text-[11px]`, quando o padrão original era `text-xs` (12px). Os títulos de seção também ficaram em `text-[11px]`, abaixo do padrão.
+### Diagnóstico do estado atual
 
-2. **Containers com `max-w-xs` forçados**: todas as abas (Áudio, Loja, Planos, Guia, Sobre) receberam `max-w-xs mx-auto`, o que cria uma caixa estreita descentrada dentro de um diálogo que já tem seu próprio tamanho fixo (`max-w-sm` / `max-w-md`).
+A edição do Hero está **fragmentada em duas abas diferentes**:
+- **Aba "Textos"**: edita `hero_badge`, `hero_title`, `hero_subtitle` (com save por campo via onBlur)
+- **Aba "Estilos"**: edita `hero_bg`, `hero_title_color`, `hero_title_size`, `hero_subtitle_color`, `hero_badge_bg`, `hero_badge_color`, `hero_pt`, `hero_pb` (accordion "🦸 Hero")
 
-3. **Dialog não aumenta para desktop**: o diálogo continua em `max-w-sm sm:max-w-md`, que é pequeno para telas maiores. No desktop/tablet, poderia ter um tamanho mais confortável (`sm:max-w-lg`).
-
----
-
-### O que será corrigido
-
-#### 1. Dialog — tamanho padronizado
-
-```
-mobile:  max-w-sm  (atual — mantém)
-tablet/desktop:  max-w-lg  (aumenta de md → lg)
-landscape fullscreen: sem mudança
-```
-
-#### 2. Abas (TabsTrigger) — tamanho de texto unificado
-
-Remover `text-[10px] sm:text-[11px]` → usar `text-xs` em todas as abas (padrão Tailwind, 12px). Ícones permanecem `h-3.5 w-3.5`.
-
-#### 3. Containers de conteúdo — sem `max-w-xs` artificial
-
-Todas as abas passam a usar `w-full` com padding interno, sem restrição de largura forçada que cria aspecto "espremido".
-
-Aba por aba:
-
-| Aba | Antes | Depois |
-|-----|-------|--------|
-| Áudio | `max-w-sm mx-auto` | `w-full` — cards ocupam a largura do dialog |
-| Loja | `max-w-xs mx-auto` | `w-full max-w-sm mx-auto` — centralizado mas mais folgado |
-| Planos | `max-w-xs mx-auto` | `w-full max-w-sm mx-auto` |
-| Guia | `max-w-xs mx-auto` | `w-full` — lista ocupa a largura total |
-| Sobre | `max-w-xs mx-auto` | `w-full max-w-sm mx-auto` |
-
-#### 4. Títulos de seção — padronizados em `text-xs` (não `text-[11px]`)
-
-Labels como "Glory Store", "Planos e Assinatura", "Guia Prático", "Sobre": `text-xs font-semibold`.
-
-#### 5. Botões de ação (Loja/Planos) — tamanho adequado
-
-Botões "Acessar a Loja" e "Gerenciar plano": de `text-xs py-1.5` para `text-sm py-2 px-5` — mais clicáveis e proporcionais.
-
-#### 6. Aba "Sobre" — texto legível
-
-- Título `Glory Pads`: de `text-xs` → `text-sm font-bold`
-- Versão: de `text-[10px]` → `text-xs`
-- Descrição: de `text-xs` → `text-sm`
+Não há uma tela unificada para editar tudo do Hero de uma vez. A solução é criar uma **nova aba dedicada "Hero"** no `AdminLandingEditor`, reunindo todos os campos com salvamento automático (onBlur salva no banco imediatamente, sem botão de publicar).
 
 ---
 
-### Arquivos alterados
+### Estrutura da nova aba "Hero"
 
-- **`src/components/SettingsDialog.tsx`** — único arquivo a ser editado
+A nova aba ficará entre "Textos" e "Recursos" e terá 3 grupos visuais:
 
-### O que NÃO muda
+**Grupo 1 — Conteúdo**
+- Badge (texto do badge)
+- Título principal
+- Subtítulo
 
-- Layout landscape (fullscreen) — já está correto
-- Componente `StereoOption` — já usa tamanhos bons (`text-sm` no label, `text-xs` nos botões)
-- Lógica de estado e callbacks — sem alterações
-- Layout do `Index.tsx` — fora do escopo desta padronização
+**Grupo 2 — Cores & Tipografia**
+- Cor de fundo da seção (`hero_bg`)
+- Cor do título (`hero_title_color`)
+- Tamanho do título (`hero_title_size`) — select com opções XS a 8XL
+- Cor do subtítulo (`hero_subtitle_color`)
+- Fundo do badge (`hero_badge_bg`)
+- Cor do texto do badge (`hero_badge_color`)
 
+**Grupo 3 — Espaçamento**
+- Padding top (`hero_pt`) — select 0px–128px
+- Padding bottom (`hero_pb`) — select 0px–128px
+
+Cada campo salva **automaticamente no banco** ao perder o foco (`onBlur`) — exatamente como o `AdminPricingManager` faz com os planos. Sem botão de publicar, sem rascunho. A landing page reflete as mudanças instantaneamente para todos os visitantes.
+
+---
+
+### Campos de cor reutilizando o ColorField
+
+O `AdminLandingStyleEditor` já tem um componente `ColorField` que:
+- Mostra um color picker nativo + input de texto HSL + preview de swatch
+- Suporta transparência (`hsl(... / 0.5)`)
+- Salva ao `onBlur`
+
+Esse componente será **extraído para um arquivo utilitário compartilhado** ou simplesmente replicado inline na nova aba com a mesma lógica de auto-save.
+
+---
+
+### Mudanças nos arquivos
+
+#### `src/components/AdminLandingEditor.tsx`
+
+1. Adicionar nova tab `'hero'` ao array `TABS` (ícone: `Layout` ou `ImageIcon`)
+2. Adicionar `type ActiveTab = 'textos' | 'hero' | 'recursos' | 'estilos'`
+3. Renderizar o conteúdo da nova aba com 3 grupos:
+   - **Conteúdo**: inputs de texto com onBlur → saveKey (reutiliza lógica já existente)
+   - **Cores**: componente ColorField inline (lógica de hsl copiada do StyleEditor)
+   - **Espaçamento**: selects com as mesmas opções de padding do StyleEditor (0–128px)
+4. A função `saveKey` já existe e funciona com upsert — pode ser reutilizada para todos os campos, **incluindo os de cor e espaçamento** desde que a chave exista no banco
+
+#### `src/components/AdminLandingStyleEditor.tsx`
+
+- Remover o accordion "🦸 Hero" (id `'hero'`) da lista `STYLE_SECTIONS`, pois esses campos agora são editados na aba dedicada
+- Isso evita duplicidade de edição
+
+#### Nenhum arquivo de banco, migration ou Landing.tsx precisa ser alterado
+
+O `Landing.tsx` já lê todos os campos `hero_*` do config e os aplica dinamicamente. O `useLandingConfig` já busca tudo de `landing_config`. Nenhuma mudança necessária.
+
+---
+
+### Comportamento do salvamento
+
+Igual ao `AdminPricingManager`:
+- Input perde foco (`onBlur`) → `saveKey(key)` chama `supabase.from('landing_config').update(...)` → toast "Salvo!"
+- Color picker muda → `onChange` atualiza estado local → ao fechar/perder foco → `onBlur` salva
+- Select muda → `onChange` imediatamente chama `saveKey` (já que não tem campo de texto intermediário)
+- A landing page reflete as mudanças em tempo real para todos os visitantes
+
+---
+
+### Resumo das alterações
+
+| Arquivo | Mudança |
+|---|---|
+| `src/components/AdminLandingEditor.tsx` | Nova aba "Hero" com todos os campos textuais + cores + espaçamento, auto-save por onBlur |
+| `src/components/AdminLandingStyleEditor.tsx` | Remove accordion "Hero" (evita duplicidade) |
+
+Sem migrations, sem alterações no banco, sem mudanças no `Landing.tsx`.
