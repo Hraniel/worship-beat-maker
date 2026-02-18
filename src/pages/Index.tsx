@@ -1305,25 +1305,20 @@ const Index = () => {
           </div>
 
           {focusMode ? (
-            /* Focus mode: minimized bar with BPM + key + play/pause + ambient pads */
-            <div>
-              <div className="flex items-center justify-center gap-3 px-3 py-1.5">
-                <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
-                <span className="text-[10px] text-muted-foreground">BPM</span>
-                {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-                <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-                <button
-                  type="button"
-                  onClick={() => setMetronomeIsPlaying((prev) => !prev)}
-                  className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
-                  title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
-                >
-                  {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </button>
-              </div>
-              <div className="px-2 pb-1">
-                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-              </div>
+            /* Focus mode: minimized bar with BPM + key + play/pause only */
+            <div className="flex items-center justify-center gap-3 px-3 py-1.5">
+              <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+              <span className="text-[10px] text-muted-foreground">BPM</span>
+              {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
+              <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+              <button
+                type="button"
+                onClick={() => setMetronomeIsPlaying((prev) => !prev)}
+                className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
+                title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
+              >
+                {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              </button>
             </div>
           ) : (
             <>
