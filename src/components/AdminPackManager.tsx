@@ -524,7 +524,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         <>
           {/* Create pack button */}
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Packs ({dbPacks.length})</h3>
+            <h3 className="text-sm font-semibold text-foreground">Packs ({packs.length})</h3>
             <button
               onClick={() => setShowCreatePack(v => !v)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -582,7 +582,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
           {/* Pack list */}
           <div className="space-y-2">
-            {dbPacks.map(pack => {
+            {packs.map(pack => {
               const sounds = getSounds(pack);
               const hasUnsavedOrder = !!localOrder[pack.id];
               const isIconImage = pack.icon_name?.startsWith('pack-icons/') || pack.icon_name?.startsWith('http');
