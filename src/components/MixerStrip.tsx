@@ -137,9 +137,11 @@ const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ chan
     updateVolume(e.clientY);
   }, [updateVolume]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!draggingRef.current) return;
     draggingRef.current = false;
     setDragging(false);
+    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch {}
   }, []);
 
   const pct = channel.volume * 100;
@@ -158,7 +160,7 @@ const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ chan
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           {/* Fill */}
           <div
