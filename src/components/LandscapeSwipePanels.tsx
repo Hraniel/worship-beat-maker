@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Play, Pause } from 'lucide-react';
 import { useIsLandscape, useIsDesktop } from '@/hooks/use-mobile';
-import Metronome from '@/components/Metronome';
-import PanControl from '@/components/PanControl';
 
 interface LandscapeSwipePanelsProps {
   padGrid: React.ReactNode;
@@ -46,7 +44,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
 }) => {
   const isLandscape = useIsLandscape();
   const isDesktop = useIsDesktop();
-  const [landscapeTab, setLandscapeTab] = useState<0 | 1>(0); // 0=Mix, 1=Met
+  
 
   // Portrait / desktop: pad grid with ambient pads below (skipped on desktop — footer handles them)
   if (!isLandscape) {
@@ -100,55 +98,20 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
             </div>
           </div>
         ) : (
-          /* Tab buttons */
-          <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
-            {(['Mix', 'Met'] as const).map((label, i) => (
-              <button
-                key={i}
-                onClick={() => setLandscapeTab(i as 0 | 1)}
-                className={`relative px-2 h-5 rounded text-[9px] font-bold transition-colors flex items-center gap-1 ${
-                  landscapeTab === i
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                {label}
-                {label === 'Met' && metronomeIsPlaying && (
-                  <span
-                    className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0"
-                    style={{ backgroundColor: 'hsl(142 71% 45%)' }}
-                  />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Tab content */}
-        {!focusMode && (
-          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-
-            {/* === MIX TAB === */}
-            <div className={landscapeTab === 0 ? 'flex-1 min-h-0 flex flex-col overflow-y-auto' : 'hidden'}>
-              {/* Faders */}
-              <div className="shrink-0 px-1 pt-1 pb-1">
-                {mixer}
-              </div>
-              {/* Metronome — full, below faders */}
-              <div className="shrink-0 border-t border-border/30">
-                {metronome}
-              </div>
-              {/* Continuous Pads — below metronome */}
-              <div className="shrink-0 px-1.5 py-1 border-t border-border/30">
-                {ambientPads}
-              </div>
+          /* No-focus mode: single Mix panel — Faders → Metronome → Continuous Pads */
+          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+            {/* Faders */}
+            <div className="shrink-0 px-1 pt-1 pb-1">
+              {mixer}
             </div>
-
-            {/* === MET TAB === always mounted to keep audio alive */}
-            <div className={landscapeTab === 1 ? 'flex-1 min-h-0 flex flex-col overflow-y-auto p-1.5' : 'hidden'}>
+            {/* Metronome — full, below faders */}
+            <div className="shrink-0 border-t border-border/30">
               {metronome}
             </div>
-
+            {/* Continuous Pads — below metronome */}
+            <div className="shrink-0 px-1.5 py-1 border-t border-border/30">
+              {ambientPads}
+            </div>
           </div>
         )}
       </div>
