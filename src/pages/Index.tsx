@@ -683,7 +683,7 @@ const Index = () => {
   const currentSongName = currentSongId ? setlists.find((s) => s.id === currentSongId)?.name || null : null;
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden" onPointerDown={initAudio}>
+    <div className="flex flex-col bg-background overflow-hidden" style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)', boxSizing: 'border-box' }} onPointerDown={initAudio}>
       <UpdateBanner show={needRefresh} onUpdate={() => updateServiceWorker(true)} />
       {/* Header */}
       {!focusMode ? (
