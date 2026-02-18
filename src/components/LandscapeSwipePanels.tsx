@@ -73,19 +73,25 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
       <div className="w-[42%] max-w-[320px] shrink-0 flex flex-col min-h-0 border-l border-border/30">
 
         {focusMode ? (
-          /* Focus mode: compact BPM bar */
-          <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-border/30">
-            <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
-            <span className="text-[10px] text-muted-foreground">BPM</span>
-            {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-            <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-            <button
-              type="button"
-              onClick={onTogglePlay}
-              className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
-            >
-              {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-            </button>
+          /* Focus mode: BPM bar + ultra-compact ambient pads */
+          <div className="flex flex-col flex-1 min-h-0">
+            <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-border/30 shrink-0">
+              <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+              <span className="text-[10px] text-muted-foreground">BPM</span>
+              {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
+              <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+              <button
+                type="button"
+                onClick={onTogglePlay}
+                className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
+              >
+                {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+            {/* Ultra-compact ambient pads */}
+            <div className="flex-1 min-h-0 px-1.5 py-1.5 overflow-hidden">
+              {ambientPads}
+            </div>
           </div>
         ) : (
           /* Tab buttons */
