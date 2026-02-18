@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay, Palette } from 'lucide-react';
 import AdminLandingFeaturesEditor from './AdminLandingFeaturesEditor';
+import AdminLandingStyleEditor from './AdminLandingStyleEditor';
 import LandingPreviewDrawer from './LandingPreviewDrawer';
 
 const LANDING_PREVIEW_URL = `${window.location.origin}/`;
@@ -46,11 +47,13 @@ const SECTION_GROUPS = [
   { label: 'CTA Final', keys: ['cta_title', 'cta_subtitle'] },
 ];
 
+type ActiveTab = 'textos' | 'recursos' | 'estilos';
+
 const AdminLandingEditor: React.FC = () => {
   const [rows, setRows] = useState<ConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'textos' | 'recursos'>('textos');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('textos');
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const fetchData = async () => {
@@ -113,6 +116,12 @@ const AdminLandingEditor: React.FC = () => {
 
   const showPricing = getVal('show_pricing') === 'true';
 
+  const TABS: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'textos', label: 'Textos', icon: <Type className="h-3 w-3" /> },
+    { id: 'recursos', label: 'Recursos', icon: <LayoutGrid className="h-3 w-3" /> },
+    { id: 'estilos', label: 'Estilos', icon: <Palette className="h-3 w-3" /> },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Preview Drawer */}
@@ -125,18 +134,17 @@ const AdminLandingEditor: React.FC = () => {
       {/* Header row: tabs + preview button */}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 bg-white/5 rounded-lg p-0.5 gap-0.5">
-          <button
-            onClick={() => setActiveTab('textos')}
-            className={`flex-1 h-7 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === 'textos' ? 'bg-violet-600 text-white shadow-sm' : 'text-white/50 hover:text-white'}`}
-          >
-            <Type className="h-3 w-3" /> Textos & Config
-          </button>
-          <button
-            onClick={() => setActiveTab('recursos')}
-            className={`flex-1 h-7 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === 'recursos' ? 'bg-violet-600 text-white shadow-sm' : 'text-white/50 hover:text-white'}`}
-          >
-            <LayoutGrid className="h-3 w-3" /> Cards Recursos
-          </button>
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 h-7 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors ${
+                activeTab === tab.id ? 'bg-violet-600 text-white shadow-sm' : 'text-white/50 hover:text-white'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* Live preview button */}
@@ -155,8 +163,13 @@ const AdminLandingEditor: React.FC = () => {
         </button>
       </div>
 
+      {/* ── Recursos tab ─────────────────────────────────────────────────────── */}
       {activeTab === 'recursos' && <AdminLandingFeaturesEditor />}
 
+      {/* ── Estilos tab ──────────────────────────────────────────────────────── */}
+      {activeTab === 'estilos' && <AdminLandingStyleEditor />}
+
+      {/* ── Textos tab ───────────────────────────────────────────────────────── */}
       {activeTab === 'textos' && (
         <div className="space-y-5">
           <p className="text-[11px]" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>
