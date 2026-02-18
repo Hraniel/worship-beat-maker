@@ -9,7 +9,7 @@ import SetlistManager from '@/components/SetlistManager';
 import SpotifySearch from '@/components/SpotifySearch';
 import AmbientPads from '@/components/AmbientPads';
 import LandscapeSwipePanels from '@/components/LandscapeSwipePanels';
-import { useIsLandscape } from '@/hooks/use-mobile';
+import { useIsLandscape, useIsTablet } from '@/hooks/use-mobile';
 import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer, setMasterPan, setMetronomePan, setPadPan } from '@/lib/audio-engine';
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds, saveCustomSoundsForSong, loadCustomSoundsForSong, deleteCustomSoundsForSong } from '@/lib/custom-sound-store';
@@ -66,6 +66,7 @@ const Index = () => {
   const { signOut } = useAuth();
   const { tier } = useSubscription();
   const isLandscape = useIsLandscape();
+  const isTablet = useIsTablet();
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
@@ -823,8 +824,8 @@ const Index = () => {
                 padVolumes={padVolumes}
                 activeLoops={activeLoops}
                 customSounds={customSounds}
-                padSize={padSizeToTextSize(padSize)}
-                padScale={padSize}
+                padSize={padSizeToTextSize(isTablet ? Math.max(padSize, 85) : padSize)}
+                padScale={isTablet ? Math.max(padSize, 85) : padSize}
                 padEffects={padEffects}
                 padPans={padPans}
                 onToggleLoop={toggleLoop}
@@ -848,20 +849,37 @@ const Index = () => {
             </div>
           }
           ambientPads={
-            <div data-tutorial="ambient-pads" className="w-full h-full flex flex-col items-center justify-end px-2 pb-2">
-              {currentSongId && !editMode && (
-                <button
-                  onClick={toggleFocusMode}
-                  className="flex items-center gap-1 px-3 py-1 mb-1 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors"
-                  title={focusMode ? 'Sair do modo foco' : 'Modo foco'}
-                  data-tutorial="focus-mode"
-                >
-                  {focusMode ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
-                  {focusMode ? 'Sair' : 'Foco'}
-                </button>
-              )}
-              <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
-            </div>
+            isTablet ? (
+              /* On tablet, only show focus button here; ambient pads move to footer */
+              <div className="w-full flex justify-center px-2 pb-1">
+                {currentSongId && !editMode && (
+                  <button
+                    onClick={toggleFocusMode}
+                    className="flex items-center gap-1 px-3 py-1 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors"
+                    title={focusMode ? 'Sair do modo foco' : 'Modo foco'}
+                    data-tutorial="focus-mode"
+                  >
+                    {focusMode ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                    {focusMode ? 'Sair' : 'Foco'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div data-tutorial="ambient-pads" className="w-full h-full flex flex-col items-center justify-end px-2 pb-2">
+                {currentSongId && !editMode && (
+                  <button
+                    onClick={toggleFocusMode}
+                    className="flex items-center gap-1 px-3 py-1 mb-1 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors"
+                    title={focusMode ? 'Sair do modo foco' : 'Modo foco'}
+                    data-tutorial="focus-mode"
+                  >
+                    {focusMode ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
+                    {focusMode ? 'Sair' : 'Foco'}
+                  </button>
+                )}
+                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+              </div>
+            )
           }
           mixer={
             !focusMode ? (
@@ -947,7 +965,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-[18vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[28vh] md:max-h-[25vh] lg:max-h-none'}`}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-[18vh] lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[28vh] md:max-h-none lg:max-h-none'}`}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1019,8 +1037,57 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Mobile: vertical snap scroll between mixer and metronome */}
-        <div className="lg:hidden h-full relative">
+        {/* Tablet: Continuous Pads (left) + Faders (right) side by side, Metronome below */}
+        {isTablet && !focusMode && (
+          <div className="hidden md:block lg:hidden p-1.5 space-y-1.5">
+            <div className="flex gap-2 items-stretch">
+              {/* Continuous Pads - left side */}
+              <div className="w-[35%] shrink-0 flex items-center" data-tutorial="ambient-pads">
+                <AmbientPads panDisabled={audioSettings.ambientStereo === 'mono'} />
+              </div>
+              {/* Faders - right side, all visible */}
+              <div className="flex-1 min-w-0" data-tutorial="volume-master">
+                <MixerStrip
+                  showAll
+                  compactFaderHeight={80}
+                  channels={[
+                    { id: 'metronome', label: 'Metrônomo', shortLabel: 'MET', volume: metronomeVol, onChange: handleMetronomeVolChange },
+                    { id: 'ambient', label: 'Continuous', shortLabel: 'PAD', volume: ambientVol, onChange: (v) => { setAmbientVol(v); setAmbientVolume(v); } },
+                    ...defaultPads.slice(0, 9).map((pad) => ({
+                      id: pad.id,
+                      label: padNames[pad.id] || pad.name,
+                      shortLabel: (padNames[pad.id] || pad.name).slice(0, 3),
+                      volume: padVolumes[pad.id] ?? 0.7,
+                      onChange: (v: number) => handlePadVolumeChange(pad.id, v),
+                    })),
+                    { id: 'master', label: 'Master', shortLabel: 'MST', volume: masterVolume, onChange: setMasterVol },
+                  ]}
+                />
+              </div>
+            </div>
+            {/* Metronome below both - compact */}
+            <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+              <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} />
+            </div>
+          </div>
+        )}
+        {isTablet && focusMode && (
+          <div className="hidden md:flex lg:hidden items-center justify-center gap-3 px-3 py-1.5">
+            <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+            <span className="text-[10px] text-muted-foreground">BPM</span>
+            <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+            <button
+              type="button"
+              onClick={() => setMetronomeIsPlaying((prev) => !prev)}
+              className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
+            >
+              {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </button>
+          </div>
+        )}
+
+        {/* Mobile (non-tablet): vertical snap scroll between mixer and metronome */}
+        <div className={`${isTablet ? 'hidden' : 'lg:hidden'} h-full relative`}>
           {/* Scroll indicator dots + directional chevron */}
           {!focusMode && (
             <div className="flex flex-col justify-center items-center py-1 pointer-events-none">
