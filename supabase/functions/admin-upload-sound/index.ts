@@ -113,6 +113,38 @@ Deno.serve(async (req) => {
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
 
+    } else if (action === 'update-sound') {
+      const soundId = formData.get('soundId') as string;
+      const shortName = formData.get('shortName') as string;
+      const category = formData.get('category') as string;
+
+      if (!soundId || !/^[0-9a-f-]{36}$/.test(soundId)) {
+        return new Response(JSON.stringify({ error: 'Invalid soundId' }), { status: 400, headers: corsHeaders });
+      }
+
+      const updateData: Record<string, any> = {};
+      if (shortName) updateData.short_name = shortName.slice(0, 6);
+      if (category) updateData.category = category;
+
+      const { error } = await supabase.from('pack_sounds').update(updateData).eq('id', soundId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+
+    } else if (action === 'reorder-sounds') {
+      const orderedIds = JSON.parse(formData.get('orderedIds') as string || '[]') as string[];
+
+      if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+        return new Response(JSON.stringify({ error: 'Invalid orderedIds' }), { status: 400, headers: corsHeaders });
+      }
+
+      // Update sort_order for each sound in batch
+      const updates = orderedIds.map((id, index) =>
+        supabase.from('pack_sounds').update({ sort_order: index }).eq('id', id)
+      );
+      await Promise.all(updates);
+
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+
     } else if (action === 'delete-sound') {
       const soundId = formData.get('soundId') as string;
       if (!soundId || !/^[0-9a-f-]{36}$/.test(soundId)) {
