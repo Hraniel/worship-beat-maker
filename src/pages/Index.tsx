@@ -793,7 +793,9 @@ const Index = () => {
             onSaveSong={handleSaveSong}
             onLoadSong={handleLoadSong}
             onDeleteSong={handleDeleteSong}
-            onReorder={reorderSetlists} />
+            onReorder={reorderSetlists}
+            setlists={setlists}
+            activeSetlistId={currentSongId} />
             </div>
             )}
 
@@ -895,7 +897,9 @@ const Index = () => {
                   onSaveSong={handleSaveSong}
                   onLoadSong={handleLoadSong}
                   onDeleteSong={handleDeleteSong}
-                  onReorder={reorderSetlists} />
+                  onReorder={reorderSetlists}
+                  setlists={setlists}
+                  activeSetlistId={currentSongId} />
               </div>
             )}
           </div>
@@ -931,6 +935,8 @@ const Index = () => {
                 onLoadSong={handleLoadSong}
                 onDeleteSong={handleDeleteSong}
                 onReorder={reorderSetlists}
+                setlists={setlists}
+                activeSetlistId={currentSongId}
               />
             </div>
           )}

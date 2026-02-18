@@ -16,6 +16,34 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import PackDetail from "./pages/PackDetail";
 import SharedSetlist from "./pages/SharedSetlist";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+const CACHE_VERSION_KEY = 'app_cache_version';
+
+// Checks if admin has bumped cache version; if so, reload to clear SW/caches
+const CacheVersionGuard = () => {
+  useEffect(() => {
+    supabase
+      .from('landing_config')
+      .select('config_value')
+      .eq('config_key', 'app_cache_version')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const remote = data.config_value;
+        const local = localStorage.getItem(CACHE_VERSION_KEY);
+        if (local !== null && local !== remote) {
+          localStorage.setItem(CACHE_VERSION_KEY, remote);
+          window.location.reload();
+        } else if (local === null) {
+          localStorage.setItem(CACHE_VERSION_KEY, remote);
+        }
+      });
+  }, []);
+  return null;
+};
+
 
 const queryClient = new QueryClient();
 
@@ -37,6 +65,7 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <BrowserRouter>
+          <CacheVersionGuard />
           <Routes>
             {/* Public routes — no auth context needed, load instantly */}
             <Route path="/s/:token" element={<SharedSetlist />} />
@@ -69,3 +98,4 @@ const App = () => (
 );
 
 export default App;
+
