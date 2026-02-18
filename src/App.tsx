@@ -36,26 +36,33 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <SubscriptionProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/store/:packId" element={<ProtectedRoute><PackDetail /></ProtectedRoute>} />
-                <Route path="/s/:token" element={<SharedSetlist />} />
-                <Route path="/install" element={<Install />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </SubscriptionProvider>
-        </AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public routes — no auth context needed, load instantly */}
+            <Route path="/s/:token" element={<SharedSetlist />} />
+            <Route path="/install" element={<Install />} />
+
+            {/* All other routes — wrapped in auth/subscription providers */}
+            <Route path="*" element={
+              <AuthProvider>
+                <SubscriptionProvider>
+                  <Toaster />
+                  <Sonner />
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
+                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                    <Route path="/store/:packId" element={<ProtectedRoute><PackDetail /></ProtectedRoute>} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </SubscriptionProvider>
+              </AuthProvider>
+            } />
+          </Routes>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>

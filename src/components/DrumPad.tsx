@@ -187,13 +187,14 @@ const DrumPad: React.FC<DrumPadProps> = ({
           aspect-square w-full touch-none
           ${isActive && !isLocked ? 'animate-pad-pulse' : ''}
           ${isLooping ? 'animate-loop-border' : ''}
+          ${!isActive && !isLooping ? 'drum-pad-idle' : ''}
         `}
         style={{
           background: isActive
             ? (customColor ? `hsl(${colorHsl} / ${0.25 * colorOpacity})` : 'hsl(0 0% 22%)')
             : isLooping
             ? (customColor ? `hsl(${colorHsl} / ${0.12 * colorOpacity})` : colorRef(0.08))
-            : 'linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 5%) 100%)',
+            : undefined,
           borderColor: isActive
             ? (customColor ? `hsl(${colorHsl} / ${0.9 * colorOpacity})` : 'hsl(0 0% 80%)')
             : isLooping
