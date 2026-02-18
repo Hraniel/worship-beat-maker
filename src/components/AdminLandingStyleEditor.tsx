@@ -40,6 +40,22 @@ const TEXT_SIZES = [
   { value: '8xl', label: '8XL (96px)' },
 ];
 
+const PADDING_OPTIONS = [
+  { value: '0', label: '0px' },
+  { value: '8', label: '8px (2)' },
+  { value: '16', label: '16px (4)' },
+  { value: '24', label: '24px (6)' },
+  { value: '32', label: '32px (8)' },
+  { value: '40', label: '40px (10)' },
+  { value: '48', label: '48px (12)' },
+  { value: '56', label: '56px (14)' },
+  { value: '64', label: '64px (16)' },
+  { value: '80', label: '80px (20)' },
+  { value: '96', label: '96px (24)' },
+  { value: '112', label: '112px (28)' },
+  { value: '128', label: '128px (32)' },
+];
+
 const STYLE_SECTIONS: StyleSection[] = [
   {
     id: 'hero', label: 'Hero', emoji: '🦸',
@@ -50,6 +66,8 @@ const STYLE_SECTIONS: StyleSection[] = [
       { key: 'hero_subtitle_color', label: 'Cor do Subtítulo', type: 'color' },
       { key: 'hero_badge_bg', label: 'Fundo do Badge', type: 'color', hint: 'Suporta transparência (ex: hsl(262 75% 55% / 0.06))' },
       { key: 'hero_badge_color', label: 'Cor do texto do Badge', type: 'color' },
+      { key: 'hero_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'hero_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -58,6 +76,8 @@ const STYLE_SECTIONS: StyleSection[] = [
       { key: 'stats_bg', label: 'Fundo', type: 'color' },
       { key: 'stats_value_color', label: 'Cor dos Números', type: 'color' },
       { key: 'stats_label_color', label: 'Cor dos Rótulos', type: 'color', hint: 'Suporta transparência (ex: hsl(0 0% 100% / 0.4))' },
+      { key: 'stats_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'stats_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -68,6 +88,8 @@ const STYLE_SECTIONS: StyleSection[] = [
       { key: 'features_card_border', label: 'Borda dos Cards', type: 'color', hint: 'Suporta transparência (ex: hsl(0 0% 0% / 0.07))' },
       { key: 'features_title_color', label: 'Cor do Título', type: 'color' },
       { key: 'features_subtitle_color', label: 'Cor do Subtítulo', type: 'color' },
+      { key: 'features_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'features_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -76,6 +98,15 @@ const STYLE_SECTIONS: StyleSection[] = [
       { key: 'store_bg', label: 'Fundo', type: 'color' },
       { key: 'store_title_color', label: 'Cor do Título', type: 'color' },
       { key: 'store_subtitle_color', label: 'Cor do Subtítulo', type: 'color', hint: 'Suporta transparência' },
+      { key: 'store_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'store_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
+    ],
+  },
+  {
+    id: 'howitworks', label: 'Como Funciona', emoji: '📋',
+    fields: [
+      { key: 'howitworks_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'howitworks_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -84,6 +115,8 @@ const STYLE_SECTIONS: StyleSection[] = [
       { key: 'pricing_bg', label: 'Fundo', type: 'color' },
       { key: 'pricing_title_color', label: 'Cor do Título', type: 'color' },
       { key: 'pricing_subtitle_color', label: 'Cor do Subtítulo', type: 'color', hint: 'Suporta transparência' },
+      { key: 'pricing_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'pricing_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -93,6 +126,8 @@ const STYLE_SECTIONS: StyleSection[] = [
       { key: 'cta_card_bg', label: 'Fundo do Card', type: 'color' },
       { key: 'cta_title_color', label: 'Cor do Título', type: 'color' },
       { key: 'cta_subtitle_color', label: 'Cor do Subtítulo', type: 'color' },
+      { key: 'cta_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'cta_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -100,6 +135,8 @@ const STYLE_SECTIONS: StyleSection[] = [
     fields: [
       { key: 'footer_bg', label: 'Fundo', type: 'color' },
       { key: 'footer_text_color', label: 'Cor do Texto', type: 'color', hint: 'Suporta transparência' },
+      { key: 'footer_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'footer_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -276,26 +313,34 @@ const AdminLandingStyleEditor: React.FC = () => {
       hero_subtitle_color: 'hsl(220 15% 40%)',
       hero_badge_bg: 'hsl(262 75% 55% / 0.06)',
       hero_badge_color: 'hsl(262 75% 55%)',
+      hero_pt: '112', hero_pb: '80',
       stats_bg: 'hsl(220 15% 7%)',
       stats_value_color: 'hsl(0 0% 100%)',
       stats_label_color: 'hsl(0 0% 100% / 0.4)',
+      stats_pt: '64', stats_pb: '64',
       features_bg: 'hsl(0 0% 97%)',
       features_card_bg: 'hsl(0 0% 100%)',
       features_card_border: 'hsl(0 0% 0% / 0.07)',
       features_title_color: 'hsl(220 15% 10%)',
       features_subtitle_color: 'hsl(220 15% 40%)',
+      features_pt: '80', features_pb: '112',
       store_bg: 'hsl(220 15% 7%)',
       store_title_color: 'hsl(0 0% 100%)',
       store_subtitle_color: 'hsl(0 0% 100% / 0.45)',
+      store_pt: '80', store_pb: '112',
+      howitworks_pt: '80', howitworks_pb: '112',
       pricing_bg: 'hsl(220 15% 7%)',
       pricing_title_color: 'hsl(0 0% 100%)',
       pricing_subtitle_color: 'hsl(0 0% 100% / 0.45)',
+      pricing_pt: '80', pricing_pb: '112',
       cta_bg: 'hsl(0 0% 97%)',
       cta_card_bg: 'hsl(0 0% 100%)',
       cta_title_color: 'hsl(220 15% 10%)',
       cta_subtitle_color: 'hsl(220 15% 40%)',
+      cta_pt: '80', cta_pb: '112',
       footer_bg: 'hsl(220 15% 5%)',
       footer_text_color: 'hsl(0 0% 100% / 0.35)',
+      footer_pt: '40', footer_pb: '40',
       divider_dark_color: 'hsl(220 15% 7%)',
     };
     for (const field of section.fields) {

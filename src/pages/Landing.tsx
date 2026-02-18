@@ -100,11 +100,14 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
   const badgeBg = config.hero_badge_bg || 'hsl(262 75% 55% / 0.06)';
   const badgeColor = config.hero_badge_color || 'hsl(262 75% 55%)';
 
+  const pt = config.hero_pt ? `${config.hero_pt}px` : undefined;
+  const pb = config.hero_pb ? `${config.hero_pb}px` : undefined;
+
   return (
     <section className="relative overflow-hidden" style={{
       background: bg,
-      paddingTop: 'calc(env(safe-area-inset-top) + 7rem)',
-      paddingBottom: '0',
+      paddingTop: pt ?? 'calc(env(safe-area-inset-top) + 7rem)',
+      paddingBottom: pb ?? '0',
     }}>
       <div className="relative max-w-5xl mx-auto px-4 text-center pb-20">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
@@ -238,8 +241,10 @@ const Stats = ({ config }: { config: Record<string, string> }) => {
     { value: config.stat_3_value || 'AI', label: config.stat_3_label || 'Spotify integrado' },
     { value: config.stat_4_value || 'PWA', label: config.stat_4_label || 'Instale no celular' },
   ];
+  const pt = config.stats_pt ? `${config.stats_pt}px` : '64px';
+  const pb = config.stats_pb ? `${config.stats_pb}px` : '64px';
   return (
-    <section className="py-16 px-4" style={{ background: bg }}>
+    <section style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: '1rem', paddingRight: '1rem' }}>
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }}
         variants={stagger}
         className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
@@ -270,8 +275,10 @@ const Features = ({
 
   const visible = landingFeatures.filter(f => f.enabled).sort((a, b) => a.sort_order - b.sort_order);
 
+  const pt = config.features_pt ? `${config.features_pt}px` : '80px';
+  const pb = config.features_pb ? `${config.features_pb}px` : '112px';
   return (
-    <section id="recursos" className="py-20 sm:py-28 px-4" style={{ background: bg }}>
+    <section id="recursos" style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: '1rem', paddingRight: '1rem' }}>
       <div className="max-w-6xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Recursos</motion.p>
@@ -332,7 +339,7 @@ const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNav
   const subtitleColor = config.store_subtitle_color || 'hsl(0 0% 100% / 0.45)';
 
   return (
-    <section id="sons" className="py-20 sm:py-28 px-4" style={{ background: bg }}>
+    <section id="sons" style={{ background: bg, paddingTop: config.store_pt ? `${config.store_pt}px` : '80px', paddingBottom: config.store_pb ? `${config.store_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
       <div className="max-w-5xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Glory Store</motion.p>
@@ -367,8 +374,8 @@ const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNav
 };
 
 // How it works — WHITE (static section)
-const HowItWorks = () => (
-  <section className="py-20 sm:py-28 px-4" style={{ background: 'hsl(0 0% 97%)' }}>
+const HowItWorks = ({ config }: { config: Record<string, string> }) => (
+  <section style={{ background: 'hsl(0 0% 97%)', paddingTop: config.howitworks_pt ? `${config.howitworks_pt}px` : '80px', paddingBottom: config.howitworks_pb ? `${config.howitworks_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
     <div className="max-w-4xl mx-auto">
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
         <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Como funciona</motion.p>
@@ -412,7 +419,7 @@ const Pricing = ({
   const tierOrder = ['free', 'pro', 'master'];
 
   return (
-    <section id="planos" className="py-20 sm:py-28 px-4" style={{ background: bg }}>
+    <section id="planos" style={{ background: bg, paddingTop: config.pricing_pt ? `${config.pricing_pt}px` : '80px', paddingBottom: config.pricing_pb ? `${config.pricing_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
       <div className="max-w-5xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Planos</motion.p>
@@ -504,7 +511,7 @@ const FinalCTA = ({ navigate, config }: { navigate: ReturnType<typeof useNavigat
   const subtitleColor = config.cta_subtitle_color || 'hsl(220 15% 40%)';
 
   return (
-    <section className="py-20 sm:py-28 px-4" style={{ background: bg }}>
+    <section style={{ background: bg, paddingTop: config.cta_pt ? `${config.cta_pt}px` : '80px', paddingBottom: config.cta_pb ? `${config.cta_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
         className="max-w-3xl mx-auto text-center">
         <motion.div variants={fadeUp} custom={0}
@@ -540,7 +547,7 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
   const textColor = config.footer_text_color || 'hsl(0 0% 100% / 0.35)';
 
   return (
-    <footer className="border-t py-10 px-4" style={{ background: bg, borderColor: 'hsl(0 0% 100% / 0.06)' }}>
+    <footer className="border-t" style={{ background: bg, borderColor: 'hsl(0 0% 100% / 0.06)', paddingTop: config.footer_pt ? `${config.footer_pt}px` : '40px', paddingBottom: config.footer_pb ? `${config.footer_pb}px` : '40px', paddingLeft: '1rem', paddingRight: '1rem' }}>
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-8 mb-8">
           <div>
@@ -616,7 +623,7 @@ const Landing = () => {
       <Divider fromLight={false} darkColor={darkColor} />
 
       {/* WHITE how it works */}
-      <HowItWorks />
+      <HowItWorks config={config} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
