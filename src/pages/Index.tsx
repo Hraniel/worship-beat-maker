@@ -715,7 +715,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col bg-background overflow-hidden" style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)', boxSizing: 'border-box' }} onPointerDown={initAudio}>
-      <UpdateBanner show={needRefresh} onUpdate={() => updateServiceWorker(true)} />
+      <UpdateBanner show={needRefresh} onUpdate={async () => { await updateServiceWorker(true); window.location.reload(); }} />
       {/* Header */}
       {!focusMode ? (
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0">
