@@ -103,7 +103,7 @@ const Auth = () => {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-12 w-12 mx-auto" />
-          <h1 className="text-xl font-bold text-foreground">Glory Pads</h1>
+          <h1 className="text-xl font-bold text-foreground tracking-widest">GLORY PADS</h1>
           <p className="text-sm text-muted-foreground">
             {isForgot ? 'Recuperar senha' : isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
           </p>
