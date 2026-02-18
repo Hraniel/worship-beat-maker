@@ -21,6 +21,8 @@ const SECTION_LABELS: Record<string, string> = {
   hero_badge: 'Badge (Hero)',
   features_title: 'Título — Seção Recursos',
   features_subtitle: 'Subtítulo — Seção Recursos',
+  how_it_works_title: 'Título — Seção Como Funciona',
+  how_it_works_subtitle: 'Subtítulo — Seção Como Funciona',
   store_title: 'Título — Seção Loja',
   store_subtitle: 'Subtítulo — Seção Loja',
   plans_title: 'Título — Seção Planos',
