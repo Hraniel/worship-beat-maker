@@ -47,6 +47,60 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_gates: {
+        Row: {
+          created_at: string
+          description: string | null
+          gate_key: string
+          gate_label: string
+          id: string
+          required_tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          gate_key: string
+          gate_label: string
+          id?: string
+          required_tier?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          gate_key?: string
+          gate_label?: string
+          id?: string
+          required_tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      landing_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pack_sounds: {
         Row: {
           category: string
@@ -93,6 +147,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plan_features: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          feature_key: string
+          feature_label: string
+          id: string
+          sort_order: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          feature_key: string
+          feature_label: string
+          id?: string
+          sort_order?: number
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          feature_key?: string
+          feature_label?: string
+          id?: string
+          sort_order?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      plan_pricing: {
+        Row: {
+          badge_text: string | null
+          created_at: string
+          cta_text: string
+          highlight: boolean
+          id: string
+          max_imports: number
+          max_pads: number
+          name: string
+          period: string
+          price_brl: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string
+          cta_text?: string
+          highlight?: boolean
+          id?: string
+          max_imports?: number
+          max_pads?: number
+          name: string
+          period?: string
+          price_brl?: number
+          tier: string
+          updated_at?: string
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string
+          cta_text?: string
+          highlight?: boolean
+          id?: string
+          max_imports?: number
+          max_pads?: number
+          name?: string
+          period?: string
+          price_brl?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
