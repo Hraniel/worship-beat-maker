@@ -66,6 +66,11 @@ const SortableItem: React.FC<SortableItemProps> = ({ song, isActive, onLoad, onD
         <p className="text-sm font-medium truncate text-foreground">{song.name}</p>
         <p className="text-[10px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}</p>
       </div>
+      {song.key && (
+        <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+          {song.key}
+        </span>
+      )}
       <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
         onClick={(e) => { e.stopPropagation(); onDelete(); }}>
         <Trash2 className="h-3 w-3" />
@@ -95,7 +100,11 @@ const SortableEventSong: React.FC<SortableEventSongProps> = ({ song, index, onRe
         <p className="text-xs font-medium text-foreground truncate">{song.name}</p>
         <p className="text-[9px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}</p>
       </div>
-      {song.key && <span className="text-[9px] font-bold text-primary shrink-0">{song.key}</span>}
+      {song.key && (
+        <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+          {song.key}
+        </span>
+      )}
       <button onClick={onRemove}
         className="opacity-0 group-hover:opacity-100 transition-opacity h-5 w-5 rounded flex items-center justify-center hover:bg-destructive/10 shrink-0">
         <X className="h-3 w-3 text-destructive" />
