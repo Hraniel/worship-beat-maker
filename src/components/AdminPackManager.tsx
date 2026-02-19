@@ -101,7 +101,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   // Pack edit form
   const [packEdit, setPackEdit] = useState<Record<string, {
-    isAvailable: boolean; priceCents: number; tag: string; name: string; description: string; publishAt: string;
+    isAvailable: boolean; priceBrl: string; tag: string; name: string; description: string; publishAt: string;
   }>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -433,10 +433,15 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       const token = sessionData?.session?.access_token;
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
+      // Convert BRL string to cents
+      const priceCents = edit.priceBrl.trim()
+        ? Math.round(parseFloat(edit.priceBrl.replace(',', '.')) * 100)
+        : 0;
+
       const fd = new FormData();
       fd.append('packId', packId);
       fd.append('isAvailable', String(edit.isAvailable));
-      fd.append('priceCents', String(edit.priceCents));
+      fd.append('priceCents', String(priceCents));
       fd.append('tag', edit.tag);
       fd.append('name', edit.name);
       fd.append('description', edit.description);
@@ -451,14 +456,14 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       if (!resp.ok) throw new Error(result.error || 'Erro ao salvar pack');
 
       // ── Sync price with Stripe if price changed and pack is paid ──────────
-      const priceChanged = edit.priceCents !== pack.price_cents;
-      if (priceChanged && edit.priceCents > 0) {
+      const priceChanged = priceCents !== pack.price_cents;
+      if (priceChanged && priceCents > 0) {
         try {
           const syncResp = await supabase.functions.invoke('admin-sync-stripe-price', {
             body: {
               type: 'pack',
               id: packId,
-              price_cents: edit.priceCents,
+              price_cents: priceCents,
               name: edit.name || pack.name,
               current_stripe_price_id: (pack as any).stripe_price_id ?? null,
               current_stripe_product_id: (pack as any).stripe_product_id ?? null,
@@ -514,11 +519,14 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
 
   const startEditPack = (pack: StorePackData) => {
+    const brl = pack.price_cents > 0
+      ? (pack.price_cents / 100).toFixed(2).replace('.', ',')
+      : '';
     setPackEdit(prev => ({
       ...prev,
       [pack.id]: {
         isAvailable: pack.is_available,
-        priceCents: pack.price_cents,
+        priceBrl: brl,
         tag: pack.tag || '',
         name: pack.name,
         description: pack.description,
@@ -883,20 +891,33 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                           onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], description: e.target.value } }))}
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="number"
-                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
-                          placeholder="Preço (centavos)"
-                          value={packEdit[pack.id].priceCents}
-                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], priceCents: parseInt(e.target.value) || 0 } }))}
-                        />
-                        <input
-                          type="datetime-local"
-                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
-                          value={packEdit[pack.id].publishAt}
-                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], publishAt: e.target.value } }))}
-                        />
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="h-8 flex items-center px-2.5 text-xs rounded-l-lg bg-muted border border-r-0 border-border text-muted-foreground select-none">R$</span>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="h-8 px-2.5 text-xs rounded-r-lg bg-muted border border-border focus:outline-none flex-1"
+                            placeholder="0,00"
+                            value={packEdit[pack.id].priceBrl}
+                            onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], priceBrl: e.target.value } }))}
+                          />
+                          <input
+                            type="datetime-local"
+                            className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                            value={packEdit[pack.id].publishAt}
+                            onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], publishAt: e.target.value } }))}
+                          />
+                        </div>
+                        {(() => {
+                          const brl = packEdit[pack.id].priceBrl;
+                          const cents = brl.trim() ? Math.round(parseFloat(brl.replace(',', '.')) * 100) : 0;
+                          const hasStripe = !!(pack as any).stripe_price_id;
+                          if (cents > 0) return (
+                            <p className="text-[10px] text-emerald-500">✓ Será sincronizado com Stripe automaticamente{hasStripe && ' · 🔗 Stripe já vinculado'}</p>
+                          );
+                          return null;
+                        })()}
                       </div>
                       <div className="flex items-center gap-2">
                         <label className="flex items-center gap-1.5 cursor-pointer">
