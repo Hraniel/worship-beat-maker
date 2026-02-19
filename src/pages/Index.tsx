@@ -116,6 +116,7 @@ const Index = () => {
   const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
+  const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
 
   // Helper: try access and show modal if blocked
   const tryAccess = useCallback((gateKey: string): boolean => {
@@ -985,10 +986,7 @@ const Index = () => {
               size="sm"
               variant="default"
               className="h-7 text-xs gap-1 ml-1"
-              onClick={() => {
-                const name = prompt('Nome da música:');
-                if (name?.trim()) handleSaveSong(name.trim());
-              }}
+              onClick={() => setOpenSetlistFromBanner(true)}
             >
               <Plus className="h-3 w-3" />
               Criar
@@ -1008,6 +1006,24 @@ const Index = () => {
               />
             </div>
           )}
+        </div>
+      )}
+      {/* Hidden SetlistManager to open from banner when songs.length === 0 */}
+      {!currentSongId && songs.length === 0 && (
+        <div className="hidden">
+          <SetlistManager
+            songs={songs}
+            currentSongId={currentSongId}
+            onSaveSong={handleSaveSong}
+            onLoadSong={handleLoadSong}
+            onDeleteSong={handleDeleteSong}
+            onReorder={reorderSetlists}
+            setlists={setlists}
+            activeSetlistId={currentSongId}
+            onOpenMusicAI={() => setSpotifySheetOpen(true)}
+            forceOpen={openSetlistFromBanner}
+            onForceOpenChange={() => setOpenSetlistFromBanner(false)}
+          />
         </div>
       )}
 

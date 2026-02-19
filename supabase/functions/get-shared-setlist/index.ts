@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     // 1. Try setlist_events first (token from a scheduled event)
     const { data: eventData, error: eventError } = await supabase
       .from('setlist_events')
-      .select('id, name, event_date, share_token, is_public, setlist_id')
+      .select('id, name, event_date, share_token, is_public, songs_data')
       .eq('share_token', token)
       .eq('is_public', true)
       .maybeSingle();
@@ -28,17 +28,8 @@ Deno.serve(async (req) => {
     if (eventError) throw eventError;
 
     if (eventData) {
-      // Load the linked setlist songs
-      let songs: any[] = [];
-      if (eventData.setlist_id) {
-        const { data: setlistData, error: setlistError } = await supabase
-          .from('setlists')
-          .select('songs')
-          .eq('id', eventData.setlist_id)
-          .maybeSingle();
-        if (setlistError) throw setlistError;
-        songs = (setlistData?.songs as any[]) || [];
-      }
+      // Use songs_data directly from the event (not from linked setlist)
+      const songs: any[] = (eventData.songs_data as any[]) || [];
 
       return new Response(JSON.stringify({
         setlist: {
