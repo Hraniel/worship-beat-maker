@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,6 +12,7 @@ export interface AdminNotification {
 export function useUserNotifications() {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchUnread = useCallback(async () => {
     if (!user) return;
@@ -22,7 +23,7 @@ export function useUserNotifications() {
       .select('id, title, message, created_at')
       .or(`target.eq.all,target_user_id.eq.${user.id}`)
       .order('created_at', { ascending: false })
-      .limit(10);
+      .limit(20);
 
     if (!allNotifs || allNotifs.length === 0) return;
 
@@ -37,9 +38,50 @@ export function useUserNotifications() {
     setNotifications(unread);
   }, [user]);
 
+  // Initial fetch
   useEffect(() => {
     fetchUnread();
   }, [fetchUnread]);
+
+  // Real-time: listen for new notifications inserted into admin_notifications
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel(`notifications-realtime-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'admin_notifications' },
+        async (payload) => {
+          const n = payload.new as { id: string; target: string; target_user_id: string | null; title: string; message: string; created_at: string };
+
+          // Only show if targeted at this user or all users
+          if (n.target !== 'all' && n.target_user_id !== user.id) return;
+
+          // Check if already read (shouldn't be for a brand-new notification, but defensive)
+          const { data: read } = await supabase
+            .from('user_notification_reads')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('notification_id', n.id)
+            .maybeSingle();
+
+          if (read) return;
+
+          setNotifications((prev) => {
+            // Avoid duplicates
+            if (prev.some((p) => p.id === n.id)) return prev;
+            return [{ id: n.id, title: n.title, message: n.message, created_at: n.created_at }, ...prev];
+          });
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [user]);
 
   const markAsRead = useCallback(
     async (notificationId: string) => {
