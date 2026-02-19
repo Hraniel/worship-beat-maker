@@ -27,11 +27,12 @@ const StoreImportPicker: React.FC<StoreImportPickerProps> = ({ onSelect, onClose
     if (!user) return;
     (async () => {
       try {
-        // Get purchased pack IDs
+        // Get purchased pack IDs (excluding removed packs)
         const { data: purchases } = await supabase
           .from('user_purchases')
           .select('pack_id')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id)
+          .eq('removed', false);
 
         if (!purchases || purchases.length === 0) {
           setSounds([]);

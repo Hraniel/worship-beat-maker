@@ -205,11 +205,22 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
         ) : pack.removedFromLibrary ? (
           <Button
             size="sm"
-            onClick={(e) => { e.stopPropagation(); navigate(`/store/${pack.id}`); }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              setPurchasing(true);
+              try {
+                await invokeWithToken('toggle-pack-library', { packId: pack.id, removed: false });
+                onPurchased();
+              } catch (err: any) {
+                toast.error(err?.message || 'Erro ao restaurar pack');
+              } finally {
+                setPurchasing(false);
+              }
+            }}
+            disabled={purchasing}
             className="w-full h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
           >
-            <Download className="h-3 w-3 mr-1" />
-            Incluir Grátis
+            {purchasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Download className="h-3 w-3 mr-1" />Incluir Grátis</>}
           </Button>
         ) : pack.purchased ? (
           <div className="text-center text-[11px] text-emerald-600 font-medium py-1 flex items-center justify-center gap-1">

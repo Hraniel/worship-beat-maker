@@ -124,17 +124,8 @@ const PackDetail: React.FC = () => {
     if (!pack) return;
     setToggling(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user?.id;
-      if (!userId) throw new Error('Não autenticado');
-
       const isRemoving = pack.purchased; // currently active → will remove
-      await supabase
-        .from('user_purchases')
-        .update({ removed: isRemoving })
-        .eq('user_id', userId)
-        .eq('pack_id', pack.id);
-
+      await invokeWithToken('toggle-pack-library', { packId: pack.id, removed: isRemoving });
       toast.success(isRemoving ? 'Pack removido da sua biblioteca.' : 'Pack restaurado na sua biblioteca!');
       refetch();
     } catch (err: any) {
@@ -148,16 +139,7 @@ const PackDetail: React.FC = () => {
     if (!pack) return;
     setToggling(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user?.id;
-      if (!userId) throw new Error('Não autenticado');
-
-      await supabase
-        .from('user_purchases')
-        .update({ removed: false })
-        .eq('user_id', userId)
-        .eq('pack_id', pack.id);
-
+      await invokeWithToken('toggle-pack-library', { packId: pack.id, removed: false });
       toast.success(`Pack "${pack.name}" restaurado na sua biblioteca!`);
       refetch();
     } catch (err: any) {
