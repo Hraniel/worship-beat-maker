@@ -31,7 +31,7 @@ async function invokeWithToken(fnName: string, body: object) {
 }
 import {
   ArrowLeft, Play, Square, Download, Check, Loader2,
-  Music, Drum, Waves, Sparkles, Headphones, Volume2, Layers, AudioWaveform, Lock, Clock
+  Music, Drum, Waves, Sparkles, Headphones, Volume2, Layers, AudioWaveform, Lock, Clock, Trash2
 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 
@@ -50,7 +50,7 @@ const PackDetail: React.FC = () => {
   const { packId } = useParams<{ packId: string }>();
   const navigate = useNavigate();
   useBodyScroll();
-  const { packs, loading } = useStorePacks();
+  const { packs, loading, refetch } = useStorePacks();
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -115,6 +115,55 @@ const PackDetail: React.FC = () => {
       toast.error(err?.message || 'Erro ao adquirir pack');
     } finally {
       setPurchasing(false);
+    }
+  };
+
+  const [toggling, setToggling] = useState(false);
+
+  const handleToggleRemove = async () => {
+    if (!pack) return;
+    setToggling(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (!userId) throw new Error('Não autenticado');
+
+      const isRemoving = pack.purchased; // currently active → will remove
+      await supabase
+        .from('user_purchases')
+        .update({ removed: isRemoving })
+        .eq('user_id', userId)
+        .eq('pack_id', pack.id);
+
+      toast.success(isRemoving ? 'Pack removido da sua biblioteca.' : 'Pack restaurado na sua biblioteca!');
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao atualizar biblioteca');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const handleRestoreFree = async () => {
+    if (!pack) return;
+    setToggling(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      if (!userId) throw new Error('Não autenticado');
+
+      await supabase
+        .from('user_purchases')
+        .update({ removed: false })
+        .eq('user_id', userId)
+        .eq('pack_id', pack.id);
+
+      toast.success(`Pack "${pack.name}" restaurado na sua biblioteca!`);
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao restaurar pack');
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -220,7 +269,7 @@ const PackDetail: React.FC = () => {
           <div className="shrink-0 w-full sm:w-56">
             <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
               {pack.purchased ? (
-                <div className="text-center space-y-2">
+                <div className="text-center space-y-3">
                   <div className="flex items-center justify-center gap-2 text-emerald-600 font-semibold">
                     <Check className="h-5 w-5" />
                     Adquirido
@@ -228,6 +277,31 @@ const PackDetail: React.FC = () => {
                   <p className="text-xs text-gray-500">Disponível nos seus pads</p>
                   <Button onClick={() => navigate('/app')} size="sm" className="w-full h-9 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white">
                     Abrir App
+                  </Button>
+                  <button
+                    onClick={handleToggleRemove}
+                    disabled={toggling}
+                    className="w-full text-xs text-gray-400 hover:text-red-500 transition-colors py-1 flex items-center justify-center gap-1"
+                  >
+                    {toggling ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    Remover da biblioteca
+                  </button>
+                </div>
+              ) : pack.removedFromLibrary ? (
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-700">Pack removido</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Você já adquiriu este pack</p>
+                  </div>
+                  <Button
+                    onClick={handleRestoreFree}
+                    disabled={toggling}
+                    className="w-full h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                  >
+                    {toggling
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <><Download className="h-4 w-4 mr-1.5" />Incluir Grátis</>
+                    }
                   </Button>
                 </div>
               ) : pack.is_available ? (

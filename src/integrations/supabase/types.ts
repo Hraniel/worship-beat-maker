@@ -636,18 +636,21 @@ export type Database = {
           id: string
           pack_id: string
           purchased_at: string
+          removed: boolean
           user_id: string
         }
         Insert: {
           id?: string
           pack_id: string
           purchased_at?: string
+          removed?: boolean
           user_id: string
         }
         Update: {
           id?: string
           pack_id?: string
           purchased_at?: string
+          removed?: boolean
           user_id?: string
         }
         Relationships: [

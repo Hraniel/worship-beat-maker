@@ -21,7 +21,10 @@ export interface StorePackData {
   is_available: boolean;
   price_cents: number;
   sounds: PackSound[];
+  /** true = comprado e ativo na biblioteca */
   purchased: boolean;
+  /** true = já pagou mas removeu da biblioteca */
+  removedFromLibrary: boolean;
   banner_url: string | null;
 }
 
@@ -33,7 +36,6 @@ export function useStorePacks() {
   const fetchPacks = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch packs
       const { data: packsData, error: packsErr } = await supabase
         .from('store_packs')
         .select('*')
@@ -41,7 +43,6 @@ export function useStorePacks() {
 
       if (packsErr) throw packsErr;
 
-      // Fetch sounds for all packs
       const { data: soundsData, error: soundsErr } = await supabase
         .from('pack_sounds')
         .select('*')
@@ -49,16 +50,23 @@ export function useStorePacks() {
 
       if (soundsErr) throw soundsErr;
 
-      // Fetch user purchases
+      // Fetch user purchases including removed flag
       let purchasedIds: Set<string> = new Set();
+      let removedIds: Set<string> = new Set();
       if (user) {
         const { data: purchases } = await supabase
           .from('user_purchases')
-          .select('pack_id')
+          .select('pack_id, removed')
           .eq('user_id', user.id);
 
         if (purchases) {
-          purchasedIds = new Set(purchases.map(p => p.pack_id));
+          purchases.forEach(p => {
+            if ((p as any).removed) {
+              removedIds.add(p.pack_id);
+            } else {
+              purchasedIds.add(p.pack_id);
+            }
+          });
         }
       }
 
@@ -88,6 +96,7 @@ export function useStorePacks() {
         price_cents: p.price_cents,
         sounds: soundsByPack.get(p.id) || [],
         purchased: purchasedIds.has(p.id),
+        removedFromLibrary: removedIds.has(p.id),
         banner_url: (p as any).banner_url ?? null,
       }));
 
