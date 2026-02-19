@@ -159,7 +159,7 @@ const Index = () => {
   });
   const startTutorialRef = useRef<((sectionId?: string) => void) | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<string>('audio');
+  const [settingsTab, setSettingsTab] = useState<string | undefined>(undefined);
   const [audioSettings, setAudioSettings] = useState<AudioSettings>(loadAudioSettings);
 
   // Reopen settings on "plans" tab when returning from /pricing
@@ -923,7 +923,7 @@ const Index = () => {
                       <Sparkles className="h-4 w-4 text-muted-foreground" />
                       Music AI
                     </button>
-                    <button onClick={() => { setSettingsTab('audio'); setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                    <button onClick={() => { setSettingsTab(undefined); setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
                       <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
                     </button>
                     <button onClick={async () => {

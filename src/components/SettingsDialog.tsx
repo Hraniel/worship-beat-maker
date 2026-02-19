@@ -288,17 +288,16 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
   const isMobilePortrait = isMobile && !isLandscape;
   const useSideLayout = isLandscape || !isMobile;
 
+  // Determine effective tab: on mobile portrait, null means show list
+  // On desktop/landscape, never allow null
+  const effectiveTab = useSideLayout && activeTab === null ? 'audio' : activeTab;
+
   useEffect(() => {
     if (open) {
       setSettings(loadAudioSettings());
-      if (initialTab) {
-        setActiveTab(initialTab);
-      } else {
-        // On desktop/landscape default to audio, on mobile show list (null)
-        setActiveTab(useSideLayout ? 'audio' : null);
-      }
+      setActiveTab(initialTab || null);
     }
-  }, [open, initialTab, useSideLayout]);
+  }, [open, initialTab]);
 
   const update = (partial: Partial<AudioSettings>) => {
     const next = { ...settings, ...partial };
@@ -307,12 +306,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
     onAudioSettingsChange?.(next);
   };
 
-  const activeTabItem = activeTab ? TAB_ITEMS.find(t => t.value === activeTab) : null;
+  const activeTabItem = effectiveTab ? TAB_ITEMS.find(t => t.value === effectiveTab) : null;
 
   // ── Render tab content ──────────────────────────────────────────────────
 
   const renderContent = () => {
-    switch (activeTab) {
+    switch (effectiveTab) {
       case 'audio':
         return (
           <div className="flex flex-col gap-3 w-full">
@@ -462,7 +461,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
     <div className="w-44 shrink-0 border-r border-border flex flex-col py-2 gap-0.5 overflow-y-auto">
       {TAB_ITEMS.map(item => {
         const Icon = item.icon;
-        const isActive = activeTab === item.value;
+        const isActive = effectiveTab === item.value;
         return (
           <button
             key={item.value}
