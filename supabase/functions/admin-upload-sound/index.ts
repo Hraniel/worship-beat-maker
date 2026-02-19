@@ -5,6 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// Accepts standard UUIDs and legacy PostgreSQL-compatible UUID formats (e.g. a1000001-0000-0000-0000-000000000001)
+const isValidPackId = (id: string) => typeof id === 'string' && /^[0-9a-f-]{32,}$/i.test(id);
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -60,8 +63,13 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders });
       }
 
+      // Validate packId format — must be a valid UUID (standard or legacy hex format)
+      if (!isValidPackId(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId: must be a valid UUID' }), { status: 400, headers: corsHeaders });
+      }
+
       // Validate input lengths
-      if (soundName.length > 100 || shortName.length > 20 || packId.length > 50) {
+      if (soundName.length > 100 || shortName.length > 20) {
         return new Response(JSON.stringify({ error: 'Invalid input' }), { status: 400, headers: corsHeaders });
       }
 
@@ -263,7 +271,7 @@ Deno.serve(async (req) => {
       const description = formData.get('description') as string;
       const publishAt = formData.get('publishAt') as string | null;
 
-      if (!packId || !/^[0-9a-f-]{8,}-[0-9a-f-]+$/.test(packId.toLowerCase()) || packId.length < 32) {
+      if (!isValidPackId(packId)) {
         return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
       }
 
