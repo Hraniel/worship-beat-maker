@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay, Palette, Layout, ShoppingBag, Settings2, AlignLeft } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay, Palette, Layout, ShoppingBag, Settings2, AlignLeft, NavigationIcon, Megaphone } from 'lucide-react';
 import AdminLandingFeaturesEditor from './AdminLandingFeaturesEditor';
 import AdminLandingStyleEditor from './AdminLandingStyleEditor';
 import LandingPreviewDrawer from './LandingPreviewDrawer';
@@ -48,7 +48,7 @@ const SECTION_GROUPS = [
   { label: 'CTA Final', keys: ['cta_title', 'cta_subtitle'] },
 ];
 
-type ActiveTab = 'textos' | 'hero' | 'recursos' | 'estilos' | 'loja' | 'conteudo';
+type ActiveTab = 'textos' | 'hero' | 'recursos' | 'estilos' | 'loja' | 'conteudo' | 'navbar';
 
 // ── ColorField (inline, same logic as AdminLandingStyleEditor) ────────────────
 const hslToHex = (hslStr: string): string => {
@@ -310,6 +310,7 @@ const AdminLandingEditor: React.FC = () => {
   const TABS: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
     { id: 'textos', label: 'Geral', icon: <Type className="h-3 w-3" /> },
     { id: 'hero', label: 'Hero', icon: <Layout className="h-3 w-3" /> },
+    { id: 'navbar', label: 'Navbar', icon: <NavigationIcon className="h-3 w-3" /> },
     { id: 'recursos', label: 'Recursos', icon: <LayoutGrid className="h-3 w-3" /> },
     { id: 'loja', label: 'Loja', icon: <ShoppingBag className="h-3 w-3" /> },
     { id: 'conteudo', label: 'Conteúdo', icon: <AlignLeft className="h-3 w-3" /> },
@@ -372,6 +373,92 @@ const AdminLandingEditor: React.FC = () => {
 
       {/* ── Estilos tab ── */}
       {activeTab === 'estilos' && <AdminLandingStyleEditor />}
+
+      {/* ── Navbar tab ── */}
+      {activeTab === 'navbar' && (
+        <div className="space-y-5">
+          <p className="text-[11px]" style={mutedStyle}>Configure a barra de navegação e a barra de anúncio da landing page.</p>
+
+          {/* Barra de Anúncio */}
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={labelStyle}>
+                <Megaphone className="h-3 w-3" /> Barra de Anúncio
+              </p>
+              <div className="flex items-center gap-2">
+                {getVal('announcement_enabled') === 'true'
+                  ? <Eye className="h-3.5 w-3.5" style={{ color: 'hsl(142 70% 50%)' }} />
+                  : <EyeOff className="h-3.5 w-3.5" style={{ color: 'hsl(0 0% 40%)' }} />}
+                <Switch
+                  checked={getVal('announcement_enabled') === 'true'}
+                  onCheckedChange={v => { setVal('announcement_enabled', v ? 'true' : 'false'); saveKey('announcement_enabled'); }}
+                />
+              </div>
+            </div>
+            {renderTextField('announcement_text', 'Texto do Anúncio', false, 'Ex: 🎉 Novidade: Glory Pads 2.0 já disponível!')}
+            {renderTextField('announcement_link', 'Link (opcional)', false, '/auth?mode=signup')}
+            {renderTextField('announcement_link_label', 'Rótulo do Link (opcional)', false, 'Saiba mais →')}
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
+              <ColorFieldInline value={getVal('announcement_bg') || 'hsl(262 75% 55%)'} onChange={v => setVal('announcement_bg', v)} onBlur={() => saveKey('announcement_bg')} />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Texto</label>
+              <ColorFieldInline value={getVal('announcement_color') || 'hsl(0 0% 100%)'} onChange={v => setVal('announcement_color', v)} onBlur={() => saveKey('announcement_color')} />
+            </div>
+          </div>
+
+          {/* Links da Navbar */}
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Links de Navegação</p>
+            <p className="text-[9px]" style={mutedStyle}>Defina os 3 links que aparecem no menu. Use âncoras (#recursos) ou rotas (/pricing).</p>
+            {[0, 1, 2].map(i => (
+              <div key={i} className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Rótulo {i + 1}</label>
+                  <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                    value={getVal(`nav_link_${i}_label`)}
+                    onChange={e => setVal(`nav_link_${i}_label`, e.target.value)}
+                    onBlur={() => saveKey(`nav_link_${i}_label`)}
+                    placeholder={['Recursos', 'Sons', 'Planos'][i]} />
+                </div>
+                <div>
+                  <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Href {i + 1}</label>
+                  <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                    value={getVal(`nav_link_${i}_href`)}
+                    onChange={e => setVal(`nav_link_${i}_href`, e.target.value)}
+                    onBlur={() => saveKey(`nav_link_${i}_href`)}
+                    placeholder={['#recursos', '#sons', '#planos'][i]} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Botões da Navbar */}
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Botões da Navbar</p>
+            {renderTextField('nav_btn_login_label', 'Rótulo — Botão Entrar', false, 'Entrar')}
+            {renderTextField('nav_btn_signup_label', 'Rótulo — Botão Criar Conta', false, 'Começar grátis')}
+          </div>
+
+          {/* Cores da Navbar */}
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores da Navbar</p>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
+              <ColorFieldInline value={getVal('nav_bg') || 'hsl(0 0% 100% / 0.96)'} onChange={v => setVal('nav_bg', v)} onBlur={() => saveKey('nav_bg')} hint="Suporta transparência (ex: hsl(0 0% 100% / 0.96))" />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor da Borda</label>
+              <ColorFieldInline value={getVal('nav_border_color') || 'hsl(0 0% 0% / 0.08)'} onChange={v => setVal('nav_border_color', v)} onBlur={() => saveKey('nav_border_color')} />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor dos Links</label>
+              <ColorFieldInline value={getVal('nav_link_color') || 'hsl(220 15% 45%)'} onChange={v => setVal('nav_link_color', v)} onBlur={() => saveKey('nav_link_color')} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Hero tab ── */}
       {activeTab === 'hero' && (
