@@ -7,7 +7,7 @@ const corsHeaders = {
 
 // ── VAPID helpers (pure Deno/Web Crypto — no third-party library needed) ────
 
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+const VAPID_PUBLIC_KEY = 'BEmai4sVQ5smKOntl650q-VuF3KJqyZFjAwxsEfMAHADK2YkLtA853gCVvCnjKOmSoRJMVumw5pcJVU8RhGTomo';
 
 function base64UrlToUint8Array(base64: string): Uint8Array {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
