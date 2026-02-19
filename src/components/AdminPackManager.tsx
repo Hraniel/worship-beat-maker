@@ -95,7 +95,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   // New pack form
   const [newPack, setNewPack] = useState({
     name: '', description: '', category: PACK_CATEGORIES[0],
-    iconName: 'drum', color: 'bg-violet-500',
+    iconName: 'drum', color: 'bg-violet-500', priceBrl: '',
   });
 
   // Pack edit form
@@ -359,10 +359,20 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
     }
   };
 
+  const [creatingPack, setCreatingPack] = useState(false);
+
   const handleCreatePack = async () => {
     if (!newPack.name.trim() || !newPack.description.trim()) {
       toast.error('Preencha nome e descrição'); return;
     }
+    // Parse BRL price → cents
+    const priceCents = newPack.priceBrl.trim()
+      ? Math.round(parseFloat(newPack.priceBrl.replace(',', '.')) * 100)
+      : 0;
+    if (newPack.priceBrl.trim() && (isNaN(priceCents) || priceCents < 0)) {
+      toast.error('Preço inválido'); return;
+    }
+    setCreatingPack(true);
     try {
       const fd = new FormData();
       fd.append('action', 'create-pack');
@@ -371,13 +381,43 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       fd.append('category', newPack.category);
       fd.append('iconName', newPack.iconName);
       fd.append('color', newPack.color);
-      await invokeAdmin(fd);
-      toast.success('Pack criado!');
+      fd.append('priceCents', String(priceCents));
+      const result = await invokeAdmin(fd);
+
+      // Sync price with Stripe if paid
+      if (priceCents > 0 && result?.packId) {
+        try {
+          const syncResp = await supabase.functions.invoke('admin-sync-stripe-price', {
+            body: {
+              type: 'pack',
+              id: result.packId,
+              price_cents: priceCents,
+              name: newPack.name.trim(),
+              current_stripe_price_id: null,
+              current_stripe_product_id: null,
+            },
+          });
+          if (!syncResp.error && syncResp.data) {
+            const { stripe_price_id, stripe_product_id } = syncResp.data;
+            await supabase.from('store_packs').update({ stripe_price_id, stripe_product_id }).eq('id', result.packId);
+            toast.success('Pack criado e sincronizado com Stripe!');
+          } else {
+            toast.success('Pack criado! (Stripe: verifique manualmente)');
+          }
+        } catch {
+          toast.success('Pack criado! (falha ao sincronizar Stripe)');
+        }
+      } else {
+        toast.success('Pack criado!');
+      }
+
       setShowCreatePack(false);
-      setNewPack({ name: '', description: '', category: PACK_CATEGORIES[0], iconName: 'drum', color: 'bg-violet-500' });
+      setNewPack({ name: '', description: '', category: PACK_CATEGORIES[0], iconName: 'drum', color: 'bg-violet-500', priceBrl: '' });
       onRefresh();
     } catch (e: any) {
       toast.error(e.message || 'Erro ao criar pack');
+    } finally {
+      setCreatingPack(false);
     }
   };
 
@@ -613,11 +653,33 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                     {PACK_COLORS.map(c => <option key={c} value={c}>{c.replace('bg-', '').replace('-500', '')}</option>)}
                   </select>
                 </div>
+                {/* Price field */}
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">R$</span>
+                  <input
+                    className="w-full h-9 pl-8 pr-3 text-xs rounded-lg bg-muted border border-border focus:outline-none focus:ring-1 focus:ring-ring"
+                    placeholder="0,00 (grátis se vazio)"
+                    value={newPack.priceBrl}
+                    inputMode="decimal"
+                    onChange={e => {
+                      // Allow only numbers, comma and dot
+                      const val = e.target.value.replace(/[^0-9.,]/g, '');
+                      setNewPack(p => ({ ...p, priceBrl: val }));
+                    }}
+                  />
+                </div>
+                {newPack.priceBrl.trim() && !isNaN(parseFloat(newPack.priceBrl.replace(',', '.'))) && parseFloat(newPack.priceBrl.replace(',', '.')) > 0 && (
+                  <p className="text-[10px] text-muted-foreground -mt-1 px-0.5 flex items-center gap-1">
+                    <span className="text-primary">✓</span>
+                    Será sincronizado com Stripe automaticamente
+                  </p>
+                )}
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" onClick={handleCreatePack} className="flex-1 h-9 text-xs">
-                    <Plus className="h-3.5 w-3.5 mr-1" /> Criar Pack
+                  <Button size="sm" onClick={handleCreatePack} disabled={creatingPack} className="flex-1 h-9 text-xs">
+                    {creatingPack ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
+                    {creatingPack ? 'Criando…' : 'Criar Pack'}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setShowCreatePack(false)} className="h-9 text-xs">Cancelar</Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowCreatePack(false)} disabled={creatingPack} className="h-9 text-xs">Cancelar</Button>
                 </div>
               </div>
             </div>

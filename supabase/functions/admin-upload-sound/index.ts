@@ -232,6 +232,7 @@ Deno.serve(async (req) => {
       const category = formData.get('category') as string;
       const iconName = formData.get('iconName') as string;
       const color = formData.get('color') as string;
+      const priceCents = parseInt(formData.get('priceCents') as string || '0') || 0;
 
       if (!name || !description || !category) {
         return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400, headers: corsHeaders });
@@ -239,7 +240,14 @@ Deno.serve(async (req) => {
 
       const { data, error } = await supabase
         .from('store_packs')
-        .insert({ name, description, category, icon_name: iconName || 'music', color: color || 'bg-violet-500' })
+        .insert({
+          name,
+          description,
+          category,
+          icon_name: iconName || 'music',
+          color: color || 'bg-violet-500',
+          price_cents: priceCents,
+        })
         .select('id')
         .single();
 
