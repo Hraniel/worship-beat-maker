@@ -16,6 +16,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import PackDetail from "./pages/PackDetail";
 import SharedSetlist from "./pages/SharedSetlist";
+import VapidGenerator from "./pages/VapidGenerator";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -70,6 +71,7 @@ const App = () => (
             {/* Public routes — no auth context needed, load instantly */}
             <Route path="/s/:token" element={<SharedSetlist />} />
             <Route path="/install" element={<Install />} />
+            <Route path="/vapid-generator" element={<VapidGenerator />} />
 
             {/* All other routes — wrapped in auth/subscription providers */}
             <Route path="*" element={
