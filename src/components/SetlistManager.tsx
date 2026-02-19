@@ -3,6 +3,9 @@ import {
   ListMusic, Plus, Trash2, ChevronRight, GripVertical, Share2, Link2, Eye, EyeOff,
   Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, Zap, Crown,
 } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarUI } from '@/components/ui/calendar';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -196,8 +199,23 @@ const EventCard: React.FC<EventCardProps> = ({
               <input value={editName} onChange={e => setEditName(e.target.value)}
                 className="w-full h-7 px-2 text-xs rounded bg-background border border-input text-foreground focus:outline-none" />
               <div className="flex gap-1.5">
-                <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
-                  className="flex-1 h-7 px-2 text-xs rounded bg-background border border-input text-foreground focus:outline-none" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="flex-1 h-7 px-2 flex items-center gap-1.5 text-xs rounded bg-background border border-input text-foreground hover:bg-muted transition-colors">
+                      <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                      {editDate ? format(parseISO(editDate), 'dd/MM/yyyy') : 'Selecionar data'}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 z-[200]" align="start">
+                    <CalendarUI
+                      mode="single"
+                      selected={editDate ? parseISO(editDate) : undefined}
+                      onSelect={d => d && setEditDate(format(d, 'yyyy-MM-dd'))}
+                      className="p-3 pointer-events-auto"
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
                 <button onClick={saveEdit} className="h-7 w-7 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20 shrink-0">
                   <Check className="h-3 w-3 text-primary" />
                 </button>
