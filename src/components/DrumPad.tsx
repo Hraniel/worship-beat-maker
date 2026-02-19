@@ -29,6 +29,7 @@ interface DrumPadProps {
   pan?: number;
   editMode?: boolean;
   panDisabled?: boolean;
+  bpm?: number;
   onToggleLoop?: () => void;
   onImportSound?: (padId: string, file: File) => void;
   onImportStoreSound?: (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => void;
@@ -49,6 +50,7 @@ interface DrumPadProps {
 const DrumPad: React.FC<DrumPadProps> = ({
   pad, volume, isLooping, isLocked, hasCustomSound, customFileName, padSize = 'md',
   isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled, customSoundsCount = 0,
+  bpm,
   onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange,
   onResetPad, onResetAllPads, onGateBlocked
 }) => {
@@ -499,6 +501,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 {showEffects && (
                   <PadEffectsPanel
                     effects={effects}
+                    bpm={bpm}
                     onChange={(fx) => onEffectsChange?.(pad.id, fx)}
                   />
                 )}
