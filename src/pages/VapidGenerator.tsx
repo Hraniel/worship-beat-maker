@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useBodyScroll } from "@/hooks/useBodyScroll";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +17,7 @@ function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
 }
 
 export default function VapidGenerator() {
+  useBodyScroll();
   const [publicKey, setPublicKey] = useState("");
   const [privateKey, setPrivateKey] = useState("");
   const [generating, setGenerating] = useState(false);
