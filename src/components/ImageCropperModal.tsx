@@ -205,18 +205,21 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
     ctx.drawImage(img, dx, dy, scaledW, scaledH);
 
+    const isPng = file.name.toLowerCase().endsWith('.png') || file.type === 'image/png';
+    const outputMime = isPng ? 'image/png' : 'image/jpeg';
+    const outputExt  = isPng ? 'png' : 'jpg';
+    const outputQuality = isPng ? undefined : 0.92; // PNG is lossless, no quality param
+
     offscreen.toBlob(
       (blob) => {
         setSaving(false);
         if (!blob) return;
-        const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-        const mime = blob.type || 'image/jpeg';
-        const outName = file.name.replace(/\.[^.]+$/, `-cropped.${mime === 'image/png' ? 'png' : 'jpg'}`);
-        const croppedFile = new File([blob], outName, { type: mime });
+        const outName = file.name.replace(/\.[^.]+$/, `-cropped.${outputExt}`);
+        const croppedFile = new File([blob], outName, { type: outputMime });
         onSave(croppedFile);
       },
-      'image/jpeg',
-      0.92
+      outputMime,
+      outputQuality
     );
   };
 
