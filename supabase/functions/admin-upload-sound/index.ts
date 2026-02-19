@@ -263,8 +263,8 @@ Deno.serve(async (req) => {
       const description = formData.get('description') as string;
       const publishAt = formData.get('publishAt') as string | null;
 
-      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
-        return new Response(JSON.stringify({ error: 'Invalid packId: must be a valid UUID' }), { status: 400, headers: corsHeaders });
+      if (!packId || !/^[0-9a-f-]{8,}-[0-9a-f-]+$/.test(packId.toLowerCase()) || packId.length < 32) {
+        return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
       }
 
       const updateData: Record<string, any> = { is_available: isAvailable, price_cents: priceCents };
@@ -279,7 +279,7 @@ Deno.serve(async (req) => {
 
     } else if (action === 'remove-banner') {
       const packId = formData.get('packId') as string;
-      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+      if (!packId || !/^[0-9a-f-]{32,}$/i.test(packId)) {
         return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
       }
 
@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
 
     } else if (action === 'remove-icon') {
       const packId = formData.get('packId') as string;
-      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+      if (!packId || !/^[0-9a-f-]{32,}$/i.test(packId)) {
         return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
       }
 
@@ -320,7 +320,7 @@ Deno.serve(async (req) => {
 
     } else if (action === 'duplicate-pack') {
       const packId = formData.get('packId') as string;
-      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+      if (!packId || !/^[0-9a-f-]{32,}$/i.test(packId)) {
         return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
       }
 
@@ -345,7 +345,7 @@ Deno.serve(async (req) => {
 
     } else if (action === 'delete-pack') {
       const packId = formData.get('packId') as string;
-      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+      if (!packId || !/^[0-9a-f-]{32,}$/i.test(packId)) {
         return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
       }
 
