@@ -39,7 +39,7 @@ import PerformanceMode from '@/components/PerformanceMode';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useUserNotifications } from '@/hooks/useUserNotifications';
 import { useNotificationPrompt } from '@/hooks/useNotificationPrompt';
-
+import { usePresenceTracker } from '@/hooks/usePresenceTracker';
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
 const PAD_SIZE_KEY = 'drum-pads-pad-size';
 const FOCUS_MODE_KEY = 'drum-pads-focus-mode';
@@ -76,6 +76,7 @@ const Index = () => {
   const { signOut, user } = useAuth();
   const { tier } = useSubscription();
   const { canAccess } = useFeatureGates();
+  usePresenceTracker(user?.id);
   const isOnline = useOnlineStatus();
   const isLandscape = useIsLandscape();
   const isTablet = useIsTablet();

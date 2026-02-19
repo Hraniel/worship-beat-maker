@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/integrations/supabase/client';
+import { usePresenceTracker } from '@/hooks/usePresenceTracker';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
@@ -130,28 +131,9 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'acquired' | 'available' | 'removed'>('all');
   const [togglingPackId, setTogglingPackId] = useState<string | null>(null);
-  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // ── Track user presence so admin can see online count ──────────────────────
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase.channel('glory-pads-online', {
-      config: { presence: { key: user.id } },
-    });
-    channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({
-          user_id: user.id,
-          online_at: new Date().toISOString(),
-        });
-      }
-    });
-    presenceChannelRef.current = channel;
-    return () => {
-      channel.untrack();
-      channel.unsubscribe();
-    };
-  }, [user]);
+  usePresenceTracker(user?.id);
 
   const badge = tierBadge[tier];
 
