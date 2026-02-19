@@ -30,8 +30,10 @@ import PanControl from '@/components/PanControl';
 import TutorialGuide from '@/components/TutorialGuide';
 import SettingsDialog, { loadAudioSettings, type AudioSettings } from '@/components/SettingsDialog';
 import UpdateBanner from '@/components/UpdateBanner';
+import NotificationBanner from '@/components/NotificationBanner';
 import PerformanceMode from '@/components/PerformanceMode';
 import { useRegisterSW } from 'virtual:pwa-register/react';
+import { useUserNotifications } from '@/hooks/useUserNotifications';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
 const PAD_SIZE_KEY = 'drum-pads-pad-size';
@@ -214,6 +216,8 @@ const Index = () => {
       }
     },
   });
+
+  const { notifications: adminNotifications, markAsRead: markNotifAsRead, markAllAsRead: markAllNotifsAsRead } = useUserNotifications();
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -749,6 +753,11 @@ const Index = () => {
           onClose={() => setPerformanceModeOpen(false)}
         />
       )}
+      <NotificationBanner
+        notifications={adminNotifications}
+        onMarkAsRead={markNotifAsRead}
+        onMarkAllAsRead={markAllNotifsAsRead}
+      />
       <UpdateBanner show={needRefresh} onUpdate={async () => { await updateServiceWorker(true); window.location.reload(); }} />
       {/* Header */}
       {!focusMode ? (
