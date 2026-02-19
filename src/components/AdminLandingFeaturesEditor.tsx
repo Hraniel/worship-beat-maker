@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ImageCropperModal from './ImageCropperModal';
 import {
   Plus, Trash2, Save, Loader2, Image, X, GripVertical,
 } from 'lucide-react';
@@ -245,6 +246,8 @@ const AdminLandingFeaturesEditor: React.FC = () => {
   const [newFeature, setNewFeature] = useState({ title: '', description: '', icon_name: 'Sparkles' });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadTargetId, setUploadTargetId] = useState<string | null>(null);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperFile, setCropperFile] = useState<File | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -364,20 +367,16 @@ const AdminLandingFeaturesEditor: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !uploadTargetId) return;
-    e.target.value = '';
-
+  const doUpload = async (file: File, targetId: string) => {
     if (!file.type.startsWith('image/')) { toast.error('Apenas imagens são permitidas'); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error('Imagem deve ter menos de 5MB'); return; }
 
-    setUploadingId(uploadTargetId);
+    setUploadingId(targetId);
     try {
       const ext = file.name.split('.').pop();
-      const path = `features/${uploadTargetId}-${Date.now()}.${ext}`;
+      const path = `features/${targetId}-${Date.now()}.${ext}`;
 
-      const feat = features.find(f => f.id === uploadTargetId);
+      const feat = features.find(f => f.id === targetId);
       if (feat?.image_url) {
         const oldPath = feat.image_url.split('/landing-assets/')[1];
         if (oldPath) await supabase.storage.from('landing-assets').remove([oldPath]);
@@ -389,7 +388,7 @@ const AdminLandingFeaturesEditor: React.FC = () => {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage.from('landing-assets').getPublicUrl(path);
-      await saveField(uploadTargetId, 'image_url', urlData.publicUrl);
+      await saveField(targetId, 'image_url', urlData.publicUrl);
       toast.success('Imagem enviada!');
     } catch (e: any) {
       toast.error(e.message || 'Erro no upload');
@@ -397,6 +396,27 @@ const AdminLandingFeaturesEditor: React.FC = () => {
       setUploadingId(null);
       setUploadTargetId(null);
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !uploadTargetId) return;
+    setCropperFile(file);
+    setCropperOpen(true);
+  };
+
+  const handleCropSave = (croppedFile: File) => {
+    setCropperOpen(false);
+    const target = uploadTargetId;
+    setCropperFile(null);
+    if (target) doUpload(croppedFile, target);
+  };
+
+  const handleCropCancel = () => {
+    setCropperOpen(false);
+    setCropperFile(null);
+    setUploadTargetId(null);
   };
 
   const removeImage = async (id: string) => {
@@ -422,6 +442,14 @@ const AdminLandingFeaturesEditor: React.FC = () => {
 
   return (
     <div className="space-y-4">
+      <ImageCropperModal
+        open={cropperOpen}
+        file={cropperFile}
+        aspectRatio="16:9"
+        title="Banner do Card de Recurso"
+        onSave={handleCropSave}
+        onCancel={handleCropCancel}
+      />
       <input
         ref={fileInputRef}
         type="file"

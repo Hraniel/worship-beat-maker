@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import ImageCropperModal from './ImageCropperModal';
 import { Button } from '@/components/ui/button';
 import {
   Upload, Trash2, Plus, Loader2, Music, ChevronDown, ChevronUp,
@@ -92,6 +93,11 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   const [notifyingPack, setNotifyingPack] = useState<string | null>(null);
   const dragSoundRef = useRef<{ packId: string; index: number } | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [cropperFile, setCropperFile] = useState<File | null>(null);
+  const [cropperType, setCropperType] = useState<'icon' | 'banner'>('icon');
 
   // New pack form
   const [newPack, setNewPack] = useState({
@@ -343,6 +349,21 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
     }
   };
 
+  // ── Cropper handlers ──────────────────────────────────────────────────────
+  const handleCropSave = (croppedFile: File) => {
+    setCropperOpen(false);
+    const meta = pendingUploadRef.current;
+    setCropperFile(null);
+    if (!meta) return;
+    if (meta.type === 'icon') handleUploadIcon(croppedFile, meta.packId);
+    else if (meta.type === 'banner') handleUploadBanner(croppedFile, meta.packId);
+  };
+
+  const handleCropCancel = () => {
+    setCropperOpen(false);
+    setCropperFile(null);
+  };
+
   const handleDeleteSound = async (soundId: string) => {
     if (!confirm('Excluir este som permanentemente?')) return;
     setDeletingSound(soundId);
@@ -559,6 +580,15 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   return (
     <div className="space-y-4">
+      {/* Image cropper modal */}
+      <ImageCropperModal
+        open={cropperOpen}
+        file={cropperFile}
+        aspectRatio={cropperType === 'icon' ? '1:1' : '16:9'}
+        title={cropperType === 'icon' ? 'Ícone do Pack' : 'Banner do Pack'}
+        onSave={handleCropSave}
+        onCancel={handleCropCancel}
+      />
       {/* Hidden file inputs */}
       <input
         ref={fileInputRef}
@@ -584,17 +614,23 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       <input ref={iconInputRef} type="file" accept="image/*" className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          const meta = pendingUploadRef.current;
-          if (file && meta?.packId) handleUploadIcon(file, meta.packId);
           e.target.value = '';
+          if (file) {
+            setCropperType('icon');
+            setCropperFile(file);
+            setCropperOpen(true);
+          }
         }}
       />
       <input ref={bannerInputRef} type="file" accept="image/*" className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          const meta = pendingUploadRef.current;
-          if (file && meta?.packId) handleUploadBanner(file, meta.packId);
           e.target.value = '';
+          if (file) {
+            setCropperType('banner');
+            setCropperFile(file);
+            setCropperOpen(true);
+          }
         }}
       />
 
