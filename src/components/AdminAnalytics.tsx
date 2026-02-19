@@ -64,6 +64,7 @@ const AdminAnalytics: React.FC = () => {
   const [onlineCount, setOnlineCount] = useState(0);
   const [cancellations, setCancellations] = useState<CancellationReason[]>([]);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [refreshingOnline, setRefreshingOnline] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -219,10 +220,30 @@ const AdminAnalytics: React.FC = () => {
         <p className="text-xs font-semibold text-emerald-400">
           {onlineCount} usuário{onlineCount !== 1 ? 's' : ''} online agora
         </p>
-        <div className="ml-auto flex gap-1">
-          {Array.from({ length: Math.min(onlineCount, 5) }).map((_, i) => (
-            <div key={i} className="h-2 w-2 rounded-full bg-emerald-400" />
-          ))}
+        <div className="ml-auto flex items-center gap-2">
+          <div className="flex gap-1">
+            {Array.from({ length: Math.min(onlineCount, 5) }).map((_, i) => (
+              <div key={i} className="h-2 w-2 rounded-full bg-emerald-400" />
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              setRefreshingOnline(true);
+              const ch = channelRef.current;
+              if (ch) {
+                const state = ch.presenceState();
+                const count = Object.keys(state).filter(k => k !== 'admin-observer').length;
+                setOnlineCount(count);
+              }
+              setTimeout(() => setRefreshingOnline(false), 600);
+            }}
+            className="p-1 rounded-md hover:bg-emerald-500/20 transition-colors"
+            title="Atualizar contagem"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className={`h-3 w-3 text-emerald-400 ${refreshingOnline ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       </div>
 
