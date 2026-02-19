@@ -160,7 +160,7 @@ const Pricing = () => {
       )}
       <div className="max-w-3xl mx-auto space-y-6 p-4">
         <div className="text-center space-y-2">
-          <button onClick={() => navigate('/app')} className="text-muted-foreground text-sm hover:text-foreground">
+          <button onClick={() => { sessionStorage.setItem('open-settings', '1'); navigate('/app'); }} className="text-muted-foreground text-sm hover:text-foreground">
             ← Voltar
           </button>
           <h1 className="text-2xl font-bold text-foreground">Planos</h1>
