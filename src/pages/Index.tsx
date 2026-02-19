@@ -31,9 +31,11 @@ import TutorialGuide from '@/components/TutorialGuide';
 import SettingsDialog, { loadAudioSettings, type AudioSettings } from '@/components/SettingsDialog';
 import UpdateBanner from '@/components/UpdateBanner';
 import NotificationBanner from '@/components/NotificationBanner';
+import NotificationPromptBanner from '@/components/NotificationPromptBanner';
 import PerformanceMode from '@/components/PerformanceMode';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useUserNotifications } from '@/hooks/useUserNotifications';
+import { useNotificationPrompt } from '@/hooks/useNotificationPrompt';
 
 const CUSTOM_NAMES_KEY = 'drum-pads-custom-names';
 const PAD_SIZE_KEY = 'drum-pads-pad-size';
@@ -68,7 +70,7 @@ function padSizeToTextSize(size: number): 'sm' | 'md' | 'lg' {
 }
 
 const Index = () => {
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { tier } = useSubscription();
   const { canAccess } = useFeatureGates();
   const isLandscape = useIsLandscape();
@@ -218,6 +220,7 @@ const Index = () => {
   });
 
   const { notifications: adminNotifications, markAsRead: markNotifAsRead, markAllAsRead: markAllNotifsAsRead } = useUserNotifications();
+  const { shouldShow: showNotifPrompt, dismiss: dismissNotifPrompt } = useNotificationPrompt(!!user);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -759,6 +762,9 @@ const Index = () => {
         onMarkAllAsRead={markAllNotifsAsRead}
       />
       <UpdateBanner show={needRefresh} onUpdate={async () => { await updateServiceWorker(true); window.location.reload(); }} />
+      {showNotifPrompt && (
+        <NotificationPromptBanner onDismiss={dismissNotifPrompt} />
+      )}
       {/* Header */}
       {!focusMode ? (
       <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0">

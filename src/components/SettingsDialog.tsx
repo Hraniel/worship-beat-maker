@@ -247,6 +247,22 @@ function NotificationSettings() {
           Ao ativar, você receberá avisos importantes da equipe Glory Pads diretamente no seu celular ou computador, mesmo com o app fechado. Sem spam.
         </p>
       </div>
+
+      {subscribed && (
+        <button
+          onClick={() => {
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('🎵 Glory Pads', {
+                body: 'Notificações funcionando! Você receberá avisos mesmo com o app fechado.',
+                icon: '/pwa-icon-192.png',
+              });
+            }
+          }}
+          className="w-full py-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-lg transition-colors hover:bg-muted/30"
+        >
+          🔔 Enviar notificação de teste
+        </button>
+      )}
     </div>
   );
 }
