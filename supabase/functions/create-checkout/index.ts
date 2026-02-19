@@ -43,12 +43,35 @@ serve(async (req) => {
     logStep("User authenticated", { email });
 
     const body = await req.json();
-    const priceId = typeof body.priceId === "string" && /^price_[a-zA-Z0-9]{1,100}$/.test(body.priceId) ? body.priceId : null;
-    if (!priceId) {
-      logStep("Invalid or missing priceId");
-      throw new Error("A valid priceId is required");
+    // Accept either a tier name (new, preferred) or a direct priceId (legacy fallback)
+    const tier: string | undefined = body.tier;
+    const legacyPriceId: string | undefined = body.priceId;
+
+    let priceId: string;
+
+    if (tier) {
+      // Look up current stripe_price_id from plan_pricing DB
+      logStep("Looking up stripe_price_id from DB", { tier });
+      const { data: planData, error: planErr } = await supabaseClient
+        .from("plan_pricing")
+        .select("stripe_price_id")
+        .eq("tier", tier)
+        .maybeSingle();
+
+      if (planErr || !planData?.stripe_price_id) {
+        logStep("No stripe_price_id found in DB, tier not found", { tier, planErr });
+        throw new Error(`No Stripe price configured for tier: ${tier}`);
+      }
+      priceId = planData.stripe_price_id;
+      logStep("Resolved stripe_price_id from DB", { tier, priceId });
+    } else if (legacyPriceId && /^price_[a-zA-Z0-9]{1,100}$/.test(legacyPriceId)) {
+      // Legacy: frontend passed price_id directly
+      priceId = legacyPriceId;
+      logStep("Using legacy priceId from request", { priceId });
+    } else {
+      logStep("Invalid or missing tier/priceId");
+      throw new Error("A valid tier or priceId is required");
     }
-    logStep("Price ID received", { priceId });
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
 

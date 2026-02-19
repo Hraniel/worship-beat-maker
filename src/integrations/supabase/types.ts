@@ -319,6 +319,7 @@ export type Database = {
           name: string
           period: string
           price_brl: number
+          stripe_price_id: string | null
           tier: string
           updated_at: string
         }
@@ -333,6 +334,7 @@ export type Database = {
           name: string
           period?: string
           price_brl?: number
+          stripe_price_id?: string | null
           tier: string
           updated_at?: string
         }
@@ -347,6 +349,7 @@ export type Database = {
           name?: string
           period?: string
           price_brl?: number
+          stripe_price_id?: string | null
           tier?: string
           updated_at?: string
         }
@@ -496,6 +499,8 @@ export type Database = {
           name: string
           price_cents: number
           publish_at: string | null
+          stripe_price_id: string | null
+          stripe_product_id: string | null
           tag: string | null
         }
         Insert: {
@@ -510,6 +515,8 @@ export type Database = {
           name: string
           price_cents?: number
           publish_at?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
           tag?: string | null
         }
         Update: {
@@ -524,6 +531,8 @@ export type Database = {
           name?: string
           price_cents?: number
           publish_at?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
           tag?: string | null
         }
         Relationships: []
