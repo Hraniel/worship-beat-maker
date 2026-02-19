@@ -29,6 +29,7 @@ interface SubscriptionStats {
 
 interface CancellationReason {
   id: string;
+  user_id: string;
   reason: string;
   detail: string | null;
   tier_at_cancellation: string | null;
@@ -54,6 +55,14 @@ const formatDate = (dateStr: string, period: Period) => {
   return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 };
 
+const REASON_LABELS: Record<string, string> = {
+  price: '💸 Preço alto',
+  missing_features: '🔧 Falta recursos',
+  not_using: '😴 Não usando',
+  found_alternative: '🔄 Outra solução',
+  other: '✏️ Outro',
+};
+
 const AdminAnalytics: React.FC = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [packs, setPacks] = useState<Pack[]>([]);
@@ -63,6 +72,7 @@ const AdminAnalytics: React.FC = () => {
   const [period, setPeriod] = useState<Period>('month');
   const [onlineCount, setOnlineCount] = useState(0);
   const [cancellations, setCancellations] = useState<CancellationReason[]>([]);
+  const [userEmailMap, setUserEmailMap] = useState<Map<string, string>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [refreshingOnline, setRefreshingOnline] = useState(false);
 
@@ -72,11 +82,34 @@ const AdminAnalytics: React.FC = () => {
         const [{ data: purchaseData }, { data: packData }, { data: cancelData }] = await Promise.all([
           supabase.from('user_purchases').select('pack_id, user_id, purchased_at'),
           supabase.from('store_packs').select('id, name, price_cents'),
-          supabase.from('cancellation_reasons' as any).select('*').order('created_at', { ascending: false }).limit(50),
+          supabase.from('cancellation_reasons' as any).select('*').order('created_at', { ascending: false }).limit(100),
         ]);
         setPurchases(purchaseData || []);
         setPacks(packData || []);
-        setCancellations((cancelData as any[]) || []);
+        const cancelList = (cancelData as unknown as CancellationReason[]) || [];
+        setCancellations(cancelList);
+
+        // Fetch user emails for cancellations
+        if (cancelList.length > 0) {
+          try {
+            const { data: session } = await supabase.auth.getSession();
+            const token = session?.session?.access_token;
+            if (token) {
+              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+              const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-get-users`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              if (resp.ok) {
+                const { users } = await resp.json();
+                const emailMap = new Map<string, string>();
+                users?.forEach((u: { id: string; email: string }) => emailMap.set(u.id, u.email));
+                setUserEmailMap(emailMap);
+              }
+            }
+          } catch (e) {
+            console.error('Failed to fetch user emails:', e);
+          }
+        }
       } catch (e) {
         console.error('Analytics error:', e);
       } finally {
@@ -360,42 +393,81 @@ const AdminAnalytics: React.FC = () => {
       </div>
 
       {/* Cancellation reasons */}
-      {cancellations.length > 0 && (
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertCircle className="h-4 w-4 text-orange-400" />
-            <p className="text-xs font-semibold text-foreground">Motivos de Cancelamento</p>
-            <span className="ml-auto text-[10px] text-muted-foreground">{cancellations.length} total</span>
-          </div>
-          {cancellationStats.length > 0 && (
-            <ResponsiveContainer width="100%" height={120}>
-              <BarChart data={cancellationStats} margin={{ top: 2, right: 4, left: -20, bottom: 0 }}>
-                <XAxis dataKey="reason" tick={{ fontSize: 8, fill: 'hsl(215 15% 55%)' }} />
-                <YAxis tick={{ fontSize: 8, fill: 'hsl(215 15% 55%)' }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ background: 'hsl(240 8% 10%)', border: '1px solid hsl(240 6% 18%)', borderRadius: 8, fontSize: 10 }}
-                  labelStyle={{ color: 'hsl(210 20% 92%)' }}
-                />
-                <Bar dataKey="count" radius={[3, 3, 0, 0]}>
-                  {cancellationStats.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-          {/* Recent details */}
-          <div className="mt-3 space-y-1.5 max-h-32 overflow-y-auto">
-            {cancellations.slice(0, 8).map(c => (
-              <div key={c.id} className="flex items-start gap-2">
-                <span className="text-[10px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded shrink-0">{c.reason}</span>
-                {c.detail && <span className="text-[10px] text-muted-foreground truncate">{c.detail}</span>}
-                <span className="ml-auto text-[9px] text-muted-foreground shrink-0">{new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
-              </div>
-            ))}
-          </div>
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+          <AlertCircle className="h-4 w-4 text-orange-400" />
+          <p className="text-xs font-semibold text-foreground">Cancelamentos</p>
+          <span className="ml-auto text-[10px] bg-orange-400/10 text-orange-400 px-2 py-0.5 rounded-full font-medium">
+            {cancellations.length} registro{cancellations.length !== 1 ? 's' : ''}
+          </span>
         </div>
-      )}
+
+        {cancellations.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-6">Nenhum cancelamento registrado</p>
+        ) : (
+          <>
+            {/* Aggregated bar chart */}
+            {cancellationStats.length > 0 && (
+              <div className="px-4 pt-3 pb-1">
+                <ResponsiveContainer width="100%" height={110}>
+                  <BarChart data={cancellationStats} margin={{ top: 2, right: 4, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="reason" tick={{ fontSize: 8, fill: 'hsl(215 15% 55%)' }} />
+                    <YAxis tick={{ fontSize: 8, fill: 'hsl(215 15% 55%)' }} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{ background: 'hsl(240 8% 10%)', border: '1px solid hsl(240 6% 18%)', borderRadius: 8, fontSize: 10 }}
+                      labelStyle={{ color: 'hsl(210 20% 92%)' }}
+                    />
+                    <Bar dataKey="count" radius={[3, 3, 0, 0]}>
+                      {cancellationStats.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Detail table */}
+            <div className="divide-y divide-border max-h-72 overflow-y-auto">
+              {cancellations.map(c => {
+                const email = userEmailMap.get(c.user_id);
+                return (
+                  <div key={c.id} className="px-4 py-2.5 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Email */}
+                      <span className="text-[11px] font-medium text-foreground truncate max-w-[160px]" title={email}>
+                        {email ?? c.user_id.slice(0, 8) + '…'}
+                      </span>
+                      {/* Tier badge */}
+                      {c.tier_at_cancellation && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
+                          c.tier_at_cancellation === 'master'
+                            ? 'bg-amber-400/15 text-amber-400'
+                            : c.tier_at_cancellation === 'pro'
+                              ? 'bg-violet-400/15 text-violet-400'
+                              : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {c.tier_at_cancellation.toUpperCase()}
+                        </span>
+                      )}
+                      {/* Reason badge */}
+                      <span className="text-[10px] font-medium bg-orange-400/10 text-orange-400 px-1.5 py-0.5 rounded shrink-0">
+                        {REASON_LABELS[c.reason] ?? c.reason}
+                      </span>
+                      <span className="ml-auto text-[9px] text-muted-foreground shrink-0">
+                        {new Date(c.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    {c.detail && (
+                      <p className="text-[10px] text-muted-foreground pl-0.5 italic">"{c.detail}"</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Bar chart */}
       <div className="bg-card border border-border rounded-xl p-4">
