@@ -367,23 +367,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         );
 
       case 'plans':
-        return (
-          <div className="flex flex-col items-center gap-4 text-center w-full py-4">
-            <div className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Planos e Assinatura</span>
-            </div>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              Gerencie sua assinatura e desbloqueie recursos avançados.
-            </p>
-            <button
-              onClick={() => { sessionStorage.setItem('settings-return-tab', 'plans'); onOpenChange(false); navigate('/pricing'); }}
-              className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Gerenciar plano
-            </button>
-          </div>
-        );
+        sessionStorage.setItem('settings-return-tab', 'plans');
+        onOpenChange(false);
+        navigate('/pricing');
+        return null;
 
       case 'guide':
         return (
