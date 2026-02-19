@@ -281,32 +281,24 @@ const TAB_ITEMS = [
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
-  // null means "show list" on mobile
-  const [activeTab, setActiveTab] = useState<string | null>(initialTab || null);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
   const isMobilePortrait = isMobile && !isLandscape;
+  const useSideLayout = isLandscape || !isMobile;
 
   useEffect(() => {
     if (open) {
       setSettings(loadAudioSettings());
       if (initialTab) {
         setActiveTab(initialTab);
-      } else if (!isMobilePortrait) {
-        setActiveTab('audio');
       } else {
-        setActiveTab(null);
+        // On desktop/landscape default to audio, on mobile show list (null)
+        setActiveTab(useSideLayout ? 'audio' : null);
       }
     }
-  }, [open, initialTab]);
-
-  // On desktop, ensure activeTab is never null
-  useEffect(() => {
-    if (!isMobilePortrait && activeTab === null) {
-      setActiveTab('audio');
-    }
-  }, [isMobilePortrait, activeTab]);
+  }, [open, initialTab, useSideLayout]);
 
   const update = (partial: Partial<AudioSettings>) => {
     const next = { ...settings, ...partial };
@@ -491,7 +483,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
 
   // ── Dialog ─────────────────────────────────────────────────────────────
 
-  const useSideLayout = isLandscape || !isMobile;
   const showMobileList = isMobilePortrait && activeTab === null;
 
   return (
