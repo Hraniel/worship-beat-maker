@@ -84,8 +84,14 @@ Deno.serve(async (req) => {
 
       if (uploadErr) throw uploadErr;
 
-      // If it's a full sound file, insert into pack_sounds
+      // If it's a full sound file, insert into pack_sounds AND auto-create preview
       if (!isPreview) {
+        // Also upload to sound-previews bucket so the public preview works
+        const previewPath = `${packId}/${Date.now()}-preview-${soundName.replace(/[^a-zA-Z0-9_-]/g, '_')}.${ext}`;
+        await supabase.storage
+          .from('sound-previews')
+          .upload(previewPath, arrayBuffer, { contentType: file.type });
+
         const { data: soundRow, error: insertErr } = await supabase
           .from('pack_sounds')
           .insert({
@@ -94,13 +100,14 @@ Deno.serve(async (req) => {
             short_name: shortName || soundName.slice(0, 3).toUpperCase(),
             category: category || 'sample',
             file_path: filePath,
+            preview_path: previewPath,
             duration_ms: isNaN(durationMs) ? 0 : durationMs,
           })
           .select('id')
           .single();
 
         if (insertErr) throw insertErr;
-        return new Response(JSON.stringify({ success: true, soundId: soundRow.id, filePath }), { headers: corsHeaders });
+        return new Response(JSON.stringify({ success: true, soundId: soundRow.id, filePath, previewPath }), { headers: corsHeaders });
       }
 
       return new Response(JSON.stringify({ success: true, filePath }), { headers: corsHeaders });
