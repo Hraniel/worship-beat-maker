@@ -4,7 +4,7 @@ import { useBodyScroll } from '@/hooks/useBodyScroll';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/integrations/supabase/client';
-import { usePresenceTracker } from '@/hooks/usePresenceTracker';
+
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
@@ -132,8 +132,6 @@ const Dashboard = () => {
   const [libraryFilter, setLibraryFilter] = useState<'all' | 'acquired' | 'available' | 'removed'>('all');
   const [togglingPackId, setTogglingPackId] = useState<string | null>(null);
 
-  // ── Track user presence so admin can see online count ──────────────────────
-  usePresenceTracker(user?.id);
 
   const badge = tierBadge[tier];
 
