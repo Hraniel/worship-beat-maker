@@ -187,6 +187,20 @@ const DrumPad: React.FC<DrumPadProps> = ({
 
   return (
     <div className="relative">
+      {/* File input lives outside the menu so it persists after menu closes */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.aiff,.aif,.wma"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            onImportSound?.(pad.id, file);
+          }
+          e.target.value = '';
+        }}
+      />
       <button
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
@@ -352,48 +366,32 @@ const DrumPad: React.FC<DrumPadProps> = ({
             )}
 
             {/* Import sound - available for ALL pads including loops */}
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.aiff,.aif,.wma"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    onImportSound?.(pad.id, file);
-                    setShowMenu(false);
-                  }
-                  e.target.value = '';
-                }}
-              />
-              {(() => {
-                const maxImports = tierConfig.maxImports;
-                const atLimit = !hasCustomSound && customSoundsCount >= maxImports;
-                if (atLimit) {
-                  return (
-                    <button
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
-                      onClick={() => toast.info(`Limite de ${maxImports} importações atingido`, { description: 'Remova um som customizado ou faça upgrade.' })}
-                    >
-                      <Lock className="h-3.5 w-3.5" />
-                      Importar som {pad.isLoop ? '(loop)' : ''}
-                      <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
-                    </button>
-                  );
-                }
+            {(() => {
+              const maxImports = tierConfig.maxImports;
+              const atLimit = !hasCustomSound && customSoundsCount >= maxImports;
+              if (atLimit) {
                 return (
                   <button
-                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
-                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
+                    onClick={() => toast.info(`Limite de ${maxImports} importações atingido`, { description: 'Remova um som customizado ou faça upgrade.' })}
                   >
-                    <Upload className="h-3.5 w-3.5" />
+                    <Lock className="h-3.5 w-3.5" />
                     Importar som {pad.isLoop ? '(loop)' : ''}
                     <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
                   </button>
                 );
-              })()}
-            </>
+              }
+              return (
+                <button
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-muted rounded-md transition-colors"
+                  onClick={() => { setShowMenu(false); setTimeout(() => fileInputRef.current?.click(), 50); }}
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Importar som {pad.isLoop ? '(loop)' : ''}
+                  <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
+                </button>
+              );
+            })()}
 
             {/* Import from Glory Store - available for ALL pads including loops */}
             <>
