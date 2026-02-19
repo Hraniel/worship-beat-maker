@@ -1,149 +1,67 @@
 
-## Popup Universal de Edição de Imagem com Recorte, Tamanho e Pré-visualização
+## Diagnóstico: App abre em Modo Foco
 
-### Visão Geral
+### Causa Raiz Identificada
 
-Criar um componente `ImageCropperModal` que intercepta todos os uploads de imagem no painel admin, permite ao usuário ajustar recorte e tamanho antes de salvar, e depois chama a função de upload original com o arquivo processado.
+O estado `focusMode` é lido diretamente do `localStorage` na inicialização:
 
----
-
-### Todos os pontos de upload de imagem identificados
-
-| Componente | Tipo | Proporção ideal |
-|---|---|---|
-| `AdminLandingEditor` — `ImageUploadField` (store_bg_image) | Fundo da loja | 16:9 (livre) |
-| `AdminLandingEditor` — `ImageUploadField` (store_cat_X_image ×6) | Cards de categoria | 1:1 |
-| `AdminLandingEditor` — `ImageUploadField` (footer_logo_url) | Logo do rodapé | 1:1 |
-| `AdminLandingEditor` — `ImageUploadField` (stat_X_image ×4) | Imagens de estatísticas | 1:1 |
-| `AdminLandingFeaturesEditor` — upload de foto do card | Banner do card de recurso | 16:9 |
-| `AdminPackManager` — `handleUploadIcon` | Ícone do pack | 1:1 |
-| `AdminPackManager` — `handleUploadBanner` | Banner do pack | 16:9 |
-
----
-
-### Componente `ImageCropperModal`
-
-**Arquivo a criar:** `src/components/ImageCropperModal.tsx`
-
-**Como funciona internamente:**
-- Usa a API Canvas nativa do browser — **sem dependência externa**
-- Ao receber o arquivo bruto, cria um `<canvas>` virtual para renderizar a imagem
-- Exibe uma pré-visualização interativa onde o usuário pode:
-  - **Arrastar** para reposicionar o recorte
-  - **Deslizar** um slider de zoom para aproximar/afastar
-  - **Alternar** entre modos de proporção configuráveis pelo chamador (`1:1`, `16:9`, `livre`)
-- Botão **Cancelar** — fecha sem fazer nada, sem nenhum upload
-- Botão **Salvar** — renderiza o canvas com as configurações, exporta como `Blob`, chama o callback com o `File` final e fecha
-
-**Interface do componente:**
-```typescript
-interface ImageCropperModalProps {
-  open: boolean;
-  file: File | null;                    // imagem bruta selecionada
-  aspectRatio?: '1:1' | '16:9' | 'free'; // proporção de recorte
-  title?: string;                       // ex: "Ícone do Pack"
-  onSave: (croppedFile: File) => void; // chamado com o arquivo pronto
-  onCancel: () => void;                 // fecha sem fazer nada
-}
+```ts
+const [focusMode, setFocusMode] = useState(() => localStorage.getItem(FOCUS_MODE_KEY) === 'true');
 ```
 
-**Lógica interna do canvas:**
-1. Ao abrir, carrega a imagem via `URL.createObjectURL(file)` em um elemento `Image`
-2. Renderiza a imagem em um `<canvas>` visível (pré-visualização ao vivo)
-3. O usuário controla `offsetX`, `offsetY` (drag) e `scale` (slider)
-4. No "Salvar", renderiza em um canvas offscreen com as dimensões finais e chama `canvas.toBlob()`, convertendo para `File`
+Se o usuário saiu do app enquanto o Modo Foco estava **ativo**, a chave `drum-pads-focus-mode = 'true'` persiste no localStorage. Na próxima vez que o app abre, ele carrega com Modo Foco ativado automaticamente.
 
----
+### Problema Secundário: Não Há Escape Fácil
 
-### Integração nos componentes existentes
+O botão para sair do Modo Foco está **condicionado a várias restrições**:
 
-A estratégia é **interceptar o momento em que o arquivo é selecionado** (antes do upload), abrir o modal, e só enviar após confirmação.
+- **Mobile portrait**: apenas visível se `currentSongId` existir, `!editMode`, `!isTablet`, `!isDesktop`, `!isLandscape`
+- **Desktop (>lg)**: o botão "Sair" no rodapé aparece normalmente
+- **Se nenhuma música estiver selecionada ao abrir em Modo Foco**: o botão de saída do header de foco mostra mas sem song name; o botão "Foco" nos ambient pads (mobile) está oculto porque `currentSongId === null`
 
-#### A. `AdminLandingEditor.tsx` — `ImageUploadField`
+### Solução: Reset do Modo Foco no Mount
 
-Atualmente: `onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); }}`
+A correção mais simples e robusta é: **ao entrar no `/app`, sempre iniciar com Modo Foco desativado** (não persistir entre sessões). O Modo Foco é uma preferência de sessão de uso ao vivo — não faz sentido preservar entre acessos ao app.
 
-Mudança: adicionar estado `pendingFile` e `cropperOpen`. Quando o usuário seleciona um arquivo, abre o cropper. No `onSave` do cropper, chama `handleUpload(croppedFile)`. No `onCancel`, limpa tudo.
+Alternativamente, podemos **resetar o focusMode automaticamente quando o usuário volta ao app sem uma música ativa**, que é o cenário que causa confusão.
 
-A prop `aspectRatio` será passada por cada chamador de `ImageUploadField`:
-- `store_bg_image` → `16:9`
-- `store_cat_X_image` → `1:1`
-- `footer_logo_url` → `1:1`
-- `stat_X_image` → `1:1`
+### Plano de Implementação
 
-#### B. `AdminLandingFeaturesEditor.tsx`
+**Arquivo:** `src/pages/Index.tsx`
 
-No `handleFileChange`, em vez de fazer upload direto, abre o `ImageCropperModal` com `aspectRatio="16:9"`. O `onSave` recebe o arquivo recortado e executa o upload real.
+**Mudança 1 — Não persistir focusMode entre sessões (abordagem mais limpa):**
 
-#### C. `AdminPackManager.tsx`
+Trocar o estado inicial de:
+```ts
+const [focusMode, setFocusMode] = useState(() => localStorage.getItem(FOCUS_MODE_KEY) === 'true');
+```
+para:
+```ts
+const [focusMode, setFocusMode] = useState(false);
+```
+E remover o `localStorage.setItem(FOCUS_MODE_KEY, ...)` do `toggleFocusMode`.
 
-- Para ícones (`iconInputRef`): abrir cropper com `aspectRatio="1:1"`, title "Ícone do Pack"
-- Para banners (`bannerInputRef`): abrir cropper com `aspectRatio="16:9"`, title "Banner do Pack"
-- Adicionar estados `cropperOpen`, `cropperFile`, `cropperType` e `cropperPackId` para saber qual upload executar no `onSave`
+**Mudança 2 — Auto-reset ao abrir app sem música:**
 
----
+Adicionar um `useEffect` que, quando o app carrega e `currentSongId` é `null`, garante que `focusMode` seja `false`:
 
-### Layout visual do `ImageCropperModal`
-
-```text
-┌──────────────────────────────────────────────────┐
-│  ✂️ Ajustar Imagem — [título opcional]            │
-│                                            [ X ] │
-├──────────────────────────────────────────────────┤
-│                                                  │
-│   ┌──────────────────────────────────────────┐   │
-│   │                                          │   │
-│   │        CANVAS DE PRÉ-VISUALIZAÇÃO        │   │
-│   │     (arrastar para mover o recorte)      │   │
-│   │                                          │   │
-│   │   ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┐  │   │
-│   │     ÁREA DE RECORTE (borda tracejada)   │   │
-│   │   └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─┘  │   │
-│   └──────────────────────────────────────────┘   │
-│                                                  │
-│   🔍 Zoom                                        │
-│   ├─────────●──────────────────────────────┤     │
-│   50%                                    200%    │
-│                                                  │
-│   Proporção:  [1:1]  [16:9]  [Livre]             │
-│                                                  │
-├──────────────────────────────────────────────────┤
-│       [ Cancelar ]              [ ✓ Salvar ]     │
-└──────────────────────────────────────────────────┘
+```ts
+useEffect(() => {
+  if (!currentSongId && focusMode) {
+    setFocusMode(false);
+    localStorage.setItem(FOCUS_MODE_KEY, 'false');
+  }
+}, []);
 ```
 
----
+**Abordagem recomendada:** A **Mudança 1** (não persistir entre sessões) é a mais correta. O Modo Foco é um estado de uso ao vivo — o usuário ativa para uma performance e desativa depois. Não faz sentido preservar entre sessões, e a implementação fica mais simples e sem bugs.
 
-### Detalhes Técnicos
+### Resumo das Alterações
 
-**Canvas nativo sem bibliotecas externas:**
-- `useRef<HTMLCanvasElement>` para o canvas de pré-visualização
-- `useEffect` para redesenhar sempre que `offsetX`, `offsetY`, `scale` ou `aspectRatio` mudam
-- Eventos `onPointerDown`, `onPointerMove`, `onPointerUp` para arrastar
-- `canvas.toBlob('image/jpeg', 0.92)` no salvar para comprimir levemente
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/Index.tsx` | Iniciar `focusMode` sempre como `false` (sem ler localStorage) |
+| `src/pages/Index.tsx` | Remover a leitura de `FOCUS_MODE_KEY` do estado inicial |
+| `src/pages/Index.tsx` | (Opcional) Manter a escrita no localStorage para referência futura ou remover completamente |
 
-**Dimensões de saída por proporção:**
-- `1:1` → 512×512px
-- `16:9` → 1280×720px
-- `livre` → largura original, altura original (apenas comprime)
-
-**Prop `aspectRatio` adicionada ao `ImageUploadField`:**
-```typescript
-interface ImageUploadFieldProps {
-  // ... props existentes ...
-  aspectRatio?: '1:1' | '16:9' | 'free';
-}
-```
-
----
-
-### Resumo de Arquivos a Criar/Modificar
-
-| Arquivo | Operação | O que muda |
-|---|---|---|
-| `src/components/ImageCropperModal.tsx` | **CRIAR** | Componente completo de recorte com canvas nativo |
-| `src/components/AdminLandingEditor.tsx` | **EDITAR** | `ImageUploadField` intercepta arquivo → abre cropper → upload |
-| `src/components/AdminLandingFeaturesEditor.tsx` | **EDITAR** | `handleFileChange` intercepta → abre cropper → upload |
-| `src/components/AdminPackManager.tsx` | **EDITAR** | Intercepta icon e banner inputs → abre cropper → upload |
-
-**Nenhuma nova dependência npm necessária** — tudo via Canvas API nativa.
+Essa mudança é mínima, cirúrgica e não afeta nenhuma outra funcionalidade do app.
