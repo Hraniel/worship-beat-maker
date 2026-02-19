@@ -192,17 +192,19 @@ const EventCard: React.FC<EventCardProps> = ({
         <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
         <div className="flex-1 min-w-0" onClick={() => setExpanded(p => !p)}>
           {editing ? (
-            <div className="flex gap-1.5" onClick={e => e.stopPropagation()}>
+            <div className="flex flex-col gap-1.5 py-0.5" onClick={e => e.stopPropagation()}>
               <input value={editName} onChange={e => setEditName(e.target.value)}
-                className="flex-1 h-6 px-2 text-xs rounded bg-background border border-input text-foreground" />
-              <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
-                className="h-6 px-1 text-xs rounded bg-background border border-input text-foreground" />
-              <button onClick={saveEdit} className="h-6 w-6 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20">
-                <Check className="h-3 w-3 text-primary" />
-              </button>
-              <button onClick={() => setEditing(false)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted">
-                <X className="h-3 w-3 text-muted-foreground" />
-              </button>
+                className="w-full h-7 px-2 text-xs rounded bg-background border border-input text-foreground focus:outline-none" />
+              <div className="flex gap-1.5">
+                <input type="date" value={editDate} onChange={e => setEditDate(e.target.value)}
+                  className="flex-1 h-7 px-2 text-xs rounded bg-background border border-input text-foreground focus:outline-none" />
+                <button onClick={saveEdit} className="h-7 w-7 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20 shrink-0">
+                  <Check className="h-3 w-3 text-primary" />
+                </button>
+                <button onClick={() => setEditing(false)} className="h-7 w-7 rounded flex items-center justify-center hover:bg-muted shrink-0">
+                  <X className="h-3 w-3 text-muted-foreground" />
+                </button>
+              </div>
             </div>
           ) : (
             <div className="cursor-pointer">
