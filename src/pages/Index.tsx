@@ -147,6 +147,12 @@ const Index = () => {
       setSettingsTab(flag);
       setSettingsOpen(true);
     }
+    // Restore previously selected song when returning from /pricing (upgrade gate flow)
+    const restoredSongId = sessionStorage.getItem('restore-song-id');
+    if (restoredSongId) {
+      sessionStorage.removeItem('restore-song-id');
+      setCurrentSongId(restoredSongId);
+    }
   }, []);
 
   // Apply audio settings (auto-pan when side is selected, reset to center on mono)
@@ -1556,7 +1562,16 @@ const Index = () => {
       />
 
       {/* Feature Gate Upgrade Modal */}
-      <UpgradeGateModal payload={upgradeGate} onClose={() => setUpgradeGate(null)} />
+      <UpgradeGateModal
+        payload={upgradeGate}
+        onClose={() => setUpgradeGate(null)}
+        onNavigateToPricing={() => {
+          if (currentSongId) {
+            sessionStorage.setItem('restore-song-id', currentSongId);
+          }
+          navigate('/pricing');
+        }}
+      />
     </div>);
 
 };

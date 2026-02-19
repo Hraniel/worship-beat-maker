@@ -13,6 +13,7 @@ export interface UpgradeGatePayload {
 interface Props {
   payload: UpgradeGatePayload | null;
   onClose: () => void;
+  onNavigateToPricing?: () => void;
 }
 
 const TIER_META: Record<string, { label: string; icon: React.ReactNode; color: string; bg: string; border: string }> = {
@@ -32,7 +33,7 @@ const TIER_META: Record<string, { label: string; icon: React.ReactNode; color: s
   },
 };
 
-const UpgradeGateModal: React.FC<Props> = ({ payload, onClose }) => {
+const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPricing }) => {
   const navigate = useNavigate();
 
   if (!payload) return null;
@@ -103,7 +104,11 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose }) => {
                 }`}
                 onClick={() => {
                   onClose();
-                  navigate('/pricing');
+                  if (onNavigateToPricing) {
+                    onNavigateToPricing();
+                  } else {
+                    navigate('/pricing');
+                  }
                 }}
               >
                 Ver planos

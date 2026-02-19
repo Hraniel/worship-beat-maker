@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Check, Crown, Zap, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useBodyScroll } from '@/hooks/useBodyScroll';
 
 // ── Cancellation Reason Modal ──────────────────────────────────────────────────
 const CANCEL_REASONS = [
@@ -84,6 +85,7 @@ const CancelReasonModal: React.FC<CancelModalProps> = ({ tier, onConfirm, onDism
 const tierOrder: TierKey[] = ['free', 'pro', 'master'];
 
 const Pricing = () => {
+  useBodyScroll();
   const { tier: currentTier, checkSubscription } = useSubscription();
   const { user } = useAuth();
   const [loadingTier, setLoadingTier] = useState<TierKey | null>(null);
