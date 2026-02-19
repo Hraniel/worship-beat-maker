@@ -286,7 +286,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
-
   const isMobilePortrait = isMobile && !isLandscape;
 
   useEffect(() => {
