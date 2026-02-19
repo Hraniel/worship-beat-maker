@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ListMusic, Plus, Trash2, ChevronRight, GripVertical, Share2, Link2, Eye, EyeOff,
   Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, Zap, Crown,
@@ -36,6 +36,8 @@ interface SetlistManagerProps {
   setlists?: { id: string; name: string; songs: SetlistSong[] }[];
   activeSetlistId?: string | null;
   onOpenMusicAI?: () => void;
+  forceOpen?: boolean;
+  onForceOpenChange?: () => void;
 }
 
 interface SortableItemProps {
@@ -347,6 +349,7 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({ onSubmit, onCancel })
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder, onOpenMusicAI,
+  forceOpen, onForceOpenChange,
 }) => {
   const [newName, setNewName] = useState('');
   const [open, setOpen] = useState(false);
@@ -354,6 +357,14 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const [showMusicAISuggestion, setShowMusicAISuggestion] = useState(false);
   const { tier } = useSubscription();
   const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = useSetlistEvents();
+
+  // Open sheet when forceOpen prop becomes true
+  useEffect(() => {
+    if (forceOpen) {
+      setOpen(true);
+      onForceOpenChange?.();
+    }
+  }, [forceOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
