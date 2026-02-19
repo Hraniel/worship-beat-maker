@@ -87,6 +87,7 @@ Deno.serve(async (req) => {
       if (Object.keys(updates).length === 0) {
         return new Response(JSON.stringify({ error: 'No valid updates' }), { status: 400, headers: corsHeaders });
       }
+      // Must use service role client (already initialised as `supabase`) for admin operations
       const { error } = await supabase.auth.admin.updateUserById(targetUserId, updates);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -184,6 +185,7 @@ Deno.serve(async (req) => {
       is_banned: banMap.has(u.id),
       ban_expires_at: banMap.get(u.id) ?? null,
       granted_tier: grantMap.get(u.id) ?? null,
+      ip: (u as any).last_sign_in_ip ?? (u as any).confirmed_at ? null : null,
     }));
 
     return new Response(JSON.stringify({ users: result }), { headers: corsHeaders });

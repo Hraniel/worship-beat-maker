@@ -504,14 +504,17 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         ] as const).map(tab => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               activeTab === tab.key
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
             {tab.label}
+            {activeTab === tab.key && tab.key !== 'packs' && (
+              <X className="h-3 w-3 opacity-70" />
+            )}
           </button>
         ))}
       </div>

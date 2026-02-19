@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar, ChevronDown,
-  ShieldCheck, Search, Trash2, Mail, Key, Ban, Gift, Clock,
+  ShieldCheck, Search, Trash2, Mail, Key, Ban, Gift, Clock, Globe,
 } from 'lucide-react';
 
 type AppRole = 'admin' | 'moderator';
@@ -20,6 +20,7 @@ interface UserRow {
   is_banned?: boolean;
   ban_expires_at?: string | null;
   granted_tier?: string | null;
+  ip?: string | null;
 }
 
 const ROLE_OPTIONS: { role: AppRole | null; label: string; description: string }[] = [
@@ -484,7 +485,7 @@ const AdminUserManager: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                         <ShoppingBag className="h-2.5 w-2.5" /> {user.purchase_count} compras
                       </span>
@@ -494,6 +495,11 @@ const AdminUserManager: React.FC = () => {
                       {user.last_sign_in_at && (
                         <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                           <Clock className="h-2.5 w-2.5" /> {new Date(user.last_sign_in_at).toLocaleDateString('pt-BR')}
+                        </span>
+                      )}
+                      {user.ip && (
+                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground font-mono" title="Último IP de acesso">
+                          <Globe className="h-2.5 w-2.5" /> {user.ip}
                         </span>
                       )}
                     </div>

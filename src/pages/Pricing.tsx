@@ -3,16 +3,91 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/integrations/supabase/client';
 import { TIERS, type TierKey } from '@/lib/tiers';
 import { useLandingConfig } from '@/hooks/useLandingConfig';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Check, Crown, Zap, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
+// ── Cancellation Reason Modal ──────────────────────────────────────────────────
+const CANCEL_REASONS = [
+  { key: 'price', label: '💸 Preço muito alto' },
+  { key: 'missing_features', label: '🔧 Falta de recursos' },
+  { key: 'not_using', label: '😴 Não estou usando' },
+  { key: 'found_alternative', label: '🔄 Encontrei outra solução' },
+  { key: 'other', label: '✏️ Outro motivo' },
+];
+
+interface CancelModalProps {
+  tier: string;
+  onConfirm: (reason: string, detail: string) => void;
+  onDismiss: () => void;
+}
+
+const CancelReasonModal: React.FC<CancelModalProps> = ({ tier, onConfirm, onDismiss }) => {
+  const [selectedReason, setSelectedReason] = useState('');
+  const [detail, setDetail] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleConfirm = async () => {
+    if (!selectedReason) { toast.error('Selecione um motivo'); return; }
+    setLoading(true);
+    await onConfirm(selectedReason, detail.trim());
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-foreground">Antes de cancelar...</p>
+          <p className="text-xs text-muted-foreground">Qual o principal motivo do cancelamento?</p>
+        </div>
+
+        <div className="space-y-2">
+          {CANCEL_REASONS.map(r => (
+            <button
+              key={r.key}
+              onClick={() => setSelectedReason(r.key)}
+              className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
+                selectedReason === r.key
+                  ? 'border-primary bg-primary/10 text-foreground'
+                  : 'border-border text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+
+        {selectedReason && (
+          <textarea
+            value={detail}
+            onChange={e => setDetail(e.target.value)}
+            placeholder="Detalhes opcionais..."
+            rows={2}
+            className="w-full px-3 py-2 text-xs rounded-lg bg-background border border-input text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+          />
+        )}
+
+        <div className="flex gap-2 pt-1">
+          <Button size="sm" variant="destructive" className="flex-1 h-8 text-xs" onClick={handleConfirm} disabled={loading || !selectedReason}>
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Confirmar cancelamento'}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onDismiss}>Voltar</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const tierOrder: TierKey[] = ['free', 'pro', 'master'];
 
 const Pricing = () => {
   const { tier: currentTier, checkSubscription } = useSubscription();
+  const { user } = useAuth();
   const [loadingTier, setLoadingTier] = useState<TierKey | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
   const navigate = useNavigate();
   const { pricing, features, loading } = useLandingConfig();
 
@@ -39,6 +114,28 @@ const Pricing = () => {
   };
 
   const handleManage = async () => {
+    // Show cancel reason modal first (only redirect after user submits reason)
+    setShowCancelModal(true);
+  };
+
+  const handleCancelConfirm = async (reason: string, detail: string) => {
+    // Save cancellation reason
+    try {
+      if (user) {
+        await supabase.from('cancellation_reasons' as any).insert({
+          user_id: user.id,
+          reason,
+          detail: detail || null,
+          tier_at_cancellation: currentTier,
+        });
+      }
+    } catch (e) {
+      console.error('Failed to save cancellation reason', e);
+    }
+
+    setShowCancelModal(false);
+
+    // Now redirect to customer portal
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) throw error;
@@ -53,6 +150,13 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 overflow-y-auto">
+      {showCancelModal && (
+        <CancelReasonModal
+          tier={currentTier}
+          onConfirm={handleCancelConfirm}
+          onDismiss={() => setShowCancelModal(false)}
+        />
+      )}
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <button onClick={() => navigate('/app')} className="text-muted-foreground text-sm hover:text-foreground">
@@ -78,7 +182,6 @@ const Pricing = () => {
                   ? <Zap className="h-5 w-5" />
                   : null;
 
-              // Features from DB for this tier, sorted by sort_order, only enabled ones
               const tierFeatures = features
                 .filter(f => f.tier === tierKey)
                 .sort((a, b) => a.sort_order - b.sort_order);
@@ -101,7 +204,6 @@ const Pricing = () => {
                         : 'border-border bg-card'
                   }`}
                 >
-                  {/* Badge: plano atual tem prioridade sobre badge_text */}
                   {isCurrent ? (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
                       SEU PLANO
@@ -140,7 +242,6 @@ const Pricing = () => {
                         </li>
                       ))
                     ) : (
-                      // Fallback if no features in DB yet
                       <li className="text-muted-foreground text-xs">—</li>
                     )}
                   </ul>
