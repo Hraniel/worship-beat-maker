@@ -230,6 +230,8 @@ Deno.serve(async (req) => {
       let failed = 0;
       const expiredEndpoints: string[] = [];
 
+      console.log(`[PUSH] Sending to ${subs.length} subscription(s)...`);
+
       const results = await Promise.allSettled(
         subs.map((sub) => sendWebPush(sub, payload, vapidPrivateKey))
       );
@@ -239,15 +241,19 @@ Deno.serve(async (req) => {
           const r = result.value;
           if (r.ok) {
             sent++;
+            console.log(`[PUSH] ✓ Sent to ${subs[i].endpoint.slice(0, 60)}... status=${r.status}`);
           } else {
             failed++;
+            console.error(`[PUSH] ✗ Failed ${subs[i].endpoint.slice(0, 60)}... status=${r.status} error=${r.error}`);
             // 410 Gone = subscription expired, clean up
             if (r.status === 410 || r.status === 404) {
               expiredEndpoints.push(subs[i].endpoint);
+              console.log(`[PUSH] Removing expired subscription (${r.status})`);
             }
           }
         } else {
           failed++;
+          console.error(`[PUSH] ✗ Promise rejected for sub[${i}]:`, result.reason);
         }
       });
 
