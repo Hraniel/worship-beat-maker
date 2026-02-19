@@ -97,26 +97,24 @@ const AdminAnalytics: React.FC = () => {
         const cancelList = (cancelData as unknown as CancellationReason[]) || [];
         setCancellations(cancelList);
 
-        // Fetch user emails for cancellations
-        if (cancelList.length > 0) {
-          try {
-            const { data: session } = await supabase.auth.getSession();
-            const token = session?.session?.access_token;
-            if (token) {
-              const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-              const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-get-users`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              if (resp.ok) {
-                const { users } = await resp.json();
-                const emailMap = new Map<string, string>();
-                users?.forEach((u: { id: string; email: string }) => emailMap.set(u.id, u.email));
-                setUserEmailMap(emailMap);
-              }
+        // Fetch user emails for online users & cancellations
+        try {
+          const { data: session } = await supabase.auth.getSession();
+          const token = session?.session?.access_token;
+          if (token) {
+            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+            const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-get-users`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (resp.ok) {
+              const { users } = await resp.json();
+              const emailMap = new Map<string, string>();
+              users?.forEach((u: { id: string; email: string }) => emailMap.set(u.id, u.email));
+              setUserEmailMap(emailMap);
             }
-          } catch (e) {
-            console.error('Failed to fetch user emails:', e);
           }
+        } catch (e) {
+          console.error('Failed to fetch user emails:', e);
         }
       } catch (e) {
         console.error('Analytics error:', e);
