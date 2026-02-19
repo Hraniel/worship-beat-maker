@@ -186,7 +186,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
         </div>
 
         {/* Action button */}
-        {pack.is_available && !pack.purchased ? (
+        {pack.is_available && !pack.purchased && !pack.removedFromLibrary ? (
           <Button
             size="sm"
             onClick={handlePurchase}
@@ -201,6 +201,15 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
                 {pack.price_cents === 0 ? 'Obter Grátis' : 'Comprar'}
               </>
             )}
+          </Button>
+        ) : pack.removedFromLibrary ? (
+          <Button
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); navigate(`/store/${pack.id}`); }}
+            className="w-full h-8 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Incluir Grátis
           </Button>
         ) : pack.purchased ? (
           <div className="text-center text-[11px] text-emerald-600 font-medium py-1 flex items-center justify-center gap-1">
