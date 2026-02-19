@@ -155,9 +155,11 @@ const Dashboard = () => {
 
   const badge = tierBadge[tier];
 
-  const displayPacks = dbPacks.length > 0
-    ? [...dbPacks, ...STATIC_PACKS.filter(sp => !dbPacks.some(dp => dp.name === sp.name))]
-    : STATIC_PACKS;
+  // Admin panel: only real DB packs with valid UUIDs (never static fallbacks)
+  const adminPacks = dbPacks;
+
+  // Store display: only real DB packs (static fallbacks removed — DB is the source of truth)
+  const displayPacks = dbPacks;
 
   const handleManageSubscription = async () => {
     setPortalLoading(true);
@@ -339,7 +341,7 @@ const Dashboard = () => {
               <span className="text-sm font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Painel Administrativo</span>
             </div>
             <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 p-4">
-              <AdminPackManager packs={displayPacks} onRefresh={refetch} />
+              <AdminPackManager packs={adminPacks} onRefresh={refetch} />
             </div>
           </div>
         )}
