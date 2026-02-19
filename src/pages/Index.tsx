@@ -155,7 +155,29 @@ const Index = () => {
     }
   }, []);
 
-  // Apply audio settings (auto-pan when side is selected, reset to center on mono)
+  // Swipe-back / browser back gesture: fecha o painel aberto em vez de navegar
+  useEffect(() => {
+    const hasOpenPanel =
+      mobileMenuOpen || settingsOpen || spotifySheetOpen || performanceModeOpen || !!upgradeGate || editMode;
+
+    if (hasOpenPanel) {
+      window.history.pushState(null, '', window.location.href);
+    }
+
+    const handlePopState = () => {
+      if (mobileMenuOpen) { setMobileMenuOpen(false); return; }
+      if (settingsOpen) { setSettingsOpen(false); return; }
+      if (spotifySheetOpen) { setSpotifySheetOpen(false); return; }
+      if (performanceModeOpen) { setPerformanceModeOpen(false); return; }
+      if (upgradeGate) { setUpgradeGate(null); return; }
+      if (editMode) { setEditMode(false); return; }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [mobileMenuOpen, settingsOpen, spotifySheetOpen, performanceModeOpen, upgradeGate, editMode]);
+
+
   const handleAudioSettingsChange = useCallback((settings: AudioSettings) => {
     setAudioSettings(settings);
 
