@@ -5,9 +5,9 @@ import { useBodyScroll } from '@/hooks/useBodyScroll';
 import { useLandingConfig, type LandingFeature } from '@/hooks/useLandingConfig';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
-import appPadGrid from '@/assets/app-pad-grid.png';
-import appSetlist from '@/assets/app-setlist.png';
-import appMixer from '@/assets/app-mixer.png';
+import appPadGridDefault from '@/assets/app-pad-grid.png';
+import appSetlistDefault from '@/assets/app-setlist.png';
+import appMixerDefault from '@/assets/app-mixer.png';
 import {
   Music, Headphones, Zap, Crown, Check, X, ChevronDown,
   Layers, Sparkles, Volume2, ArrowRight, Drum, AudioWaveform,
@@ -340,7 +340,85 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
 };
 
 
-// Stats — dynamic styles (with optional image per stat)
+// App Screenshots section — 3 feature mockup images
+const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
+  const bg = config.screenshots_bg || 'hsl(0 0% 97%)';
+  const titleColor = config.screenshots_title_color || 'hsl(220 15% 10%)';
+  const subtitleColor = config.screenshots_subtitle_color || 'hsl(220 15% 40%)';
+
+  const shots = [
+    {
+      key: 'screenshot_1',
+      defaultImg: appPadGridDefault,
+      defaultTitle: config.screenshot_1_title || 'Pad Grid',
+      defaultDesc: config.screenshot_1_desc || 'Pads totalmente personalizáveis com cores, efeitos e sons da sua biblioteca.',
+    },
+    {
+      key: 'screenshot_2',
+      defaultImg: appSetlistDefault,
+      defaultTitle: config.screenshot_2_title || 'Repertório',
+      defaultDesc: config.screenshot_2_desc || 'Organize suas músicas em setlists e acesse o tom e BPM de cada uma.',
+    },
+    {
+      key: 'screenshot_3',
+      defaultImg: appMixerDefault,
+      defaultTitle: config.screenshot_3_title || 'Mixer',
+      defaultDesc: config.screenshot_3_desc || 'Controle de volume e pan individual por pad, em tempo real.',
+    },
+  ];
+
+  if (config.screenshots_enabled === 'false') return null;
+
+  return (
+    <section style={{
+      background: bg,
+      paddingTop: config.screenshots_pt ? `${config.screenshots_pt}px` : '80px',
+      paddingBottom: config.screenshots_pb ? `${config.screenshots_pb}px` : '96px',
+      paddingLeft: '1rem',
+      paddingRight: '1rem',
+    }}>
+      <div className="max-w-5xl mx-auto">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-12">
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">App Glory Pads</motion.p>
+          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
+            {config.screenshots_title || 'Tudo que você precisa, em um só lugar'}
+          </motion.h2>
+          <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto text-base" style={{ color: subtitleColor }}>
+            {config.screenshots_subtitle || 'Interface intuitiva feita para músicos de louvor profissionais.'}
+          </motion.p>
+        </motion.div>
+
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {shots.map((shot, i) => {
+            const imgSrc = config[`${shot.key}_image`] || shot.defaultImg;
+            const title = config[`${shot.key}_title`] || shot.defaultTitle;
+            const desc = config[`${shot.key}_desc`] || shot.defaultDesc;
+            return (
+              <motion.div key={shot.key} variants={fadeUp} custom={i} className="group">
+                <div className="relative rounded-2xl overflow-hidden mb-4 shadow-lg"
+                  style={{ border: '1px solid hsl(0 0% 0% / 0.07)' }}>
+                  <img
+                    src={imgSrc}
+                    alt={title}
+                    className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    style={{ aspectRatio: '9/16', objectFit: 'cover', objectPosition: 'top' }}
+                    loading="lazy"
+                  />
+                  {/* subtle overlay */}
+                  <div className="absolute inset-0 pointer-events-none rounded-2xl"
+                    style={{ background: 'linear-gradient(to bottom, transparent 60%, hsl(0 0% 0% / 0.12) 100%)' }} />
+                </div>
+                <h3 className="text-base font-bold mb-1.5" style={{ color: titleColor }}>{title}</h3>
+                <p className="text-sm leading-relaxed" style={{ color: subtitleColor }}>{desc}</p>
+              </motion.div>
+            );
+          })}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
 // Stats — dynamic styles (with optional image per stat)
 const Stats = ({ config }: { config: Record<string, string> }) => {
@@ -755,6 +833,9 @@ const Landing = () => {
 
       {/* WHITE features */}
       <Features navigate={navigate} config={config} landingFeatures={landingFeatures} />
+
+      {/* WHITE app screenshots */}
+      <AppScreenshots config={config} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
