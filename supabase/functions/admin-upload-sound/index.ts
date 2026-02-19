@@ -343,6 +343,43 @@ Deno.serve(async (req) => {
       if (insertErr) throw insertErr;
       return new Response(JSON.stringify({ success: true, packId: newPack.id }), { headers: corsHeaders });
 
+    } else if (action === 'delete-pack') {
+      const packId = formData.get('packId') as string;
+      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
+      }
+
+      // 1. Get all sounds to delete their files
+      const { data: sounds } = await supabase
+        .from('pack_sounds')
+        .select('file_path, preview_path')
+        .eq('pack_id', packId);
+
+      // 2. Delete sound files from storage
+      const soundPaths = (sounds || []).map(s => s.file_path).filter(Boolean) as string[];
+      const previewPaths = (sounds || []).map(s => s.preview_path).filter(Boolean) as string[];
+      if (soundPaths.length > 0) await supabase.storage.from('sound-packs').remove(soundPaths);
+      if (previewPaths.length > 0) await supabase.storage.from('sound-previews').remove(previewPaths);
+
+      // 3. Get pack to delete banner/icon from storage
+      const { data: pack } = await supabase.from('store_packs').select('banner_url, icon_name').eq('id', packId).single();
+      if (pack?.banner_url) {
+        const p = pack.banner_url.startsWith('http') ? pack.banner_url.split('/sound-previews/').pop() : pack.banner_url;
+        if (p) await supabase.storage.from('sound-previews').remove([p]);
+      }
+      if (pack?.icon_name?.startsWith('pack-icons/')) {
+        await supabase.storage.from('sound-previews').remove([pack.icon_name]);
+      }
+
+      // 4. Delete pack_sounds rows (cascade would also work but explicit is safer)
+      await supabase.from('pack_sounds').delete().eq('pack_id', packId);
+
+      // 5. Delete the pack itself
+      const { error: delErr } = await supabase.from('store_packs').delete().eq('id', packId);
+      if (delErr) throw delErr;
+
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+
     } else {
       return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: corsHeaders });
     }
