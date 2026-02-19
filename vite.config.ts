@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
+      includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png", "sw-push.js"],
       manifest: {
         name: "Glory Pads",
         short_name: "GloryPads",
@@ -53,6 +53,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         cleanupOutdatedCaches: true,
+        // Import our push handler into the generated SW
+        importScripts: ["/sw-push.js"],
       },
     }),
   ].filter(Boolean),
