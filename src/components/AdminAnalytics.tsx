@@ -124,35 +124,50 @@ const AdminAnalytics: React.FC = () => {
     })();
   }, []);
 
-  // Helper: extract OnlineUser list from presenceState
+  // Helper: extract OnlineUser list from presenceState (excludes admin observer)
   const extractOnlineUsers = (state: Record<string, unknown[]>): OnlineUser[] => {
     const users: OnlineUser[] = [];
     for (const [key, presences] of Object.entries(state)) {
       const first = presences[0] as { user_id?: string; online_at?: string } | undefined;
-      if (first?.user_id) {
+      if (first?.user_id && first.user_id !== '__admin_observer__') {
         users.push({ user_id: first.user_id, online_at: first.online_at ?? new Date().toISOString(), presenceKey: key });
       }
     }
     return users;
   };
 
-  // Real-time online users — reads presence from the same channel users join on Dashboard
+  // Real-time online users — reads presence from the same channel users join on Dashboard/App
   useEffect(() => {
-    const channel = supabase.channel('glory-pads-online');
+    // Must include presence config so Supabase treats this as a presence-capable channel
+    const channel = supabase.channel('glory-pads-online', {
+      config: { presence: { key: 'admin-observer' } },
+    });
 
     const syncUsers = () => {
       const state = channel.presenceState<{ user_id: string; online_at: string }>();
-      setOnlineUsers(extractOnlineUsers(state as Record<string, unknown[]>));
+      // Filter out the admin-observer entry itself
+      const filtered: Record<string, unknown[]> = {};
+      for (const [key, val] of Object.entries(state as Record<string, unknown[]>)) {
+        if (key !== 'admin-observer') filtered[key] = val;
+      }
+      setOnlineUsers(extractOnlineUsers(filtered));
     };
 
     channel
       .on('presence', { event: 'sync' }, syncUsers)
       .on('presence', { event: 'join' }, syncUsers)
       .on('presence', { event: 'leave' }, syncUsers)
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Track as observer (won't count as a real user in the list)
+          await channel.track({ user_id: '__admin_observer__', online_at: new Date().toISOString() });
+          syncUsers();
+        }
+      });
 
     channelRef.current = channel;
     return () => {
+      channel.untrack();
       channel.unsubscribe();
     };
   }, []);
