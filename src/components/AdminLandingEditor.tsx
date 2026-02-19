@@ -208,10 +208,37 @@ const ImageUploadField: React.FC<{
   );
 };
 
+// Keys per tab used for "Save all" feature
+const TAB_KEYS: Record<string, string[]> = {
+  navbar: [
+    'announcement_enabled', 'announcement_text', 'announcement_link', 'announcement_link_label', 'announcement_bg', 'announcement_color',
+    'nav_link_0_label', 'nav_link_0_href', 'nav_link_1_label', 'nav_link_1_href', 'nav_link_2_label', 'nav_link_2_href',
+    'nav_btn_login_label', 'nav_btn_signup_label',
+    'nav_bg', 'nav_border_color', 'nav_link_color', 'nav_link_hover_color',
+    'nav_btn_login_bg', 'nav_btn_login_color', 'nav_btn_signup_bg', 'nav_btn_signup_color',
+  ],
+  hero: [
+    'hero_badge', 'hero_title', 'hero_subtitle',
+    'hero_bg', 'hero_title_color', 'hero_subtitle_color', 'hero_badge_bg', 'hero_badge_color',
+    'hero_title_size', 'hero_pt', 'hero_pb',
+  ],
+  textos: [
+    'features_title', 'features_subtitle', 'store_title', 'store_subtitle',
+    'plans_title', 'plans_subtitle', 'show_pricing', 'cta_title', 'cta_subtitle',
+  ],
+  conteudo: [
+    'how_main_title', 'how_step_1_title', 'how_step_1_desc', 'how_step_2_title', 'how_step_2_desc', 'how_step_3_title', 'how_step_3_desc',
+    'footer_tagline', 'footer_copyright',
+    'footer_link_0_label', 'footer_link_0_href', 'footer_link_1_label', 'footer_link_1_href', 'footer_link_2_label', 'footer_link_2_href',
+    'stat_1_value', 'stat_1_label', 'stat_2_value', 'stat_2_label', 'stat_3_value', 'stat_3_label', 'stat_4_value', 'stat_4_label',
+  ],
+};
+
 const AdminLandingEditor: React.FC = () => {
   const [rows, setRows] = useState<ConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
+  const [savingAll, setSavingAll] = useState(false);
   const [activeTab, setActiveTab] = useState<ActiveTab>('textos');
   const [previewOpen, setPreviewOpen] = useState(false);
 
@@ -258,6 +285,20 @@ const AdminLandingEditor: React.FC = () => {
   const saveKeyAndToast = async (key: string) => {
     await saveKey(key);
     toast.success('Salvo!');
+  };
+
+  const saveAllKeys = async () => {
+    const keys = TAB_KEYS[activeTab];
+    if (!keys) return;
+    setSavingAll(true);
+    try {
+      await Promise.all(keys.map(k => saveKey(k)));
+      toast.success('Todas as alterações salvas!');
+    } catch {
+      toast.error('Erro ao salvar algumas chaves');
+    } finally {
+      setSavingAll(false);
+    }
   };
 
   const toggleShowPricing = async (v: boolean) => {
@@ -359,13 +400,24 @@ const AdminLandingEditor: React.FC = () => {
             </button>
           ))}
         </div>
-        <button onClick={() => setPreviewOpen(true)}
-          className="shrink-0 flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all"
-          style={{ background: 'hsl(262 75% 55% / 0.15)', color: 'hsl(262 75% 70%)', border: '1px solid hsl(262 75% 55% / 0.3)' }}
-          title="Preview ao vivo da landing page">
-          <MonitorPlay className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Preview</span>
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {TAB_KEYS[activeTab] && (
+            <button onClick={saveAllKeys} disabled={savingAll}
+              className="flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-semibold transition-all"
+              style={{ background: 'hsl(142 70% 40% / 0.2)', color: 'hsl(142 70% 55%)', border: '1px solid hsl(142 70% 40% / 0.35)' }}
+              title="Salvar todas as alterações desta aba">
+              {savingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              <span className="hidden sm:inline">Salvar tudo</span>
+            </button>
+          )}
+          <button onClick={() => setPreviewOpen(true)}
+            className="flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all"
+            style={{ background: 'hsl(262 75% 55% / 0.15)', color: 'hsl(262 75% 70%)', border: '1px solid hsl(262 75% 55% / 0.3)' }}
+            title="Preview ao vivo da landing page">
+            <MonitorPlay className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Preview</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Recursos tab ── */}
@@ -442,6 +494,7 @@ const AdminLandingEditor: React.FC = () => {
           </div>
 
           {/* Cores da Navbar */}
+          {/* Cores da Navbar */}
           <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores da Navbar</p>
             <div>
@@ -452,9 +505,46 @@ const AdminLandingEditor: React.FC = () => {
               <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor da Borda</label>
               <ColorFieldInline value={getVal('nav_border_color') || 'hsl(0 0% 0% / 0.08)'} onChange={v => setVal('nav_border_color', v)} onBlur={() => saveKey('nav_border_color')} />
             </div>
+          </div>
+
+          {/* Cores dos Links de Navegação */}
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores dos Links de Navegação</p>
             <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor dos Links</label>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor Normal</label>
               <ColorFieldInline value={getVal('nav_link_color') || 'hsl(220 15% 45%)'} onChange={v => setVal('nav_link_color', v)} onBlur={() => saveKey('nav_link_color')} />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor Hover</label>
+              <ColorFieldInline value={getVal('nav_link_hover_color') || 'hsl(220 15% 15%)'} onChange={v => setVal('nav_link_hover_color', v)} onBlur={() => saveKey('nav_link_hover_color')} />
+            </div>
+          </div>
+
+          {/* Cores dos Botões */}
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores dos Botões da Navbar</p>
+            <p className="text-[9px]" style={mutedStyle}>Botão "Entrar" (secundário) e botão "Criar Conta" (principal).</p>
+            <div className="space-y-3 pb-3" style={{ borderBottom: '1px solid hsl(0 0% 100% / 0.06)' }}>
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Entrar"</p>
+              <div>
+                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
+                <ColorFieldInline value={getVal('nav_btn_login_bg') || 'hsl(0 0% 0% / 0)'} onChange={v => setVal('nav_btn_login_bg', v)} onBlur={() => saveKey('nav_btn_login_bg')} hint="Use hsl(0 0% 0% / 0) para transparente" />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Texto</label>
+                <ColorFieldInline value={getVal('nav_btn_login_color') || 'hsl(220 15% 30%)'} onChange={v => setVal('nav_btn_login_color', v)} onBlur={() => saveKey('nav_btn_login_color')} />
+              </div>
+            </div>
+            <div className="space-y-3">
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Começar grátis"</p>
+              <div>
+                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
+                <ColorFieldInline value={getVal('nav_btn_signup_bg') || 'hsl(262 80% 55%)'} onChange={v => setVal('nav_btn_signup_bg', v)} onBlur={() => saveKey('nav_btn_signup_bg')} />
+              </div>
+              <div>
+                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Texto</label>
+                <ColorFieldInline value={getVal('nav_btn_signup_color') || 'hsl(0 0% 100%)'} onChange={v => setVal('nav_btn_signup_color', v)} onBlur={() => saveKey('nav_btn_signup_color')} />
+              </div>
             </div>
           </div>
         </div>
