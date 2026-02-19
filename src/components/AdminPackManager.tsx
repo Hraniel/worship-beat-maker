@@ -506,6 +506,11 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   };
 
   const handleDeletePack = async (pack: StorePackData) => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(pack.id)) {
+      toast.error(`Este pack tem um ID legado ("${pack.id}") e não pode ser excluído por aqui. Delete-o manualmente no banco de dados.`);
+      return;
+    }
     const soundCount = pack.sounds.length;
     const confirmMsg = soundCount > 0
       ? `Excluir permanentemente "${pack.name}" e seus ${soundCount} sons? Esta ação não pode ser desfeita.`
