@@ -16,8 +16,32 @@ import {
   Crown, Zap, Play, LogOut, Store,
   User, Mail, Calendar, Loader2,
   ChevronDown, ChevronRight, Drum, Waves, Sparkles, Music, Headphones,
-  Volume2, Layers, AudioWaveform, Star, Lock, ShieldCheck, Filter, Search, X
+  Volume2, Layers, AudioWaveform, Lock, ShieldCheck, Filter, Search, X,
+  Library, RotateCcw, Package, CheckCircle, BookOpen
 } from 'lucide-react';
+
+async function invokeWithToken(fnName: string, body: object) {
+  const { supabase: supabaseClient } = await import('@/integrations/supabase/client');
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const res = await fetch(
+    `https://${projectId}.supabase.co/functions/v1/${fnName}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || json?.message || 'Erro na função');
+  return json;
+}
 
 const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: string }> = {
   free: { label: 'Free', icon: null, cls: 'bg-gray-100 text-gray-600' },
@@ -104,6 +128,8 @@ const Dashboard = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ drums: true, loops: false, efeitos: false });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [libraryFilter, setLibraryFilter] = useState<'all' | 'acquired' | 'available' | 'removed'>('all');
+  const [togglingPackId, setTogglingPackId] = useState<string | null>(null);
   const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // ── Track user presence so admin can see online count ──────────────────────
@@ -155,11 +181,34 @@ const Dashboard = () => {
     ? new Date(subscriptionEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
 
+  // Library derived data
+  const activePacks = dbPacks.filter(p => p.purchased);
+  const removedPacks = dbPacks.filter(p => p.removedFromLibrary);
+
+  const handleRestorePack = async (packId: string) => {
+    setTogglingPackId(packId);
+    try {
+      await invokeWithToken('toggle-pack-library', { packId, removed: false });
+      toast.success('Pack restaurado na sua biblioteca!');
+      refetch();
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao restaurar pack');
+    } finally {
+      setTogglingPackId(null);
+    }
+  };
+
   const filteredPacks = displayPacks.filter(p => {
     const matchesCategory = activeCategory === 'Todos' || p.category === activeCategory;
     const q = searchQuery.toLowerCase().trim();
     const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
-    return matchesCategory && matchesSearch;
+
+    let matchesLibrary = true;
+    if (libraryFilter === 'acquired') matchesLibrary = p.purchased;
+    else if (libraryFilter === 'available') matchesLibrary = p.is_available && !p.purchased && !p.removedFromLibrary;
+    else if (libraryFilter === 'removed') matchesLibrary = p.removedFromLibrary;
+
+    return matchesCategory && matchesSearch && matchesLibrary;
   });
 
   // Select category and auto-expand its parent group
@@ -296,6 +345,102 @@ const Dashboard = () => {
         )}
 
         {/* Store header */}
+        {/* ── Minha Biblioteca ─────────────────────────────────────────── */}
+        {!packsLoading && (activePacks.length > 0 || removedPacks.length > 0) && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2.5 mb-4">
+              <Library className="h-5 w-5 text-violet-500" />
+              <h2 className="text-lg font-bold text-gray-900">Minha Biblioteca</h2>
+              <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">
+                {activePacks.length} ativo{activePacks.length !== 1 ? 's' : ''}
+                {removedPacks.length > 0 && ` · ${removedPacks.length} removido${removedPacks.length !== 1 ? 's' : ''}`}
+              </span>
+            </div>
+
+            {/* Active packs */}
+            {activePacks.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
+                  <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Ativos</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {activePacks.map(pack => (
+                    <div
+                      key={pack.id}
+                      onClick={() => pack.id.length === 36 && navigate(`/store/${pack.id}`)}
+                      className="group bg-white rounded-xl border border-gray-200 hover:shadow-md hover:border-gray-300 transition-all duration-200 overflow-hidden cursor-pointer"
+                    >
+                      <div className={`w-full h-16 ${pack.color} flex items-center justify-center`}>
+                        {pack.banner_url ? (
+                          <img
+                            src={pack.banner_url.startsWith('http') ? pack.banner_url : `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/sound-previews/${pack.banner_url}`}
+                            alt={pack.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Music className="h-5 w-5 text-white/70" />
+                        )}
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-xs font-semibold text-gray-900 leading-snug truncate">{pack.name}</p>
+                        <p className="text-[10px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+                          <CheckCircle className="h-2.5 w-2.5" /> Adquirido
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Removed packs */}
+            {removedPacks.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2.5">
+                  <Package className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Removidos</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {removedPacks.map(pack => (
+                    <div
+                      key={pack.id}
+                      className="bg-white rounded-xl border border-dashed border-gray-200 overflow-hidden opacity-75 hover:opacity-100 transition-all duration-200"
+                    >
+                      <div className={`w-full h-16 ${pack.color} flex items-center justify-center opacity-50`}>
+                        {pack.banner_url ? (
+                          <img
+                            src={pack.banner_url.startsWith('http') ? pack.banner_url : `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/storage/v1/object/public/sound-previews/${pack.banner_url}`}
+                            alt={pack.name}
+                            className="w-full h-full object-cover grayscale"
+                          />
+                        ) : (
+                          <Music className="h-5 w-5 text-white/70" />
+                        )}
+                      </div>
+                      <div className="p-2.5">
+                        <p className="text-xs font-semibold text-gray-500 leading-snug truncate">{pack.name}</p>
+                        <button
+                          onClick={() => handleRestorePack(pack.id)}
+                          disabled={togglingPackId === pack.id}
+                          className="mt-1.5 w-full flex items-center justify-center gap-1 h-6 rounded-lg bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-semibold transition-colors disabled:opacity-50"
+                        >
+                          {togglingPackId === pack.id ? (
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          ) : (
+                            <><RotateCcw className="h-2.5 w-2.5" /> Restaurar</>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Glory Store ──────────────────────────────────────────────── */}
         <div className="mb-6">
           <div className="flex items-center gap-2.5 mb-1">
             <Store className="h-5 w-5 text-gray-400" />
@@ -304,24 +449,49 @@ const Dashboard = () => {
           <p className="text-sm text-gray-500 max-w-lg mb-4">
             Descubra novos sons, packs e texturas para elevar seu louvor.
           </p>
-          {/* Search bar */}
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Buscar packs por nome ou descrição..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full h-10 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+
+          {/* Search + Library filter row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Buscar packs por nome ou descrição..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full h-10 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            {/* Library status filter */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {([
+                { key: 'all', label: 'Todos', icon: <Store className="h-3 w-3" /> },
+                { key: 'acquired', label: 'Adquiridos', icon: <CheckCircle className="h-3 w-3" /> },
+                { key: 'available', label: 'Disponíveis', icon: <BookOpen className="h-3 w-3" /> },
+                { key: 'removed', label: 'Removidos', icon: <Package className="h-3 w-3" /> },
+              ] as const).map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setLibraryFilter(f.key)}
+                  className={`flex items-center gap-1 h-8 px-3 rounded-full text-xs font-medium border transition-colors ${
+                    libraryFilter === f.key
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {f.icon}
+                  {f.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
