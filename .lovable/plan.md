@@ -1,60 +1,59 @@
 
 
-## Corrigir Conflito de Canal no Sistema de Presenca
+## Configuracoes com lista direta no mobile
 
-### Problema
-
-O sistema de usuarios online parou de funcionar por causa de um **conflito de canal Supabase**. Na pagina `/dashboard`, existem **duas assinaturas simultaneas** ao mesmo canal `glory-pads-online`:
-
-1. `usePresenceTracker(user?.id)` -- rastreia o admin como usuario online
-2. `AdminAnalytics` -- se inscreve como `admin-observer` para monitorar
-
-O Supabase **reutiliza instancias de canal pelo nome**. Quando dois hooks tentam criar `supabase.channel('glory-pads-online')` com configs diferentes (um com `key: userId`, outro com `key: 'admin-observer'`), o segundo pode sobrescrever ou conflitar com o primeiro, quebrando o tracking de presenca.
+### Problema atual
+No mobile, o usuario precisa clicar no icone de menu (hamburger) para ver as opcoes das abas. Isso cria um "menu dentro do menu" que e confuso.
 
 ### Solucao
+Transformar o fluxo mobile em **duas telas dentro do dialog**:
 
-Dar um **nome unico ao canal do observador admin** no `AdminAnalytics.tsx`, separando-o do canal de tracking dos usuarios.
+1. **Tela 1 (lista)**: Ao abrir as configuracoes, o usuario ve imediatamente a lista de todas as opcoes (Audio, Notificacoes, Loja, Planos, Guia, Sobre) como itens clicaveis em lista vertical
+2. **Tela 2 (conteudo)**: Ao clicar em uma opcao, o conteudo dessa aba aparece com um botao de voltar no topo para retornar a lista
 
-### Arquivos a Editar
+Desktop/landscape continua com o sidebar lateral como esta hoje.
 
-#### 1. `src/components/AdminAnalytics.tsx` (linha 144)
+### Detalhes Tecnicos
 
-Mudar o nome do canal do admin de `glory-pads-online` para `glory-pads-online-observer` (ou qualquer nome diferente). Porem, isso nao funcionaria porque o canal precisa **escutar** a presenca dos outros usuarios no canal original.
+#### Arquivo: `src/components/SettingsDialog.tsx`
 
-**Abordagem correta**: manter o nome do canal como `glory-pads-online`, mas **remover o `usePresenceTracker` da pagina Dashboard** ja que o admin nao precisa aparecer como "online" para si mesmo.
+**Remover**:
+- O drawer lateral (mobileDrawer) com backdrop e painel deslizante
+- O botao de hamburger (Menu icon) no header
+- Os imports de `Menu`, `X` que so eram usados no drawer
 
-Alternativa melhor: alterar o `usePresenceTracker` para **nao rodar quando o usuario for admin**, ou mover a chamada para fora do componente Dashboard.
+**Adicionar**:
+- Um estado `activeTab` que começa como `null` no mobile (mostra a lista) ou com valor quando vem de `initialTab`
+- Quando `activeTab === null` e mobile: renderiza a lista de opcoes (TAB_ITEMS) como botoes verticais com icone + label + chevron
+- Quando `activeTab !== null`: renderiza o conteudo da aba com um header contendo botao de voltar (seta para esquerda) + titulo da aba
+- No desktop/landscape: comportamento atual com sidebar permanece inalterado
 
-### Solucao Final Escolhida
+**Fluxo mobile**:
+```text
++----------------------------------+
+| Configuracoes                  X |
+|----------------------------------|
+| [icon] Audio              >     |
+| [icon] Notificacoes       >     |
+| [icon] Loja               >     |
+| [icon] Planos             >     |
+| [icon] Guia               >     |
+| [icon] Sobre              >     |
++----------------------------------+
 
-No `Dashboard.tsx`, **condicionar** a chamada do `usePresenceTracker` para nao rodar quando o admin estiver logado (ja que o admin observer ocupa o mesmo canal via `AdminAnalytics`). Isso elimina o conflito.
+  (usuario clica em "Audio")
 
-#### 1. Editar `src/pages/Dashboard.tsx`
++----------------------------------+
+| <- Audio                       X |
+|----------------------------------|
+|                                  |
+|  Conteudo da aba Audio           |
+|  (com scroll vertical)           |
+|                                  |
++----------------------------------+
+```
 
-- Remover `usePresenceTracker(user?.id)` do Dashboard
-- O tracking de presenca do usuario ja esta coberto pelo `Index.tsx` (pagina `/app`)
-- No Dashboard, o admin ja esta no canal via `AdminAnalytics` como observador
-
-#### 2. Editar `src/hooks/usePresenceTracker.ts`
-
-- Adicionar um sufixo unico ao nome do canal para evitar conflito caso o mesmo usuario abra multiplas paginas:
-  ```text
-  supabase.channel(`glory-pads-online:${userId}`, { config: { presence: { key: userId } } })
-  ```
-  Porem isso quebraria a presenca pois cada usuario estaria em seu proprio canal.
-
-**Melhor solucao**: manter o canal com nome `glory-pads-online` no hook, mas remover a chamada duplicada no Dashboard. O canal do `AdminAnalytics` usa o **mesmo nome** propositalmente para ler o estado de presenca de todos os usuarios.
-
-### Mudancas Finais
-
-#### `src/pages/Dashboard.tsx`
-- Remover a linha `usePresenceTracker(user?.id)` (linha 136)
-- Remover o import de `usePresenceTracker` (linha 7)
-- Usuarios comuns que visitam o Dashboard tambem ficam trackeados pelo `/app` (Index.tsx)
-
-### Por que funciona
-
-- Usuarios ficam online via `usePresenceTracker` no `Index.tsx` (pagina `/app`)
-- Admin observa via canal separado no `AdminAnalytics` com key `admin-observer`
-- Sem dois hooks competindo pelo mesmo canal na mesma pagina, o conflito desaparece
-
+**Logica principal**:
+- Mobile portrait: `activeTab === null` mostra lista, `activeTab !== null` mostra conteudo com botao voltar
+- Desktop/landscape: `activeTab` sempre tem valor, sidebar + conteudo lado a lado (sem mudanca)
+- `initialTab` prop: se fornecido, abre direto no conteudo dessa aba (pula a lista)
