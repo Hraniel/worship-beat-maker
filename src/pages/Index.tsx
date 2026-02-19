@@ -162,12 +162,18 @@ const Index = () => {
   const [settingsTab, setSettingsTab] = useState<string | undefined>(undefined);
   const [audioSettings, setAudioSettings] = useState<AudioSettings>(loadAudioSettings);
 
-  // Reopen settings on "plans" tab when returning from /pricing
+  // Reopen settings when returning from /pricing
   useEffect(() => {
     const flag = sessionStorage.getItem('settings-return-tab');
     if (flag) {
       sessionStorage.removeItem('settings-return-tab');
       setSettingsTab(flag);
+      setSettingsOpen(true);
+    }
+    const openSettings = sessionStorage.getItem('open-settings');
+    if (openSettings) {
+      sessionStorage.removeItem('open-settings');
+      setSettingsTab(undefined);
       setSettingsOpen(true);
     }
     // Restore previously selected song when returning from /pricing (upgrade gate flow)
