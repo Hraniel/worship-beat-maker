@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, ShoppingBag, DollarSign, Package, Users, CreditCard,
-  Zap, Crown, Radio, AlertCircle, ChevronDown, ChevronUp,
+  Zap, Crown, Radio, AlertCircle, ChevronDown, ChevronUp, RefreshCw,
 } from 'lucide-react';
 
 interface Purchase {
@@ -80,6 +80,8 @@ const AdminAnalytics: React.FC = () => {
   const [onlineExpanded, setOnlineExpanded] = useState(false);
   const [cancellations, setCancellations] = useState<CancellationReason[]>([]);
   const [userEmailMap, setUserEmailMap] = useState<Map<string, string>>(new Map());
+  const [presenceRefreshKey, setPresenceRefreshKey] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
@@ -137,9 +139,11 @@ const AdminAnalytics: React.FC = () => {
   };
 
   // Real-time online users — reads presence from the same channel users join on Dashboard/App
+  // presenceRefreshKey triggers a full reconnect when the user clicks refresh
   useEffect(() => {
+    setIsRefreshing(true);
     // Must include presence config so Supabase treats this as a presence-capable channel
-    const channel = supabase.channel('glory-pads-online', {
+    const channel = supabase.channel(`glory-pads-online`, {
       config: { presence: { key: 'admin-observer' } },
     });
 
@@ -151,6 +155,7 @@ const AdminAnalytics: React.FC = () => {
         if (key !== 'admin-observer') filtered[key] = val;
       }
       setOnlineUsers(extractOnlineUsers(filtered));
+      setIsRefreshing(false);
     };
 
     channel
@@ -162,15 +167,17 @@ const AdminAnalytics: React.FC = () => {
           // Track as observer (won't count as a real user in the list)
           await channel.track({ user_id: '__admin_observer__', online_at: new Date().toISOString() });
           syncUsers();
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setIsRefreshing(false);
         }
       });
 
     channelRef.current = channel;
     return () => {
       channel.untrack();
-      channel.unsubscribe();
+      supabase.removeChannel(channel);
     };
-  }, []);
+  }, [presenceRefreshKey]);
 
   useEffect(() => {
     (async () => {
@@ -279,34 +286,51 @@ const AdminAnalytics: React.FC = () => {
       {/* Online users panel */}
       <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl overflow-hidden">
         {/* Header row */}
-        <button
-          onClick={() => setOnlineExpanded(v => !v)}
-          className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-emerald-500/5 transition-colors"
-        >
-          <Radio className="h-4 w-4 text-emerald-400 animate-pulse shrink-0" />
-          <p className="text-xs font-semibold text-emerald-400">
-            {onlineUsers.length} usuário{onlineUsers.length !== 1 ? 's' : ''} online agora
-          </p>
-          <div className="flex gap-1 ml-2">
-            {onlineUsers.slice(0, 5).map((u) => (
-              <div
-                key={u.presenceKey}
-                className="h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center text-[9px] font-bold text-white border border-emerald-400/40"
-                title={u.user_id}
-              >
-                {u.user_id.slice(0, 1).toUpperCase()}
-              </div>
-            ))}
-            {onlineUsers.length > 5 && (
-              <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] text-muted-foreground font-medium">
-                +{onlineUsers.length - 5}
-              </div>
-            )}
-          </div>
-          <div className="ml-auto shrink-0 text-emerald-400">
+        <div className="flex items-center gap-2 px-4 py-2.5">
+          <button
+            onClick={() => setOnlineExpanded(v => !v)}
+            className="flex-1 flex items-center gap-2 hover:opacity-80 transition-opacity text-left"
+          >
+            <Radio className="h-4 w-4 text-emerald-400 animate-pulse shrink-0" />
+            <p className="text-xs font-semibold text-emerald-400">
+              {onlineUsers.length} usuário{onlineUsers.length !== 1 ? 's' : ''} online agora
+            </p>
+            <div className="flex gap-1 ml-2">
+              {onlineUsers.slice(0, 5).map((u) => (
+                <div
+                  key={u.presenceKey}
+                  className="h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center text-[9px] font-bold text-white border border-emerald-400/40"
+                  title={u.user_id}
+                >
+                  {u.user_id.slice(0, 1).toUpperCase()}
+                </div>
+              ))}
+              {onlineUsers.length > 5 && (
+                <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[9px] text-muted-foreground font-medium">
+                  +{onlineUsers.length - 5}
+                </div>
+              )}
+            </div>
+          </button>
+          {/* Refresh button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setPresenceRefreshKey(k => k + 1);
+            }}
+            disabled={isRefreshing}
+            className="shrink-0 p-1.5 rounded-lg hover:bg-emerald-500/20 text-emerald-400 transition-colors disabled:opacity-50"
+            title="Atualizar usuários online"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </button>
+          <button
+            onClick={() => setOnlineExpanded(v => !v)}
+            className="shrink-0 text-emerald-400 p-1"
+          >
             {onlineExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </div>
-        </button>
+          </button>
+        </div>
 
         {/* Expanded list */}
         {onlineExpanded && onlineUsers.length > 0 && (
