@@ -22,6 +22,7 @@ interface PadGridProps {
   isMasterTier?: boolean;
   tier?: TierKey;
   focusMode?: boolean;
+  bpm?: number;
   onToggleLoop: (padId: string) => void;
   onImportSound: (padId: string, file: File) => void;
   onImportStoreSound: (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => void;
@@ -37,7 +38,7 @@ interface PadGridProps {
 }
 
 const PadGrid: React.FC<PadGridProps> = ({
-  pads, padVolumes, activeLoops, customSounds, padSize, padScale = 65, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free', focusMode,
+  pads, padVolumes, activeLoops, customSounds, padSize, padScale = 65, padEffects, padNames, padPans, padColors, editMode, disabled, panDisabled, isMasterTier: isMaster = false, tier = 'free', focusMode, bpm,
   onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onPadVolumeChange, onEffectsChange, onPadPanChange, onRenamePad, onPadColorChange,
   onResetPad, onResetAllPads, onGateBlocked
 }) => {
@@ -70,6 +71,7 @@ const PadGrid: React.FC<PadGridProps> = ({
           isMasterTier={isMaster}
           effects={padEffects[pad.id]}
           pan={padPans[pad.id] ?? 0}
+          bpm={bpm}
           onToggleLoop={pad.isLoop ? () => onToggleLoop(pad.id) : undefined}
           onImportSound={onImportSound}
           onImportStoreSound={onImportStoreSound}

@@ -133,6 +133,10 @@ export function isLoopEngineRunning() {
   return isRunning;
 }
 
+export function getCurrentBpm(): number {
+  return currentBpm;
+}
+
 export function getActiveLoopIds(): string[] {
   return Array.from(activeLoops.keys());
 }

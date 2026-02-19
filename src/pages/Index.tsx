@@ -14,8 +14,9 @@ import { setMasterVolume, getAudioContext, loadCustomBuffer, removeCustomBuffer,
 import { defaultPads, type SetlistSong } from '@/lib/sounds';
 import { saveCustomSound, getCustomSound, deleteCustomSound, getAllCustomSoundIds, saveCustomSoundsForSong, loadCustomSoundsForSong, deleteCustomSoundsForSong } from '@/lib/custom-sound-store';
 import { addLoop, removeLoop, setLoopBpm, setLoopTimeSignature, updateLoopVolume, stopAllLoops, setMetronomeVolume, getMetronomeVolume } from '@/lib/loop-engine';
+
 import { getAmbientVolume, setAmbientVolume } from '@/lib/ambient-engine';
-import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects } from '@/lib/audio-effects';
+import { type PadEffects, loadAllEffects, saveAllEffects, applyEffects, calcBpmDelayTime } from '@/lib/audio-effects';
 import { type PadColor } from '@/components/PadColorPicker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -312,6 +313,24 @@ const Index = () => {
   useEffect(() => {
     bpmRef.current = bpm;
     setLoopBpm(bpm);
+    // Resync all pads that have BPM-synced delay active
+    setPadEffects((prev) => {
+      const updated: Record<string, typeof prev[string]> = {};
+      let changed = false;
+      Object.entries(prev).forEach(([padId, fx]) => {
+        if (fx.delaySyncBpm && fx.delay > 0) {
+          const newDelayTime = calcBpmDelayTime(bpm, fx.delaySubdivision);
+          updated[padId] = { ...fx, delayTime: newDelayTime };
+          applyEffects(padId, { ...fx, delayTime: newDelayTime });
+          changed = true;
+        } else {
+          updated[padId] = fx;
+        }
+      });
+      if (!changed) return prev;
+      saveAllEffects(updated);
+      return updated;
+    });
   }, [bpm]);
 
   useEffect(() => {
@@ -554,6 +573,8 @@ const Index = () => {
           reverb: cfg.reverb ?? 0,
           delay: cfg.delay ?? 0,
           delayTime: cfg.delayTime ?? 0.3,
+          delaySyncBpm: false,
+          delaySubdivision: '1/4',
         };
       }
 
@@ -999,6 +1020,7 @@ const Index = () => {
                 padSize={padSizeToTextSize(isTablet ? Math.max(padSize, 90) : padSize)}
                 padScale={isTablet ? Math.max(padSize, 90) : padSize}
                 padEffects={padEffects}
+                bpm={bpm}
                 padPans={padPans}
                 onToggleLoop={toggleLoop}
                 onImportSound={handleImportSound}

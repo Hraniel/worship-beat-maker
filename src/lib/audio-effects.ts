@@ -1,6 +1,8 @@
 // Per-pad audio effects chain: EQ (3-band), Reverb (convolver), Delay
 import { getAudioContext, getPadPanner } from './audio-engine';
 
+export type DelaySubdivision = '1/16' | '1/8' | '1/8d' | '1/4' | '1/4d' | '1/2';
+
 export interface PadEffects {
   eqLow: number;   // -12 to 12 dB
   eqMid: number;   // -12 to 12 dB
@@ -8,6 +10,8 @@ export interface PadEffects {
   reverb: number;   // 0 to 1 (dry/wet)
   delay: number;    // 0 to 1 (dry/wet)
   delayTime: number; // 0.1 to 1.0 seconds
+  delaySyncBpm: boolean; // sincronizar delay com BPM do metrônomo
+  delaySubdivision: DelaySubdivision; // subdivisão musical para sync
 }
 
 export const DEFAULT_EFFECTS: PadEffects = {
@@ -17,7 +21,26 @@ export const DEFAULT_EFFECTS: PadEffects = {
   reverb: 0,
   delay: 0,
   delayTime: 0.3,
+  delaySyncBpm: false,
+  delaySubdivision: '1/4',
 };
+
+/**
+ * Converte BPM e uma subdivisão musical em tempo de delay (em segundos).
+ * 'd' = pontuado (dotted) = 1.5x o valor base.
+ */
+export function calcBpmDelayTime(bpm: number, sub: DelaySubdivision): number {
+  const beat = 60 / bpm; // duração de uma semínima em segundos
+  switch (sub) {
+    case '1/16': return beat * 0.25;
+    case '1/8':  return beat * 0.5;
+    case '1/8d': return beat * 0.75;
+    case '1/4':  return beat;
+    case '1/4d': return beat * 1.5;
+    case '1/2':  return beat * 2;
+    default:     return beat;
+  }
+}
 
 // Convolver impulse response (synthetic reverb)
 let reverbBuffer: AudioBuffer | null = null;
