@@ -502,9 +502,10 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           isLandscape
             ? "w-full h-full max-w-full max-h-full rounded-none mx-0 p-0 overflow-hidden"
             : isMobile
-              ? "w-[calc(100vw-1rem)] max-w-lg p-0 overflow-hidden max-h-[calc(100dvh-2rem)]"
+              ? "w-full max-w-full h-[100dvh] max-h-[100dvh] rounded-none mx-0 p-0 overflow-hidden border-0"
               : "w-[calc(100vw-2rem)] max-w-2xl p-0 overflow-hidden max-h-[85vh]"
         }
+        style={isMobile && !isLandscape ? { paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' } : undefined}
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
