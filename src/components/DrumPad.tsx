@@ -356,7 +356,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="audio/*"
+                accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.aiff,.aif,.wma"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];

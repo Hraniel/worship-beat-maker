@@ -218,6 +218,7 @@ const AdminAnalytics: React.FC = () => {
     });
 
     const packStats = packs.map(p => ({
+      id: p.id,
       name: p.name.length > 14 ? p.name.slice(0, 14) + '…' : p.name,
       purchases: purchasesByPack.get(p.id) || 0,
       revenue: (purchasesByPack.get(p.id) || 0) * (p.price_cents / 100),
@@ -589,7 +590,7 @@ const AdminAnalytics: React.FC = () => {
         </div>
         <div className="divide-y divide-border">
           {analytics.packStats.map((pack, i) => (
-            <div key={pack.name} className="flex items-center gap-3 px-4 py-2.5">
+            <div key={pack.id} className="flex items-center gap-3 px-4 py-2.5">
               <span className="text-xs font-bold text-muted-foreground w-5 text-right">{i + 1}</span>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground truncate">{pack.name}</p>

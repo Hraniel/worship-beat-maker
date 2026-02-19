@@ -593,7 +593,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       <input
         ref={fileInputRef}
         type="file"
-        accept="audio/*"
+        accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.aiff,.aif,.wma"
         multiple
         className="hidden"
         onChange={(e) => {
@@ -603,7 +603,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           e.target.value = '';
         }}
       />
-      <input ref={previewInputRef} type="file" accept="audio/*" className="hidden"
+      <input ref={previewInputRef} type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.aac,.m4a,.aiff,.aif,.wma" className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
           const meta = pendingUploadRef.current;
