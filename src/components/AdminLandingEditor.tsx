@@ -487,10 +487,28 @@ const AdminLandingEditor: React.FC = () => {
           </div>
 
           {/* Botões da Navbar */}
-          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Botões da Navbar</p>
-            {renderTextField('nav_btn_login_label', 'Rótulo — Botão Entrar', false, 'Entrar')}
-            {renderTextField('nav_btn_signup_label', 'Rótulo — Botão Criar Conta', false, 'Começar grátis')}
+
+            {/* Botão Entrar */}
+            <div className="space-y-2.5 pb-3" style={{ borderBottom: '1px solid hsl(0 0% 100% / 0.06)' }}>
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Entrar"</p>
+              {renderTextField('nav_btn_login_label', 'Rótulo', false, 'Entrar')}
+              <div>
+                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Rótulo</label>
+                <ColorFieldInline key="nav_btn_login_color" value={getVal('nav_btn_login_color') || 'hsl(220 15% 30%)'} onChange={v => setVal('nav_btn_login_color', v)} onBlur={() => saveKey('nav_btn_login_color')} />
+              </div>
+            </div>
+
+            {/* Botão Criar Conta */}
+            <div className="space-y-2.5">
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Começar grátis"</p>
+              {renderTextField('nav_btn_signup_label', 'Rótulo', false, 'Começar grátis')}
+              <div>
+                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Rótulo</label>
+                <ColorFieldInline key="nav_btn_signup_color" value={getVal('nav_btn_signup_color') || 'hsl(0 0% 100%)'} onChange={v => setVal('nav_btn_signup_color', v)} onBlur={() => saveKey('nav_btn_signup_color')} />
+              </div>
+            </div>
           </div>
 
           {/* Cores da Navbar */}
