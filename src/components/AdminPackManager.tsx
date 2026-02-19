@@ -439,6 +439,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         : 0;
 
       const fd = new FormData();
+      fd.append('action', 'update-pack');
       fd.append('packId', packId);
       fd.append('isAvailable', String(edit.isAvailable));
       fd.append('priceCents', String(priceCents));
