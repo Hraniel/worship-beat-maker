@@ -1,57 +1,53 @@
 
 
-## Redesign dos Drum Pads
+## Corrigir Push Notifications (status 403)
 
-### O que muda
+### Problema Diagnosticado
 
-O design atual usa uma borda completa ao redor do pad. O novo design, baseado na imagem de referencia, tem:
+Os logs mostram que **todas** as 7 tentativas de push falharam com **status 403** (Forbidden), tanto para endpoints do Apple (web.push.apple.com) quanto FCM (fcm.googleapis.com). Isso significa que a autenticacao VAPID esta sendo rejeitada pelos servidores de push.
 
-1. **Barra colorida no topo** -- uma faixa fina e vibrante no topo de cada pad (em vez de borda completa)
-2. **Texto do shortName colorido** -- a sigla do pad (KCK, SNR, etc.) usa a mesma cor da barra
-3. **Nome completo abaixo** -- subtitulo em cor suave (muted) abaixo da sigla
-4. **Corpo escuro** -- fundo preto/escuro sem a textura de borracha atual
-5. **Borda sutil cinza** -- borda fina e discreta ao redor do pad (nao colorida)
-6. **Cores customizadas se aplicam** -- quando o usuario muda a cor pelo PadColorPicker, a barra do topo e o texto da sigla mudam para a cor escolhida
+A causa raiz esta na implementacao manual de criptografia e assinatura VAPID na edge function `send-push-notification`. O codigo atual mistura formatos incompativeis:
 
-### Estados visuais mantidos
+- Usa `Content-Encoding: aesgcm` (formato legado)
+- Mas usa `Authorization: vapid t=...` (formato moderno, so funciona com `aes128gcm`)
+- A criptografia de payload tambem pode ter inconsistencias no padding
 
-- **Hit (active)**: flash de brilho + glow na cor do pad
-- **Loop ativo**: barra do topo pulsa + glow sutil
-- **Locked**: overlay com cadeado (sem mudanca)
-- **Edit mode**: icone de engrenagem (sem mudanca)
+### Solucao
 
-### Arquivos alterados
+Substituir toda a implementacao manual de criptografia por uma biblioteca testada e confiavel: **web-push** via `npm:web-push`. Essa biblioteca cuida automaticamente de:
 
-#### `src/components/DrumPad.tsx`
-- Remover `border-2` e a classe `drum-pad-idle` do botao principal
-- Adicionar um `div` absoluto no topo do pad como barra colorida (h-[3px] rounded-t)
-- Mudar a cor do `shortName` para usar `colorSolid` (cor do pad)
-- Adicionar o nome completo (`pad.name`) como subtitulo abaixo do shortName
-- Ajustar o background para gradiente escuro fixo (sem textura de pontos)
-- Border passa a ser `border border-white/10` (sutil, neutra)
-- Estados active/looping continuam alterando a barra do topo e o glow
+- Assinatura JWT VAPID correta
+- Criptografia de payload (aes128gcm, RFC 8291)
+- Headers corretos para cada push service (Apple, Google, Mozilla)
+- Limpeza de subscriptions expiradas
 
-#### `src/index.css`
-- Atualizar `.drum-pad-idle` para usar apenas gradiente escuro sem dot pattern
-- Ajustar `loop-border` para animar a barra do topo em vez da borda completa
+### Arquivo Alterado
 
-### Detalhes tecnicos
+**`supabase/functions/send-push-notification/index.ts`**
+
+- Remover toda a implementacao manual (~150 linhas): `buildVapidJwt`, `sendWebPush`, criptografia ECDH/AES-GCM
+- Importar `npm:web-push` e configurar com as chaves VAPID existentes
+- Usar `webpush.sendNotification()` para cada subscription
+- Manter toda a logica de negocio intacta (subscribe, unsubscribe, broadcast, admin check, cleanup de expirados)
+
+### Detalhes Tecnicos
 
 ```text
-Pad Layout (novo):
-+--[barra colorida 3px]--------+
-|                               |
-|     KCK  (cor do pad)         |
-|     Kick (muted)              |
-|                               |
-+-------------------------------+
-  borda: 1px white/10
-  fundo: gradiente hsl(0 0% 8%) -> hsl(0 0% 4%)
+ANTES (manual, ~150 linhas de crypto):
+  buildVapidJwt() -> crypto.subtle.sign()
+  sendWebPush()   -> ECDH + AES-GCM manual + fetch()
+  Content-Encoding: aesgcm  (ERRADO com vapid t=...)
+  Authorization: vapid t=...,k=...
+
+DEPOIS (web-push library):
+  webpush.setVapidDetails('mailto:admin@glorypads.app', publicKey, privateKey)
+  webpush.sendNotification(subscription, payload)
+  Criptografia e headers corretos automaticamente
 ```
 
-Logica de cor:
-- Se `customColor` existe: barra e texto usam `hsl(customColor)`
-- Se nao: usa `hsl(var(pad.colorVar))` (cor padrao da categoria)
-- Todos os estados (idle, active, looping) respeitam a cor customizada
-- O `PadColorPicker` continua funcionando sem mudancas -- apenas o visual do pad muda
+A logica de subscribe/unsubscribe/broadcast permanece identica. Apenas o metodo de envio muda.
+
+### Nenhuma mudanca no frontend
+
+O codigo do cliente (`push-notifications.ts`, `sw-push.js`, `NotificationPromptBanner.tsx`) permanece exatamente como esta. O service worker continuara recebendo e exibindo as notificacoes normalmente - o problema era exclusivamente no envio do servidor.
 
