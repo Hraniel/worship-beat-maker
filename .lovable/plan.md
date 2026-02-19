@@ -1,53 +1,48 @@
 
 
-## Corrigir Push Notifications (status 403)
+## Corrigir Sistema de Usuarios Online (Presence)
 
-### Problema Diagnosticado
+### Problema
 
-Os logs mostram que **todas** as 7 tentativas de push falharam com **status 403** (Forbidden), tanto para endpoints do Apple (web.push.apple.com) quanto FCM (fcm.googleapis.com). Isso significa que a autenticacao VAPID esta sendo rejeitada pelos servidores de push.
+O tracking de presenca so existe no `Dashboard.tsx`. Isso significa que:
 
-A causa raiz esta na implementacao manual de criptografia e assinatura VAPID na edge function `send-push-notification`. O codigo atual mistura formatos incompativeis:
-
-- Usa `Content-Encoding: aesgcm` (formato legado)
-- Mas usa `Authorization: vapid t=...` (formato moderno, so funciona com `aes128gcm`)
-- A criptografia de payload tambem pode ter inconsistencias no padding
+1. Usuarios que estao na pagina principal do app (`/app` - `Index.tsx`) **nao sao rastreados** como online
+2. O admin so ve usuarios online se eles estiverem especificamente na pagina `/dashboard`
+3. A limpeza do canal usa `channel.unsubscribe()` em vez de `supabase.removeChannel(channel)`, o que pode deixar canais orfaos
 
 ### Solucao
 
-Substituir toda a implementacao manual de criptografia por uma biblioteca testada e confiavel: **web-push** via `npm:web-push`. Essa biblioteca cuida automaticamente de:
+Criar um hook dedicado `usePresenceTracker` e usa-lo em **ambas** as paginas protegidas (`Index.tsx` e `Dashboard.tsx`), garantindo que qualquer usuario logado e ativo seja visivel para o admin.
 
-- Assinatura JWT VAPID correta
-- Criptografia de payload (aes128gcm, RFC 8291)
-- Headers corretos para cada push service (Apple, Google, Mozilla)
-- Limpeza de subscriptions expiradas
+### Arquivos
 
-### Arquivo Alterado
+#### 1. Criar `src/hooks/usePresenceTracker.ts` (novo)
 
-**`supabase/functions/send-push-notification/index.ts`**
+Hook reutilizavel que:
+- Recebe o `user_id` do usuario logado
+- Conecta ao canal `glory-pads-online` com a key do usuario
+- Faz `channel.track()` ao se inscrever
+- Faz cleanup correto com `channel.untrack()` + `supabase.removeChannel(channel)`
+- Nao faz nada se `user_id` for `undefined` (usuario nao logado)
 
-- Remover toda a implementacao manual (~150 linhas): `buildVapidJwt`, `sendWebPush`, criptografia ECDH/AES-GCM
-- Importar `npm:web-push` e configurar com as chaves VAPID existentes
-- Usar `webpush.sendNotification()` para cada subscription
-- Manter toda a logica de negocio intacta (subscribe, unsubscribe, broadcast, admin check, cleanup de expirados)
+#### 2. Editar `src/pages/Dashboard.tsx`
+
+- Remover o `useEffect` de presenca (linhas ~135-154) e o `presenceChannelRef`
+- Importar e chamar `usePresenceTracker(user?.id)`
+
+#### 3. Editar `src/pages/Index.tsx`
+
+- Importar e chamar `usePresenceTracker(user?.id)` para que usuarios usando o app principal tambem aparecam como online
 
 ### Detalhes Tecnicos
 
 ```text
-ANTES (manual, ~150 linhas de crypto):
-  buildVapidJwt() -> crypto.subtle.sign()
-  sendWebPush()   -> ECDH + AES-GCM manual + fetch()
-  Content-Encoding: aesgcm  (ERRADO com vapid t=...)
-  Authorization: vapid t=...,k=...
-
-DEPOIS (web-push library):
-  webpush.setVapidDetails('mailto:admin@glorypads.app', publicKey, privateKey)
-  webpush.sendNotification(subscription, payload)
-  Criptografia e headers corretos automaticamente
+usePresenceTracker(userId):
+  - Se userId undefined -> nao faz nada
+  - Cria canal: supabase.channel('glory-pads-online', { config: { presence: { key: userId } } })
+  - subscribe -> track({ user_id: userId, online_at: new Date().toISOString() })
+  - cleanup -> untrack() + supabase.removeChannel(channel)
 ```
 
-A logica de subscribe/unsubscribe/broadcast permanece identica. Apenas o metodo de envio muda.
-
-### Nenhuma mudanca no frontend
-
-O codigo do cliente (`push-notifications.ts`, `sw-push.js`, `NotificationPromptBanner.tsx`) permanece exatamente como esta. O service worker continuara recebendo e exibindo as notificacoes normalmente - o problema era exclusivamente no envio do servidor.
+O `AdminAnalytics.tsx` permanece inalterado -- ele ja escuta o canal corretamente como observador.
 
