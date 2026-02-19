@@ -197,57 +197,57 @@ const EventCard: React.FC<EventCardProps> = ({
   return (
     <div className="bg-muted/30 border border-border rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-2 px-3 py-2.5">
-        <button onClick={() => setExpanded(p => !p)} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0">
-          {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-        </button>
-        <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
-        <div className="flex-1 min-w-0" onClick={() => setExpanded(p => !p)}>
-          {editing ? (
-            <div className="flex flex-col gap-1.5 py-0.5" onClick={e => e.stopPropagation()}>
-              <input value={editName} onChange={e => setEditName(e.target.value)}
-                className="w-full h-7 px-2 text-xs rounded bg-background border border-input text-foreground focus:outline-none" />
-              <div className="flex gap-1.5">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button className="flex-1 h-7 px-2 flex items-center gap-1.5 text-xs rounded bg-background border border-input text-foreground hover:bg-muted transition-colors">
-                      <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-                      {editDate ? format(parseISO(editDate), 'dd/MM/yyyy') : 'Selecionar data'}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 z-[200]" align="start">
-                    <CalendarUI
-                      mode="single"
-                      selected={editDate ? parseISO(editDate) : undefined}
-                      onSelect={d => d && setEditDate(format(d, 'yyyy-MM-dd'))}
-                      className="p-3 pointer-events-auto"
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <button onClick={saveEdit} className="h-7 w-7 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20 shrink-0">
-                  <Check className="h-3 w-3 text-primary" />
-                </button>
-                <button onClick={() => setEditing(false)} className="h-7 w-7 rounded flex items-center justify-center hover:bg-muted shrink-0">
-                  <X className="h-3 w-3 text-muted-foreground" />
-                </button>
-              </div>
+      <div className="px-3 py-2.5">
+        {editing ? (
+          /* Edit mode: full-width layout, nothing clipped */
+          <div className="flex flex-col gap-1.5" onClick={e => e.stopPropagation()}>
+            <input value={editName} onChange={e => setEditName(e.target.value)}
+              className="w-full h-7 px-2 text-xs rounded bg-background border border-input text-foreground focus:outline-none" />
+            <div className="flex gap-1.5">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex-1 h-7 px-2 flex items-center gap-1.5 text-xs rounded bg-background border border-input text-foreground hover:bg-muted transition-colors">
+                    <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
+                    {editDate ? format(parseISO(editDate), 'dd/MM/yyyy') : 'Selecionar data'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[200]" align="start" side="bottom" sideOffset={4} collisionPadding={12} avoidCollisions={true}>
+                  <CalendarUI
+                    mode="single"
+                    selected={editDate ? parseISO(editDate) : undefined}
+                    onSelect={d => d && setEditDate(format(d, 'yyyy-MM-dd'))}
+                    className="p-3 pointer-events-auto"
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <button onClick={saveEdit} className="h-7 w-7 rounded flex items-center justify-center bg-primary/10 hover:bg-primary/20 shrink-0">
+                <Check className="h-3 w-3 text-primary" />
+              </button>
+              <button onClick={() => setEditing(false)} className="h-7 w-7 rounded flex items-center justify-center hover:bg-muted shrink-0">
+                <X className="h-3 w-3 text-muted-foreground" />
+              </button>
             </div>
-          ) : (
-            <div className="cursor-pointer">
+          </div>
+        ) : (
+          /* View mode: row layout */
+          <div className="flex items-center gap-2">
+            <button onClick={() => setExpanded(p => !p)} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0">
+              {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+            <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(p => !p)}>
               <p className="text-sm font-semibold text-foreground truncate">{event.name}</p>
               <p className="text-[10px] text-muted-foreground">{formatDate(event.event_date)} · {event.songs_data.length} músicas</p>
             </div>
-          )}
-        </div>
-        {!editing && (
-          <div className="flex items-center gap-1 shrink-0">
-            <button onClick={() => setEditing(true)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted">
-              <Edit2 className="h-3 w-3 text-muted-foreground" />
-            </button>
-            <button onClick={() => onDelete(event.id)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-destructive/10">
-              <Trash2 className="h-3 w-3 text-destructive" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              <button onClick={() => setEditing(true)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted">
+                <Edit2 className="h-3 w-3 text-muted-foreground" />
+              </button>
+              <button onClick={() => onDelete(event.id)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-destructive/10">
+                <Trash2 className="h-3 w-3 text-destructive" />
+              </button>
+            </div>
           </div>
         )}
       </div>
