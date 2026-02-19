@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
 import { useAuth } from '@/contexts/AuthContext';
@@ -104,6 +104,28 @@ const Dashboard = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ drums: true, loops: false, efeitos: false });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // ── Track user presence so admin can see online count ──────────────────────
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase.channel('glory-pads-online', {
+      config: { presence: { key: user.id } },
+    });
+    channel.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        await channel.track({
+          user_id: user.id,
+          online_at: new Date().toISOString(),
+        });
+      }
+    });
+    presenceChannelRef.current = channel;
+    return () => {
+      channel.untrack();
+      channel.unsubscribe();
+    };
+  }, [user]);
 
   const badge = tierBadge[tier];
 

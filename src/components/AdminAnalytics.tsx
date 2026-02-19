@@ -118,24 +118,24 @@ const AdminAnalytics: React.FC = () => {
     })();
   }, []);
 
-  // Real-time online users via Supabase Presence
+  // Real-time online users — reads presence from the same channel users join on Dashboard
   useEffect(() => {
-    const channel = supabase.channel('admin-presence-tracker', {
-      config: { presence: { key: 'admin-observer' } },
-    });
+    const channel = supabase.channel('glory-pads-online');
 
     channel
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
-        // Count unique users (excluding the admin observer itself)
-        const count = Object.keys(state).filter(k => k !== 'admin-observer').length;
-        setOnlineCount(count);
+        setOnlineCount(Object.keys(state).length);
       })
-      .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({ role: 'admin-observer', timestamp: new Date().toISOString() });
-        }
-      });
+      .on('presence', { event: 'join' }, () => {
+        const state = channel.presenceState();
+        setOnlineCount(Object.keys(state).length);
+      })
+      .on('presence', { event: 'leave' }, () => {
+        const state = channel.presenceState();
+        setOnlineCount(Object.keys(state).length);
+      })
+      .subscribe();
 
     channelRef.current = channel;
     return () => {
@@ -265,8 +265,7 @@ const AdminAnalytics: React.FC = () => {
               const ch = channelRef.current;
               if (ch) {
                 const state = ch.presenceState();
-                const count = Object.keys(state).filter(k => k !== 'admin-observer').length;
-                setOnlineCount(count);
+                setOnlineCount(Object.keys(state).length);
               }
               setTimeout(() => setRefreshingOnline(false), 600);
             }}
