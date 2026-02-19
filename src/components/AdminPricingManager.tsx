@@ -435,6 +435,12 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
       {activeTab === 'pricing' && (
         <div className="space-y-4">
           <p className="text-[11px] text-white/40">Defina preços, limites e aparência dos cards na landing page e no app.</p>
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
+            <span className="text-amber-400 text-xs shrink-0">⚠️</span>
+            <p className="text-[11px] text-amber-300/80 leading-relaxed">
+              <strong className="text-amber-300">O campo "Preço" é apenas visual</strong> — aparece na landing page e na tela de planos, mas <strong className="text-amber-300">o valor cobrado é definido diretamente no Stripe</strong>. Mantenha os dois sincronizados manualmente.
+            </p>
+          </div>
           {TIER_ORDER.map(tier => {
             const plan = pricing.find(p => p.tier === tier);
             if (!plan) return null;
