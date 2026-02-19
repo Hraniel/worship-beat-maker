@@ -26,6 +26,15 @@ export async function requestPushPermission(): Promise<boolean> {
 
 export async function subscribeToPush(): Promise<boolean> {
   try {
+    // Ensure our push SW is also registered (Workbox SW may be different)
+    if ('serviceWorker' in navigator) {
+      try {
+        await navigator.serviceWorker.register('/sw-push.js', { scope: '/' });
+      } catch {
+        // Already registered or falls back to main SW
+      }
+    }
+
     const reg = (await navigator.serviceWorker.ready) as PushReg;
     if (!reg.pushManager) return false;
 
@@ -41,7 +50,7 @@ export async function subscribeToPush(): Promise<boolean> {
     const authHeader = await getAuthHeader();
     if (!authHeader) return false;
 
-    await fetch(PUSH_FUNCTION_URL, {
+    const resp = await fetch(PUSH_FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: authHeader },
       body: JSON.stringify({
@@ -52,7 +61,7 @@ export async function subscribeToPush(): Promise<boolean> {
       }),
     });
 
-    return true;
+    return resp.ok;
   } catch (e) {
     console.warn('Push subscription failed:', e);
     return false;
