@@ -301,29 +301,29 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Tab bar — 6 equal columns, icon + label stacked */}
-          <TabsList className="w-full grid grid-cols-6 h-auto p-1 gap-0.5">
-            <TabsTrigger value="audio" className="flex flex-col items-center gap-1 py-2.5 px-1 text-xs">
+          {/* Tab bar — horizontal scrollable list */}
+          <TabsList className="w-full flex h-auto p-1 gap-1 overflow-x-auto scrollbar-none justify-start">
+            <TabsTrigger value="audio" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
               <Headphones className="h-4 w-4 shrink-0" />
               <span>Áudio</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex flex-col items-center gap-1 py-2.5 px-1 text-xs">
+            <TabsTrigger value="notifications" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
               <Bell className="h-4 w-4 shrink-0" />
-              <span className="leading-tight text-center">Notif.</span>
+              <span>Notificações</span>
             </TabsTrigger>
-            <TabsTrigger value="store" className="flex flex-col items-center gap-1 py-2.5 px-1 text-xs">
+            <TabsTrigger value="store" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
               <Store className="h-4 w-4 shrink-0" />
               <span>Loja</span>
             </TabsTrigger>
-            <TabsTrigger value="plans" className="flex flex-col items-center gap-1 py-2.5 px-1 text-xs">
+            <TabsTrigger value="plans" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
               <Crown className="h-4 w-4 shrink-0" />
               <span>Planos</span>
             </TabsTrigger>
-            <TabsTrigger value="guide" className="flex flex-col items-center gap-1 py-2.5 px-1 text-xs">
+            <TabsTrigger value="guide" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
               <HelpCircle className="h-4 w-4 shrink-0" />
               <span>Guia</span>
             </TabsTrigger>
-            <TabsTrigger value="about" className="flex flex-col items-center gap-1 py-2.5 px-1 text-xs">
+            <TabsTrigger value="about" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
               <Info className="h-4 w-4 shrink-0" />
               <span>Sobre</span>
             </TabsTrigger>
