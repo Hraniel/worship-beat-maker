@@ -150,6 +150,58 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
+    // ── Reset pack purchase ──────────────────────────────────────────────────────
+    if (action === 'reset-purchase') {
+      const { userId: targetUserId, packId } = body;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
+      }
+      const { error: delErr } = await supabase
+        .from('user_purchases')
+        .delete()
+        .eq('user_id', targetUserId)
+        .eq('pack_id', packId);
+      if (delErr) throw delErr;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    // ── Get user purchases ───────────────────────────────────────────────────────
+    if (action === 'get-purchases') {
+      const targetUserId = body.userId;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      const { data: purchases, error: purchErr } = await supabase
+        .from('user_purchases')
+        .select('pack_id, removed, purchased_at')
+        .eq('user_id', targetUserId)
+        .order('purchased_at', { ascending: false });
+      if (purchErr) throw purchErr;
+
+      // Fetch pack names
+      const packIds = (purchases || []).map(p => p.pack_id);
+      let packNames: Record<string, string> = {};
+      if (packIds.length > 0) {
+        const { data: packs } = await supabase
+          .from('store_packs')
+          .select('id, name')
+          .in('id', packIds);
+        packs?.forEach(p => { packNames[p.id] = p.name; });
+      }
+
+      const result = (purchases || []).map(p => ({
+        pack_id: p.pack_id,
+        pack_name: packNames[p.pack_id] || p.pack_id,
+        removed: p.removed,
+        purchased_at: p.purchased_at,
+      }));
+
+      return new Response(JSON.stringify({ purchases: result }), { headers: corsHeaders });
+    }
+
     // ── List users ───────────────────────────────────────────────────────────────
     const { data: { users: authUsers }, error: usersErr } = await supabase.auth.admin.listUsers({ perPage: 200 });
     if (usersErr) throw usersErr;
