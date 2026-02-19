@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar, ChevronDown,
-  ShieldCheck, Search, Trash2, Mail, Key, Ban, Gift, Clock, Globe,
+  ShieldCheck, Search, Trash2, Mail, Key, Ban, Gift, Clock, Globe, RotateCcw,
 } from 'lucide-react';
 
 type AppRole = 'admin' | 'moderator';
@@ -232,6 +232,95 @@ const CredentialsModal: React.FC<CredentialsModalProps> = ({ user, onClose, onUp
   );
 };
 
+// ── Reset Purchase Modal ────────────────────────────────────────────────────────
+interface Purchase {
+  pack_id: string;
+  pack_name: string;
+  removed: boolean;
+  purchased_at: string;
+}
+
+interface ResetPurchaseModalProps {
+  user: UserRow;
+  onClose: () => void;
+  onReset: (userId: string, packId: string, packName: string) => Promise<void>;
+  callAdmin: (body: object) => Promise<any>;
+}
+
+const ResetPurchaseModal: React.FC<ResetPurchaseModalProps> = ({ user, onClose, onReset, callAdmin }) => {
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [loadingPurchases, setLoadingPurchases] = useState(true);
+  const [resettingId, setResettingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await callAdmin({ action: 'get-purchases', userId: user.id });
+        setPurchases(data.purchases || []);
+      } catch {
+        toast.error('Erro ao buscar compras');
+      } finally {
+        setLoadingPurchases(false);
+      }
+    })();
+  }, [user.id]);
+
+  const handleReset = async (purchase: Purchase) => {
+    if (!window.confirm(`Resetar compra de "${purchase.pack_name}"? O usuário voltará a ver o botão de compra.`)) return;
+    setResettingId(purchase.pack_id);
+    await onReset(user.id, purchase.pack_id, purchase.pack_name);
+    setPurchases(prev => prev.filter(p => p.pack_id !== purchase.pack_id));
+    setResettingId(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+        <div className="flex items-center gap-2">
+          <RotateCcw className="h-4 w-4 text-amber-400" />
+          <p className="text-sm font-semibold text-foreground">Resetar Compra de Pack</p>
+        </div>
+        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+
+        {loadingPurchases ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : purchases.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-3">Nenhuma compra encontrada</p>
+        ) : (
+          <div className="space-y-1.5 max-h-64 overflow-y-auto">
+            {purchases.map(p => (
+              <div key={p.pack_id} className="flex items-center justify-between gap-2 bg-muted/50 rounded-lg px-3 py-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground truncate">{p.pack_name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(p.purchased_at).toLocaleDateString('pt-BR')}
+                    {p.removed && <span className="ml-1.5 text-amber-400 font-medium">· removido</span>}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 text-[10px] px-2 border-amber-500/40 text-amber-400 hover:bg-amber-500/10 shrink-0"
+                  onClick={() => handleReset(p)}
+                  disabled={resettingId === p.pack_id}
+                >
+                  {resettingId === p.pack_id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Resetar'}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="pt-1">
+          <Button size="sm" variant="ghost" className="w-full h-8 text-xs" onClick={onClose}>Fechar</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 const AdminUserManager: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -243,6 +332,7 @@ const AdminUserManager: React.FC = () => {
   const [banModal, setBanModal] = useState<UserRow | null>(null);
   const [grantModal, setGrantModal] = useState<UserRow | null>(null);
   const [credModal, setCredModal] = useState<UserRow | null>(null);
+  const [resetPurchaseModal, setResetPurchaseModal] = useState<UserRow | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const getToken = async () => {
@@ -372,6 +462,16 @@ const AdminUserManager: React.FC = () => {
     }
   };
 
+  const handleResetPurchase = async (userId: string, packId: string, packName: string) => {
+    try {
+      await callAdmin({ action: 'reset-purchase', userId, packId });
+      toast.success(`Compra de "${packName}" resetada. Usuário verá o botão de compra novamente.`);
+      fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao resetar compra');
+    }
+  };
+
   const getCurrentRoleLabel = (user: UserRow) => {
     if (user.is_admin) return 'Admin';
     if (user.is_moderator) return 'Mod';
@@ -406,6 +506,14 @@ const AdminUserManager: React.FC = () => {
       )}
       {credModal && (
         <CredentialsModal user={credModal} onClose={() => setCredModal(null)} onUpdate={handleUpdateCredentials} />
+      )}
+      {resetPurchaseModal && (
+        <ResetPurchaseModal
+          user={resetPurchaseModal}
+          onClose={() => setResetPurchaseModal(null)}
+          onReset={handleResetPurchase}
+          callAdmin={callAdmin}
+        />
       )}
 
       <div className="space-y-3">
@@ -581,6 +689,14 @@ const AdminUserManager: React.FC = () => {
                   >
                     <Gift className="h-2.5 w-2.5" /> Acesso grátis
                   </button>
+                  {user.purchase_count > 0 && (
+                    <button
+                      onClick={() => setResetPurchaseModal(user)}
+                      className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
+                    >
+                      <RotateCcw className="h-2.5 w-2.5" /> Resetar compra
+                    </button>
+                  )}
                   <button
                     onClick={() => setBanModal(user)}
                     className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 transition-colors"
