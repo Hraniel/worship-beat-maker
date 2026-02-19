@@ -1,94 +1,57 @@
 
-## Duas correções: Date Picker no Repertório + Cores dos Rótulos na Navbar Admin
 
-### 1. Date Picker no SetlistManager (Repertório)
+## Redesign dos Drum Pads
 
-**Problema**: O `<input type="date">` nativo fica oculto e é muito pequeno dentro do card de edição de evento. Ele tem aparência inconsistente entre plataformas (especialmente mobile).
+### O que muda
 
-**Solução**: Substituir o `input[type="date"]` por um Shadcn `Popover` + `Calendar`, seguindo o padrão já existente no projeto (`shadcn-datepicker`). O trigger será um botão de largura completa com ícone de calendário e a data formatada.
+O design atual usa uma borda completa ao redor do pad. O novo design, baseado na imagem de referencia, tem:
 
-**Arquivo**: `src/components/SetlistManager.tsx`
+1. **Barra colorida no topo** -- uma faixa fina e vibrante no topo de cada pad (em vez de borda completa)
+2. **Texto do shortName colorido** -- a sigla do pad (KCK, SNR, etc.) usa a mesma cor da barra
+3. **Nome completo abaixo** -- subtitulo em cor suave (muted) abaixo da sigla
+4. **Corpo escuro** -- fundo preto/escuro sem a textura de borracha atual
+5. **Borda sutil cinza** -- borda fina e discreta ao redor do pad (nao colorida)
+6. **Cores customizadas se aplicam** -- quando o usuario muda a cor pelo PadColorPicker, a barra do topo e o texto da sigla mudam para a cor escolhida
 
-Mudanças:
-- Adicionar imports: `Popover`, `PopoverContent`, `PopoverTrigger` de `@/components/ui/popover`; `Calendar` de `@/components/ui/calendar`; `format`, `parseISO` de `date-fns`
-- No `EventCard`, o estado `editDate` continuará como string `'YYYY-MM-DD'`, mas a interação será via calendário
-- Substituir o `input[type="date"]` por:
+### Estados visuais mantidos
 
-```tsx
-<Popover>
-  <PopoverTrigger asChild>
-    <button className="flex-1 h-7 px-2 flex items-center gap-1.5 text-xs rounded bg-background border border-input text-foreground">
-      <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-      {editDate ? format(parseISO(editDate), 'dd/MM/yyyy') : 'Selecionar data'}
-    </button>
-  </PopoverTrigger>
-  <PopoverContent className="w-auto p-0 z-[200]" align="start">
-    <CalendarUI
-      mode="single"
-      selected={editDate ? parseISO(editDate) : undefined}
-      onSelect={d => d && setEditDate(format(d, 'yyyy-MM-dd'))}
-      className="p-3 pointer-events-auto"
-      initialFocus
-    />
-  </PopoverContent>
-</Popover>
+- **Hit (active)**: flash de brilho + glow na cor do pad
+- **Loop ativo**: barra do topo pulsa + glow sutil
+- **Locked**: overlay com cadeado (sem mudanca)
+- **Edit mode**: icone de engrenagem (sem mudanca)
+
+### Arquivos alterados
+
+#### `src/components/DrumPad.tsx`
+- Remover `border-2` e a classe `drum-pad-idle` do botao principal
+- Adicionar um `div` absoluto no topo do pad como barra colorida (h-[3px] rounded-t)
+- Mudar a cor do `shortName` para usar `colorSolid` (cor do pad)
+- Adicionar o nome completo (`pad.name`) como subtitulo abaixo do shortName
+- Ajustar o background para gradiente escuro fixo (sem textura de pontos)
+- Border passa a ser `border border-white/10` (sutil, neutra)
+- Estados active/looping continuam alterando a barra do topo e o glow
+
+#### `src/index.css`
+- Atualizar `.drum-pad-idle` para usar apenas gradiente escuro sem dot pattern
+- Ajustar `loop-border` para animar a barra do topo em vez da borda completa
+
+### Detalhes tecnicos
+
+```text
+Pad Layout (novo):
++--[barra colorida 3px]--------+
+|                               |
+|     KCK  (cor do pad)         |
+|     Kick (muted)              |
+|                               |
++-------------------------------+
+  borda: 1px white/10
+  fundo: gradiente hsl(0 0% 8%) -> hsl(0 0% 4%)
 ```
 
-Nota: O ícone `Calendar` já está importado no SetlistManager.
+Logica de cor:
+- Se `customColor` existe: barra e texto usam `hsl(customColor)`
+- Se nao: usa `hsl(var(pad.colorVar))` (cor padrao da categoria)
+- Todos os estados (idle, active, looping) respeitam a cor customizada
+- O `PadColorPicker` continua funcionando sem mudancas -- apenas o visual do pad muda
 
----
-
-### 2. Cores dos Rótulos na Seção "Botões da Navbar" (Admin)
-
-**Problema**: Os color pickers para o texto dos botões (`nav_btn_login_color`, `nav_btn_signup_color`) já existem, mas estão numa seção separada chamada "Cores dos Botões da Navbar", longe dos campos de rótulo. O usuário não consegue associar facilmente.
-
-**Solução**: Expandir a seção "Botões da Navbar" (linhas 489-494) para incluir um color picker de texto diretamente ao lado/abaixo de cada campo de label, tornando a configuração de cada botão autocontida.
-
-**Arquivo**: `src/components/AdminLandingEditor.tsx`
-
-A seção "Botões da Navbar" atual:
-```tsx
-<div className="rounded-xl p-4 space-y-3" style={groupStyle}>
-  <p ...>Botões da Navbar</p>
-  {renderTextField('nav_btn_login_label', 'Rótulo — Botão Entrar', ...)}
-  {renderTextField('nav_btn_signup_label', 'Rótulo — Botão Criar Conta', ...)}
-</div>
-```
-
-Será expandida para:
-```tsx
-<div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-  <p ...>Botões da Navbar</p>
-  
-  {/* Botão Entrar */}
-  <div className="space-y-2">
-    <p className="text-[9px] font-semibold uppercase ..." ...>Botão "Entrar"</p>
-    {renderTextField('nav_btn_login_label', 'Rótulo', false, 'Entrar')}
-    <div>
-      <label ...>Cor do Rótulo</label>
-      <ColorFieldInline key="nav_btn_login_color" ... />
-    </div>
-  </div>
-  
-  {/* Botão Criar Conta */}
-  <div className="space-y-2">
-    <p ...>Botão "Começar grátis"</p>
-    {renderTextField('nav_btn_signup_label', 'Rótulo', false, 'Começar grátis')}
-    <div>
-      <label ...>Cor do Rótulo</label>
-      <ColorFieldInline key="nav_btn_signup_color" ... />
-    </div>
-  </div>
-</div>
-```
-
-A seção "Cores dos Botões da Navbar" existente (linhas 523-549) manterá os campos de cor de fundo (`nav_btn_login_bg`, `nav_btn_signup_bg`) e poderá remover as duplicatas de cor de texto que já estarão acima.
-
----
-
-### Resumo das Alterações
-
-| Arquivo | Mudança |
-|---|---|
-| `src/components/SetlistManager.tsx` | Substituir `input[type="date"]` por Popover + Calendar do Shadcn |
-| `src/components/AdminLandingEditor.tsx` | Adicionar color pickers de texto dos botões dentro da seção "Botões da Navbar" |
