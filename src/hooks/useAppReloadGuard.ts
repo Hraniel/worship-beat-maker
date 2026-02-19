@@ -22,7 +22,9 @@ export function useAppReloadGuard() {
     const elapsed = Date.now() - lastActive;
 
     if (lastActive > 0 && elapsed >= AWAY_THRESHOLD_MS) {
-      setShowLoading(true);
+      if (navigator.onLine) {
+        setShowLoading(true);
+      }
     } else {
       // Record first visit
       localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
@@ -38,7 +40,9 @@ export function useAppReloadGuard() {
         const stored = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? '0', 10);
         const away = Date.now() - stored;
         if (stored > 0 && away >= AWAY_THRESHOLD_MS) {
-          setShowLoading(true);
+          if (navigator.onLine) {
+            setShowLoading(true);
+          }
         }
       }
     };
