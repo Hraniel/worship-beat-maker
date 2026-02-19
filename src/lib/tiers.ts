@@ -2,7 +2,7 @@
 export const TIERS = {
   free: {
     name: 'Gratuito',
-    maxPads: 4,
+    maxPads: 6,
     maxImports: 3,
     individualVolume: false,
     audioEffects: false,

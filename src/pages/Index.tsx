@@ -31,8 +31,10 @@ import PanControl from '@/components/PanControl';
 import TutorialGuide from '@/components/TutorialGuide';
 import SettingsDialog, { loadAudioSettings, type AudioSettings } from '@/components/SettingsDialog';
 import UpdateBanner from '@/components/UpdateBanner';
+import OfflineBanner from '@/components/OfflineBanner';
 import NotificationBanner from '@/components/NotificationBanner';
 import NotificationPromptBanner from '@/components/NotificationPromptBanner';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import PerformanceMode from '@/components/PerformanceMode';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { useUserNotifications } from '@/hooks/useUserNotifications';
@@ -74,6 +76,7 @@ const Index = () => {
   const { signOut, user } = useAuth();
   const { tier } = useSubscription();
   const { canAccess } = useFeatureGates();
+  const isOnline = useOnlineStatus();
   const isLandscape = useIsLandscape();
   const isTablet = useIsTablet();
   const isDesktop = useIsDesktop();
@@ -118,7 +121,25 @@ const Index = () => {
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
 
-  // Helper: try access and show modal if blocked
+  // Mixer gate check
+  const mixerFaderAccess = canAccess('mixer_faders');
+  const showMixerLocked = !mixerFaderAccess.allowed;
+
+  const openMixerGate = useCallback(() => {
+    const g = mixerFaderAccess.gate;
+    if (g) {
+      setUpgradeGate({
+        gateKey: g.gate_key,
+        gateLabel: g.gate_label,
+        requiredTier: g.required_tier,
+        description: g.description,
+      });
+    } else {
+      setUpgradeGate({ gateKey: 'mixer_faders', gateLabel: 'Mixer de faders', requiredTier: 'pro', description: 'Controle individual de volume por fader' });
+    }
+  }, [mixerFaderAccess]);
+
+
   const tryAccess = useCallback((gateKey: string): boolean => {
     const result = canAccess(gateKey);
     if (!result.allowed && result.gate) {
@@ -812,6 +833,7 @@ const Index = () => {
         onMarkAllAsRead={markAllNotifsAsRead}
       />
       <UpdateBanner show={needRefresh} onUpdate={async () => { await updateServiceWorker(true); window.location.reload(); }} />
+      <OfflineBanner isOffline={!isOnline} />
       {showNotifPrompt && (
         <NotificationPromptBanner onDismiss={dismissNotifPrompt} />
       )}
@@ -1134,6 +1156,15 @@ const Index = () => {
                     </button>
                   ))}
                 </div>
+                {showMixerLocked ? (
+                  <button
+                    onClick={openMixerGate}
+                    className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
+                  >
+                    <Lock className="h-4 w-4" />
+                    <span className="text-[10px]">Mixer — Plano Pro</span>
+                  </button>
+                ) : (
                 <MixerStrip
                   controlledPage={faderPage}
                   onControlledPageChange={setFaderPage}
@@ -1149,6 +1180,7 @@ const Index = () => {
                   })),
                   { id: 'master', label: 'Master', shortLabel: 'Master', volume: masterVolume, onChange: setMasterVol },
                 ]} />
+                )}
               </div>
             ) : undefined
           }
@@ -1259,6 +1291,15 @@ const Index = () => {
                 </button>
               ))}
             </div>
+            {showMixerLocked ? (
+              <button
+                onClick={openMixerGate}
+                className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
+              >
+                <Lock className="h-4 w-4" />
+                <span className="text-[10px]">Mixer — Plano Pro</span>
+              </button>
+            ) : (
             <MixerStrip
               controlledPage={faderPage}
               onControlledPageChange={setFaderPage}
@@ -1274,6 +1315,7 @@ const Index = () => {
               })),
               { id: 'master', label: 'Master', shortLabel: 'Master', volume: masterVolume, onChange: setMasterVol },
             ]} />
+            )}
           </div>
           }
 
@@ -1313,6 +1355,15 @@ const Index = () => {
                   </button>
                 ))}
               </div>
+              {showMixerLocked ? (
+                <button
+                  onClick={openMixerGate}
+                  className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
+                >
+                  <Lock className="h-4 w-4" />
+                  <span className="text-[10px]">Mixer — Plano Pro</span>
+                </button>
+              ) : (
               <MixerStrip
                 controlledPage={faderPage}
                 onControlledPageChange={setFaderPage}
@@ -1330,6 +1381,7 @@ const Index = () => {
                   { id: 'master', label: 'Master', shortLabel: 'MST', volume: masterVolume, onChange: setMasterVol },
                 ]}
               />
+              )}
             </div>
             {/* Metronome — below faders */}
             <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
@@ -1447,6 +1499,15 @@ const Index = () => {
                   {/* Faders */}
                   <div className="flex-1 flex items-end pb-0 px-1.5 pt-2">
                     <div className="w-full" data-tutorial="volume-master">
+                      {showMixerLocked ? (
+                        <button
+                          onClick={openMixerGate}
+                          className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
+                        >
+                          <Lock className="h-4 w-4" />
+                          <span className="text-[10px]">Mixer — Plano Pro</span>
+                        </button>
+                      ) : (
                       <MixerStrip
                         controlledPage={faderPage}
                         onControlledPageChange={setFaderPage}
@@ -1462,6 +1523,7 @@ const Index = () => {
                         })),
                         { id: 'master', label: 'Master', shortLabel: 'Master', volume: masterVolume, onChange: setMasterVol },
                       ]} />
+                      )}
                     </div>
                   </div>
                   {/* Metronome mini-bar below faders */}

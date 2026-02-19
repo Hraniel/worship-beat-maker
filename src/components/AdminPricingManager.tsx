@@ -38,7 +38,8 @@ const APP_FEATURES_CATALOG: {
     category: 'Pads & Sons',
     icon: <Drum className="h-3.5 w-3.5" />,
     features: [
-      { key: 'unlimited_pads', label: 'Pads ilimitados', description: 'Acesso a mais de 4 pads simultâneos', tier: 'pro' },
+      { key: 'unlimited_pads', label: 'Pads ilimitados', description: 'Acesso a mais de 6 pads simultâneos', tier: 'pro' },
+      { key: 'mixer_faders', label: 'Mixer de faders', description: 'Controle individual de volume por fader no mixer', tier: 'pro' },
       { key: 'import_audio', label: 'Importar áudio personalizado', description: 'Carregar sons próprios nos pads', tier: 'pro' },
       { key: 'pad_color_picker', label: 'Personalização de cor dos pads', description: 'Escolher cor de cada pad individualmente', tier: 'pro' },
       { key: 'store_packs', label: 'Loja de packs de sons', description: 'Comprar e usar packs premium', tier: 'free' },
