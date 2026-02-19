@@ -7,58 +7,93 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ── Drum synthesis ──────────────────────────────
+// ── Drum synthesis (matches audio-engine.ts pad sounds) ──────────
 
-function synthHit(
-  params: { freq: number; decay: number; noise?: number; punch?: number },
-  durationMs: number,
-  sampleRate: number
-): Float32Array {
-  const length = Math.floor((durationMs / 1000) * sampleRate);
+/** Kick: oscillator 150→30 Hz sweep, 0.4s decay (same as playKick) */
+function renderKick(sampleRate: number): Float32Array {
+  const duration = 0.4;
+  const length = Math.floor(duration * sampleRate);
   const buf = new Float32Array(length);
-  const { freq, decay, noise = 0, punch = 0 } = params;
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
-    const env = Math.exp(-t / decay);
-    const pFreq = punch > 0 ? freq * (1 + punch * 4 * Math.exp(-t * 40)) : freq;
-    let s = Math.sin(2 * Math.PI * pFreq * t) * env * (1 - noise);
-    if (noise > 0) s += (Math.random() * 2 - 1) * env * noise;
-    buf[i] = Math.tanh(s * 1.5);
+    // Exponential frequency sweep from 150 to 30 Hz over 0.15s
+    const freq = 30 + (150 - 30) * Math.exp(-t / 0.04);
+    // Volume envelope: starts at 0.8, decays exponentially
+    const env = 0.8 * Math.exp(-t / 0.12);
+    buf[i] = Math.sin(2 * Math.PI * freq * t) * env;
   }
   return buf;
 }
 
-function renderKick(sampleRate: number): Float32Array {
-  return synthHit({ freq: 50, decay: 0.3, punch: 0.9 }, 600, sampleRate);
-}
-
+/** Snare: highpass noise (1000Hz) 0.2s + tone body 180→60 Hz 0.1s (same as playSnare) */
 function renderSnare(sampleRate: number): Float32Array {
-  return synthHit({ freq: 280, decay: 0.2, noise: 0.4 }, 400, sampleRate);
+  const noiseLen = 0.2;
+  const length = Math.floor(noiseLen * sampleRate);
+  const buf = new Float32Array(length);
+
+  // Noise component with simple 1-pole highpass at ~1000Hz
+  const rc = 1 / (2 * Math.PI * 1000);
+  const dt = 1 / sampleRate;
+  const alpha = rc / (rc + dt);
+  let prevIn = 0, prevOut = 0;
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const raw = (Math.random() * 2 - 1);
+    const hp = alpha * (prevOut + raw - prevIn);
+    prevIn = raw;
+    prevOut = hp;
+    const env = 0.7 * Math.exp(-t / 0.06);
+    buf[i] = hp * env;
+  }
+
+  // Tone body: 180→60Hz, 0.1s
+  const toneLen = Math.floor(0.1 * sampleRate);
+  for (let i = 0; i < toneLen && i < length; i++) {
+    const t = i / sampleRate;
+    const freq = 60 + (180 - 60) * Math.exp(-t / 0.02);
+    const env = 0.7 * 0.7 * Math.exp(-t / 0.03);
+    buf[i] += Math.sin(2 * Math.PI * freq * t) * env;
+  }
+
+  // Soft clip
+  for (let i = 0; i < length; i++) buf[i] = Math.tanh(buf[i] * 1.5);
+  return buf;
 }
 
+/** Clap: 3 bandpass noise bursts (2500Hz) 10ms apart, 0.1s each (same as playClap) */
 function renderClap(sampleRate: number): Float32Array {
-  // Clap: multiple short noise bursts layered
-  const durationMs = 300;
-  const length = Math.floor((durationMs / 1000) * sampleRate);
+  const burstLen = 0.1;
+  const totalDuration = 0.12; // last burst starts at 0.02
+  const length = Math.floor((totalDuration + burstLen) * sampleRate);
   const buf = new Float32Array(length);
-  // 3 micro-bursts at slightly different offsets for "hand clap" feel
-  const bursts = [0, 0.008, 0.018];
-  for (const offset of bursts) {
-    const startSample = Math.floor(offset * sampleRate);
-    for (let i = startSample; i < length; i++) {
-      const t = (i - startSample) / sampleRate;
-      const env = Math.exp(-t / 0.08);
-      buf[i] += (Math.random() * 2 - 1) * env * 0.5;
+  const delays = [0, 0.01, 0.02];
+
+  for (const delay of delays) {
+    const startSample = Math.floor(delay * sampleRate);
+    const bLen = Math.floor(burstLen * sampleRate);
+    // Generate noise, apply bandpass-ish via 1-pole BP at 2500Hz
+    const rc = 1 / (2 * Math.PI * 2500);
+    const dtVal = 1 / sampleRate;
+    const a = dtVal / (rc + dtVal);
+    let lpPrev = 0;
+    let hpPrevIn = 0, hpPrevOut = 0;
+    const alphaHp = rc / (rc + dtVal);
+    for (let i = 0; i < bLen; i++) {
+      const t = i / sampleRate;
+      const raw = Math.random() * 2 - 1;
+      // Lowpass
+      lpPrev += a * (raw - lpPrev);
+      // Highpass on lowpassed signal
+      const hp = alphaHp * (hpPrevOut + lpPrev - hpPrevIn);
+      hpPrevIn = lpPrev;
+      hpPrevOut = hp;
+      const env = 0.6 * 0.7 * Math.exp(-t / 0.03);
+      const pos = startSample + i;
+      if (pos < length) buf[pos] += hp * env;
     }
   }
-  // Bandpass-ish: apply a gentle high-pass by subtracting a smoothed version
-  let prev = 0;
-  for (let i = 0; i < length; i++) {
-    const hp = buf[i] - prev;
-    prev = buf[i];
-    buf[i] = Math.tanh(hp * 2.5);
-  }
+
+  for (let i = 0; i < length; i++) buf[i] = Math.tanh(buf[i] * 2);
   return buf;
 }
 
