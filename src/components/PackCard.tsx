@@ -59,10 +59,16 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
     e.stopPropagation();
     setPurchasing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
-      if (error) throw error;
-      toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
-      onPurchased();
+      if (pack.price_cents === 0) {
+        // Pack gratuito: entrega imediata
+        const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
+        if (error) throw error;
+        toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
+        onPurchased();
+      } else {
+        // Pack pago: redirecionar para a página de detalhes onde o checkout do Stripe é feito
+        navigate(`/store/${pack.id}`);
+      }
     } catch (err: any) {
       toast.error(err?.message || 'Erro ao adquirir pack');
     } finally {
