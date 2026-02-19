@@ -26,15 +26,8 @@ export async function requestPushPermission(): Promise<boolean> {
 
 export async function subscribeToPush(): Promise<boolean> {
   try {
-    // Ensure our push SW is also registered (Workbox SW may be different)
-    if ('serviceWorker' in navigator) {
-      try {
-        await navigator.serviceWorker.register('/sw-push.js', { scope: '/' });
-      } catch {
-        // Already registered or falls back to main SW
-      }
-    }
-
+    // Use the Workbox-generated SW (which already imports sw-push.js via importScripts)
+    // Do NOT register sw-push.js separately — it causes SW conflicts
     const reg = (await navigator.serviceWorker.ready) as PushReg;
     if (!reg.pushManager) return false;
 
