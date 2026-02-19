@@ -6,6 +6,7 @@ import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay, P
 import AdminLandingFeaturesEditor from './AdminLandingFeaturesEditor';
 import AdminLandingStyleEditor from './AdminLandingStyleEditor';
 import LandingPreviewDrawer from './LandingPreviewDrawer';
+import ImageCropperModal from './ImageCropperModal';
 
 const LANDING_PREVIEW_URL = `${window.location.origin}/`;
 
@@ -133,11 +134,14 @@ const ImageUploadField: React.FC<{
   onChange: (v: string) => void;
   onSave: () => void;
   saving: boolean;
-}> = ({ label, hint, value, onChange, onSave, saving }) => {
+  aspectRatio?: '1:1' | '16:9' | 'free';
+}> = ({ label, hint, value, onChange, onSave, saving, aspectRatio = 'free' }) => {
   const [uploading, setUploading] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const handleUpload = async (file: File) => {
+  const doUpload = async (file: File) => {
     setUploading(true);
     try {
       const ext = file.name.split('.').pop() || 'jpg';
@@ -155,8 +159,32 @@ const ImageUploadField: React.FC<{
     }
   };
 
+  const handleFileSelected = (file: File) => {
+    setPendingFile(file);
+    setCropperOpen(true);
+  };
+
+  const handleCropSave = (croppedFile: File) => {
+    setCropperOpen(false);
+    setPendingFile(null);
+    doUpload(croppedFile);
+  };
+
+  const handleCropCancel = () => {
+    setCropperOpen(false);
+    setPendingFile(null);
+  };
+
   return (
     <div className="space-y-1.5">
+      <ImageCropperModal
+        open={cropperOpen}
+        file={pendingFile}
+        aspectRatio={aspectRatio}
+        title={label}
+        onSave={handleCropSave}
+        onCancel={handleCropCancel}
+      />
       <label className="text-[10px] font-medium uppercase tracking-wider block" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>{label}</label>
       <p className="text-[9px]" style={{ color: 'hsl(262 75% 65%)' }}>📐 {hint}</p>
       <div className="flex gap-2">
@@ -175,7 +203,7 @@ const ImageUploadField: React.FC<{
       </div>
       {value && <img src={value} alt="" className="w-full h-16 object-cover rounded-lg mt-1" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }} />}
       <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleUpload(f); e.target.value = ''; }} />
+        onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); e.target.value = ''; }} />
     </div>
   );
 };
@@ -409,6 +437,7 @@ const AdminLandingEditor: React.FC = () => {
               onChange={v => setVal('store_bg_image', v)}
               onSave={() => saveKey('store_bg_image')}
               saving={saving === 'store_bg_image'}
+              aspectRatio="16:9"
             />
             <div>
               <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>
@@ -461,6 +490,7 @@ const AdminLandingEditor: React.FC = () => {
                   onChange={v => setVal(`store_cat_${i}_image`, v)}
                   onSave={() => saveKey(`store_cat_${i}_image`)}
                   saving={saving === `store_cat_${i}_image`}
+                  aspectRatio="1:1"
                 />
               </div>
             ))}
@@ -524,6 +554,7 @@ const AdminLandingEditor: React.FC = () => {
               onChange={v => setVal('footer_logo_url', v)}
               onSave={() => saveKey('footer_logo_url')}
               saving={saving === 'footer_logo_url'}
+              aspectRatio="1:1"
             />
           </div>
 
@@ -560,6 +591,7 @@ const AdminLandingEditor: React.FC = () => {
                   onChange={v => setVal(`stat_${n}_image`, v)}
                   onSave={() => saveKey(`stat_${n}_image`)}
                   saving={saving === `stat_${n}_image`}
+                  aspectRatio="1:1"
                 />
               </div>
             ))}
