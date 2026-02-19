@@ -105,7 +105,7 @@ const Index = () => {
   const [padNames, setPadNames] = useState<Record<string, string>>(() => {
     try {const d = localStorage.getItem('drum-pads-pad-names');return d ? JSON.parse(d) : {};} catch {return {};}
   });
-  const [focusMode, setFocusMode] = useState(() => localStorage.getItem(FOCUS_MODE_KEY) === 'true');
+  const [focusMode, setFocusMode] = useState(false);
   const [padPans, setPadPans] = useState<Record<string, number>>(() => {
     try {const d = localStorage.getItem('drum-pads-pad-pans');return d ? JSON.parse(d) : {};} catch {return {};}
   });
@@ -349,11 +349,7 @@ const Index = () => {
   }, []);
 
   const toggleFocusMode = useCallback(() => {
-    setFocusMode((prev) => {
-      const next = !prev;
-      localStorage.setItem(FOCUS_MODE_KEY, String(next));
-      return next;
-    });
+    setFocusMode((prev) => !prev);
   }, []);
 
   // Keep loop engine in sync with BPM/time signature
