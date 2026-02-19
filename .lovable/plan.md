@@ -1,53 +1,49 @@
 
-## Causa do Problema
+## Root Cause
 
-O frontend em `AdminPackManager.tsx` tem uma validação rígida de UUID antes de chamar a Edge Function de exclusão:
+The error `invalid input syntax for type uuid: "worship-drums-dry"` comes from the **`upload` action in the Edge Function** — it has no UUID format validation on `packId`. It only checks length `> 50`, so slugs like `worship-drums-dry` (17 chars) pass straight through and crash PostgreSQL when attempting to insert into `pack_sounds.pack_id` (a UUID column).
 
-```typescript
-const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-if (!uuidRegex.test(pack.id)) {
-  toast.error(`Este pack tem um ID legado... Delete-o manualmente.`);
-  return; // bloqueia a exclusão
-}
+Additionally, the `update-pack` action uses a different, inconsistent regex that may also fail for certain inputs.
+
+## The Problem in Detail
+
+```
+upload action (line 63-66):
+  ✗ Only checks: packId.length > 50
+  ✗ "worship-drums-dry" is 17 chars → PASSES
+  ✗ Reaches: pack_sounds.insert({ pack_id: "worship-drums-dry" })
+  ✗ PostgreSQL: ERROR invalid input syntax for type uuid
+
+update-pack action (line 266):
+  Uses: /^[0-9a-f-]{8,}-[0-9a-f-]+$/  ← inconsistent with other actions
 ```
 
-Os packs "legados" no banco de dados têm IDs no formato `a1000001-0000-0000-0000-000000000001`. Esses IDs são **UUIDs válidos para o PostgreSQL** (todos os caracteres são hexadecimais, no formato correto), mas a regex estrita do frontend os **rejeita** — impedindo desnecessariamente a exclusão pelo painel.
+All other actions (`delete-pack`, `remove-banner`, `remove-icon`, `duplicate-pack`) use `/^[0-9a-f-]{32,}$/i` which correctly accepts the legacy IDs like `a1000001-0000-0000-0000-000000000001`.
 
-A validação foi adicionada para evitar o erro anterior onde slugs de texto como `worship-drums-dry` chegavam ao banco e causavam erros de sintaxe SQL. Porém, ela é excessivamente restritiva e bloqueia UUIDs que o PostgreSQL aceita perfeitamente.
+## Solution
 
-## Solução
-
-### 1. Remover a validação rígida de UUID do frontend (`AdminPackManager.tsx`)
-
-Retirar o bloco que bloqueia packs com IDs "legados". A Edge Function já tem validação suficiente e usa a service role — ela simplesmente faz `DELETE WHERE id = packId` pelo valor exato do banco.
-
-### 2. Ajustar a validação da Edge Function (`admin-upload-sound/index.ts`)
-
-As ações `delete-pack`, `update-pack`, `remove-banner`, `remove-icon` e `duplicate-pack` usam a regex `/^[0-9a-f-]{36}$/` que verifica apenas comprimento. Essa regex é suficiente para todos os IDs presentes no banco.
-
-Para as ações de exclusão, substituir a regex estrita por uma verificação de comprimento e caracteres hexadecimais mais permissiva que aceita os IDs reais no banco:
+### 1. Add a shared UUID validation helper at the top of the Edge Function
 
 ```typescript
-// Antes (muito restritivo):
-!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(packId)
-
-// Depois (aceita todos UUIDs válidos do PostgreSQL):
-!/^[0-9a-f-]{36}$/i.test(packId)  // <- já é o que a EF usa, mas o frontend precisa ser alinhado
+// Accepts standard UUIDs and legacy PostgreSQL-compatible UUID formats
+const isValidPackId = (id: string) => /^[0-9a-f-]{32,}$/i.test(id);
 ```
 
-### 3. Melhorar a UX do modal de confirmação
+### 2. Apply it consistently to ALL actions that receive a `packId`
 
-Ao invés do `window.confirm()` nativo, exibir diretamente o toast de confirmação com o nome do pack e a contagem de sons — mantendo o comportamento atual mas sem bloquear os packs legados.
+- `upload` action: replace the `packId.length > 50` check with `isValidPackId(packId)` validation
+- `update-pack` action: replace the inconsistent regex with `isValidPackId`
+- All other actions already use a compatible regex — standardize them too
 
-## Arquivos a modificar
+## Files to Modify
 
-| Arquivo | Mudança |
+| File | Change |
 |---|---|
-| `src/components/AdminPackManager.tsx` | Remover o bloco de validação de UUID que exibe a mensagem de "ID legado" e bloqueia a exclusão |
-| `supabase/functions/admin-upload-sound/index.ts` | Nenhuma mudança necessária (a Edge Function já aceita os IDs corretamente via `/^[0-9a-f-]{36}$/`) |
+| `supabase/functions/admin-upload-sound/index.ts` | Add `isValidPackId` helper and apply it in `upload` and `update-pack` actions (the primary gap causing the 500 error) |
 
-## O que acontece após a correção
+## What Changes After the Fix
 
-- Packs com IDs `a1000001-0000-0000-0000-000000000001` poderão ser excluídos normalmente pelo painel
-- A Edge Function recebe o ID, faz `DELETE` no banco pelo valor exato, apaga os arquivos de storage e retorna sucesso
-- Nenhuma lógica de negócio é alterada — apenas a validação excessivamente rígida do frontend é removida
+- `upload` action will reject non-UUID `packId` values with a clear 400 error instead of a 500 database crash
+- `update-pack` uses the same permissive regex as all other actions, accepting both standard UUIDs and legacy IDs
+- All actions consistently use the same validation, preventing future inconsistencies
+- The Edge Function is redeployed automatically after the code change
