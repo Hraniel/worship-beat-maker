@@ -31,7 +31,7 @@ export async function subscribeToPush(): Promise<boolean> {
     const reg = (await navigator.serviceWorker.ready) as PushReg;
     if (!reg.pushManager) return false;
 
-    const vapidPublicKey = 'BEmai4sVQ5smKOntl650q-VuF3KJqyZFjAwxsEfMAHADK2YkLtA853gCVvCnjKOmSoRJMVumw5pcJVU8RhGTomo';
+    const vapidPublicKey = 'BDcRX9mAmmCx-FyEKa1WMZGi1U1IJbSUeINDGhDxy30ZiiN0q84FpjfAeKhX4d1vLDeB8OURov_Xdk1foz6F5NM';
     const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
 
     const subscription = await reg.pushManager.subscribe({

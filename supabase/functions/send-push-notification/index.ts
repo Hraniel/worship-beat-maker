@@ -1,27 +1,19 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { sendNotification, deserializeVapidKeys } from 'npm:web-push-browser@^1.4.2';
+import webpush from 'npm:web-push@3.6.7';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const VAPID_PUBLIC_KEY = 'BEmai4sVQ5smKOntl650q-VuF3KJqyZFjAwxsEfMAHADK2YkLtA853gCVvCnjKOmSoRJMVumw5pcJVU8RhGTomo';
+const VAPID_PUBLIC_KEY = 'BDcRX9mAmmCx-FyEKa1WMZGi1U1IJbSUeINDGhDxy30ZiiN0q84FpjfAeKhX4d1vLDeB8OURov_Xdk1foz6F5NM';
 
 // ── Convert PKCS8 base64url to raw 32-byte base64url ──────────────────────
-// The VapidGenerator exports the private key in PKCS8 format.
-// web-push-browser expects the raw 32-byte d value in base64url.
 function base64UrlToUint8Array(base64: string): Uint8Array {
   const padding = '='.repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(b64);
   return Uint8Array.from(raw, (c) => c.charCodeAt(0));
-}
-
-function uint8ArrayToBase64Url(arr: Uint8Array): string {
-  let str = '';
-  arr.forEach((b) => (str += String.fromCharCode(b)));
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
 async function pkcs8ToRawPrivateKey(pkcs8Base64Url: string): Promise<string> {
@@ -34,11 +26,11 @@ async function pkcs8ToRawPrivateKey(pkcs8Base64Url: string): Promise<string> {
     ['sign']
   );
   const jwk = await crypto.subtle.exportKey('jwk', key);
-  // jwk.d is the raw private key in base64url format
-  return jwk.d!;
+  // jwk.d is the raw private key in base64url, convert to base64 for web-push
+  const d = jwk.d!;
+  // web-push expects base64url format for the private key
+  return d;
 }
-
-// ─────────────────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
@@ -94,14 +86,15 @@ Deno.serve(async (req) => {
       const { title, message, target_user_id, url } = body;
       if (!title) return new Response(JSON.stringify({ error: 'Missing title' }), { status: 400, headers: corsHeaders });
 
-      // Convert PKCS8 private key to raw base64url format
+      // Convert PKCS8 private key to raw base64url format for web-push
       const rawPrivateKey = await pkcs8ToRawPrivateKey(vapidPrivateKeyPkcs8);
 
-      // Deserialize VAPID keys for web-push-browser
-      const vapidKeys = await deserializeVapidKeys({
-        publicKey: VAPID_PUBLIC_KEY,
-        privateKey: rawPrivateKey,
-      });
+      // Configure web-push with VAPID details
+      webpush.setVapidDetails(
+        'mailto:admin@glorypads.app',
+        VAPID_PUBLIC_KEY,
+        rawPrivateKey
+      );
 
       // Fetch subscriptions (all or specific user)
       let query = supabaseAdmin.from('push_subscriptions').select('*');
@@ -138,14 +131,10 @@ Deno.serve(async (req) => {
               },
             };
 
-            const res = await sendNotification(vapidKeys, pushSub, payload, {
-              contactInformation: 'mailto:admin@glorypads.app',
-              ttl: 86400,
-            });
-
-            return { ok: res.ok, status: res.status, endpoint: sub.endpoint };
+            await webpush.sendNotification(pushSub, payload);
+            return { ok: true, endpoint: sub.endpoint };
           } catch (e: any) {
-            return { ok: false, status: e?.statusCode || 0, error: e?.message, endpoint: sub.endpoint };
+            return { ok: false, statusCode: e?.statusCode || 0, error: e?.message, endpoint: sub.endpoint };
           }
         })
       );
@@ -155,13 +144,13 @@ Deno.serve(async (req) => {
           const r = result.value;
           if (r.ok) {
             sent++;
-            console.log(`[PUSH] ✓ Sent to ${r.endpoint.slice(0, 60)}... status=${r.status}`);
+            console.log(`[PUSH] ✓ Sent to ${r.endpoint.slice(0, 60)}...`);
           } else {
             failed++;
-            console.error(`[PUSH] ✗ Failed ${r.endpoint.slice(0, 60)}... status=${r.status} error=${r.error || ''}`);
-            if (r.status === 410 || r.status === 404) {
+            console.error(`[PUSH] ✗ Failed ${r.endpoint.slice(0, 60)}... status=${r.statusCode} error=${r.error || ''}`);
+            if (r.statusCode === 410 || r.statusCode === 404) {
               expiredEndpoints.push(r.endpoint);
-              console.log(`[PUSH] Removing expired subscription (${r.status})`);
+              console.log(`[PUSH] Removing expired subscription (${r.statusCode})`);
             }
           }
         } else {
