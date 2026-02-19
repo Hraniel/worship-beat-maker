@@ -13,18 +13,20 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
-    );
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Unauthorized");
+
+    // Use service role client to authenticate the user token
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-    if (claimsErr || !claimsData?.claims) throw new Error("Unauthorized");
-    const userId = claimsData.claims.sub as string;
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) throw new Error("Unauthorized");
+    const userId = userData.user.id;
 
     const { packId } = await req.json();
     if (!packId) throw new Error("Pack ID required");
@@ -58,14 +60,8 @@ serve(async (req) => {
       throw purchaseErr;
     }
 
-    // Get sound file paths for download
-    const serviceClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    const { data: sounds } = await serviceClient
+    // Get sound file paths and generate signed URLs (reuse same service client)
+    const { data: sounds } = await supabase
       .from("pack_sounds")
       .select("name, short_name, file_path, duration_ms")
       .eq("pack_id", packId)
@@ -76,7 +72,7 @@ serve(async (req) => {
     if (sounds) {
       for (const sound of sounds) {
         if (sound.file_path) {
-          const { data: urlData } = await serviceClient.storage
+          const { data: urlData } = await supabase.storage
             .from("sound-packs")
             .createSignedUrl(sound.file_path, 3600); // 1 hour expiry
           if (urlData?.signedUrl) {
