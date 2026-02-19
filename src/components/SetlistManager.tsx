@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   ListMusic, Plus, Trash2, ChevronRight, GripVertical, Share2, Link2, Eye, EyeOff,
-  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music,
+  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, Zap, Crown,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription
 } from '@/components/ui/sheet';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -21,6 +24,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import type { SetlistSong } from '@/lib/sounds';
 import { useSetlistEvents, type SetlistEvent, type EventSong } from '@/hooks/useSetlistEvents';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface SetlistManagerProps {
   songs: SetlistSong[];
@@ -31,6 +35,7 @@ interface SetlistManagerProps {
   onReorder?: (ids: string[]) => void;
   setlists?: { id: string; name: string; songs: SetlistSong[] }[];
   activeSetlistId?: string | null;
+  onOpenMusicAI?: () => void;
 }
 
 interface SortableItemProps {
@@ -341,11 +346,13 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({ onSubmit, onCancel })
 };
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
-  songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder,
+  songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder, onOpenMusicAI,
 }) => {
   const [newName, setNewName] = useState('');
   const [open, setOpen] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [showMusicAISuggestion, setShowMusicAISuggestion] = useState(false);
+  const { tier } = useSubscription();
   const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = useSetlistEvents();
 
   const sensors = useSensors(
@@ -354,7 +361,26 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   );
 
   const handleSave = () => {
-    if (newName.trim()) { onSaveSong(newName.trim()); setNewName(''); }
+    if (!newName.trim()) return;
+    // For Pro/Master users with no saved songs, suggest Music AI first
+    if (songs.length === 0 && (tier === 'pro' || tier === 'master') && onOpenMusicAI) {
+      setShowMusicAISuggestion(true);
+      return;
+    }
+    onSaveSong(newName.trim());
+    setNewName('');
+  };
+
+  const handleSaveManually = () => {
+    setShowMusicAISuggestion(false);
+    onSaveSong(newName.trim());
+    setNewName('');
+  };
+
+  const handleOpenMusicAI = () => {
+    setShowMusicAISuggestion(false);
+    setOpen(false);
+    onOpenMusicAI?.();
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -371,7 +397,54 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     if (ev) setShowCreateEvent(false);
   };
 
+  const TierIcon = tier === 'master' ? Crown : Zap;
+
   return (
+    <>
+    {/* Music AI Suggestion Modal */}
+    <Dialog open={showMusicAISuggestion} onOpenChange={setShowMusicAISuggestion}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-foreground">
+            <span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </span>
+            Criar com Music AI?
+          </DialogTitle>
+          <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
+            Você ainda não tem músicas salvas. Como usuário{' '}
+            <span className="font-semibold text-primary inline-flex items-center gap-0.5">
+              <TierIcon className="h-3 w-3" />
+              {tier === 'master' ? 'Master' : 'Pro'}
+            </span>
+            , você pode usar o <strong>Music AI</strong> para buscar uma música e aplicar automaticamente BPM, tom e configurações de pads.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2 mt-1">
+          <button
+            onClick={handleOpenMusicAI}
+            className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors text-left"
+          >
+            <Sparkles className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">Usar Music AI</p>
+              <p className="text-[11px] text-muted-foreground">Buscar e configurar tudo automaticamente</p>
+            </div>
+          </button>
+          <button
+            onClick={handleSaveManually}
+            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border hover:bg-muted transition-colors text-left"
+          >
+            <Music className="h-5 w-5 text-muted-foreground shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Salvar manualmente</p>
+              <p className="text-[11px] text-muted-foreground">Continuar com os ajustes atuais</p>
+            </div>
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
@@ -457,6 +530,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         </div>
       </SheetContent>
     </Sheet>
+    </>
   );
 };
 
