@@ -505,6 +505,24 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
     }
   };
 
+  const handleDeletePack = async (pack: StorePackData) => {
+    const soundCount = pack.sounds.length;
+    const confirmMsg = soundCount > 0
+      ? `Excluir permanentemente "${pack.name}" e seus ${soundCount} sons? Esta ação não pode ser desfeita.`
+      : `Excluir permanentemente "${pack.name}"? Esta ação não pode ser desfeita.`;
+    if (!confirm(confirmMsg)) return;
+    try {
+      const fd = new FormData();
+      fd.append('action', 'delete-pack');
+      fd.append('packId', pack.id);
+      await invokeAdmin(fd);
+      toast.success(`Pack "${pack.name}" excluído permanentemente.`);
+      onRefresh();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao excluir pack');
+    }
+  };
+
   const handleNotifyUsers = async (packName: string) => {
     setNotifyingPack(packName);
     try {
@@ -851,8 +869,14 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                         <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                       </button>
 
-
-
+                      {/* Delete pack */}
+                      <button
+                        onClick={() => handleDeletePack(pack)}
+                        className="p-1.5 rounded-lg hover:bg-destructive/10 transition-colors"
+                        title="Excluir pack permanentemente"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive/60 hover:text-destructive" />
+                      </button>
 
                       {/* Expand/collapse */}
                       <button
