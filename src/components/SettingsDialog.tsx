@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2 } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, Menu, X, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
-import { useIsLandscape } from '@/hooks/use-mobile';
+import { useIsMobile, useIsLandscape } from '@/hooks/use-mobile';
 import {
   isPushSupported,
   getPushPermission,
@@ -125,7 +124,7 @@ const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onMo
   </div>
 );
 
-// ── Push Notification Settings Tab ───────────────────────────────────────────
+// ── Push Notification Settings ──────────────────────────────────────────────
 
 function NotificationSettings() {
   const [supported, setSupported] = useState(false);
@@ -267,18 +266,32 @@ function NotificationSettings() {
   );
 }
 
+// ── Tab definitions ─────────────────────────────────────────────────────────
+
+const TAB_ITEMS = [
+  { value: 'audio', label: 'Áudio', icon: Headphones },
+  { value: 'notifications', label: 'Notificações', icon: Bell },
+  { value: 'store', label: 'Loja', icon: Store },
+  { value: 'plans', label: 'Planos', icon: Crown },
+  { value: 'guide', label: 'Guia', icon: HelpCircle },
+  { value: 'about', label: 'Sobre', icon: Info },
+] as const;
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState('audio');
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
 
   useEffect(() => {
     if (open) {
       setSettings(loadAudioSettings());
       if (initialTab) setActiveTab(initialTab);
+      setDrawerOpen(false);
     }
   }, [open, initialTab]);
 
@@ -289,170 +302,261 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
     onAudioSettingsChange?.(next);
   };
 
+  const handleTabSelect = (value: string) => {
+    setActiveTab(value);
+    setDrawerOpen(false);
+  };
+
+  const activeTabItem = TAB_ITEMS.find(t => t.value === activeTab);
+
+  // ── Render tab content ──────────────────────────────────────────────────
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'audio':
+        return (
+          <div className="flex flex-col gap-3 w-full">
+            <StereoOption
+              id="pads" label="Pads"
+              mode={settings.padsStereo} side={settings.padsSide}
+              onModeChange={(v) => update({ padsStereo: v, padsSide: v === 'mono' ? null : settings.padsSide })}
+              onSideChange={(v) => update({ padsSide: v })}
+            />
+            <StereoOption
+              id="ambient" label="Continuous Pads"
+              mode={settings.ambientStereo} side={settings.ambientSide}
+              onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}
+              onSideChange={(v) => update({ ambientSide: v })}
+            />
+            <StereoOption
+              id="metronome" label="Metrônomo"
+              mode={settings.metronomeStereo} side={settings.metronomeSide}
+              onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
+              onSideChange={(v) => update({ metronomeSide: v })}
+            />
+          </div>
+        );
+
+      case 'notifications':
+        return (
+          <div className="flex flex-col gap-3 w-full">
+            <div className="flex justify-center items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notificações Push</span>
+            </div>
+            <NotificationSettings />
+          </div>
+        );
+
+      case 'store':
+        return (
+          <div className="flex flex-col items-center gap-4 text-center w-full py-4">
+            <div className="flex items-center gap-2">
+              <Store className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Glory Store</span>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Descubra novos sons, packs e texturas para elevar seu louvor.
+            </p>
+            <button
+              onClick={() => { onOpenChange(false); navigate('/dashboard'); }}
+              className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Acessar a Loja
+            </button>
+          </div>
+        );
+
+      case 'plans':
+        return (
+          <div className="flex flex-col items-center gap-4 text-center w-full py-4">
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Planos e Assinatura</span>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Gerencie sua assinatura e desbloqueie recursos avançados.
+            </p>
+            <button
+              onClick={() => { sessionStorage.setItem('settings-return-tab', 'plans'); onOpenChange(false); navigate('/pricing'); }}
+              className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+            >
+              Gerenciar plano
+            </button>
+          </div>
+        );
+
+      case 'guide':
+        return (
+          <div className="flex flex-col gap-3 w-full">
+            <div className="flex justify-center items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Guia Prático</span>
+            </div>
+            <button
+              onClick={() => { onOpenChange(false); onStartTutorial?.(); }}
+              className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-primary hover:bg-muted rounded-lg transition-colors border border-primary/30"
+            >
+              Tour Completo
+            </button>
+            <div className="rounded-lg border border-border bg-muted/20 w-full overflow-hidden">
+              {TUTORIAL_SECTIONS.map(section => (
+                <button
+                  key={section.id}
+                  onClick={() => { onOpenChange(false); onStartTutorial?.(section.id); }}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors border-b border-border/50 last:border-0"
+                >
+                  {section.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'about':
+        return (
+          <div className="flex flex-col items-center gap-4 text-center w-full py-4">
+            <div className="flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Sobre</span>
+            </div>
+            <div className="rounded-lg border border-border bg-card p-5 space-y-2 w-full text-left">
+              <h3 className="text-base font-bold text-foreground">Glory Pads</h3>
+              <p className="text-sm text-muted-foreground">v1.0.0</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Pads de louvor profissionais para sua igreja. Configure sons, efeitos e metrônomo para elevar a experiência do seu worship.
+              </p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  // ── Mobile drawer overlay ───────────────────────────────────────────────
+
+  const mobileDrawer = (
+    <>
+      {/* Backdrop */}
+      {drawerOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-50 transition-opacity"
+          onClick={() => setDrawerOpen(false)}
+        />
+      )}
+      {/* Drawer panel */}
+      <div
+        className={`fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 transform transition-transform duration-200 ease-out ${
+          drawerOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <span className="text-sm font-bold text-foreground">Configurações</span>
+          <button onClick={() => setDrawerOpen(false)} className="p-1 rounded-md hover:bg-muted transition-colors">
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
+        <nav className="flex flex-col p-2 gap-0.5">
+          {TAB_ITEMS.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.value;
+            return (
+              <button
+                key={item.value}
+                onClick={() => handleTabSelect(item.value)}
+                className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                }`}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="flex-1 text-left">{item.label}</span>
+                <ChevronRight className={`h-4 w-4 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground/40'}`} />
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+    </>
+  );
+
+  // ── Desktop/landscape sidebar ─────────────────────────────────────────
+
+  const desktopSidebar = (
+    <div className="w-44 shrink-0 border-r border-border flex flex-col py-2 gap-0.5 overflow-y-auto">
+      {TAB_ITEMS.map(item => {
+        const Icon = item.icon;
+        const isActive = activeTab === item.value;
+        return (
+          <button
+            key={item.value}
+            onClick={() => setActiveTab(item.value)}
+            className={`flex items-center gap-2.5 w-full px-3 py-2.5 text-xs font-medium transition-colors ${
+              isActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            }`}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  // ── Dialog ─────────────────────────────────────────────────────────────
+
+  const useSideLayout = isLandscape || !isMobile;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={
-        isLandscape
-          ? "w-full h-full max-w-full max-h-full rounded-none mx-0 overflow-y-auto"
-          : "w-[calc(100vw-2rem)] max-w-lg sm:max-w-xl lg:max-w-2xl mx-auto"
-      }>
-        <DialogHeader>
-          <DialogTitle className="text-lg text-center">Configurações</DialogTitle>
-        </DialogHeader>
+      <DialogContent
+        className={
+          isLandscape
+            ? "w-full h-full max-w-full max-h-full rounded-none mx-0 p-0 overflow-hidden"
+            : isMobile
+              ? "w-[calc(100vw-1rem)] max-w-lg p-0 overflow-hidden max-h-[calc(100dvh-2rem)]"
+              : "w-[calc(100vw-2rem)] max-w-2xl p-0 overflow-hidden max-h-[85vh]"
+        }
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
+          {isMobile && !isLandscape && (
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="p-1.5 -ml-1 rounded-md hover:bg-muted transition-colors"
+            >
+              <Menu className="h-5 w-5 text-muted-foreground" />
+            </button>
+          )}
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {isMobile && !isLandscape && activeTabItem && (
+              <activeTabItem.icon className="h-4 w-4 text-primary shrink-0" />
+            )}
+            <h2 className="text-base font-bold text-foreground truncate">
+              {isMobile && !isLandscape ? activeTabItem?.label || 'Configurações' : 'Configurações'}
+            </h2>
+          </div>
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Tab bar — horizontal scrollable list */}
-          <TabsList className="w-full flex h-auto p-1 gap-1 overflow-x-auto scrollbar-none justify-start">
-            <TabsTrigger value="audio" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
-              <Headphones className="h-4 w-4 shrink-0" />
-              <span>Áudio</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
-              <Bell className="h-4 w-4 shrink-0" />
-              <span>Notificações</span>
-            </TabsTrigger>
-            <TabsTrigger value="store" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
-              <Store className="h-4 w-4 shrink-0" />
-              <span>Loja</span>
-            </TabsTrigger>
-            <TabsTrigger value="plans" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
-              <Crown className="h-4 w-4 shrink-0" />
-              <span>Planos</span>
-            </TabsTrigger>
-            <TabsTrigger value="guide" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
-              <HelpCircle className="h-4 w-4 shrink-0" />
-              <span>Guia</span>
-            </TabsTrigger>
-            <TabsTrigger value="about" className="flex items-center gap-1.5 py-2 px-3 text-xs whitespace-nowrap shrink-0">
-              <Info className="h-4 w-4 shrink-0" />
-              <span>Sobre</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* Body */}
+        <div className={`flex flex-1 min-h-0 overflow-hidden ${useSideLayout ? 'flex-row' : 'flex-col'}`}>
+          {/* Sidebar for desktop/landscape */}
+          {useSideLayout && desktopSidebar}
 
-          {/* Audio tab */}
-          <TabsContent value="audio" className="mt-4">
-            <div className="flex flex-col gap-3 w-full">
-              <StereoOption
-                id="pads"
-                label="Pads"
-                mode={settings.padsStereo}
-                side={settings.padsSide}
-                onModeChange={(v) => update({ padsStereo: v, padsSide: v === 'mono' ? null : settings.padsSide })}
-                onSideChange={(v) => update({ padsSide: v })}
-              />
-              <StereoOption
-                id="ambient"
-                label="Continuous Pads"
-                mode={settings.ambientStereo}
-                side={settings.ambientSide}
-                onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}
-                onSideChange={(v) => update({ ambientSide: v })}
-              />
-              <StereoOption
-                id="metronome"
-                label="Metrônomo"
-                mode={settings.metronomeStereo}
-                side={settings.metronomeSide}
-                onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
-                onSideChange={(v) => update({ metronomeSide: v })}
-              />
-            </div>
-          </TabsContent>
+          {/* Content area */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {renderContent()}
+          </div>
+        </div>
 
-
-          {/* Notifications tab */}
-          <TabsContent value="notifications" className="mt-4">
-            <div className="flex flex-col gap-3 w-full">
-              <div className="flex justify-center items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notificações Push</span>
-              </div>
-              <NotificationSettings />
-            </div>
-          </TabsContent>
-
-          {/* Store tab */}
-          <TabsContent value="store" className="mt-4">
-            <div className="flex flex-col items-center gap-4 text-center w-full py-4">
-              <div className="flex items-center gap-2">
-                <Store className="h-5 w-5 text-primary" />
-                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Glory Store</span>
-              </div>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Descubra novos sons, packs e texturas para elevar seu louvor.
-              </p>
-              <button
-                onClick={() => { onOpenChange(false); navigate('/dashboard'); }}
-                className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-              >
-                Acessar a Loja
-              </button>
-            </div>
-          </TabsContent>
-
-          {/* Plans tab */}
-          <TabsContent value="plans" className="mt-4">
-            <div className="flex flex-col items-center gap-4 text-center w-full py-4">
-              <div className="flex items-center gap-2">
-                <Crown className="h-5 w-5 text-primary" />
-                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Planos e Assinatura</span>
-              </div>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Gerencie sua assinatura e desbloqueie recursos avançados.
-              </p>
-              <button
-                onClick={() => { sessionStorage.setItem('settings-return-tab', 'plans'); onOpenChange(false); navigate('/pricing'); }}
-                className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-              >
-                Gerenciar plano
-              </button>
-            </div>
-          </TabsContent>
-
-          {/* Guide tab */}
-          <TabsContent value="guide" className="mt-4">
-            <div className="flex flex-col gap-3 w-full">
-              <div className="flex justify-center items-center gap-2">
-                <HelpCircle className="h-5 w-5 text-primary" />
-                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Guia Prático</span>
-              </div>
-              <button
-                onClick={() => { onOpenChange(false); onStartTutorial?.(); }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-primary hover:bg-muted rounded-lg transition-colors border border-primary/30"
-              >
-                Tour Completo
-              </button>
-              <div className="rounded-lg border border-border bg-muted/20 w-full overflow-hidden">
-                {TUTORIAL_SECTIONS.map(section => (
-                  <button
-                    key={section.id}
-                    onClick={() => { onOpenChange(false); onStartTutorial?.(section.id); }}
-                    className="flex items-center gap-3 w-full px-4 py-3 text-sm text-foreground hover:bg-muted transition-colors border-b border-border/50 last:border-0"
-                  >
-                    {section.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* About tab */}
-          <TabsContent value="about" className="mt-4">
-            <div className="flex flex-col items-center gap-4 text-center w-full py-4">
-              <div className="flex items-center gap-2">
-                <Info className="h-5 w-5 text-primary" />
-                <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Sobre</span>
-              </div>
-              <div className="rounded-lg border border-border bg-card p-5 space-y-2 w-full text-left">
-                <h3 className="text-base font-bold text-foreground">Glory Pads</h3>
-                <p className="text-sm text-muted-foreground">v1.0.0</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Pads de louvor profissionais para sua igreja. Configure sons, efeitos e metrônomo para elevar a experiência do seu worship.
-                </p>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Mobile drawer (portal-like, rendered inside dialog) */}
+        {isMobile && !isLandscape && mobileDrawer}
       </DialogContent>
     </Dialog>
   );
