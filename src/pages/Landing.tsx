@@ -62,34 +62,77 @@ const Divider = ({ fromLight, darkColor }: { fromLight: boolean; darkColor: stri
   />
 );
 
-// Nav
-const Nav = ({ navigate }: { navigate: ReturnType<typeof useNavigate> }) => (
-  <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b"
-    style={{
-      background: 'hsl(0 0% 100% / 0.96)',
-      borderColor: 'hsl(0 0% 0% / 0.08)',
-      paddingTop: 'env(safe-area-inset-top)',
-    }}>
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
-        <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
-      </div>
-      <div className="flex items-center gap-2 sm:gap-4">
-        <a href="#recursos" className="text-sm text-muted-foreground hover:text-foreground transition hidden sm:inline">Recursos</a>
-        <a href="#sons" className="text-sm text-muted-foreground hover:text-foreground transition hidden sm:inline">Sons</a>
-        <a href="#planos" className="text-sm text-muted-foreground hover:text-foreground transition hidden sm:inline">Planos</a>
-        <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="text-foreground/70 hover:text-foreground">
-          Entrar
-        </Button>
-        <Button size="sm" onClick={() => navigate('/auth?mode=signup')}
-          className="bg-foreground text-background hover:bg-foreground/90 font-semibold">
-          Começar grátis
-        </Button>
-      </div>
+// Announcement Bar
+const AnnouncementBar = ({ config }: { config: Record<string, string> }) => {
+  const [dismissed, setDismissed] = React.useState(false);
+  if (config.announcement_enabled !== 'true' || dismissed) return null;
+  const bg = config.announcement_bg || 'hsl(262 75% 55%)';
+  const color = config.announcement_color || 'hsl(0 0% 100%)';
+  const text = config.announcement_text || '';
+  const link = config.announcement_link || '';
+  const linkLabel = config.announcement_link_label || '';
+  if (!text) return null;
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium"
+      style={{ background: bg, color, paddingTop: 'calc(env(safe-area-inset-top) + 8px)' }}>
+      <span>{text}</span>
+      {link && linkLabel && (
+        <a href={link} className="underline underline-offset-2 font-semibold hover:opacity-80 transition">{linkLabel}</a>
+      )}
+      <button onClick={() => setDismissed(true)} className="ml-2 opacity-60 hover:opacity-100 transition text-base leading-none">&times;</button>
     </div>
-  </nav>
-);
+  );
+};
+
+// Nav
+const Nav = ({ navigate, config, hasAnnouncement }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string>; hasAnnouncement: boolean }) => {
+  const navBg = config.nav_bg || 'hsl(0 0% 100% / 0.96)';
+  const navBorder = config.nav_border_color || 'hsl(0 0% 0% / 0.08)';
+  const linkColor = config.nav_link_color || 'hsl(220 15% 45%)';
+  const loginLabel = config.nav_btn_login_label || 'Entrar';
+  const signupLabel = config.nav_btn_signup_label || 'Começar grátis';
+
+  const navLinks = [
+    { label: config.nav_link_0_label || 'Recursos', href: config.nav_link_0_href || '#recursos' },
+    { label: config.nav_link_1_label || 'Sons', href: config.nav_link_1_href || '#sons' },
+    { label: config.nav_link_2_label || 'Planos', href: config.nav_link_2_href || '#planos' },
+  ];
+
+  return (
+    <nav className="fixed left-0 right-0 z-50 backdrop-blur-xl border-b"
+      style={{
+        top: hasAnnouncement ? '32px' : '0',
+        background: navBg,
+        borderColor: navBorder,
+        paddingTop: hasAnnouncement ? '0' : 'env(safe-area-inset-top)',
+      }}>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
+          <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-4">
+          {navLinks.map(l => (
+            <a key={l.href} href={l.href} className="text-sm transition hidden sm:inline"
+              style={{ color: linkColor }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'hsl(220 15% 10%)')}
+              onMouseLeave={e => (e.currentTarget.style.color = linkColor)}>
+              {l.label}
+            </a>
+          ))}
+          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="text-foreground/70 hover:text-foreground">
+            {loginLabel}
+          </Button>
+          <Button size="sm" onClick={() => navigate('/auth?mode=signup')}
+            className="bg-foreground text-background hover:bg-foreground/90 font-semibold">
+            {signupLabel}
+          </Button>
+        </div>
+      </div>
+    </nav>
+  );
+};
 
 // Hero — dynamic styles
 const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
@@ -571,9 +614,9 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
   const logoUrl = config.footer_logo_url;
 
   const footerLinks = [
-    { label: config.footer_link_1_label || 'Recursos', href: config.footer_link_1_href || '#recursos' },
-    { label: config.footer_link_2_label || 'Planos', href: config.footer_link_2_href || '#planos' },
-    { label: config.footer_link_3_label || 'Glory Store', href: config.footer_link_3_href || '#sons' },
+    { label: config.footer_link_0_label || 'Recursos', href: config.footer_link_0_href || '#recursos' },
+    { label: config.footer_link_1_label || 'Planos', href: config.footer_link_1_href || '#planos' },
+    { label: config.footer_link_2_label || 'Glory Store', href: config.footer_link_2_href || '#sons' },
   ];
 
   return (
@@ -621,10 +664,12 @@ const Landing = () => {
   const { config, pricing, features, landingFeatures, loading } = useLandingConfig();
 
   const darkColor = config.divider_dark_color || 'hsl(220 15% 7%)';
+  const hasAnnouncement = config.announcement_enabled === 'true' && !!config.announcement_text;
 
   return (
     <div className="overflow-y-auto overflow-x-hidden">
-      <Nav navigate={navigate} />
+      <AnnouncementBar config={config} />
+      <Nav navigate={navigate} config={config} hasAnnouncement={hasAnnouncement} />
 
       {/* WHITE hero */}
       <Hero navigate={navigate} config={config} />
