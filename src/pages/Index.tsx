@@ -796,7 +796,8 @@ const Index = () => {
             onDeleteSong={handleDeleteSong}
             onReorder={reorderSetlists}
             setlists={setlists}
-            activeSetlistId={currentSongId} />
+            activeSetlistId={currentSongId}
+            onOpenMusicAI={() => setSpotifySheetOpen(true)} />
             </div>
             )}
 
@@ -900,7 +901,8 @@ const Index = () => {
                   onDeleteSong={handleDeleteSong}
                   onReorder={reorderSetlists}
                   setlists={setlists}
-                  activeSetlistId={currentSongId} />
+                  activeSetlistId={currentSongId}
+                  onOpenMusicAI={() => setSpotifySheetOpen(true)} />
               </div>
             )}
           </div>
@@ -938,6 +940,7 @@ const Index = () => {
                 onReorder={reorderSetlists}
                 setlists={setlists}
                 activeSetlistId={currentSongId}
+                onOpenMusicAI={() => setSpotifySheetOpen(true)}
               />
             </div>
           )}
