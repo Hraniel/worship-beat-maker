@@ -150,7 +150,7 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 overflow-y-auto">
+    <div className="min-h-screen bg-background overflow-y-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {showCancelModal && (
         <CancelReasonModal
           tier={currentTier}
@@ -158,7 +158,7 @@ const Pricing = () => {
           onDismiss={() => setShowCancelModal(false)}
         />
       )}
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6 p-4">
         <div className="text-center space-y-2">
           <button onClick={() => navigate('/app')} className="text-muted-foreground text-sm hover:text-foreground">
             ← Voltar
