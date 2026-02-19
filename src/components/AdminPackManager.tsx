@@ -384,19 +384,58 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   const handleUpdatePack = async (packId: string) => {
     const edit = packEdit[packId];
     if (!edit) return;
+    const pack = packs.find(p => p.id === packId);
+    if (!pack) return;
+
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
       const fd = new FormData();
-      fd.append('action', 'update-pack');
       fd.append('packId', packId);
       fd.append('isAvailable', String(edit.isAvailable));
       fd.append('priceCents', String(edit.priceCents));
       fd.append('tag', edit.tag);
       fd.append('name', edit.name);
       fd.append('description', edit.description);
-      fd.append('publishAt', edit.publishAt || '');
-      await invokeAdmin(fd);
+      fd.append('publishAt', edit.publishAt);
+
+      const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/admin-upload-sound`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      });
+      const result = await resp.json();
+      if (!resp.ok) throw new Error(result.error || 'Erro ao salvar pack');
+
+      // ── Sync price with Stripe if price changed and pack is paid ──────────
+      const priceChanged = edit.priceCents !== pack.price_cents;
+      if (priceChanged && edit.priceCents > 0) {
+        try {
+          const syncResp = await supabase.functions.invoke('admin-sync-stripe-price', {
+            body: {
+              type: 'pack',
+              id: packId,
+              price_cents: edit.priceCents,
+              name: edit.name || pack.name,
+              current_stripe_price_id: (pack as any).stripe_price_id ?? null,
+              current_stripe_product_id: (pack as any).stripe_product_id ?? null,
+            },
+          });
+          if (syncResp.error) throw syncResp.error;
+          const { stripe_price_id, stripe_product_id } = syncResp.data;
+
+          // Save stripe IDs back to DB
+          await supabase.from('store_packs').update({ stripe_price_id, stripe_product_id }).eq('id', packId);
+          toast.success('Preço sincronizado com Stripe!');
+        } catch (stripeErr: any) {
+          console.error('Stripe sync failed:', stripeErr);
+          toast.error(`Pack salvo, mas falha ao sincronizar Stripe: ${stripeErr?.message || stripeErr}`);
+        }
+      }
+
       toast.success('Pack atualizado!');
-      setEditingPack(null);
       onRefresh();
     } catch (e: any) {
       toast.error(e.message || 'Erro ao atualizar pack');

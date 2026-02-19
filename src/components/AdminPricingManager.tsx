@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { TIERS } from '@/lib/tiers';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -225,7 +226,38 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
         max_imports: plan.max_imports,
       }).eq('tier', tier);
       if (error) throw error;
-      toast.success(`Plano ${plan.name} salvo!`);
+
+      // Sync price with Stripe if tier is paid and has a product
+      if (tier !== 'free' && plan.price_brl > 0) {
+        const tierConfig = TIERS[tier as keyof typeof TIERS];
+        const productId = 'product_id' in tierConfig ? tierConfig.product_id : null;
+        if (productId) {
+          try {
+            const { data: syncData, error: syncErr } = await supabase.functions.invoke('admin-sync-stripe-price', {
+              body: {
+                type: 'plan',
+                id: plan.id,
+                price_cents: Math.round(plan.price_brl * 100),
+                name: plan.name,
+                current_stripe_price_id: (plan as any).stripe_price_id ?? null,
+                current_stripe_product_id: productId,
+              },
+            });
+            if (syncErr) throw syncErr;
+            // Save new stripe_price_id back to DB
+            await supabase.from('plan_pricing')
+              .update({ stripe_price_id: syncData.stripe_price_id })
+              .eq('tier', tier);
+            toast.success(`Plano ${plan.name} salvo e Stripe atualizado!`);
+          } catch (stripeErr: any) {
+            toast.warning(`Plano salvo, mas erro no Stripe: ${stripeErr?.message || stripeErr}`);
+          }
+        } else {
+          toast.success(`Plano ${plan.name} salvo!`);
+        }
+      } else {
+        toast.success(`Plano ${plan.name} salvo!`);
+      }
       onRefresh?.();
     } catch (e: any) {
       toast.error(e.message || 'Erro ao salvar');

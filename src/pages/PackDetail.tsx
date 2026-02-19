@@ -55,13 +55,39 @@ const PackDetail: React.FC = () => {
     }
   }, [playingId]);
 
+  // Handle return from Stripe for paid packs
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('payment_success');
+    const sessionId = params.get('session_id');
+    if (success === '1' && sessionId && pack) {
+      supabase.functions.invoke('verify-pack-payment', { body: { sessionId } }).then(({ data, error }) => {
+        if (error || !data?.success) {
+          toast.error('Erro ao confirmar pagamento. Contate o suporte.');
+        } else {
+          toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
+          // Clean URL
+          window.history.replaceState({}, '', `/store/${pack.id}`);
+        }
+      });
+    }
+  }, [pack]);
+
   const handlePurchase = async () => {
     if (!pack) return;
     setPurchasing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
-      if (error) throw error;
-      toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
+      if (pack.price_cents === 0) {
+        // Free pack — immediate delivery
+        const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
+        if (error) throw error;
+        toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
+      } else {
+        // Paid pack — redirect to Stripe Checkout
+        const { data, error } = await supabase.functions.invoke('create-pack-checkout', { body: { packId: pack.id } });
+        if (error) throw error;
+        if (data?.url) window.location.href = data.url;
+      }
     } catch (err: any) {
       toast.error(err?.message || 'Erro ao adquirir pack');
     } finally {

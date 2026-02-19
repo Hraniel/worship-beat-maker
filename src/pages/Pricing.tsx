@@ -93,13 +93,12 @@ const Pricing = () => {
 
   const handleCheckout = async (tierKey: TierKey) => {
     if (tierKey === 'free') return;
-    const tierData = TIERS[tierKey];
-    if (!('price_id' in tierData)) return;
 
     setLoadingTier(tierKey);
     try {
+      // Send tier name — create-checkout will resolve the price_id from DB
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId: tierData.price_id },
+        body: { tier: tierKey },
       });
       if (error) throw error;
       if (data?.url) {
