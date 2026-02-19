@@ -1,139 +1,109 @@
 
-## Três Correções Independentes
+## Três Melhorias Independentes
 
 ---
 
-### Bug 1 — Link compartilhado: erro em outros dispositivos e lista vazia em eventos
+### 1. Banner de Modo Offline
 
-**Causa:** Dois problemas separados:
+**Objetivo:** Exibir um banner discreto no topo do app quando `navigator.onLine === false`, informando ao usuário que está usando dados em cache.
 
-**1a. Lista de músicas vazia no mesmo navegador:** O `get-shared-setlist` edge function, ao encontrar um evento, carrega as músicas do campo `songs_data` do próprio evento — correto. Mas a página `SharedSetlist.tsx` lê `data.setlist.songs`, e a edge function retorna o campo como `songs` (linha `songs,`). Isso está certo. O real problema é que a condição `songs_data` pode estar sendo enviada como objeto vazio `[]` para o evento se nenhuma música foi adicionada via `songs_data` — ou o campo `songs` da `setlists` vinculada (via `setlist_id`) é diferente de `songs_data` do evento.
+**Implementação:**
 
-**Investigando melhor:** A edge function faz:
-```
-songs = (setlistData?.songs as any[]) || [];
-```
-Ela lê `setlists.songs` (o setlist vinculado), não `songs_data` do próprio evento. Se o evento tem músicas em `songs_data` mas o `setlist_id` aponta para um setlist com songs diferentes (ou vazio), a lista retornada estará errada. O correto seria sempre retornar `songs_data` do evento.
-
-**1b. Erro em outros dispositivos:** A edge function precisa de autenticação para ser chamada? Não — ela usa `SUPABASE_SERVICE_ROLE_KEY` internamente. O problema é o CORS: o header `Access-Control-Allow-Origin: *` existe. O provável problema é que em outros dispositivos o `VITE_SUPABASE_PROJECT_ID` não está definido (env vars de desenvolvimento não ficam disponíveis em produção sem prefixo `VITE_`). Mas como está em `.env` com prefixo `VITE_`, deveria funcionar.
-
-**Causa real confirmada:** O edge function retorna `songs` baseando-se no `setlists.songs` vinculado (via `setlist_id`), não em `songs_data` do evento. Se o evento tem músicas em `songs_data` mas o setlist vinculado é diferente, a lista estará errada. **A correção é retornar `songs_data` do evento diretamente**, sem buscar o setlist vinculado:
-
+**Novo hook `src/hooks/useOnlineStatus.ts`:**
 ```typescript
-// ATUAL (errado para eventos):
-if (eventData.setlist_id) {
-  // busca setlists.songs — mas o usuário edita songs_data no evento
-}
+import { useState, useEffect } from 'react';
 
-// CORRETO:
-songs = eventData.songs_data || []; // songs_data está no próprio evento
-```
-
-**Arquivos afetados:**
-- `supabase/functions/get-shared-setlist/index.ts` — retornar `songs_data` do evento em vez de buscar setlist vinculado
-
----
-
-### Bug 2 — Usuário free: voltar de /pricing deve restaurar a música selecionada
-
-**Causa:** O `UpgradeGateModal` navega para `/pricing` ao clicar "Ver planos", mas **não salva o `currentSongId` no `sessionStorage`** antes de navegar. O mecanismo de restauração já existe em `Index.tsx` (linhas 151–155):
-```typescript
-const restoredSongId = sessionStorage.getItem('restore-song-id');
-if (restoredSongId) {
-  sessionStorage.removeItem('restore-song-id');
-  setCurrentSongId(restoredSongId);
+export function useOnlineStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  useEffect(() => {
+    const onOnline  = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online',  onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online',  onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, []);
+  return isOnline;
 }
 ```
 
-Mas ninguém define `sessionStorage.setItem('restore-song-id', currentSongId)` antes de navegar.
+**Novo componente `src/components/OfflineBanner.tsx`:**
+- Aparece com `slide-in-from-top` quando offline
+- Ícone de nuvem cortada + texto "Modo offline — usando dados em cache"
+- Sem botão de fechar (desaparece automaticamente quando voltar online)
+- Mesmo estilo do `UpdateBanner.tsx` existente (barra no topo, `fixed z-[60]`)
 
-**Solução:** No `UpgradeGateModal`, quando o botão "Ver planos" é clicado, salvar o `currentSongId` no sessionStorage. Como o modal não tem acesso direto ao `currentSongId`, há duas abordagens:
-
-**Abordagem escolhida (mais simples):** Passar `currentSongId` como prop opcional para `UpgradeGateModal` e salvar no `sessionStorage` no `onClick` do botão "Ver planos":
-
-```typescript
-// UpgradeGateModal recebe currentSongId opcional
-onClick={() => {
-  if (currentSongId) {
-    sessionStorage.setItem('restore-song-id', currentSongId);
-  }
-  onClose();
-  navigate('/pricing');
-}}
-```
-
-No `Index.tsx`, onde `UpgradeGateModal` é renderizado, passar `currentSongId`:
-```tsx
-<UpgradeGateModal
-  payload={upgradeGate}
-  onClose={() => setUpgradeGate(null)}
-  currentSongId={currentSongId}
-/>
-```
-
-**Arquivos afetados:**
-- `src/components/UpgradeGateModal.tsx` — adicionar prop `currentSongId?` e salvar no sessionStorage antes de navegar
-- `src/pages/Index.tsx` — passar `currentSongId` para `UpgradeGateModal`
+**Integração em `src/pages/Index.tsx`:**
+- Importar `useOnlineStatus` e `OfflineBanner`
+- Renderizar `<OfflineBanner isOffline={!isOnline} />` logo após o `<UpdateBanner>`
 
 ---
 
-### Bug 3 — Banner "Criar música" usa `prompt()` em vez de abrir o repertório
+### 2. Pads Free: 4 → 6 pads liberados
 
-**Causa:** Na linha 988–991 de `Index.tsx`, o banner "Crie uma música para começar" usa `window.prompt()` para capturar o nome:
-```tsx
-onClick={() => {
-  const name = prompt('Nome da música:');
-  if (name?.trim()) handleSaveSong(name.trim());
-}}
-```
+**Onde o limite de 4 pads está definido:**
+- `src/lib/tiers.ts` → `free.maxPads: 4` → mudar para `6`
+- `src/components/AdminPricingManager.tsx` → catálogo em `APP_FEATURES_CATALOG`, descrição do gate `unlimited_pads`: _"Acesso a mais de 4 pads simultâneos"_ → atualizar para "mais de 6 pads"
+- Banco de dados → tabela `plan_pricing` para o tier `free`: `max_pads` = `4` → atualizar para `6` via UPDATE SQL
+- Banco de dados → tabela `feature_gates`: gate `unlimited_pads`, `description` = "Mais de 4 pads por setlist" → atualizar para "Mais de 6 pads por setlist" via UPDATE SQL
 
-Isso é um popup nativo do browser que:
-- Não funciona bem em PWA/mobile
-- Não abre a aba repertório como esperado pelo usuário
-- Não permite cancelar elegantemente
+**Arquivos a modificar:**
 
-**Solução:** Substituir o botão "Criar" do banner por um que abre o `SetlistManager` (aba repertório). O `SetlistManager` já tem um sheet com input de nome. Para isso, precisamos de um estado controlável no `SetlistManager` para abri-lo externamente.
-
-**Abordagem:**
-1. Adicionar prop `forceOpen?: boolean` ao `SetlistManager` que controla `open` externamente
-2. No banner do Index, em vez do botão "Criar" com `prompt()`, renderizar um `SetlistManager` diretamente (ou reutilizar o existente)
-
-**Abordagem mais limpa:** Extrair o controle de `open` do `SetlistManager` para ser controlável pela prop. Adicionar um estado `setlistOpenFromBanner` no `Index.tsx`, e no banner mostrar um `SetlistManager` com `forceOpen={true}` quando clicado.
-
-Na prática, a solução mais simples é: o banner com `songs.length === 0` já renderiza um `SetlistManager` (linha 998–1008) quando há músicas. Quando não há músicas, mostrar o botão "Criar" que simplesmente abre o `SetlistManager` passando `forceOpen`:
-
-```tsx
-// Estado no Index
-const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
-
-// No banner, quando songs.length === 0:
-<Button onClick={() => setOpenSetlistFromBanner(true)}>
-  <Plus /> Criar
-</Button>
-<SetlistManager
-  forceOpen={openSetlistFromBanner}
-  onOpenChange={() => setOpenSetlistFromBanner(false)}
-  ... 
-/>
-
-// No SetlistManager, controlar open:
-// Se forceOpen === true, abrir o sheet
-useEffect(() => {
-  if (forceOpen) setOpen(true);
-}, [forceOpen]);
-```
-
-**Arquivos afetados:**
-- `src/components/SetlistManager.tsx` — adicionar props `forceOpen?` e `onOpenChange?`; usar `useEffect` para abrir quando `forceOpen` muda
-- `src/pages/Index.tsx` — adicionar estado `openSetlistFromBanner`, substituir o `prompt()` por `setOpenSetlistFromBanner(true)`, renderizar um `SetlistManager` invisível (sem trigger) quando `songs.length === 0`
-
----
-
-## Resumo dos Arquivos a Modificar
-
-| Arquivo | Bugs corrigidos |
+| Arquivo | Mudança |
 |---|---|
-| `supabase/functions/get-shared-setlist/index.ts` | Bug 1: retornar `songs_data` do evento |
-| `src/components/UpgradeGateModal.tsx` | Bug 2: salvar `currentSongId` no sessionStorage |
-| `src/pages/Index.tsx` | Bugs 2 e 3: passar `currentSongId` ao modal; abrir SetlistManager no banner |
-| `src/components/SetlistManager.tsx` | Bug 3: suporte a `forceOpen` prop |
+| `src/lib/tiers.ts` | `free.maxPads: 4` → `6` |
+| `src/components/AdminPricingManager.tsx` | Descrição do catálogo: "mais de 4 pads" → "mais de 6 pads" |
+| Banco de dados (`plan_pricing`) | `max_pads` = 6 para o tier `free` |
+| Banco de dados (`feature_gates`) | `description` do gate `unlimited_pads`: "Mais de 4" → "Mais de 6" |
+
+**A landing page e o app de preços** já consomem `max_pads` diretamente do banco de dados via `useLandingConfig` e `plan_pricing`, então se atualizam automaticamente sem alteração de código.
+
+---
+
+### 3. Gate de Faders no Painel Admin + Gate Aplicado no App
+
+**Situação atual:** O gate `mixer_faders` existe no banco com `required_tier: 'pro'`, mas o mixer nunca verifica esse gate — ele é sempre exibido para todos.
+
+**O que fazer:**
+
+**A. Aplicar o gate no `src/pages/Index.tsx`:**
+- Dentro do bloco que renderiza o `<MixerStrip>` (aparecem 3 vezes: mobile, tablet e desktop), verificar `canAccess('mixer_faders').allowed`
+- Quando bloqueado, exibir um overlay sobre o mixer com cadeado + texto "Mixer disponível no plano Pro" e botão que abre o `UpgradeGateModal`
+- Criar um componente `MixerLockedOverlay` inline (ou no próprio Index) para esse overlay
+
+**B. Garantir que o gate `mixer_faders` exista no catálogo do painel:**
+- Em `AdminPricingManager.tsx`, o `APP_FEATURES_CATALOG` já não inclui o gate `mixer_faders` nativamente — ele precisa ser adicionado ao catálogo em `APP_FEATURES_CATALOG` para que o botão "Adicionar todos os gates" o reconheça corretamente com tier padrão `pro`.
+- O gate já existe no banco, então o admin já consegue editá-lo pela aba "Gates" — essa parte funciona.
+
+**Fluxo do gate de faders:**
+
+```text
+Usuário free ou com tier insuficiente acessa o app
+  └─ canAccess('mixer_faders').allowed === false
+       └─ MixerStrip fica visualmente bloqueado
+            └─ Overlay com Lock + "Mixer disponível no plano Pro"
+                 └─ Botão "Ver planos" → setUpgradeGate({ gateKey: 'mixer_faders', ... })
+                      └─ UpgradeGateModal exibido
+```
+
+**Arquivos a modificar:**
+
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/Index.tsx` | Verificar `canAccess('mixer_faders')` antes de renderizar os 3 blocos de MixerStrip; mostrar overlay bloqueado quando não permitido |
+| `src/components/AdminPricingManager.tsx` | Adicionar `mixer_faders` ao `APP_FEATURES_CATALOG` com tier `pro` |
+
+---
+
+## Resumo de todos os arquivos a modificar
+
+| Arquivo | O que muda |
+|---|---|
+| `src/hooks/useOnlineStatus.ts` | **NOVO** — hook de detecção de conectividade |
+| `src/components/OfflineBanner.tsx` | **NOVO** — banner de modo offline |
+| `src/pages/Index.tsx` | Integrar OfflineBanner; aplicar gate mixer_faders nos 3 blocos de faders |
+| `src/lib/tiers.ts` | `free.maxPads: 4` → `6` |
+| `src/components/AdminPricingManager.tsx` | Atualizar descrição do catálogo; adicionar mixer_faders ao catálogo |
+| Banco de dados | UPDATE `plan_pricing` e `feature_gates` para free tier e unlimited_pads |
