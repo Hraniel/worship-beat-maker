@@ -29,13 +29,37 @@ function synthHit(
   return buf;
 }
 
-// Pre-render kick and snare with reverb-like long decay
 function renderKick(sampleRate: number): Float32Array {
   return synthHit({ freq: 50, decay: 0.3, punch: 0.9 }, 600, sampleRate);
 }
 
 function renderSnare(sampleRate: number): Float32Array {
   return synthHit({ freq: 280, decay: 0.2, noise: 0.4 }, 400, sampleRate);
+}
+
+function renderClap(sampleRate: number): Float32Array {
+  // Clap: multiple short noise bursts layered
+  const durationMs = 300;
+  const length = Math.floor((durationMs / 1000) * sampleRate);
+  const buf = new Float32Array(length);
+  // 3 micro-bursts at slightly different offsets for "hand clap" feel
+  const bursts = [0, 0.008, 0.018];
+  for (const offset of bursts) {
+    const startSample = Math.floor(offset * sampleRate);
+    for (let i = startSample; i < length; i++) {
+      const t = (i - startSample) / sampleRate;
+      const env = Math.exp(-t / 0.08);
+      buf[i] += (Math.random() * 2 - 1) * env * 0.5;
+    }
+  }
+  // Bandpass-ish: apply a gentle high-pass by subtracting a smoothed version
+  let prev = 0;
+  for (let i = 0; i < length; i++) {
+    const hp = buf[i] - prev;
+    prev = buf[i];
+    buf[i] = Math.tanh(hp * 2.5);
+  }
+  return buf;
 }
 
 // ── Mix hits into a timeline buffer ──────────────────────────────
@@ -53,7 +77,6 @@ function mixLoop(
       }
     }
   }
-  // Normalize
   let peak = 0;
   for (let i = 0; i < totalSamples; i++) {
     const abs = Math.abs(buf[i]);
@@ -103,40 +126,74 @@ interface LoopDef {
   packId: string;
   bpm: number;
   bars: number;
-  // subdivisions per bar (16 for 4/4 using 16th notes, 12 for 6/8 using 8th note triplets)
   subsPerBar: number;
-  // hits: [subdivisionIndex, 'kick' | 'snare']
-  hits: [number, "kick" | "snare"][];
+  hits: [number, "kick" | "snare" | "clap"][];
 }
 
 const PACK_44 = "ee6f328e-68da-4d34-8dcb-99fb9ed8953d";
-const PACK_68 = "bff34d03-ed9c-4fd0-98c0-ff0e2c8b13f8";
+
+// 16th-note grid: beat 1=0, 2=4, 2-and=6, 3=8, 3-and=10, 4=12, 4-and=14
+// Bar 2 starts at 16
 
 const loops: LoopDef[] = [
   {
-    name: "Worship Snap 4/4",
-    shortName: "WSP44",
+    name: "Worship Pulse",
+    shortName: "WLP1",
     packId: PACK_44,
     bpm: 120,
     bars: 2,
-    subsPerBar: 16, // 16th-note grid
-    // Reference: kicks at 0, 6, 12 (bar 1) + snare at 24 (bar 2 beat 3)
+    subsPerBar: 16,
     hits: [
-      [0, "kick"], [6, "kick"], [12, "kick"],
-      [24, "snare"],
+      [0, "kick"], [6, "kick"], [12, "kick"], [8, "snare"],
+      [16, "kick"], [22, "kick"], [24, "clap"],
     ],
   },
   {
-    name: "Worship Snap 6/8",
-    shortName: "WSP68",
-    packId: PACK_68,
+    name: "Worship Grace",
+    shortName: "WLP2",
+    packId: PACK_44,
     bpm: 120,
     bars: 2,
-    subsPerBar: 12, // 12 eighth-note subdivisions per bar in 6/8
-    // 6/8 adapted: kick on 1 and 4 (subdivisions 0, 3) bar 1, kick on 1 bar 2, snare on 4 bar 2
+    subsPerBar: 16,
     hits: [
-      [0, "kick"], [3, "kick"],
-      [12, "kick"], [15, "snare"],
+      [0, "kick"], [8, "clap"],
+      [16, "kick"], [24, "kick"], [28, "snare"],
+    ],
+  },
+  {
+    name: "Worship Breath",
+    shortName: "WLP3",
+    packId: PACK_44,
+    bpm: 120,
+    bars: 2,
+    subsPerBar: 16,
+    hits: [
+      [0, "kick"], [8, "kick"], [12, "snare"],
+      [16, "kick"], [24, "clap"], [28, "kick"],
+    ],
+  },
+  {
+    name: "Worship Steady",
+    shortName: "WLP4",
+    packId: PACK_44,
+    bpm: 120,
+    bars: 2,
+    subsPerBar: 16,
+    hits: [
+      [0, "kick"], [6, "kick"], [12, "clap"],
+      [16, "kick"], [24, "snare"],
+    ],
+  },
+  {
+    name: "Worship Gentle",
+    shortName: "WLP5",
+    packId: PACK_44,
+    bpm: 120,
+    bars: 2,
+    subsPerBar: 16,
+    hits: [
+      [0, "kick"], [10, "snare"], [12, "kick"],
+      [16, "kick"], [20, "kick"], [28, "clap"],
     ],
   },
 ];
@@ -165,6 +222,9 @@ serve(async (req) => {
     const sampleRate = 44100;
     const kick = renderKick(sampleRate);
     const snare = renderSnare(sampleRate);
+    const clap = renderClap(sampleRate);
+
+    const sampleMap: Record<string, Float32Array> = { kick, snare, clap };
 
     const results: { name: string; status: string }[] = [];
 
@@ -172,16 +232,10 @@ serve(async (req) => {
       try {
         console.log(`[LOOP] Generating: ${loop.name}`);
 
-        // Calculate subdivision duration in samples
-        // For 4/4: 1 beat (quarter note) = 60/bpm seconds, 1 16th = beat/4
-        // For 6/8: 1 dotted quarter = 60/bpm, 1 eighth = (60/bpm)/3
         let subDurationSec: number;
         if (loop.subsPerBar === 16) {
-          // 4/4: subdivision = 16th note = (60/bpm) / 4
           subDurationSec = (60 / loop.bpm) / 4;
         } else {
-          // 6/8: subdivision = 8th note, dotted quarter = 60/bpm
-          // 6 eighth notes per bar, dotted quarter groups 3 eighths
           subDurationSec = (60 / loop.bpm) / 3;
         }
 
@@ -192,7 +246,7 @@ serve(async (req) => {
 
         // Build hit list
         const hitList = loop.hits.map(([sub, type]) => ({
-          sample: type === "kick" ? kick : snare,
+          sample: sampleMap[type] ?? kick,
           offsetSamples: sub * subSamples,
         }));
 
