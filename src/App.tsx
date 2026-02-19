@@ -22,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const CACHE_VERSION_KEY = 'app_cache_version';
 
-// Checks if admin has bumped cache version; if so, reload to clear SW/caches
+// Global cache guard — runs for all visitors (no auth needed)
 const CacheVersionGuard = () => {
   useEffect(() => {
     supabase
@@ -42,6 +42,32 @@ const CacheVersionGuard = () => {
         }
       });
   }, []);
+  return null;
+};
+
+// Per-user cache guard — runs after auth is available
+const UserCacheVersionGuard = () => {
+  const { user } = useAuth();
+  useEffect(() => {
+    if (!user?.id) return;
+    const userKey = `user_cache_version_${user.id}`;
+    supabase
+      .from('landing_config')
+      .select('config_value')
+      .eq('config_key', userKey)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        const remote = data.config_value;
+        const local = localStorage.getItem(userKey);
+        if (local !== null && local !== remote) {
+          localStorage.setItem(userKey, remote);
+          window.location.reload();
+        } else if (local === null) {
+          localStorage.setItem(userKey, remote);
+        }
+      });
+  }, [user?.id]);
   return null;
 };
 
@@ -77,6 +103,7 @@ const App = () => (
             <Route path="*" element={
               <AuthProvider>
                 <SubscriptionProvider>
+                  <UserCacheVersionGuard />
                   <Toaster />
                   <Sonner />
                   <Routes>
