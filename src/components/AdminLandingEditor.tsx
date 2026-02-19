@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay, Palette, Layout, ShoppingBag, Settings2, AlignLeft, NavigationIcon, Megaphone } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay, Palette, Layout, ShoppingBag, Settings2, AlignLeft, NavigationIcon, Megaphone, Images } from 'lucide-react';
 import AdminLandingFeaturesEditor from './AdminLandingFeaturesEditor';
 import AdminLandingStyleEditor from './AdminLandingStyleEditor';
+import AdminImageBank from './AdminImageBank';
 import LandingPreviewDrawer from './LandingPreviewDrawer';
 import ImageCropperModal from './ImageCropperModal';
 
@@ -48,7 +49,7 @@ const SECTION_GROUPS = [
   { label: 'CTA Final', keys: ['cta_title', 'cta_subtitle'] },
 ];
 
-type ActiveTab = 'textos' | 'hero' | 'recursos' | 'estilos' | 'loja' | 'conteudo' | 'navbar';
+type ActiveTab = 'textos' | 'hero' | 'recursos' | 'estilos' | 'loja' | 'conteudo' | 'navbar' | 'imagens';
 
 // ── ColorField (inline, same logic as AdminLandingStyleEditor) ────────────────
 const hslToHex = (hslStr: string): string => {
@@ -354,6 +355,7 @@ const AdminLandingEditor: React.FC = () => {
     { id: 'navbar', label: 'Navbar', icon: <NavigationIcon className="h-3 w-3" /> },
     { id: 'recursos', label: 'Recursos', icon: <LayoutGrid className="h-3 w-3" /> },
     { id: 'loja', label: 'Loja', icon: <ShoppingBag className="h-3 w-3" /> },
+    { id: 'imagens', label: 'Imagens', icon: <Images className="h-3 w-3" /> },
     { id: 'conteudo', label: 'Conteúdo', icon: <AlignLeft className="h-3 w-3" /> },
     { id: 'estilos', label: 'Estilos', icon: <Palette className="h-3 w-3" /> },
   ];
@@ -425,6 +427,64 @@ const AdminLandingEditor: React.FC = () => {
 
       {/* ── Estilos tab ── */}
       {activeTab === 'estilos' && <AdminLandingStyleEditor />}
+
+      {/* ── Imagens tab ── */}
+      {activeTab === 'imagens' && (
+        <div className="space-y-5">
+          <p className="text-[11px]" style={mutedStyle}>
+            Gerencie as imagens do banco, configure os screenshots do app exibidos na landing page e ajuste textos e visibilidade da seção.
+          </p>
+
+          {/* Screenshot section toggle + texts */}
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Seção Screenshots do App</p>
+              <div className="flex items-center gap-2">
+                {getVal('screenshots_enabled') !== 'false'
+                  ? <Eye className="h-3.5 w-3.5" style={{ color: 'hsl(142 70% 50%)' }} />
+                  : <EyeOff className="h-3.5 w-3.5" style={{ color: 'hsl(0 0% 40%)' }} />}
+                <Switch
+                  checked={getVal('screenshots_enabled') !== 'false'}
+                  onCheckedChange={v => { setVal('screenshots_enabled', v ? 'true' : 'false'); saveKey('screenshots_enabled'); }}
+                />
+              </div>
+            </div>
+            {renderTextField('screenshots_title', 'Título da Seção', false, 'Tudo que você precisa, em um só lugar')}
+            {renderTextField('screenshots_subtitle', 'Subtítulo da Seção', true, 'Interface intuitiva feita para músicos...')}
+          </div>
+
+          {/* Individual screenshot images */}
+          {[
+            { n: 1, label: 'Screenshot 1 — Pad Grid', defaultTitle: 'Pad Grid' },
+            { n: 2, label: 'Screenshot 2 — Repertório', defaultTitle: 'Repertório' },
+            { n: 3, label: 'Screenshot 3 — Mixer', defaultTitle: 'Mixer' },
+          ].map(({ n, label, defaultTitle }) => (
+            <div key={n} className="rounded-xl p-4 space-y-3" style={groupStyle}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>{label}</p>
+              {renderTextField(`screenshot_${n}_title`, 'Título', false, defaultTitle)}
+              {renderTextField(`screenshot_${n}_desc`, 'Descrição', true)}
+              <ImageUploadField
+                keyPrefix={`screenshot_${n}_image`}
+                label="Imagem do Screenshot"
+                hint="Proporção sugerida: 9:16 (ex: 400×711px) — PNG/JPEG de alta qualidade"
+                value={getVal(`screenshot_${n}_image`)}
+                onChange={v => setVal(`screenshot_${n}_image`, v)}
+                onSave={() => saveKey(`screenshot_${n}_image`)}
+                saving={saving === `screenshot_${n}_image`}
+                aspectRatio="free"
+              />
+            </div>
+          ))}
+
+          {/* Divider */}
+          <div className="border-t" style={{ borderColor: 'hsl(0 0% 100% / 0.08)' }} />
+
+          {/* Image bank */}
+          <div className="rounded-xl p-4" style={groupStyle}>
+            <AdminImageBank />
+          </div>
+        </div>
+      )}
 
       {/* ── Navbar tab ── */}
       {activeTab === 'navbar' && (
