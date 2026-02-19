@@ -263,8 +263,8 @@ Deno.serve(async (req) => {
       const description = formData.get('description') as string;
       const publishAt = formData.get('publishAt') as string | null;
 
-      if (!packId) {
-        return new Response(JSON.stringify({ error: 'Missing packId' }), { status: 400, headers: corsHeaders });
+      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId: must be a valid UUID' }), { status: 400, headers: corsHeaders });
       }
 
       const updateData: Record<string, any> = { is_available: isAvailable, price_cents: priceCents };
