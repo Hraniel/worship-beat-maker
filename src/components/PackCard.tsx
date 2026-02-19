@@ -123,7 +123,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
   return (
     <div
-      className="group relative bg-white rounded-2xl border border-gray-200/80 hover:shadow-lg hover:border-gray-300 transition-all duration-200 overflow-hidden cursor-pointer"
+      className="group relative bg-white rounded-2xl border border-gray-200/80 hover:shadow-lg hover:border-gray-300 transition-all duration-200 overflow-hidden cursor-pointer flex flex-col"
       onClick={handleCardClick}
     >
       {/* Banner or color header */}
@@ -143,7 +143,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
       )}
 
       {/* Card body */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-1">
         {pack.tag && (
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 mb-2 inline-block">
             {pack.tag}
@@ -186,6 +186,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
         </div>
 
         {/* Action button */}
+        <div className="mt-auto">
         {pack.is_available && !pack.purchased && !pack.removedFromLibrary ? (
           <Button
             size="sm"
@@ -234,6 +235,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
             Ver detalhes <ChevronRight className="h-3 w-3" />
           </button>
         ) : null}
+        </div>
       </div>
     </div>
   );
