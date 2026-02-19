@@ -102,13 +102,9 @@ html.scrollable-page body {
   width: 100% !important;
 }
 
-/* Rubber pad texture — subtle dot pattern for physical pad feel */
+/* Legacy class kept for backwards compat — no longer used by pads */
 .drum-pad-idle {
-  background-image:
-    linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 5%) 100%),
-    radial-gradient(circle, hsl(0 0% 100% / 0.055) 1px, transparent 1px);
-  background-size: 100% 100%, 5px 5px;
-  background-blend-mode: normal;
+  background: linear-gradient(145deg, hsl(0 0% 8%) 0%, hsl(0 0% 4%) 100%);
 }
 
 @keyframes pad-pulse {
@@ -143,6 +139,15 @@ html.scrollable-page body {
 
 .animate-loop-border {
   animation: loop-border 1.2s ease-in-out infinite;
+}
+
+@keyframes loop-bar {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.animate-loop-bar {
+  animation: loop-bar 1.2s ease-in-out infinite;
 }
 
 /* Landscape mobile: ultra-compact footer */

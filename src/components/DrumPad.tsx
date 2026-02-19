@@ -207,47 +207,56 @@ const DrumPad: React.FC<DrumPadProps> = ({
         onPointerLeave={handlePointerUp}
         className={`
           relative flex flex-col items-center justify-center rounded-lg
-          border-2 transition-all duration-75 select-none cursor-pointer
-          aspect-square w-full touch-none
+          border border-white/10 transition-all duration-75 select-none cursor-pointer
+          aspect-square w-full touch-none overflow-hidden
           ${isActive && !isLocked ? 'animate-pad-pulse' : ''}
-          ${isLooping ? 'animate-loop-border' : ''}
-          ${!isActive && !isLooping ? 'drum-pad-idle' : ''}
         `}
         style={{
           background: isActive
             ? (customColor ? `hsl(${colorHsl} / ${0.25 * colorOpacity})` : 'hsl(0 0% 22%)')
             : isLooping
-            ? (customColor ? `hsl(${colorHsl} / ${0.12 * colorOpacity})` : colorRef(0.08))
-            : undefined,
-          borderColor: isActive
-            ? (customColor ? `hsl(${colorHsl} / ${0.9 * colorOpacity})` : 'hsl(0 0% 80%)')
-            : isLooping
-            ? (customColor ? `hsl(${colorHsl} / ${0.7 * colorOpacity})` : colorRef(0.5))
-            : 'hsl(0 0% 20%)',
+            ? (customColor ? `hsl(${colorHsl} / ${0.08 * colorOpacity})` : colorRef(0.06))
+            : 'linear-gradient(145deg, hsl(0 0% 8%) 0%, hsl(0 0% 4%) 100%)',
           boxShadow: isActive
             ? (customColor
                 ? `0 0 24px hsl(${colorHsl} / ${0.45 * colorOpacity}), inset 0 0 12px hsl(${colorHsl} / ${0.15 * colorOpacity})`
                 : '0 0 20px hsl(0 0% 100% / 0.25), inset 0 0 10px hsl(0 0% 100% / 0.08)')
             : isLooping
             ? (customColor ? `0 0 14px hsl(${colorHsl} / ${0.3 * colorOpacity})` : `0 0 14px ${colorRef(0.25)}`)
-            : 'inset 0 1px 0 hsl(0 0% 100% / 0.04), inset 0 -2px 4px hsl(0 0% 0% / 0.4)',
+            : 'none',
         }}
       >
+        {/* Top color bar */}
+        <div
+          className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-lg ${isLooping ? 'animate-loop-bar' : ''}`}
+          style={{
+            backgroundColor: colorSolid,
+            opacity: isActive ? 1 : isLooping ? undefined : 0.85,
+          }}
+        />
+
         {editMode && (
-          <Settings2 className="absolute top-1 left-1 h-3 w-3 text-primary/70" />
+          <Settings2 className="absolute top-1.5 left-1 h-3 w-3 text-primary/70" />
         )}
         {isLocked && (
-          <Lock className={`absolute top-1 right-1 h-3 w-3 text-muted-foreground/60`} />
+          <Lock className="absolute top-1.5 right-1 h-3 w-3 text-muted-foreground/60" />
         )}
 
+        {/* Short name in pad color */}
         <span
-          className={`${sizes.label} font-bold tracking-wider opacity-90 max-w-full truncate px-1 text-center text-foreground`}
+          className={`${sizes.label} font-bold tracking-wider max-w-full truncate px-1 text-center`}
+          style={{ color: colorSolid }}
         >
-          {customName || pad.name}
+          {customName || pad.shortName}
+        </span>
+
+        {/* Full name as muted subtitle */}
+        <span className={`${sizes.name} text-muted-foreground max-w-full truncate px-1 text-center mt-0.5`}>
+          {pad.name}
         </span>
 
         {pad.isLoop && (
-          <div className="absolute top-1 right-1 flex items-center gap-0.5">
+          <div className="absolute top-1.5 right-1 flex items-center gap-0.5">
             <Repeat
               className={`${sizes.loop} ${isLooping ? 'text-foreground' : 'text-muted-foreground/40'}`}
             />
@@ -258,7 +267,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
         )}
 
         {hasCustomSound && (
-          <div className="absolute top-1 left-1 w-1.5 h-1.5 rounded-full bg-primary" />
+          <div className="absolute bottom-1 left-1 w-1.5 h-1.5 rounded-full bg-primary" />
         )}
       </button>
 
