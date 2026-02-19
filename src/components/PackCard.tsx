@@ -9,6 +9,29 @@ import {
 } from 'lucide-react';
 import { StorePackData } from '@/hooks/useStorePacks';
 
+const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+async function invokeWithToken(fnName: string, body: object) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+  const res = await fetch(
+    `https://${projectId}.supabase.co/functions/v1/${fnName}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || json?.message || 'Erro na função');
+  return json;
+}
+
 const LUCIDE_ICON_MAP: Record<string, React.ReactNode> = {
   drum: <Drum className="h-5 w-5" />,
   waves: <Waves className="h-5 w-5" />,
@@ -31,7 +54,6 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
   const [purchasing, setPurchasing] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
   const handlePreview = useCallback(async (e: React.MouseEvent, sound: { id: string; preview_path: string | null }) => {
     e.stopPropagation();
@@ -60,13 +82,12 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
     setPurchasing(true);
     try {
       if (pack.price_cents === 0) {
-        // Pack gratuito: entrega imediata
-        const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
-        if (error) throw error;
+        // Pack gratuito: entrega imediata com token explícito
+        await invokeWithToken('purchase-pack', { packId: pack.id });
         toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
         onPurchased();
       } else {
-        // Pack pago: redirecionar para a página de detalhes onde o checkout do Stripe é feito
+        // Pack pago: redirecionar para a página de detalhes onde o Stripe Checkout é feito
         navigate(`/store/${pack.id}`);
       }
     } catch (err: any) {

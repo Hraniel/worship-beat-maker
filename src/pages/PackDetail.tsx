@@ -5,6 +5,30 @@ import { supabase } from '@/integrations/supabase/client';
 import { useStorePacks } from '@/hooks/useStorePacks';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+
+const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+/** Chama uma Edge Function explicitando o token — evita falhas de auth no mobile/PWA */
+async function invokeWithToken(fnName: string, body: object) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+  const res = await fetch(
+    `https://${projectId}.supabase.co/functions/v1/${fnName}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+  const json = await res.json();
+  if (!res.ok) throw new Error(json?.error || json?.message || 'Erro na função');
+  return json;
+}
 import {
   ArrowLeft, Play, Square, Download, Check, Loader2,
   Music, Drum, Waves, Sparkles, Headphones, Volume2, Layers, AudioWaveform, Lock, Clock
@@ -61,15 +85,16 @@ const PackDetail: React.FC = () => {
     const success = params.get('payment_success');
     const sessionId = params.get('session_id');
     if (success === '1' && sessionId && pack) {
-      supabase.functions.invoke('verify-pack-payment', { body: { sessionId } }).then(({ data, error }) => {
-        if (error || !data?.success) {
-          toast.error('Erro ao confirmar pagamento. Contate o suporte.');
-        } else {
-          toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
-          // Clean URL
-          window.history.replaceState({}, '', `/store/${pack.id}`);
-        }
-      });
+      invokeWithToken('verify-pack-payment', { sessionId })
+        .then((data) => {
+          if (!data?.success) {
+            toast.error('Erro ao confirmar pagamento. Contate o suporte.');
+          } else {
+            toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
+            window.history.replaceState({}, '', `/store/${pack.id}`);
+          }
+        })
+        .catch(() => toast.error('Erro ao confirmar pagamento. Contate o suporte.'));
     }
   }, [pack]);
 
@@ -77,28 +102,13 @@ const PackDetail: React.FC = () => {
     if (!pack) return;
     setPurchasing(true);
     try {
-      // Explicitly get the session token to avoid auth issues on mobile/PWA
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      if (!accessToken) throw new Error('Sessão expirada. Faça login novamente.');
-
-      const headers = { Authorization: `Bearer ${accessToken}` };
-
       if (pack.price_cents === 0) {
         // Free pack — immediate delivery
-        const { data, error } = await supabase.functions.invoke('purchase-pack', {
-          body: { packId: pack.id },
-          headers,
-        });
-        if (error) throw error;
+        await invokeWithToken('purchase-pack', { packId: pack.id });
         toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
       } else {
-        // Paid pack — redirect to Stripe Checkout
-        const { data, error } = await supabase.functions.invoke('create-pack-checkout', {
-          body: { packId: pack.id },
-          headers,
-        });
-        if (error) throw error;
+        // Paid pack — Stripe Checkout
+        const data = await invokeWithToken('create-pack-checkout', { packId: pack.id });
         if (data?.url) window.location.href = data.url;
       }
     } catch (err: any) {
@@ -127,7 +137,6 @@ const PackDetail: React.FC = () => {
     );
   }
 
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const isImageIcon = pack.icon_name?.startsWith('pack-icons/') || pack.icon_name?.startsWith('http');
   const imageIconUrl = isImageIcon
     ? (pack.icon_name.startsWith('http')
