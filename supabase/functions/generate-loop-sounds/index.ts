@@ -31,11 +31,11 @@ function synthHit(
 
 // Pre-render kick and snare with reverb-like long decay
 function renderKick(sampleRate: number): Float32Array {
-  return synthHit({ freq: 50, decay: 0.8, punch: 0.9 }, 1200, sampleRate);
+  return synthHit({ freq: 50, decay: 0.3, punch: 0.9 }, 600, sampleRate);
 }
 
 function renderSnare(sampleRate: number): Float32Array {
-  return synthHit({ freq: 200, decay: 0.5, noise: 0.7 }, 800, sampleRate);
+  return synthHit({ freq: 280, decay: 0.2, noise: 0.4 }, 400, sampleRate);
 }
 
 // ── Mix hits into a timeline buffer ──────────────────────────────
