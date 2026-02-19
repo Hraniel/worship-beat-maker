@@ -367,7 +367,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         );
 
       case 'plans':
-        sessionStorage.setItem('settings-return-tab', 'plans');
         onOpenChange(false);
         navigate('/pricing');
         return null;
