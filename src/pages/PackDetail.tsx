@@ -77,14 +77,27 @@ const PackDetail: React.FC = () => {
     if (!pack) return;
     setPurchasing(true);
     try {
+      // Explicitly get the session token to avoid auth issues on mobile/PWA
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error('Sessão expirada. Faça login novamente.');
+
+      const headers = { Authorization: `Bearer ${accessToken}` };
+
       if (pack.price_cents === 0) {
         // Free pack — immediate delivery
-        const { data, error } = await supabase.functions.invoke('purchase-pack', { body: { packId: pack.id } });
+        const { data, error } = await supabase.functions.invoke('purchase-pack', {
+          body: { packId: pack.id },
+          headers,
+        });
         if (error) throw error;
         toast.success(`Pack "${pack.name}" adquirido com sucesso!`);
       } else {
         // Paid pack — redirect to Stripe Checkout
-        const { data, error } = await supabase.functions.invoke('create-pack-checkout', { body: { packId: pack.id } });
+        const { data, error } = await supabase.functions.invoke('create-pack-checkout', {
+          body: { packId: pack.id },
+          headers,
+        });
         if (error) throw error;
         if (data?.url) window.location.href = data.url;
       }
@@ -135,7 +148,7 @@ const PackDetail: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f8f8fa] text-gray-900">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-lg border-b border-gray-200/80 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center gap-3">
           <button
             onClick={() => navigate('/dashboard')}
