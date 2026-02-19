@@ -1,64 +1,83 @@
 
 ## Objetivo
 
-Fazer com que a Gloria Store atualize automaticamente para todos os usuários quando o admin criar, editar ou excluir um pack — sem necessidade de republicar o app ou recarregar a página manualmente.
+Adicionar verificação de conectividade ao sistema de "soft reload" para que:
+- **Com internet:** comportamento atual — tela de carregamento aparece, cache é limpo, loja é atualizada
+- **Sem internet:** tela de carregamento NÃO aparece, o cache é preservado, o usuário usa o app offline normalmente
 
-## Como funciona atualmente
+---
 
-O `useStorePacks` busca os dados do banco uma única vez quando o componente monta (`useEffect` com `fetchPacks`). Após isso, os dados só se atualizam quando:
-- O admin realiza uma ação e `onRefresh()` é chamado (apenas na sessão do admin)
-- O usuário navega para outra página e volta
-- O usuário recarrega o app
+## Como detectar a conectividade
 
-A tabela `store_packs` não tem Realtime habilitado no banco, então mudanças feitas pelo admin não chegam automaticamente para outros usuários.
+O browser expõe `navigator.onLine` (booleano síncrono) que indica se o dispositivo tem uma rota de rede ativa. Para maior confiabilidade, também pode-se tentar uma requisição real. Para este caso, `navigator.onLine` é suficiente porque:
+- Quando o usuário volta ao app (visibilitychange), já há um valor atualizado
+- Se `navigator.onLine === false`, o dispositivo definitivamente não tem internet
+- Falso-positivo (navigator.onLine = true mas sem internet real) é raro e tem impacto baixo — o cache seria limpo e o fetch falharia graciosamente sem quebrar nada
 
-## Solução
+---
 
-### 1. Habilitar Realtime nas tabelas `store_packs` e `pack_sounds` (migração SQL)
+## Mudanças necessárias
 
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.store_packs;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.pack_sounds;
-```
+### 1. `src/hooks/useAppReloadGuard.ts`
 
-### 2. Adicionar listener Realtime no `useStorePacks`
+Adicionar verificação de `navigator.onLine` **antes** de setar `showLoading = true`, nos dois lugares onde isso acontece:
 
-Adicionar um canal Realtime que escuta qualquer `INSERT`, `UPDATE` ou `DELETE` nas tabelas `store_packs` e `pack_sounds`. Quando um evento chegar, chama `fetchPacks()` automaticamente para todos os clientes conectados.
-
+**No `useEffect` de montagem inicial (usuario retorna depois de fechar o navegador):**
 ```typescript
-// Dentro do useStorePacks, após o useEffect de fetch inicial:
-useEffect(() => {
-  const channel = supabase
-    .channel('store-packs-realtime')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'store_packs' }, () => {
-      fetchPacks();
-    })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'pack_sounds' }, () => {
-      fetchPacks();
-    })
-    .subscribe();
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [fetchPacks]);
+if (lastActive > 0 && elapsed >= AWAY_THRESHOLD_MS) {
+  // Só mostra a tela de carregamento se houver internet
+  if (navigator.onLine) {
+    setShowLoading(true);
+  }
+  // Se offline: silenciosamente ignora — cache preservado
+}
 ```
 
-## Resultado
+**No `handleVisibilityChange` (usuario sai e volta para o app):**
+```typescript
+} else if (document.visibilityState === 'visible') {
+  const stored = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) ?? '0', 10);
+  const away = Date.now() - stored;
+  if (stored > 0 && away >= AWAY_THRESHOLD_MS) {
+    // Só dispara se houver internet
+    if (navigator.onLine) {
+      setShowLoading(true);
+    }
+    // Se offline: ignora — cache mantido para uso offline
+  }
+}
+```
 
-- Quando o admin **cria um pack novo** → aparece instantaneamente na loja para todos
-- Quando o admin **edita nome, preço, disponibilidade** → reflete imediatamente
-- Quando o admin **adiciona ou remove um som** → pack atualiza em tempo real
-- Quando o admin **exclui um pack** → desaparece da loja imediatamente
-- **Não requer republicar o app nem recarregar a página**
+### 2. `src/components/AppLoadingScreen.tsx`
 
-## Arquivos a modificar
+A limpeza de cache dentro do `AppLoadingScreen` já está protegida pelo fato de que o componente **só é renderizado quando `showLoading = true`**, e esse estado só será `true` quando `navigator.onLine` for verdadeiro após a mudança. Portanto, **não precisa de alteração** — a lógica já funciona corretamente em cascata.
+
+---
+
+## Fluxo completo após a mudança
+
+```text
+Usuário sai do app por 2+ minutos → visibilitychange → 'visible'
+  │
+  ├─ navigator.onLine === true (tem internet)
+  │    └─ setShowLoading(true)
+  │         └─ AppLoadingScreen aparece
+  │              └─ caches.keys() → delete todos os caches SW
+  │              └─ label: "Limpando cache... → Preparando app... → Pronto!"
+  │              └─ onDone() → dismiss() → store e app recarregam com dados frescos
+  │
+  └─ navigator.onLine === false (sem internet)
+       └─ showLoading permanece false
+            └─ App continua normalmente com cache existente
+            └─ Usuário usa o app offline sem interrupção
+```
+
+---
+
+## Arquivo a modificar
 
 | Arquivo | Mudança |
 |---|---|
-| `supabase/migrations/` | Nova migração habilitando Realtime em `store_packs` e `pack_sounds` |
-| `src/hooks/useStorePacks.ts` | Adicionar listener Realtime que chama `fetchPacks()` em qualquer mudança |
+| `src/hooks/useAppReloadGuard.ts` | Adicionar `if (navigator.onLine)` antes de cada `setShowLoading(true)` |
 
-## Observação
-
-O comportamento do admin que já funciona (`onRefresh()` após cada ação) é mantido — ele garante atualização imediata mesmo que o Realtime demore alguns milissegundos para disparar.
+Apenas 2 linhas adicionadas (uma para cada ponto de disparo), sem alterar nenhuma outra lógica.
