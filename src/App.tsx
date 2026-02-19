@@ -19,6 +19,8 @@ import SharedSetlist from "./pages/SharedSetlist";
 import VapidGenerator from "./pages/VapidGenerator";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import AppLoadingScreen from "@/components/AppLoadingScreen";
+import { useAppReloadGuard } from "@/hooks/useAppReloadGuard";
 
 const CACHE_VERSION_KEY = 'app_cache_version';
 
@@ -87,6 +89,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Wraps the /app route: shows loading screen on return after 2+ min
+const AppGate = ({ children }: { children: React.ReactNode }) => {
+  const { showLoading, dismiss } = useAppReloadGuard();
+  if (showLoading) return <AppLoadingScreen onDone={dismiss} />;
+  return <>{children}</>;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -109,7 +118,7 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/app" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                    <Route path="/app" element={<ProtectedRoute><AppGate><Index /></AppGate></ProtectedRoute>} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
                     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
