@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, Menu, X, ChevronRight } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
 import { useIsMobile, useIsLandscape } from '@/hooks/use-mobile';
@@ -281,19 +281,33 @@ const TAB_ITEMS = [
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
-  const [activeTab, setActiveTab] = useState('audio');
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // null means "show list" on mobile
+  const [activeTab, setActiveTab] = useState<string | null>(initialTab || null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
 
+  const isMobilePortrait = isMobile && !isLandscape;
+
   useEffect(() => {
     if (open) {
       setSettings(loadAudioSettings());
-      if (initialTab) setActiveTab(initialTab);
-      setDrawerOpen(false);
+      if (initialTab) {
+        setActiveTab(initialTab);
+      } else if (!isMobilePortrait) {
+        setActiveTab('audio');
+      } else {
+        setActiveTab(null);
+      }
     }
   }, [open, initialTab]);
+
+  // On desktop, ensure activeTab is never null
+  useEffect(() => {
+    if (!isMobilePortrait && activeTab === null) {
+      setActiveTab('audio');
+    }
+  }, [isMobilePortrait, activeTab]);
 
   const update = (partial: Partial<AudioSettings>) => {
     const next = { ...settings, ...partial };
@@ -302,12 +316,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
     onAudioSettingsChange?.(next);
   };
 
-  const handleTabSelect = (value: string) => {
-    setActiveTab(value);
-    setDrawerOpen(false);
-  };
-
-  const activeTabItem = TAB_ITEMS.find(t => t.value === activeTab);
+  const activeTabItem = activeTab ? TAB_ITEMS.find(t => t.value === activeTab) : null;
 
   // ── Render tab content ──────────────────────────────────────────────────
 
@@ -435,53 +444,25 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
     }
   };
 
-  // ── Mobile drawer overlay ───────────────────────────────────────────────
+  // ── Mobile list view ──────────────────────────────────────────────────────
 
-  const mobileDrawer = (
-    <>
-      {/* Backdrop */}
-      {drawerOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-50 transition-opacity"
-          onClick={() => setDrawerOpen(false)}
-        />
-      )}
-      {/* Drawer panel */}
-      <div
-        className={`fixed top-0 left-0 h-full w-64 bg-background border-r border-border z-50 transform transition-transform duration-200 ease-out ${
-          drawerOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-        style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <span className="text-sm font-bold text-foreground">Configurações</span>
-          <button onClick={() => setDrawerOpen(false)} className="p-1 rounded-md hover:bg-muted transition-colors">
-            <X className="h-5 w-5 text-muted-foreground" />
+  const mobileListView = (
+    <div className="flex flex-col">
+      {TAB_ITEMS.map(item => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.value}
+            onClick={() => setActiveTab(item.value)}
+            className="flex items-center gap-3 w-full px-4 py-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors border-b border-border/50 last:border-0"
+          >
+            <Icon className="h-5 w-5 text-primary shrink-0" />
+            <span className="flex-1 text-left">{item.label}</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
           </button>
-        </div>
-        <nav className="flex flex-col p-2 gap-0.5">
-          {TAB_ITEMS.map(item => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.value;
-            return (
-              <button
-                key={item.value}
-                onClick={() => handleTabSelect(item.value)}
-                className={`flex items-center gap-3 w-full px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                <span className="flex-1 text-left">{item.label}</span>
-                <ChevronRight className={`h-4 w-4 shrink-0 transition-colors ${isActive ? 'text-primary' : 'text-muted-foreground/40'}`} />
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-    </>
+        );
+      })}
+    </div>
   );
 
   // ── Desktop/landscape sidebar ─────────────────────────────────────────
@@ -512,6 +493,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
   // ── Dialog ─────────────────────────────────────────────────────────────
 
   const useSideLayout = isLandscape || !isMobile;
+  const showMobileList = isMobilePortrait && activeTab === null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -526,37 +508,37 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
-          {isMobile && !isLandscape && (
+          {isMobilePortrait && activeTab !== null && (
             <button
-              onClick={() => setDrawerOpen(true)}
+              onClick={() => setActiveTab(null)}
               className="p-1.5 -ml-1 rounded-md hover:bg-muted transition-colors"
             >
-              <Menu className="h-5 w-5 text-muted-foreground" />
+              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
             </button>
           )}
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            {isMobile && !isLandscape && activeTabItem && (
+            {isMobilePortrait && activeTabItem && (
               <activeTabItem.icon className="h-4 w-4 text-primary shrink-0" />
             )}
             <h2 className="text-base font-bold text-foreground truncate">
-              {isMobile && !isLandscape ? activeTabItem?.label || 'Configurações' : 'Configurações'}
+              {isMobilePortrait && activeTabItem ? activeTabItem.label : 'Configurações'}
             </h2>
           </div>
         </div>
 
         {/* Body */}
-        <div className={`flex flex-1 min-h-0 overflow-hidden ${useSideLayout ? 'flex-row' : 'flex-col'}`}>
-          {/* Sidebar for desktop/landscape */}
-          {useSideLayout && desktopSidebar}
-
-          {/* Content area */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {renderContent()}
+        {showMobileList ? (
+          <div className="overflow-y-auto">
+            {mobileListView}
           </div>
-        </div>
-
-        {/* Mobile drawer (portal-like, rendered inside dialog) */}
-        {isMobile && !isLandscape && mobileDrawer}
+        ) : (
+          <div className={`flex flex-1 min-h-0 overflow-hidden ${useSideLayout ? 'flex-row' : 'flex-col'}`}>
+            {useSideLayout && desktopSidebar}
+            <div className="flex-1 overflow-y-auto p-4">
+              {renderContent()}
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
