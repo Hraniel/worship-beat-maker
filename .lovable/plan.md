@@ -1,71 +1,64 @@
 
-## Causa Raiz Definitiva
+## Objetivo
 
-O problema está no arquivo `src/pages/Dashboard.tsx`, linha 159:
+Fazer com que a Gloria Store atualize automaticamente para todos os usuários quando o admin criar, editar ou excluir um pack — sem necessidade de republicar o app ou recarregar a página manualmente.
 
-```typescript
-const displayPacks = dbPacks.length > 0
-  ? [...dbPacks, ...STATIC_PACKS.filter(sp => !dbPacks.some(dp => dp.name === sp.name))]
-  : STATIC_PACKS;
-```
+## Como funciona atualmente
 
-Esta linha **combina os packs reais do banco com packs estáticos hardcoded** (`STATIC_PACKS`) que possuem IDs do tipo slug (`'worship-drums-dry'`, `'worship-strings'`, etc.) — não UUIDs. O filtro usa apenas o `name` para deduplicar, então qualquer pack estático cujo nome não coincida exatamente com um pack do banco é adicionado à lista.
+O `useStorePacks` busca os dados do banco uma única vez quando o componente monta (`useEffect` com `fetchPacks`). Após isso, os dados só se atualizam quando:
+- O admin realiza uma ação e `onRefresh()` é chamado (apenas na sessão do admin)
+- O usuário navega para outra página e volta
+- O usuário recarrega o app
 
-O `AdminPackManager` recebe esse `displayPacks` e quando o admin clica em "Adicionar Sons" em um desses packs estáticos mesclados, o `pack.id` enviado para a Edge Function é o slug — causando o erro `invalid input syntax for type uuid: "worship-drums-dry"`.
-
-## O que está acontecendo passo a passo
-
-```text
-1. dbPacks = [Worship Strings (a1000001...), Worship Drums Dry (a1000001...), ...]
-2. STATIC_PACKS = [worship-strings (slug), worship-drums-dry (slug), worship-snare-dry (slug), ...]
-3. Filtro por nome: "Worship Strings" != "Worship Strings" ← case match OK, removido
-                    "Worship Drums Dry" != "Worship Kick Dry" ← NOMES DIFERENTES, slug incluído!
-4. displayPacks = [...dbPacks, { id: 'worship-drums-dry', name: 'Worship Kick Dry', ... }]
-5. Admin clica em "Adicionar Sons" no pack 'Worship Kick Dry'
-6. packId = 'worship-drums-dry' → Edge Function → PostgreSQL → ERRO 500
-```
-
-O pack estático `'worship-drums-dry'` tem nome `'Worship Kick Dry'` (linha 104) mas o pack no banco tem nome `'Worship Drums Dry'` — nomes diferentes, então o filtro não o remove.
+A tabela `store_packs` não tem Realtime habilitado no banco, então mudanças feitas pelo admin não chegam automaticamente para outros usuários.
 
 ## Solução
 
-### 1. Remover a mistura de STATIC_PACKS no displayPacks do admin
+### 1. Habilitar Realtime nas tabelas `store_packs` e `pack_sounds` (migração SQL)
 
-O painel admin (`AdminPackManager`) nunca deve exibir packs estáticos. Ele deve mostrar **apenas** os packs reais do banco.
-
-Criar um `adminPacks` separado que usa somente `dbPacks`:
-
-```typescript
-// Para o painel admin: APENAS packs reais do banco
-const adminPacks = dbPacks;
-
-// Para a loja (usuários normais): mantém o fallback estático
-const displayPacks = dbPacks.length > 0
-  ? [...dbPacks, ...STATIC_PACKS.filter(sp => !dbPacks.some(dp => dp.name === sp.name))]
-  : STATIC_PACKS;
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.store_packs;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.pack_sounds;
 ```
 
-E passar `adminPacks` para o `AdminPackManager` em vez de `displayPacks`.
+### 2. Adicionar listener Realtime no `useStorePacks`
 
-### 2. Remover os STATIC_PACKS da exibição da loja também (opcional mas recomendado)
-
-Como o banco agora tem todos os packs reais, a lista estática de fallback não serve mais propósito. Packs com `is_available: false` já aparecem na loja para o admin. Simplificar para:
+Adicionar um canal Realtime que escuta qualquer `INSERT`, `UPDATE` ou `DELETE` nas tabelas `store_packs` e `pack_sounds`. Quando um evento chegar, chama `fetchPacks()` automaticamente para todos os clientes conectados.
 
 ```typescript
-const displayPacks = dbPacks;
+// Dentro do useStorePacks, após o useEffect de fetch inicial:
+useEffect(() => {
+  const channel = supabase
+    .channel('store-packs-realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'store_packs' }, () => {
+      fetchPacks();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'pack_sounds' }, () => {
+      fetchPacks();
+    })
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [fetchPacks]);
 ```
 
-Isso elimina a confusão de vez.
+## Resultado
 
-## Arquivos a Modificar
+- Quando o admin **cria um pack novo** → aparece instantaneamente na loja para todos
+- Quando o admin **edita nome, preço, disponibilidade** → reflete imediatamente
+- Quando o admin **adiciona ou remove um som** → pack atualiza em tempo real
+- Quando o admin **exclui um pack** → desaparece da loja imediatamente
+- **Não requer republicar o app nem recarregar a página**
+
+## Arquivos a modificar
 
 | Arquivo | Mudança |
 |---|---|
-| `src/pages/Dashboard.tsx` | Separar `adminPacks = dbPacks` de `displayPacks`, passar `adminPacks` para `<AdminPackManager>` |
+| `supabase/migrations/` | Nova migração habilitando Realtime em `store_packs` e `pack_sounds` |
+| `src/hooks/useStorePacks.ts` | Adicionar listener Realtime que chama `fetchPacks()` em qualquer mudança |
 
-## O que muda após a correção
+## Observação
 
-- O painel admin só mostrará packs reais do banco com UUIDs válidos
-- Nunca mais um slug chega na Edge Function via painel admin
-- A loja para usuários normais pode manter ou remover o fallback estático — neste plano removemos pois o banco já está completo
-- Os packs legados (`a1000001-...`) continuarão funcionando normalmente pois seus IDs passam na validação da Edge Function
+O comportamento do admin que já funciona (`onRefresh()` após cada ação) é mantido — ele garante atualização imediata mesmo que o Realtime demore alguns milissegundos para disparar.
