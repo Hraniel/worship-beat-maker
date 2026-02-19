@@ -3,6 +3,7 @@ import {
   ListMusic, Plus, Trash2, ChevronRight, GripVertical, Share2, Link2, Eye, EyeOff,
   Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -387,33 +388,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         </SheetHeader>
         <div className="mt-4 space-y-4 flex-1 overflow-y-auto pb-4" style={{ overscrollBehavior: 'contain' }}>
 
-          {/* Save current config as song */}
-          <div className="flex gap-2">
-            <Input placeholder="Nome da música..." value={newName} onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="bg-background" />
-            <Button size="icon" onClick={handleSave} disabled={!newName.trim()}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Songs list */}
-          <div className="space-y-1">
-            {songs.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">Nenhuma música salva ainda</p>
-            )}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={songs.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                {songs.map((song) => (
-                  <SortableItem key={song.id} song={song} isActive={currentSongId === song.id}
-                    onLoad={() => { onLoadSong(song); setOpen(false); }}
-                    onDelete={() => onDeleteSong(song.id)} />
-                ))}
-              </SortableContext>
-            </DndContext>
-          </div>
-
           {/* Events section */}
-          <div className="space-y-2 pt-2 border-t border-border">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5 text-primary" />
@@ -445,6 +421,37 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 onReorderSongs={reorderEventSongs}
               />
             ))}
+          </div>
+
+          {/* Save current config as song */}
+          <div className="pt-2 border-t border-border space-y-3">
+            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+              <Music className="h-3.5 w-3.5 text-primary" />
+              Músicas Salvas
+            </p>
+            <div className="flex gap-2">
+              <Input placeholder="Nome da música..." value={newName} onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="bg-background" />
+              <Button size="icon" onClick={handleSave} disabled={!newName.trim()}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Songs list */}
+            <div className="space-y-1">
+              {songs.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma música salva ainda</p>
+              )}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={songs.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                  {songs.map((song) => (
+                    <SortableItem key={song.id} song={song} isActive={currentSongId === song.id}
+                      onLoad={() => { onLoadSong(song); setOpen(false); }}
+                      onDelete={() => onDeleteSong(song.id)} />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            </div>
           </div>
 
         </div>
