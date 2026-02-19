@@ -567,63 +567,73 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
       {activeTab === 'packs' && (
         <>
-          {/* Create pack button */}
+          {/* Create pack floating modal */}
+          {showCreatePack && (
+            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm space-y-3 shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-foreground">Novo Pack</h4>
+                  <button onClick={() => setShowCreatePack(false)} className="p-1 rounded-lg hover:bg-muted transition-colors">
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                </div>
+                <input
+                  className="w-full h-9 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none focus:ring-1 focus:ring-ring"
+                  placeholder="Nome do pack *"
+                  value={newPack.name}
+                  onChange={e => setNewPack(p => ({ ...p, name: e.target.value }))}
+                />
+                <textarea
+                  className="w-full px-3 py-2 text-xs rounded-lg bg-muted border border-border focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                  rows={2}
+                  placeholder="Descrição *"
+                  value={newPack.description}
+                  onChange={e => setNewPack(p => ({ ...p, description: e.target.value }))}
+                />
+                <select
+                  className="w-full h-9 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                  value={newPack.category}
+                  onChange={e => setNewPack(p => ({ ...p, category: e.target.value }))}
+                >
+                  {PACK_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <div className="flex gap-2">
+                  <select
+                    className="flex-1 h-9 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                    value={newPack.iconName}
+                    onChange={e => setNewPack(p => ({ ...p, iconName: e.target.value }))}
+                  >
+                    {PACK_ICONS.map(i => <option key={i.key} value={i.key}>{i.label}</option>)}
+                  </select>
+                  <select
+                    className="flex-1 h-9 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                    value={newPack.color}
+                    onChange={e => setNewPack(p => ({ ...p, color: e.target.value }))}
+                  >
+                    {PACK_COLORS.map(c => <option key={c} value={c}>{c.replace('bg-', '').replace('-500', '')}</option>)}
+                  </select>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" onClick={handleCreatePack} className="flex-1 h-9 text-xs">
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Criar Pack
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setShowCreatePack(false)} className="h-9 text-xs">Cancelar</Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Header */}
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-foreground">Packs ({packs.length})</h3>
             <button
-              onClick={() => setShowCreatePack(v => !v)}
+              onClick={() => setShowCreatePack(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               Novo Pack
             </button>
           </div>
-
-          {/* Create pack form */}
-          {showCreatePack && (
-            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-              <h4 className="text-xs font-semibold text-foreground">Criar novo pack</h4>
-              <input
-                className="w-full h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
-                placeholder="Nome do pack"
-                value={newPack.name}
-                onChange={e => setNewPack(p => ({ ...p, name: e.target.value }))}
-              />
-              <input
-                className="w-full h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
-                placeholder="Descrição"
-                value={newPack.description}
-                onChange={e => setNewPack(p => ({ ...p, description: e.target.value }))}
-              />
-              <select
-                className="w-full h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
-                value={newPack.category}
-                onChange={e => setNewPack(p => ({ ...p, category: e.target.value }))}
-              >
-                {PACK_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-              <div className="flex gap-2">
-                <select
-                  className="flex-1 h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
-                  value={newPack.iconName}
-                  onChange={e => setNewPack(p => ({ ...p, iconName: e.target.value }))}
-                >
-                  {PACK_ICONS.map(i => <option key={i.key} value={i.key}>{i.label}</option>)}
-                </select>
-                <select
-                  className="flex-1 h-8 px-3 text-xs rounded-lg bg-muted border border-border focus:outline-none"
-                  value={newPack.color}
-                  onChange={e => setNewPack(p => ({ ...p, color: e.target.value }))}
-                >
-                  {PACK_COLORS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleCreatePack} className="flex-1 h-8 text-xs">Criar</Button>
-                <Button size="sm" variant="outline" onClick={() => setShowCreatePack(false)} className="h-8 text-xs">Cancelar</Button>
-              </div>
-            </div>
-          )}
 
           {/* Pack list */}
           <div className="space-y-2">
@@ -767,20 +777,8 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                         <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                       </button>
 
-                      {/* Upload sounds */}
-                      <button
-                        onClick={() => {
-                          pendingUploadRef.current = { packId: pack.id, type: 'full' };
-                          fileInputRef.current?.click();
-                        }}
-                        disabled={uploading?.packId === pack.id && uploading?.type === 'full'}
-                        className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors"
-                        title="Enviar sons"
-                      >
-                        {uploading?.packId === pack.id && uploading?.type === 'full'
-                          ? <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-                          : <Upload className="h-3.5 w-3.5 text-muted-foreground" />}
-                      </button>
+
+
 
                       {/* Expand/collapse */}
                       <button
@@ -872,6 +870,26 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                   {/* Sounds list */}
                   {expandedPack === pack.id && (
                     <div className="border-t border-border">
+                      {/* Add sounds toolbar */}
+                      <div className="px-3 py-2 flex items-center justify-between border-b border-border bg-muted/30">
+                        <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">
+                          {sounds.length} som{sounds.length !== 1 ? 's' : ''}
+                        </span>
+                        <button
+                          onClick={() => {
+                            pendingUploadRef.current = { packId: pack.id, type: 'full' };
+                            fileInputRef.current?.click();
+                          }}
+                          disabled={uploading?.packId === pack.id && uploading?.type === 'full'}
+                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        >
+                          {uploading?.packId === pack.id && uploading?.type === 'full'
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Plus className="h-3 w-3" />}
+                          Adicionar Sons
+                        </button>
+                      </div>
+
                       {hasUnsavedOrder && (
                         <div className="px-3 py-2 flex items-center justify-between bg-amber-500/10">
                           <span className="text-[10px] text-amber-600">Ordem alterada — salvar?</span>
@@ -887,8 +905,18 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                       )}
 
                       {sounds.length === 0 ? (
-                        <div className="py-6 text-center text-xs text-muted-foreground">
-                          Nenhum som. Clique em upload para adicionar.
+                        <div className="py-8 flex flex-col items-center gap-2 text-muted-foreground">
+                          <Music className="h-6 w-6 opacity-30" />
+                          <p className="text-xs">Nenhum som adicionado</p>
+                          <button
+                            onClick={() => {
+                              pendingUploadRef.current = { packId: pack.id, type: 'full' };
+                              fileInputRef.current?.click();
+                            }}
+                            className="text-xs text-primary hover:underline"
+                          >
+                            Clique para adicionar sons
+                          </button>
                         </div>
                       ) : (
                         <div className="divide-y divide-border">
