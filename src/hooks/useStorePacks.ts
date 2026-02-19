@@ -112,5 +112,21 @@ export function useStorePacks() {
     fetchPacks();
   }, [fetchPacks]);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel('store-packs-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'store_packs' }, () => {
+        fetchPacks();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pack_sounds' }, () => {
+        fetchPacks();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPacks]);
+
   return { packs, loading, refetch: fetchPacks };
 }
