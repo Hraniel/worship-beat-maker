@@ -90,8 +90,13 @@ const Nav = ({ navigate, config, hasAnnouncement }: { navigate: ReturnType<typeo
   const navBg = config.nav_bg || 'hsl(0 0% 100% / 0.96)';
   const navBorder = config.nav_border_color || 'hsl(0 0% 0% / 0.08)';
   const linkColor = config.nav_link_color || 'hsl(220 15% 45%)';
+  const linkHoverColor = config.nav_link_hover_color || 'hsl(220 15% 10%)';
   const loginLabel = config.nav_btn_login_label || 'Entrar';
   const signupLabel = config.nav_btn_signup_label || 'Começar grátis';
+  const loginBg = config.nav_btn_login_bg || '';
+  const loginColor = config.nav_btn_login_color || '';
+  const signupBg = config.nav_btn_signup_bg || '';
+  const signupColor = config.nav_btn_signup_color || '';
 
   const navLinks = [
     { label: config.nav_link_0_label || 'Recursos', href: config.nav_link_0_href || '#recursos' },
@@ -116,16 +121,22 @@ const Nav = ({ navigate, config, hasAnnouncement }: { navigate: ReturnType<typeo
           {navLinks.map(l => (
             <a key={l.href} href={l.href} className="text-sm transition hidden sm:inline"
               style={{ color: linkColor }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'hsl(220 15% 10%)')}
+              onMouseEnter={e => (e.currentTarget.style.color = linkHoverColor)}
               onMouseLeave={e => (e.currentTarget.style.color = linkColor)}>
               {l.label}
             </a>
           ))}
-          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="text-foreground/70 hover:text-foreground">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}
+            className="text-foreground/70 hover:text-foreground"
+            style={{ ...(loginBg ? { background: loginBg } : {}), ...(loginColor ? { color: loginColor } : {}) }}>
             {loginLabel}
           </Button>
           <Button size="sm" onClick={() => navigate('/auth?mode=signup')}
-            className="bg-foreground text-background hover:bg-foreground/90 font-semibold">
+            className="font-semibold"
+            style={{
+              background: signupBg || 'hsl(220 15% 10%)',
+              color: signupColor || 'hsl(0 0% 100%)',
+            }}>
             {signupLabel}
           </Button>
         </div>
