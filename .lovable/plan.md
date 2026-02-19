@@ -1,92 +1,53 @@
 
-## Sistema de Remoção/Restauração de Packs — da Loja e do App
+## Causa do Problema
 
-### Problema atual identificado
-
-Existem dois problemas críticos na implementação atual:
-
-**1. RLS bloqueia o UPDATE direto pelo cliente**
-A tabela `user_purchases` tem RLS com política apenas para `SELECT` e `INSERT`. O `UPDATE` (usado em `handleToggleRemove` e `handleRestoreFree` nos componentes) é bloqueado pelo banco de dados. As atualizações no campo `removed` falham silenciosamente.
-
-**2. StoreImportPicker não filtra packs removidos**
-O seletor de importação de sons dentro do app (menu de contexto dos pads) busca todos os packs comprados **sem filtrar** `removed = true`. Isso significa que mesmo após remover um pack da biblioteca, os sons dele ainda aparecem disponíveis para importação no app.
-
----
-
-### Solução
-
-#### Parte 1 — Corrigir o UPDATE via Edge Function
-
-Em vez de chamar `supabase.from('user_purchases').update(...)` diretamente no cliente (bloqueado pelo RLS), criar uma Edge Function `toggle-pack-library` que usa a **service role** para fazer o update com segurança, validando que o usuário é dono da compra.
-
-**Nova Edge Function: `toggle-pack-library`**
-- Recebe: `{ packId, removed: boolean }`
-- Valida o JWT do usuário
-- Verifica que o usuário possui o pack em `user_purchases`
-- Atualiza o campo `removed` usando a service role key
-- Retorna `{ success: true }`
-
-#### Parte 2 — Filtrar packs removidos no StoreImportPicker
-
-Alterar `src/components/StoreImportPicker.tsx` para buscar compras com `removed = eq(false)`:
+O frontend em `AdminPackManager.tsx` tem uma validação rígida de UUID antes de chamar a Edge Function de exclusão:
 
 ```typescript
-// Antes:
-const { data: purchases } = await supabase
-  .from('user_purchases')
-  .select('pack_id')
-  .eq('user_id', user.id);
-
-// Depois:
-const { data: purchases } = await supabase
-  .from('user_purchases')
-  .select('pack_id')
-  .eq('user_id', user.id)
-  .eq('removed', false);  // <- filtro adicionado
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+if (!uuidRegex.test(pack.id)) {
+  toast.error(`Este pack tem um ID legado... Delete-o manualmente.`);
+  return; // bloqueia a exclusão
+}
 ```
 
-#### Parte 3 — Atualizar PackDetail e PackCard para usar a Edge Function
+Os packs "legados" no banco de dados têm IDs no formato `a1000001-0000-0000-0000-000000000001`. Esses IDs são **UUIDs válidos para o PostgreSQL** (todos os caracteres são hexadecimais, no formato correto), mas a regex estrita do frontend os **rejeita** — impedindo desnecessariamente a exclusão pelo painel.
 
-Substituir as chamadas diretas de `supabase.update` pelo `invokeWithToken('toggle-pack-library', ...)` em:
-- `src/pages/PackDetail.tsx` (funções `handleToggleRemove` e `handleRestoreFree`)
-- `src/components/PackCard.tsx` (botão "Incluir Grátis")
+A validação foi adicionada para evitar o erro anterior onde slugs de texto como `worship-drums-dry` chegavam ao banco e causavam erros de sintaxe SQL. Porém, ela é excessivamente restritiva e bloqueia UUIDs que o PostgreSQL aceita perfeitamente.
 
----
+## Solução
 
-### Arquivos a modificar
+### 1. Remover a validação rígida de UUID do frontend (`AdminPackManager.tsx`)
+
+Retirar o bloco que bloqueia packs com IDs "legados". A Edge Function já tem validação suficiente e usa a service role — ela simplesmente faz `DELETE WHERE id = packId` pelo valor exato do banco.
+
+### 2. Ajustar a validação da Edge Function (`admin-upload-sound/index.ts`)
+
+As ações `delete-pack`, `update-pack`, `remove-banner`, `remove-icon` e `duplicate-pack` usam a regex `/^[0-9a-f-]{36}$/` que verifica apenas comprimento. Essa regex é suficiente para todos os IDs presentes no banco.
+
+Para as ações de exclusão, substituir a regex estrita por uma verificação de comprimento e caracteres hexadecimais mais permissiva que aceita os IDs reais no banco:
+
+```typescript
+// Antes (muito restritivo):
+!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(packId)
+
+// Depois (aceita todos UUIDs válidos do PostgreSQL):
+!/^[0-9a-f-]{36}$/i.test(packId)  // <- já é o que a EF usa, mas o frontend precisa ser alinhado
+```
+
+### 3. Melhorar a UX do modal de confirmação
+
+Ao invés do `window.confirm()` nativo, exibir diretamente o toast de confirmação com o nome do pack e a contagem de sons — mantendo o comportamento atual mas sem bloquear os packs legados.
+
+## Arquivos a modificar
 
 | Arquivo | Mudança |
 |---|---|
-| `supabase/functions/toggle-pack-library/index.ts` | Nova Edge Function (criação) |
-| `src/pages/PackDetail.tsx` | `handleToggleRemove` e `handleRestoreFree` passam a usar a Edge Function |
-| `src/components/PackCard.tsx` | Restauração também usa Edge Function |
-| `src/components/StoreImportPicker.tsx` | Filtra `.eq('removed', false)` na busca de compras |
+| `src/components/AdminPackManager.tsx` | Remover o bloco de validação de UUID que exibe a mensagem de "ID legado" e bloqueia a exclusão |
+| `supabase/functions/admin-upload-sound/index.ts` | Nenhuma mudança necessária (a Edge Function já aceita os IDs corretamente via `/^[0-9a-f-]{36}$/`) |
 
----
+## O que acontece após a correção
 
-### Fluxo completo após a implementação
-
-```text
-Usuário clica "Remover da biblioteca"
-  → invokeWithToken('toggle-pack-library', { packId, removed: true })
-    → Edge Function valida JWT + posse do pack
-    → UPDATE user_purchases SET removed = true (service role)
-  → refetch() atualiza o estado local
-  → Pack some da loja como "adquirido"
-  → Pack desaparece do StoreImportPicker no app
-
-Usuário clica "Incluir Grátis"  
-  → invokeWithToken('toggle-pack-library', { packId, removed: false })
-  → Pack volta como "adquirido" na loja
-  → Sons voltam a aparecer no StoreImportPicker
-```
-
----
-
-### Fluxo de segurança
-
-A Edge Function usa `SUPABASE_SERVICE_ROLE_KEY` para fazer o UPDATE, mas valida:
-1. Token JWT presente e válido
-2. Registro `user_purchases` com `user_id = auth_user_id` existe para o `packId`
-
-Isso garante que nenhum usuário pode alterar compras de outro usuário.
+- Packs com IDs `a1000001-0000-0000-0000-000000000001` poderão ser excluídos normalmente pelo painel
+- A Edge Function recebe o ID, faz `DELETE` no banco pelo valor exato, apaga os arquivos de storage e retorna sucesso
+- Nenhuma lógica de negócio é alterada — apenas a validação excessivamente rígida do frontend é removida
