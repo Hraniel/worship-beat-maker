@@ -1,8 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Play, Pause, Minus, Plus } from 'lucide-react';
+import { Play, Pause, Minus, Plus, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { enableMetronome, disableMetronome, onMetronomeBeat, setSyncEnabled, isSyncEnabled } from '@/lib/loop-engine';
+import { useFeatureGates } from '@/hooks/useFeatureGates';
+import UpgradeGateModal, { type UpgradeGatePayload } from '@/components/UpgradeGateModal';
 
 interface MetronomeProps {
   bpm: number;
@@ -21,6 +23,8 @@ const TIME_SIGNATURES = ['4/4', '3/4', '6/8'];
 const Metronome: React.FC<MetronomeProps> = ({
   bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat, songKey, onKeyChange
 }) => {
+  const { canAccess } = useFeatureGates();
+  const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [syncOn, setSyncOn] = useState(() => {
     const stored = localStorage.getItem('drum-pads-sync-enabled');
     const val = stored === null ? true : stored === 'true';
@@ -121,6 +125,7 @@ const Metronome: React.FC<MetronomeProps> = ({
   }, [isPlaying, onBpmChange]);
 
   return (
+    <>
     <div className="flex flex-col gap-2 px-3 py-2">
       {/* BPM + slider row */}
       <div className="flex items-center gap-1.5">
@@ -169,14 +174,20 @@ const Metronome: React.FC<MetronomeProps> = ({
         <Button
           variant={syncOn ? "default" : "outline"}
           size="sm"
-          className="text-[10px] px-1.5 h-7 ml-1"
+          className="text-[10px] px-1.5 h-7 ml-1 gap-0.5"
           onClick={() => {
+            const check = canAccess('sync');
+            if (!check.allowed) {
+              setUpgradeGate({ gateKey: 'sync', gateLabel: check.gate?.gate_label || 'Sync', requiredTier: check.requiredTier || 'master' });
+              return;
+            }
             const next = !syncOn;
             setSyncOn(next);
             setSyncEnabled(next);
             localStorage.setItem('drum-pads-sync-enabled', String(next));
           }}
         >
+          {!canAccess('sync').allowed && <Lock className="h-2.5 w-2.5" />}
           Sync
         </Button>
 
@@ -230,6 +241,14 @@ const Metronome: React.FC<MetronomeProps> = ({
         </div>
       </div>
     </div>
+
+    {upgradeGate && (
+      <UpgradeGateModal
+        payload={upgradeGate}
+        onClose={() => setUpgradeGate(null)}
+      />
+    )}
+    </>
   );
 };
 
