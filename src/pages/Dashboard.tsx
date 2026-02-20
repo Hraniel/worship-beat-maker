@@ -13,6 +13,7 @@ import AdminPackManager from '@/components/AdminPackManager';
 import CommunitySuggestions from '@/components/CommunitySuggestions';
 import { useStorePacks, StorePackData } from '@/hooks/useStorePacks';
 import { useAdminRole } from '@/hooks/useAdminRole';
+import { useStoreConfig } from '@/hooks/useStoreConfig';
 import {
   Crown, Zap, Play, LogOut, Store,
   User, Mail, Calendar, Loader2,
@@ -122,6 +123,7 @@ const Dashboard = () => {
   const { tier, subscriptionEnd, loading } = useSubscription();
   const { packs: dbPacks, loading: packsLoading, refetch } = useStorePacks();
   const { isAdmin } = useAdminRole();
+  const { get: sc, getJSON } = useStoreConfig();
   const [portalLoading, setPortalLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Todos');
@@ -332,7 +334,7 @@ const Dashboard = () => {
           <div className="mb-8">
             <div className="flex items-center gap-2.5 mb-4">
               <Library className="h-5 w-5 text-violet-500" />
-              <h2 className="text-lg font-bold text-gray-900">Minha Biblioteca</h2>
+              <h2 className="text-lg font-bold text-gray-900">{sc('library_title')}</h2>
               <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">
                 {activePacks.length} ativo{activePacks.length !== 1 ? 's' : ''}
                 {removedPacks.length > 0 && ` · ${removedPacks.length} removido${removedPacks.length !== 1 ? 's' : ''}`}
@@ -344,7 +346,7 @@ const Dashboard = () => {
               <div className="mb-4">
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Ativos</span>
+                  <span className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">{sc('library_active_label')}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {activePacks.map(pack => (
@@ -381,7 +383,7 @@ const Dashboard = () => {
               <div>
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <Package className="h-3.5 w-3.5 text-gray-400" />
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Removidos</span>
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{sc('library_removed_label')}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                   {removedPacks.map(pack => (
@@ -426,10 +428,10 @@ const Dashboard = () => {
         <div className="mb-6">
           <div className="flex items-center gap-2.5 mb-1">
             <Store className="h-5 w-5 text-gray-400" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Glory Store</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{sc('store_title')}</h1>
           </div>
           <p className="text-sm text-gray-500 max-w-lg mb-4">
-            Descubra novos sons, packs e texturas para elevar seu louvor.
+            {sc('store_subtitle')}
           </p>
 
           {/* Search + Library filter row */}
@@ -438,7 +440,7 @@ const Dashboard = () => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Buscar packs por nome ou descrição..."
+                placeholder={sc('search_placeholder')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full h-10 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
@@ -454,12 +456,15 @@ const Dashboard = () => {
             </div>
             {/* Library status filter */}
             <div className="flex items-center gap-1.5 flex-wrap">
-              {([
-                { key: 'all', label: 'Todos', icon: <Store className="h-3 w-3" /> },
-                { key: 'acquired', label: 'Adquiridos', icon: <CheckCircle className="h-3 w-3" /> },
-                { key: 'available', label: 'Disponíveis', icon: <BookOpen className="h-3 w-3" /> },
-                { key: 'removed', label: 'Removidos', icon: <Package className="h-3 w-3" /> },
-              ] as const).map(f => (
+              {(() => {
+                const fl = getJSON<Record<string, string>>('filter_labels', { all: 'Todos', purchased: 'Adquiridos', available: 'Disponíveis', removed: 'Removidos' });
+                return [
+                  { key: 'all' as const, label: fl.all ?? 'Todos', icon: <Store className="h-3 w-3" /> },
+                  { key: 'acquired' as const, label: fl.purchased ?? 'Adquiridos', icon: <CheckCircle className="h-3 w-3" /> },
+                  { key: 'available' as const, label: fl.available ?? 'Disponíveis', icon: <BookOpen className="h-3 w-3" /> },
+                  { key: 'removed' as const, label: fl.removed ?? 'Removidos', icon: <Package className="h-3 w-3" /> },
+                ];
+              })().map(f => (
                 <button
                   key={f.key}
                   onClick={() => setLibraryFilter(f.key)}

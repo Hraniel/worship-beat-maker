@@ -486,6 +486,27 @@ export type Database = {
         }
         Relationships: []
       }
+      store_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       store_packs: {
         Row: {
           banner_url: string | null

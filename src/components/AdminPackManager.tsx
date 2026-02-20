@@ -16,6 +16,7 @@ import AdminPricingManager from '@/components/AdminPricingManager';
 import AdminNotificationManager from '@/components/AdminNotificationManager';
 import AdminLandingEditor from '@/components/AdminLandingEditor';
 import AdminCacheManager from '@/components/AdminCacheManager';
+import AdminStoreEditor from '@/components/AdminStoreEditor';
 import { broadcastPushNotification } from '@/lib/push-notifications';
 
 
@@ -75,7 +76,7 @@ interface BatchProgress {
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache' | 'store'>('packs');
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -644,6 +645,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           { key: 'suggestions', label: '💡 Sugestões' },
           { key: 'pricing', label: '💳 Planos' },
           { key: 'landing', label: '🌐 Landing' },
+          { key: 'store', label: '🏪 Loja' },
           { key: 'cache', label: '🗑️ Cache' },
         ] as const).map(tab => (
           <button
@@ -669,6 +671,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       {activeTab === 'suggestions' && <AdminSuggestionsManager />}
       {activeTab === 'pricing' && <AdminPricingManager />}
       {activeTab === 'landing' && <AdminLandingEditor />}
+      {activeTab === 'store' && <AdminStoreEditor />}
       {activeTab === 'cache' && <AdminCacheManager />}
 
       {activeTab === 'packs' && (
