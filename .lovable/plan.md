@@ -1,33 +1,47 @@
 
 
-## Problem
+## Problema Real
 
-The main app container is set to exactly `height: 100dvh` with `overflow: hidden`, but it has no `paddingBottom` for the safe area. The shortcut bar (Metronome, Afinador, Loja buttons) sits at the very bottom of the footer, which gets clipped/hidden because the container ends at the viewport boundary -- the safe area space below is never reached.
+O problema nao e de padding ou safe-area. E um problema **estrutural de layout**. A barra de atalhos (Metronomo, Afinador, Loja) esta aninhada dentro de uma hierarquia que a corta:
 
-## Solution
-
-Two changes are needed:
-
-### 1. Main container (`src/pages/Index.tsx`, line ~820)
-Add `paddingBottom: 'env(safe-area-inset-bottom, 0px)'` to the root container's style. This expands the usable area into the safe zone so the footer (including shortcut buttons) is not clipped.
-
-### 2. Remove duplicate safe-area padding from shortcut bar
-Since the root container now handles the safe-area bottom, remove the `paddingBottom: 'env(safe-area-inset-bottom, 0px)'` from the shortcut bar wrapper (line ~1615). This prevents double-padding that would create an excessive gap.
-
-### 3. Footer conditional paddingBottom cleanup
-The footer tag (line ~1260) conditionally applies `paddingBottom` for tablet/desktop. This stays as-is since it only applies to non-mobile layouts.
-
-### Technical Details
-
-```
-Root div (line 820):
-  BEFORE: paddingTop + paddingLeft + paddingRight only
-  AFTER:  add paddingBottom: 'env(safe-area-inset-bottom, 0px)'
-
-Shortcut bar (line 1613-1615):
-  BEFORE: style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-  AFTER:  no paddingBottom style (remove it)
+```text
+Root (100dvh, overflow-hidden, flex-col)
+  +-- header (shrink-0)
+  +-- div.flex-1 (overflow-hidden)        <-- ESTE CONTAINER CORTA O CONTEUDO
+  |     +-- main.flex-1 (pad grid)
+  |     +-- footer (shrink-0)
+  |           +-- conteudo do footer (Mix/Met/Tools)
+  |           +-- BARRA DE ATALHOS        <-- CORTADA pelo overflow-hidden do pai
+  +-- modais...
 ```
 
-This ensures the background extends to the bottom edge of the screen, and the buttons render visibly inside the safe area without being clipped by `overflow: hidden`.
+A barra de atalhos fica dentro do `footer`, que fica dentro de um `div` com `overflow-hidden`. Quando o conteudo total (main + footer) excede o espaco disponivel, a parte inferior e cortada — exatamente onde ficam os botoes.
 
+A aba "Planos" (Dashboard/Loja) funciona porque usa um layout completamente diferente (`useBodyScroll`) com rolagem normal.
+
+## Solucao
+
+Mover a barra de atalhos para **fora** do container `overflow-hidden`, tornando-a um filho direto do container raiz. Assim ela nunca sera cortada.
+
+### Estrutura Nova:
+
+```text
+Root (100dvh, overflow-hidden, flex-col)
+  +-- header (shrink-0)
+  +-- div.flex-1 (overflow-hidden)
+  |     +-- main.flex-1 (pad grid)
+  |     +-- footer (shrink-0)
+  |           +-- conteudo do footer (Mix/Met/Tools)
+  +-- BARRA DE ATALHOS (shrink-0)         <-- MOVIDA PARA FORA
+```
+
+### Detalhes Tecnicos
+
+**Arquivo: `src/pages/Index.tsx`**
+
+1. **Remover** o bloco da barra de atalhos (linhas ~1612-1647) de dentro do `<footer>`
+2. **Inserir** esse mesmo bloco como filho direto do `<div>` raiz (apos o fechamento do `</div>` que contem main+footer, antes dos modais)
+3. A barra mantem o `paddingBottom: env(safe-area-inset-bottom)` para que o fundo se estenda ate a borda do dispositivo e os botoes fiquem acima do indicador home
+4. A barra tera `shrink-0` para nunca ser comprimida
+
+Isso resolve o problema de uma vez porque a barra de atalhos deixa de depender do espaco sobrante dentro do container com overflow cortado.
