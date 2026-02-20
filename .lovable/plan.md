@@ -1,79 +1,89 @@
 
 
-## Editar Textos e Cores da Comunidade e Rodapé no Painel Admin
+## Video de Fundo em Todas as Secoes da Landing Page
 
 ### Resumo
 
-Expandir o `AdminStoreEditor` com duas novas secoes: uma para os textos/cores da secao "Comunidade" e outra para o rodape da pagina da loja. Tambem atualizar o `CommunitySuggestions` e o `Dashboard` para consumir esses valores dinamicamente.
+Expandir o suporte a video de fundo (atualmente so no Hero) para todas as secoes da landing page, com controles independentes de URL, opacidade e enquadramento (object-fit) para cada secao. Os videos terao tamanho contido dentro da secao (nao full-screen), respeitando a altura natural do conteudo.
 
-### Novas config keys no `store_config`
+### Secoes que receberao suporte a video
 
-Adicionar via seed SQL as seguintes chaves:
+| Secao | Config prefix | Fundo |
+|-------|--------------|-------|
+| Hero | `hero_video_*` | Ja existe |
+| Stats | `stats_video_*` | Escuro |
+| Features (Recursos) | `features_video_*` | Claro |
+| App Screenshots | `screenshots_video_*` | Claro |
+| Sound Store | `store_video_*` | Escuro |
+| How It Works | `howitworks_video_*` | Claro |
+| Pricing | `pricing_video_*` | Escuro |
+| CTA Final | `cta_video_*` | Claro |
+| Footer | `footer_video_*` | Escuro |
 
-**Comunidade:**
-- `community_title` = "Comunidade — Proximas Atualizacoes"
-- `community_subtitle` = "Vote nas ideias que voce quer ver no Glory Pads. Sua voz molda o app."
-- `community_button_label` = "Sugerir ideia"
-- `community_empty_text` = "Nenhuma sugestao ainda. Seja o primeiro!"
-- `community_login_text` = "Faca login para curtir as sugestoes que voce quer ver no app."
+### Chaves de configuracao por secao (3 keys cada)
 
-**Rodape:**
-- `footer_text` = "Glory Pads -- Feito com amor para adoradores."
-- `footer_links` = JSON com links customizaveis (ex: Termos, Privacidade, Contato)
+Para cada secao `PREFIX`:
+- `{PREFIX}_url` -- URL do video (MP4/WebM)
+- `{PREFIX}_opacity` -- Opacidade (0 a 1, padrao 0.15)
+- `{PREFIX}_fit` -- Enquadramento: cover, contain, fill
 
-**Cores (adicionadas ao JSON `text_colors` existente):**
-- `community_title_color` = "#111827"
-- `community_subtitle_color` = "#6b7280"
-- `community_button_color` = "#111827"
-- `footer_text_color` = "#9ca3af"
-- `footer_bg_color` = "#f8f8fa"
+### Passo 1 -- Landing.tsx: Componente reutilizavel de video
 
-### Passo 1 -- Migracao SQL
+Criar um componente interno `SectionVideo` que recebe `url`, `opacity` e `fit`, renderizando o `<video>` com posicionamento absoluto dentro da secao. Cada secao que ja tem `position: relative` e `overflow: hidden` recebera esse componente condicionalmente.
 
-Inserir as novas config keys com valores padrao na tabela `store_config` (INSERT com ON CONFLICT DO NOTHING para nao sobrescrever dados existentes).
+Para secoes que nao tem `overflow: hidden`, adicionar a classe para que o video nao extrapole os limites da secao (enquadramento contido).
 
-### Passo 2 -- Atualizar `useStoreConfig.ts`
+### Passo 2 -- Landing.tsx: Aplicar em cada secao
 
-Adicionar os novos defaults ao mapa DEFAULTS para garantir fallback caso as keys nao existam no banco.
+Adicionar `<SectionVideo>` em cada componente de secao (Stats, Features, AppScreenshots, SoundSection, HowItWorks, Pricing, FinalCTA, Footer), lendo as config keys correspondentes.
 
-### Passo 3 -- Expandir `AdminStoreEditor.tsx`
+Cada secao tera `position: relative` e `overflow: hidden` para garantir que o video fique contido na area visivel da secao, sem ocupar a tela inteira.
 
-Adicionar duas novas secoes ao editor:
+### Passo 3 -- AdminLandingEditor.tsx: Bloco reutilizavel de edicao de video
 
-**Secao "Comunidade":**
-- Campo: Titulo da comunidade + color picker
-- Campo: Subtitulo + color picker
-- Campo: Label do botao "Sugerir" + color picker
-- Campo: Texto estado vazio
-- Campo: Texto login
-- Botao "Salvar Comunidade"
+Criar uma funcao `renderVideoBlock(prefix, label)` que renderiza o grupo de campos:
+- Upload/URL do video
+- Preview inline
+- Botao remover
+- Slider de opacidade
+- Select de enquadramento (Cover / Contain / Fill)
 
-**Secao "Rodape":**
-- Campo: Texto do rodape + color picker
-- Campo: Cor de fundo do rodape
-- Campo: Links do rodape (JSON editavel com label + url, adicionar/remover)
-- Botao "Salvar Rodape"
+### Passo 4 -- AdminLandingEditor.tsx: Adicionar blocos de video nas abas
 
-Mesmo padrao visual das secoes existentes (color pickers inline, preview de cor).
+- **Aba Hero**: ja existe (manter como esta)
+- **Aba Estilos** (AdminLandingStyleEditor): Adicionar blocos de video para Stats, Features, Screenshots, Store, HowItWorks, Pricing, CTA, Footer -- cada um dentro da secao de estilo correspondente
 
-### Passo 4 -- Atualizar `CommunitySuggestions.tsx`
+Como o `AdminLandingStyleEditor` e um componente separado, os blocos de video serao adicionados no `AdminLandingEditor` nas abas relevantes:
+- Aba **Loja**: bloco de video para SoundSection
+- Aba **Imagens**: bloco de video para Screenshots
+- Aba **Conteudo**: blocos de video para HowItWorks, Stats, Footer
+- Aba **Textos**: blocos de video para Features, Pricing, CTA
 
-- Importar `useStoreConfig`
-- Substituir todos os textos hardcoded pelos valores dinamicos do hook
-- Aplicar cores dinamicas via `style={{ color: ... }}`
+### Passo 5 -- Atualizar TAB_KEYS
 
-### Passo 5 -- Adicionar Rodape ao `Dashboard.tsx`
+Adicionar as novas keys de video ao mapa `TAB_KEYS` para que o botao "Salvar tudo" inclua as configuracoes de video.
 
-- Renderizar um rodape abaixo de `<CommunitySuggestions />` com texto e links dinamicos
-- Aplicar cores de texto e fundo vindas do `store_config`
+### Recomendacoes de tamanho por secao
+
+| Secao | Resolucao sugerida | Formato | Duracao |
+|-------|--------------------|---------|---------|
+| Hero | 1920x1080 (16:9) | MP4/WebM | 5-15s |
+| Stats | 1920x400 (widescreen) | MP4/WebM | 5-10s |
+| Features | 1920x800 | MP4/WebM | 5-15s |
+| Screenshots | 1920x800 | MP4/WebM | 5-15s |
+| Store | 1920x600 | MP4/WebM | 5-10s |
+| HowItWorks | 1920x600 | MP4/WebM | 5-10s |
+| Pricing | 1920x800 | MP4/WebM | 5-10s |
+| CTA | 1920x500 | MP4/WebM | 5-10s |
+| Footer | 1920x300 | MP4/WebM | 5-10s |
+
+Todos sem audio, em loop, maximo 15MB cada.
 
 ### Detalhes Tecnicos
 
 **Arquivos modificados:**
-- `src/hooks/useStoreConfig.ts` -- novos defaults
-- `src/components/AdminStoreEditor.tsx` -- 2 novas secoes (Comunidade + Rodape)
-- `src/components/CommunitySuggestions.tsx` -- textos e cores dinamicos
-- `src/pages/Dashboard.tsx` -- rodape dinamico
+- `src/pages/Landing.tsx` -- componente `SectionVideo` reutilizavel + integracao em todas as secoes
+- `src/components/AdminLandingEditor.tsx` -- funcao `renderVideoBlock` + blocos de video nas abas relevantes
 
-**Migracao SQL:** INSERT de novas config keys com ON CONFLICT DO NOTHING
+**Nenhuma migracao SQL necessaria** -- as keys sao criadas automaticamente pelo upsert existente no admin.
 
