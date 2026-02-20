@@ -147,7 +147,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
 
         <div className="flex gap-1">
           {/* Note grid */}
-          <div className="grid grid-cols-6 gap-[3px] md:gap-1 flex-1 ambient-grid">
+          <div className="grid grid-cols-6 gap-[2px] md:gap-1 flex-1 ambient-grid">
             {ALL_NOTES.map((note) => {
               const isActive = activeNotes.has(note);
               const isCustom = customNotes.has(note);
@@ -159,7 +159,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                   className={`
                     relative flex items-center justify-center rounded-[5px]
                     transition-all duration-150 select-none
-                    h-8 md:h-10 text-[10px] md:text-xs font-semibold tracking-wide
+                    h-6 md:h-10 text-[10px] md:text-xs font-semibold tracking-wide
                     ${loading || isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
                     ${isActive
                       ? 'text-foreground ring-1 ring-foreground/30'

@@ -65,7 +65,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
         </div>
         {/* Mobile portrait: Continuous Pads below the grid */}
         {!isDesktop && !isTablet && (
-          <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-2 py-0.5' : 'px-2 py-1'}`}>
+          <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-1.5 py-0' : 'px-1.5 py-0.5'}`}>
             {ambientPads}
           </div>
         )}

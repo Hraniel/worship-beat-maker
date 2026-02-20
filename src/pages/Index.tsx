@@ -1256,7 +1256,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[28vh] md:max-h-none lg:max-h-none overflow-hidden'}`}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[22vh] md:max-h-none lg:max-h-none overflow-hidden'}`}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1500,7 +1500,7 @@ const Index = () => {
                 {/* === MIX PAGE === */}
                 <div className={footerPage === 0 ? 'h-full flex flex-col' : 'hidden'}>
                   {/* Faders */}
-                  <div className="flex items-end pb-0 px-1.5 pt-1">
+                  <div className="flex items-end pb-0 px-1.5 pt-0.5">
                     <div className="w-full" data-tutorial="volume-master">
                       {showMixerLocked ? (
                         <button
@@ -1530,7 +1530,7 @@ const Index = () => {
                     </div>
                   </div>
                   {/* Metronome mini-bar below faders */}
-                  <div className="flex items-center justify-center gap-3 px-3 py-1 shrink-0 border-t border-border/30">
+                  <div className="flex items-center justify-center gap-3 px-3 py-0.5 shrink-0 border-t border-border/30">
                     <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
                     <span className="text-[10px] text-muted-foreground">BPM</span>
                     {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
@@ -1541,7 +1541,7 @@ const Index = () => {
                       className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
                       title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
                     >
-                      {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                      {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </div>
