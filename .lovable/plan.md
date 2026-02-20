@@ -1,88 +1,92 @@
 
 
-## Editor Completo da Loja no Painel Administrativo
+## Editor Completo da Glory Store no Painel Administrativo
 
-### Objetivo
+### Resumo
 
-Criar uma nova aba "Loja" no painel administrativo que permita editar dinamicamente todos os elementos visuais e textuais da Glory Store, alem dos packs que ja sao gerenciados.
+Criar a tabela `store_config`, um hook para consumir os dados, um componente editor completo e integrar tudo no painel admin e no Dashboard.
 
-### O que sera editavel
+### Passo 1 -- Tabela `store_config`
 
-1. **Cabecalho da Loja**
-   - Titulo principal (atualmente "Glory Store" hardcoded)
-   - Subtitulo/descricao (atualmente "Descubra novos sons, packs e texturas...")
-   - Icone do titulo
-
-2. **Secao "Minha Biblioteca"**
-   - Titulo da secao
-   - Labels ("Ativos", "Removidos")
-   - Botao "Restaurar" texto
-
-3. **Filtros de Biblioteca**
-   - Labels dos filtros (Todos, Adquiridos, Disponiveis, Removidos)
-
-4. **Categorias da Sidebar**
-   - Adicionar, editar, remover e reordenar categorias
-   - Nome, icone e subcategorias de cada grupo
-   - Controle de quais categorias aparecem nas tabs mobile
-
-5. **Textos Gerais**
-   - Placeholder da busca
-   - Labels de contagem (ex: "pack", "packs")
-
-### Implementacao Tecnica
-
-**1. Nova tabela `store_config`**
-
-Tabela chave-valor similar a `landing_config`, para armazenar as configuracoes da loja:
+Criar via migracao SQL:
 
 ```text
 store_config
-  - id (uuid, PK)
-  - config_key (text, unique)
-  - config_value (text - JSON stringified)
-  - updated_at (timestamp)
+  - id (uuid, PK, default gen_random_uuid())
+  - config_key (text, UNIQUE, NOT NULL)
+  - config_value (text, NOT NULL)
+  - updated_at (timestamptz, default now())
 ```
 
-Chaves previstas:
-- `store_title` -> "Glory Store"
-- `store_subtitle` -> "Descubra novos sons..."
-- `library_title` -> "Minha Biblioteca"
-- `library_active_label` -> "Ativos"
-- `library_removed_label` -> "Removidos"
-- `search_placeholder` -> "Buscar packs por nome ou descricao..."
-- `filter_labels` -> JSON com labels dos filtros
-- `categories` -> JSON array com grupos de categorias (nome, icone, subcategorias, ordem)
+RLS:
+- Admins: ALL (usando `has_role(auth.uid(), 'admin')`)
+- Qualquer um: SELECT (true)
 
-RLS: Admins podem gerenciar, qualquer um pode ler (mesmo padrao de `landing_config`).
+Trigger `update_updated_at_column` para auto-atualizar `updated_at`.
 
-**2. Novo componente `AdminStoreEditor.tsx`**
+Seed inicial com valores padrao: `store_title`, `store_subtitle`, `library_title`, `library_active_label`, `library_removed_label`, `search_placeholder`, `filter_labels` (JSON), `categories` (JSON array com os 6 grupos atuais do CATEGORY_GROUPS).
 
-Editor com secoes colapsaveis para cada grupo de configuracao:
+### Passo 2 -- Hook `useStoreConfig.ts`
 
-- **Textos da Loja**: campos de texto para titulo, subtitulo, labels
-- **Categorias**: lista reordenavel com drag-and-drop para gerenciar grupos e subcategorias; botoes para adicionar/remover; seletor de icone Lucide para cada grupo
-- **Preview ao vivo**: visualizacao em tempo real das mudancas antes de salvar
-- Botao "Salvar tudo" por secao (mesmo padrao do `AdminLandingEditor`)
+Mesmo padrao do `useLandingConfig.ts`:
+- Busca todas as rows de `store_config`
+- Retorna um mapa `Record<string, string>` com fallback para valores hardcoded
+- Helper `getJSON(key)` para parsear valores JSON (categorias, filtros)
+- Funcao `refetch` para recarregar apos salvar
 
-**3. Nova aba no `AdminPackManager.tsx`**
+### Passo 3 -- Componente `AdminStoreEditor.tsx`
 
-Adicionar aba "Loja" na barra de tabs do painel admin, entre "Packs" e "Analytics".
+Editor com secoes usando Accordion (mesmo padrao visual do AdminLandingEditor):
 
-**4. Hook `useStoreConfig.ts`**
+**Secao "Textos da Loja":**
+- Campo: Titulo da loja (store_title)
+- Campo: Subtitulo (store_subtitle)
+- Campo: Titulo "Minha Biblioteca" (library_title)
+- Campo: Label "Ativos" (library_active_label)
+- Campo: Label "Removidos" (library_removed_label)
+- Campo: Placeholder de busca (search_placeholder)
+- Botao "Salvar Textos"
 
-Hook similar ao `useLandingConfig.ts` para buscar e cachear as configuracoes da loja. Retorna valores com fallback para os valores hardcoded atuais, garantindo compatibilidade retroativa.
+**Secao "Filtros":**
+- 4 campos para os labels dos filtros (Todos, Adquiridos, Disponiveis, Removidos)
+- Botao "Salvar Filtros"
 
-**5. Atualizacao do `Dashboard.tsx`**
+**Secao "Categorias":**
+- Lista de grupos de categorias com drag-and-drop para reordenar
+- Cada grupo: nome, icone (select com icones Lucide), subcategorias (chips editaveis)
+- Botoes para adicionar novo grupo, remover grupo, adicionar/remover subcategoria
+- Botao "Salvar Categorias"
 
-Substituir todos os textos hardcoded por valores do `useStoreConfig`, com fallback para os valores atuais caso a tabela esteja vazia.
+Estilo visual: gradientes slate/indigo consistentes com o restante do admin.
 
-### Sequencia de implementacao
+### Passo 4 -- Nova aba no AdminPackManager
 
-1. Criar tabela `store_config` com RLS
-2. Criar hook `useStoreConfig.ts`
-3. Criar componente `AdminStoreEditor.tsx`
-4. Integrar nova aba no `AdminPackManager.tsx`
-5. Atualizar `Dashboard.tsx` para usar configuracoes dinamicas
-6. Atualizar `PackDetail.tsx` para usar titulo/cores dinamicos se aplicavel
+Adicionar `'store'` ao tipo de `activeTab` e uma nova entrada na lista de tabs:
+```text
+{ key: 'store', label: '🏪 Loja' }
+```
+Renderizar `<AdminStoreEditor />` quando `activeTab === 'store'`.
+
+### Passo 5 -- Atualizar Dashboard.tsx
+
+Importar `useStoreConfig` e substituir:
+- `"Glory Store"` -> `storeConfig.store_title`
+- `"Descubra novos sons..."` -> `storeConfig.store_subtitle`
+- `"Minha Biblioteca"` -> `storeConfig.library_title`
+- Labels "Ativos"/"Removidos" -> valores dinamicos
+- Placeholder de busca -> valor dinamico
+- Labels dos filtros (Todos, Adquiridos, Disponiveis, Removidos) -> valores dinamicos
+- `CATEGORY_GROUPS` e `MOBILE_CATEGORIES` -> construidos a partir do JSON `categories` do banco, com fallback para os arrays hardcoded atuais
+
+### Detalhes Tecnicos
+
+**Arquivos criados:**
+- `src/hooks/useStoreConfig.ts`
+- `src/components/AdminStoreEditor.tsx`
+
+**Arquivos modificados:**
+- `src/components/AdminPackManager.tsx` (nova aba + import)
+- `src/pages/Dashboard.tsx` (textos dinamicos)
+
+**Migracao SQL:** 1 migracao para tabela + RLS + trigger + seed
 
