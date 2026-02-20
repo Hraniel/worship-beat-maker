@@ -1,52 +1,40 @@
 
 
-# Forcar Atualizacao Imediata (Realtime) -- Plano
+# Correção: Cache por Usuário não funciona em tempo real
 
-## Problema Atual
+## Problema
 
-O sistema de cache (global e por usuario) **so verifica na montagem do componente** (`useEffect` com `[]`). Isso significa:
+Quando o admin clica "Forçar" para um usuário específico, duas coisas podem acontecer:
 
-- Se o admin clica "Forcar Atualizacao" enquanto o usuario esta com o app aberto, **nada acontece**
-- O usuario so recebe a atualizacao quando **fecha e reabre** o app
-- A tabela `landing_config` **nao tem Realtime habilitado**, entao nao ha como "empurrar" a mudanca para clientes conectados
+1. Se a chave `user_cache_version_{userId}` **nunca foi criada** no banco, o admin faz um `INSERT`. Porém, o listener Realtime no App.tsx escuta apenas eventos de `UPDATE`, ignorando o `INSERT`.
+2. Mesmo no cenário de `UPDATE`, o guard do usuário tem uma verificação `local !== null` que pode bloquear o reload se o localStorage ainda não foi inicializado.
 
-## Solucao
+## Solução
 
-Habilitar Supabase Realtime na tabela `landing_config` e adicionar listeners nos guards do `App.tsx` para reagir instantaneamente a mudancas de cache.
+### 1. `src/App.tsx` -- Escutar INSERT e UPDATE
 
-O admin tera duas opcoes no painel:
-1. **Na proxima visita** (comportamento atual, mantido)
-2. **Imediato** (novo) -- forca o reload enquanto o usuario esta com o app aberto
+Alterar ambos os guards (global e per-user) para escutar `event: '*'` em vez de `event: 'UPDATE'`, capturando tanto INSERT quanto UPDATE.
 
-## Detalhes Tecnicos
+Remover a verificação `local !== null` do listener Realtime para que o reload aconteça mesmo se o localStorage ainda não tem valor.
 
-### 1. Migration SQL -- Habilitar Realtime na `landing_config`
+### 2. `src/components/AdminCacheManager.tsx` -- Usar upsert
+
+Substituir a lógica de "check if exists then insert/update" por um único `upsert` tanto no cache global quanto no per-user. Isso simplifica o código e garante que sempre gera um evento consistente.
+
+Para que o `upsert` funcione na `landing_config` usando `config_key`, precisa existir uma constraint unique nessa coluna.
+
+### 3. Migration SQL -- Unique constraint em config_key
 
 ```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.landing_config;
+ALTER TABLE public.landing_config 
+ADD CONSTRAINT landing_config_config_key_unique UNIQUE (config_key);
 ```
 
-### 2. Arquivo: `src/App.tsx` -- Adicionar Realtime nos Guards
+## Resumo das mudancas
 
-**CacheVersionGuard**: Alem da checagem inicial (mantida), assinar um canal Realtime que escuta `UPDATE` na `landing_config` filtrado por `config_key = 'app_cache_version'`. Quando receber uma mudanca, comparar com o valor local e executar `window.location.reload()` se diferente.
-
-**UserCacheVersionGuard**: Mesmo principio, mas filtrado por `config_key = 'user_cache_version_{userId}'`. Ao receber mudanca via Realtime, recarregar imediatamente.
-
-Ambos os canais serao limpos no cleanup do `useEffect`.
-
-### 3. Arquivo: `src/components/AdminCacheManager.tsx` -- Botao "Imediato"
-
-Adicionar na UI do admin a opcao de "Forcar Agora" com indicacao visual de que o reload sera instantaneo (vs. "na proxima visita"). Na pratica, o mecanismo e o mesmo (atualizar a `config_value` no banco), pois com Realtime habilitado a mudanca ja chega imediatamente. A diferenca e apenas de UX -- o admin vera uma mensagem confirmando que usuarios conectados serao recarregados **agora**.
-
-Atualizar as mensagens de feedback:
-- Botao global: "Todos os usuarios conectados serao recarregados agora"
-- Botao por usuario: "O app de {email} sera recarregado agora"
-
-### Resumo das Mudancas
-
-| Arquivo | O que muda |
+| Arquivo | Mudanca |
 |---|---|
-| Migration SQL | Adiciona `landing_config` ao Realtime |
-| `src/App.tsx` | Guards assinam canal Realtime para reagir em tempo real |
-| `src/components/AdminCacheManager.tsx` | Atualiza textos/UX para refletir que a atualizacao e imediata |
+| Migration SQL | Adiciona unique constraint em `config_key` |
+| `src/App.tsx` | Guards escutam `event: '*'` e removem check `local !== null` no Realtime |
+| `src/components/AdminCacheManager.tsx` | Substituir insert/update por `upsert` com `onConflict: 'config_key'` |
 
