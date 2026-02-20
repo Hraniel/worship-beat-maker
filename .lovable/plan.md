@@ -1,42 +1,33 @@
 
 
-# Adicionar toggle de Sync (quantização) no Metrônomo
+## Problem
 
-## O que muda
+The main app container is set to exactly `height: 100dvh` with `overflow: hidden`, but it has no `paddingBottom` for the safe area. The shortcut bar (Metronome, Afinador, Loja buttons) sits at the very bottom of the footer, which gets clipped/hidden because the container ends at the viewport boundary -- the safe area space below is never reached.
 
-Atualmente, quando o metrônomo ou loops estão rodando, todos os pads são automaticamente quantizados (sincronizados ao grid de semicolcheias). O usuário quer poder ligar/desligar essa sincronização globalmente, com um botão no metrônomo.
+## Solution
 
-## Como funciona
+Two changes are needed:
 
-Um botão "Sync" será adicionado na barra de controles do metrônomo. Quando ativado, os pads terão seus toques quantizados ao grid rítmico. Quando desativado, os pads tocam imediatamente ao toque, mesmo com o metrônomo ligado.
+### 1. Main container (`src/pages/Index.tsx`, line ~820)
+Add `paddingBottom: 'env(safe-area-inset-bottom, 0px)'` to the root container's style. This expands the usable area into the safe zone so the footer (including shortcut buttons) is not clipped.
 
-## Detalhes Tecnicos
+### 2. Remove duplicate safe-area padding from shortcut bar
+Since the root container now handles the safe-area bottom, remove the `paddingBottom: 'env(safe-area-inset-bottom, 0px)'` from the shortcut bar wrapper (line ~1615). This prevents double-padding that would create an excessive gap.
 
-### 1. `src/lib/loop-engine.ts` -- Estado global de sync
+### 3. Footer conditional paddingBottom cleanup
+The footer tag (line ~1260) conditionally applies `paddingBottom` for tablet/desktop. This stays as-is since it only applies to non-mobile layouts.
 
-Adicionar uma variavel `syncEnabled` (default `true`) com getter/setter exportados:
+### Technical Details
 
-- `setSyncEnabled(enabled: boolean)`
-- `isSyncEnabled(): boolean`
+```
+Root div (line 820):
+  BEFORE: paddingTop + paddingLeft + paddingRight only
+  AFTER:  add paddingBottom: 'env(safe-area-inset-bottom, 0px)'
 
-Modificar `getQuantizeDelay()` para retornar `0` quando sync estiver desabilitado.
+Shortcut bar (line 1613-1615):
+  BEFORE: style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+  AFTER:  no paddingBottom style (remove it)
+```
 
-### 2. `src/components/Metronome.tsx` -- Botao Sync
-
-Adicionar um botao toggle "Sync" na linha de controles (ao lado dos botoes de formula de compasso). O botao fica destacado quando ativo (estilo similar aos botoes de time signature selecionados).
-
-O estado sera gerenciado localmente e sincronizado via `setSyncEnabled()` / `isSyncEnabled()` do loop-engine.
-
-### 3. Persistencia
-
-Salvar a preferencia no `localStorage` com a chave `drum-pads-sync-enabled` para manter entre sessoes.
-
-### Resumo
-
-| Arquivo | Mudanca |
-|---|---|
-| `src/lib/loop-engine.ts` | Adicionar `syncEnabled`, `setSyncEnabled()`, `isSyncEnabled()`; condicionar `getQuantizeDelay()` |
-| `src/components/Metronome.tsx` | Adicionar botao toggle "Sync" na UI com persistencia em localStorage |
-
-Nenhuma alteracao necessaria no `DrumPad.tsx` -- ele ja usa `getQuantizeDelay()` que passara a respeitar o novo flag automaticamente.
+This ensures the background extends to the bottom edge of the screen, and the buttons render visibly inside the safe area without being clipped by `overflow: hidden`.
 
