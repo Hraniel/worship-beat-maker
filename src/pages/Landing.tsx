@@ -226,6 +226,21 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
       paddingTop: pt ?? 'calc(env(safe-area-inset-top) + 7rem)',
       paddingBottom: pb ?? '0',
     }}>
+      {/* Background video */}
+      {config.hero_video_url && (
+        <video
+          src={config.hero_video_url}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{
+            objectFit: (config.hero_video_fit as any) || 'cover',
+            opacity: parseFloat(config.hero_video_opacity || '0.15'),
+          }}
+        />
+      )}
       <div className="relative max-w-5xl mx-auto px-4 text-center pb-20">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
           <motion.div variants={fadeUp} custom={0}
