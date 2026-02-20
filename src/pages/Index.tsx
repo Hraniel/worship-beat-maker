@@ -24,7 +24,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import UpgradeGateModal, { type UpgradeGatePayload } from '@/components/UpgradeGateModal';
-import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles, MonitorPlay, Drum, Store, Activity } from 'lucide-react';
+import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles, MonitorPlay, Store, Activity, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -1456,25 +1456,25 @@ const Index = () => {
             </div>
           ) : (
             <>
-              {/* Tab bar: Mix | Met   |   1 | 2 (fader pages, only on Mix) */}
-              <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
-                {/* Mix / Met tabs */}
-                {(['Mix', 'Met', 'Tools'] as const).map((label, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setFooterPage(i)}
-                    className={`relative px-2 h-5 rounded text-[9px] font-bold transition-colors flex items-center gap-1 ${
-                      footerPage === i
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    {label}
-                    {label === 'Met' && metronomeIsPlaying && (
-                      <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
-                    )}
-                  </button>
-                ))}
+               {/* Tab bar: Mix | Met | Tap   |   1 | 2 (fader pages, only on Mix) */}
+               <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
+                 {/* Mix / Met / Tap tabs */}
+                 {(['Mix', 'Met', 'Tap'] as const).map((label, i) => (
+                   <button
+                     key={i}
+                     onClick={() => setFooterPage(i)}
+                     className={`relative px-2 h-5 rounded text-[9px] font-bold transition-colors flex items-center gap-1 ${
+                       footerPage === i
+                         ? 'bg-primary text-primary-foreground'
+                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                     }`}
+                   >
+                     {label}
+                     {label === 'Met' && metronomeIsPlaying && (
+                       <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
+                     )}
+                   </button>
+                 ))}
 
                 {/* Spacer */}
                 <div className="flex-1" />
@@ -1532,78 +1532,30 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* === MET PAGE === always mounted but hidden when on Mix */}
-                <div className={footerPage === 1 ? 'h-full flex items-center p-1.5' : 'hidden'}>
-                  <div className="w-full bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
-                    <div className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => setMetronomeOpen((prev) => !prev)}>
-                      <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-                        {spotifyTrackName && <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">♪ {spotifyTrackName}</span>}
+                {/* === MET PAGE === always mounted, full page */}
+                <div className={footerPage === 1 ? 'h-full flex flex-col' : 'hidden'}>
+                  <div className="flex-1 flex flex-col" data-tutorial="metronome">
+                    {spotifyTrackName && (
+                      <div className="px-3 py-1 border-b border-border/50 shrink-0">
+                        <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">♪ {spotifyTrackName}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {editingHeaderBpm ? (
-                          <input
-                            type="number"
-                            min={40}
-                            max={240}
-                            value={headerBpmValue}
-                            onChange={(e) => setHeaderBpmValue(e.target.value)}
-                            onBlur={() => { setEditingHeaderBpm(false); const v = parseInt(headerBpmValue); if (!isNaN(v) && v >= 40 && v <= 240) setBpm(v); }}
-                            onKeyDown={(e) => { if (e.key === 'Enter') { setEditingHeaderBpm(false); const v = parseInt(headerBpmValue); if (!isNaN(v) && v >= 40 && v <= 240) setBpm(v); } if (e.key === 'Escape') setEditingHeaderBpm(false); }}
-                            className="w-12 h-6 text-center text-xs font-bold bg-muted border border-border rounded px-1 text-foreground"
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        ) : (
-                          <button className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors" onClick={(e) => { e.stopPropagation(); setEditingHeaderBpm(true); setHeaderBpmValue(String(bpm)); }} title="Editar BPM">{bpm}</button>
-                        )}
-                        <span className="text-[10px] text-muted-foreground">BPM</span>
-                        {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-                        <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {!metronomeOpen &&
-                        <button type="button" onClick={(e) => {e.stopPropagation();setMetronomeIsPlaying((prev) => !prev);}} className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`} title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}>
-                            {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                          </button>
-                        }
-                        {metronomeOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
-                      </div>
-                    </div>
-                    <div className={metronomeOpen ? 'px-0 pb-0' : 'hidden'}>
-                      <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
-                      <div data-tutorial="pan-metronome">
+                    )}
+                    <Metronome bpm={bpm} onBpmChange={setBpm} timeSignature={timeSignature} onTimeSignatureChange={setTimeSignature} isPlaying={metronomeIsPlaying} onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)} songKey={spotifyKey} onKeyChange={setSpotifyKey} />
+                    <div data-tutorial="pan-metronome">
                       <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
-                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* === TOOLS PAGE === */}
-                <div className={footerPage === 2 ? 'h-full flex items-center p-1.5' : 'hidden'}>
-                  <div className="w-full bg-card rounded-lg border border-border overflow-hidden">
-                    <ToolsPanel bpm={bpm} onBpmChange={setBpm} />
-                  </div>
+                {/* === TAP TEMPO PAGE === */}
+                <div className={footerPage === 2 ? 'h-full' : 'hidden'}>
+                  <ToolsPanel bpm={bpm} onBpmChange={setBpm} />
                 </div>
 
               </div>
 
-              {/* Persistent metronome mini-bar — always visible */}
-              <div className="flex items-center justify-between gap-2 px-3 py-1 shrink-0 border-t border-border/40 bg-card/80 backdrop-blur-sm">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
-                  <span className="text-[9px] text-muted-foreground uppercase tracking-wide">BPM</span>
-                  {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-                  <span className="text-[9px] text-muted-foreground">· {timeSignature}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMetronomeIsPlaying((prev) => !prev)}
-                  className={`p-1.5 rounded-full transition-all ${metronomeIsPlaying ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}
-                  title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
-                >
-                  {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                </button>
-              </div>
+
+
 
             </>
           )}
@@ -1633,10 +1585,10 @@ const Index = () => {
               <button
                 onClick={() => { setFooterPage(2); }}
                 className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
-                title="Afinador"
+                title="Tap Tempo"
               >
-                <Drum className="h-4 w-4" />
-                <span className="text-[8px] font-medium">Afinador</span>
+                <Timer className="h-4 w-4" />
+                <span className="text-[8px] font-medium">Tap Tempo</span>
               </button>
               <button
                 onClick={() => navigate('/dashboard')}
