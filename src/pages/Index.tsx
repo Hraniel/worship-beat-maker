@@ -5,6 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import PadGrid from '@/components/PadGrid';
 import Metronome from '@/components/Metronome';
 import MixerStrip from '@/components/MixerStrip';
+import ToolsPanel from '@/components/ToolsPanel';
 import SetlistManager from '@/components/SetlistManager';
 import MusicAISearch from '@/components/MusicAISearch';
 import AmbientPads from '@/components/AmbientPads';
@@ -1458,7 +1459,7 @@ const Index = () => {
               {/* Tab bar: Mix | Met   |   1 | 2 (fader pages, only on Mix) */}
               <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
                 {/* Mix / Met tabs */}
-                {(['Mix', 'Met'] as const).map((label, i) => (
+                {(['Mix', 'Met', 'Tools'] as const).map((label, i) => (
                   <button
                     key={i}
                     onClick={() => setFooterPage(i)}
@@ -1574,6 +1575,13 @@ const Index = () => {
                       <PanControl label="Pan Metrônomo" pan={metronomePan} onPanChange={handleMetronomePanChange} disabled={audioSettings.metronomeStereo === 'mono'} />
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* === TOOLS PAGE === */}
+                <div className={footerPage === 2 ? 'h-full flex items-center p-1.5' : 'hidden'}>
+                  <div className="w-full bg-card rounded-lg border border-border overflow-hidden">
+                    <ToolsPanel bpm={bpm} onBpmChange={setBpm} />
                   </div>
                 </div>
 
