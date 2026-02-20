@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Play, Pause, Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import { enableMetronome, disableMetronome, onMetronomeBeat } from '@/lib/loop-engine';
+import { enableMetronome, disableMetronome, onMetronomeBeat, setSyncEnabled, isSyncEnabled } from '@/lib/loop-engine';
 
 interface MetronomeProps {
   bpm: number;
@@ -21,6 +21,12 @@ const TIME_SIGNATURES = ['4/4', '3/4', '6/8'];
 const Metronome: React.FC<MetronomeProps> = ({
   bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat, songKey, onKeyChange
 }) => {
+  const [syncOn, setSyncOn] = useState(() => {
+    const stored = localStorage.getItem('drum-pads-sync-enabled');
+    const val = stored === null ? true : stored === 'true';
+    setSyncEnabled(val);
+    return val;
+  });
   const [editingKey, setEditingKey] = useState(false);
   const [editKeyValue, setEditKeyValue] = useState('');
   const keyInputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +163,20 @@ const Metronome: React.FC<MetronomeProps> = ({
             </Button>
           ))}
         </div>
+
+        <Button
+          variant={syncOn ? "default" : "outline"}
+          size="sm"
+          className="text-[10px] px-1.5 h-7 ml-1"
+          onClick={() => {
+            const next = !syncOn;
+            setSyncOn(next);
+            setSyncEnabled(next);
+            localStorage.setItem('drum-pads-sync-enabled', String(next));
+          }}
+        >
+          Sync
+        </Button>
 
         {/* Tom (Key) editable field */}
         {onKeyChange && (

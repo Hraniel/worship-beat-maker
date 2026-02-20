@@ -35,6 +35,17 @@ let currentBpm = 120;
 let beatsPerBar = 4;
 let beatUnit = 4; // denominator of time signature
 
+// Sync (quantization) toggle
+let syncEnabled = true;
+
+export function setSyncEnabled(enabled: boolean) {
+  syncEnabled = enabled;
+}
+
+export function isSyncEnabled(): boolean {
+  return syncEnabled;
+}
+
 function getSubdivisionsPerBar(): number {
   // 4/4 -> 16 (4 beats x 4 subdivisions), 3/4 -> 12, 6/8 -> 12 (6 beats x 2)
   const subsPerBeat = beatUnit === 8 ? 2 : 4;
@@ -243,7 +254,7 @@ export function stopAllLoops() {
  * If the engine is not running, returns 0 (play immediately).
  */
 export function getQuantizeDelay(): number {
-  if (!isRunning) return 0;
+  if (!isRunning || !syncEnabled) return 0;
   const subdivisionMs = (60 / currentBpm / 4) * 1000;
   const elapsed = performance.now() - lastTickTime;
   const remaining = subdivisionMs - elapsed;
