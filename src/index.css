@@ -114,8 +114,9 @@ html.scrollable-page body {
 }
 
 @keyframes beat-flash {
-  0%, 100% { opacity: 0.3; }
-  10% { opacity: 1; }
+  0% { transform: scale(1); opacity: 0.6; }
+  15% { transform: scale(1.5); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes loop-border {
