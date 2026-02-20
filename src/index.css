@@ -99,6 +99,7 @@ html.scrollable-page body {
   position: static !important;
   overflow: auto !important;
   height: auto !important;
+  min-height: 100dvh !important;
   overscroll-behavior: auto !important;
   width: 100% !important;
 }
