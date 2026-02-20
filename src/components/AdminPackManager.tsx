@@ -27,7 +27,7 @@ const PACK_CATEGORIES = [
   'Efeitos Crescente Fade', 'Outros',
 ];
 
-const SOUND_CATEGORIES = PACK_CATEGORIES;
+
 
 const PACK_COLORS = [
   'bg-rose-500', 'bg-orange-500', 'bg-amber-500', 'bg-yellow-500',
@@ -56,7 +56,6 @@ interface UploadingState {
 
 interface SoundEdit {
   shortName: string;
-  category: string;
 }
 
 interface SortableSound {
@@ -184,7 +183,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
   const startEditSound = (sound: SortableSound) => {
     setSoundEdits(prev => ({
       ...prev,
-      [sound.id]: { shortName: sound.short_name, category: (sound as any).category || 'sample' },
+      [sound.id]: { shortName: sound.short_name },
     }));
     setEditingSound(sound.id);
   };
@@ -198,7 +197,6 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       fd.append('action', 'update-sound');
       fd.append('soundId', soundId);
       fd.append('shortName', edit.shortName.trim());
-      fd.append('category', edit.category);
       await invokeAdmin(fd);
       toast.success('Som atualizado!');
       setEditingSound(null);
@@ -1097,18 +1095,11 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                               {editingSound === sound.id ? (
                                 <div className="flex-1 flex items-center gap-1.5">
                                   <input
-                                    className="w-16 h-6 px-1.5 text-[10px] rounded bg-muted border border-border focus:outline-none uppercase"
+                                    className="w-20 h-6 px-1.5 text-[10px] rounded bg-muted border border-border focus:outline-none uppercase"
                                     value={soundEdits[sound.id]?.shortName || ''}
                                     onChange={e => setSoundEdits(p => ({ ...p, [sound.id]: { ...p[sound.id], shortName: e.target.value.toUpperCase() } }))}
                                     maxLength={6}
                                   />
-                                  <select
-                                    className="flex-1 h-6 px-1 text-[10px] rounded bg-muted border border-border focus:outline-none"
-                                    value={soundEdits[sound.id]?.category || 'sample'}
-                                    onChange={e => setSoundEdits(p => ({ ...p, [sound.id]: { ...p[sound.id], category: e.target.value } }))}
-                                  >
-                                    {SOUND_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                  </select>
                                 </div>
                               ) : (
                                 <div className="flex-1 min-w-0">
