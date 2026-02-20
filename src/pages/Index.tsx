@@ -1493,44 +1493,24 @@ const Index = () => {
             </div>
           ) : (
             <>
-               {/* Tab bar: Mix | Met | Tap   |   1 | 2 (fader pages, only on Mix) */}
+               {/* Fader page buttons — only visible when Mix tab is active */}
+               {footerPage === 0 && (
                <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
-                 {/* Mix / Met / Tap tabs */}
-                 {(['Mix', 'Met', 'Tap'] as const).map((label, i) => (
+                 {([0, 1, 2] as const).map((p) => (
                    <button
-                     key={i}
-                     onClick={() => setFooterPage(i)}
-                     className={`relative px-2 h-5 rounded text-[9px] font-bold transition-colors flex items-center gap-1 ${
-                       footerPage === i
+                     key={p}
+                     onClick={() => setFaderPage(p)}
+                     className={`relative w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
+                       faderPage === p
                          ? 'bg-primary text-primary-foreground'
                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
                      }`}
                    >
-                     {label}
-                     {label === 'Met' && metronomeIsPlaying && (
-                       <span className="w-1.5 h-1.5 rounded-full animate-pulse shrink-0" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
-                     )}
+                     {p + 1}
                    </button>
                  ))}
-
-                {/* Spacer */}
-                <div className="flex-1" />
-
-                {/* Fader page buttons — only visible when Mix tab is active */}
-                {footerPage === 0 && ([0, 1, 2] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setFaderPage(p)}
-                    className={`relative w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
-                      faderPage === p
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                    }`}
-                  >
-                    {p + 1}
-                  </button>
-                ))}
-              </div>
+               </div>
+               )}
 
               {/* Page content — Metronome always mounted to keep audio alive */}
               <div className="flex-1 min-h-0 overflow-y-auto">
@@ -1612,20 +1592,31 @@ const Index = () => {
           {!focusMode && (
             <>
               <button
+                onClick={() => { setFooterPage(0); }}
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 transition-colors ${footerPage === 0 ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
+                title="Mix"
+              >
+                <Sliders className="h-4 w-4" />
+                <span className="text-[8px] font-medium">Mix</span>
+              </button>
+              <button
                 onClick={() => { setFooterPage(1); }}
-                className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 transition-colors relative ${footerPage === 1 ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                 title="Metrônomo"
               >
                 <Activity className="h-4 w-4" />
                 <span className="text-[8px] font-medium">Metrônomo</span>
+                {metronomeIsPlaying && (
+                  <span className="absolute top-0.5 right-2 w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
+                )}
               </button>
               <button
                 onClick={() => { setFooterPage(2); }}
-                className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
+                className={`flex flex-col items-center gap-0.5 px-3 py-1 transition-colors ${footerPage === 2 ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}
                 title="Tap Tempo"
               >
                 <Timer className="h-4 w-4" />
-                <span className="text-[8px] font-medium">Tap Tempo</span>
+                <span className="text-[8px] font-medium">Tap</span>
               </button>
               <button
                 onClick={() => navigate('/dashboard')}
