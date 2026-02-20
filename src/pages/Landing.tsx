@@ -87,8 +87,56 @@ const DEFAULT_CATEGORIES = [
 ];
 
 // Reusable background video for any section
-const SectionVideo = ({ url, opacity, fit }: { url?: string; opacity?: string; fit?: string }) => {
-  if (!url) return null;
+const SectionVideo = ({ url, opacity, fit, borderPos, borderWidth, borderRadius, borderColor }: {
+  url?: string; opacity?: string; fit?: string;
+  borderPos?: string; borderWidth?: string; borderRadius?: string; borderColor?: string;
+}) => {
+  if (!url || url.trim() === '') return null;
+  const bPos = borderPos || 'none';
+  const bWidth = parseInt(borderWidth || '2');
+  const bRadius = parseInt(borderRadius || '0');
+  const bColor = borderColor || 'hsl(0 0% 100% / 0.2)';
+  const hasBorder = bPos !== 'none' && bWidth > 0;
+
+  if (bPos === 'inset' && hasBorder) {
+    // Inset border: use box-shadow inset on a wrapper overlay
+    return (
+      <div className="absolute inset-0 pointer-events-none" style={{ overflow: 'hidden', borderRadius: `${bRadius}px` }}>
+        <video
+          src={url}
+          autoPlay muted loop playsInline
+          className="w-full h-full"
+          style={{
+            objectFit: (fit as any) || 'cover',
+            opacity: parseFloat(opacity || '0.15'),
+          }}
+        />
+        <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 0 ${bWidth}px ${bColor}`, borderRadius: `${bRadius}px` }} />
+      </div>
+    );
+  }
+
+  if (bPos === 'outset' && hasBorder) {
+    // Outset border: standard border on wrapper
+    return (
+      <div className="absolute inset-0 pointer-events-none" style={{
+        border: `${bWidth}px solid ${bColor}`,
+        borderRadius: `${bRadius}px`,
+        overflow: 'hidden',
+      }}>
+        <video
+          src={url}
+          autoPlay muted loop playsInline
+          className="w-full h-full"
+          style={{
+            objectFit: (fit as any) || 'cover',
+            opacity: parseFloat(opacity || '0.15'),
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <video
       src={url}
@@ -242,7 +290,7 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
       paddingTop: pt ?? 'calc(env(safe-area-inset-top) + 7rem)',
       paddingBottom: pb ?? '0',
     }}>
-      <SectionVideo url={config.hero_video_url} opacity={config.hero_video_opacity} fit={config.hero_video_fit} />
+      <SectionVideo url={config.hero_video_url} opacity={config.hero_video_opacity} fit={config.hero_video_fit} borderPos={config.hero_video_border_pos} borderWidth={config.hero_video_border_width} borderRadius={config.hero_video_border_radius} borderColor={config.hero_video_border_color} />
       <div className="relative max-w-5xl mx-auto px-4 text-center pb-20">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
           <motion.div variants={fadeUp} custom={0}
@@ -394,7 +442,7 @@ const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
       paddingLeft: '1rem',
       paddingRight: '1rem',
     }}>
-      <SectionVideo url={config.screenshots_video_url} opacity={config.screenshots_video_opacity} fit={config.screenshots_video_fit} />
+      <SectionVideo url={config.screenshots_video_url} opacity={config.screenshots_video_opacity} fit={config.screenshots_video_fit} borderPos={config.screenshots_video_border_pos} borderWidth={config.screenshots_video_border_width} borderRadius={config.screenshots_video_border_radius} borderColor={config.screenshots_video_border_color} />
       <div className="max-w-5xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-12">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">App Glory Pads</motion.p>
@@ -454,7 +502,7 @@ const Stats = ({ config }: { config: Record<string, string> }) => {
   const pb = config.stats_pb ? `${config.stats_pb}px` : '64px';
   return (
     <section className="relative overflow-hidden" style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.stats_video_url} opacity={config.stats_video_opacity} fit={config.stats_video_fit} />
+      <SectionVideo url={config.stats_video_url} opacity={config.stats_video_opacity} fit={config.stats_video_fit} borderPos={config.stats_video_border_pos} borderWidth={config.stats_video_border_width} borderRadius={config.stats_video_border_radius} borderColor={config.stats_video_border_color} />
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }}
         variants={stagger}
         className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
@@ -492,7 +540,7 @@ const Features = ({
   const pb = config.features_pb ? `${config.features_pb}px` : '112px';
   return (
     <section id="recursos" className="relative overflow-hidden" style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.features_video_url} opacity={config.features_video_opacity} fit={config.features_video_fit} />
+      <SectionVideo url={config.features_video_url} opacity={config.features_video_opacity} fit={config.features_video_fit} borderPos={config.features_video_border_pos} borderWidth={config.features_video_border_width} borderRadius={config.features_video_border_radius} borderColor={config.features_video_border_color} />
       <div className="relative max-w-6xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Recursos</motion.p>
@@ -554,7 +602,7 @@ const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNav
 
   return (
     <section id="sons" className="relative overflow-hidden" style={{ background: bg, paddingTop: config.store_pt ? `${config.store_pt}px` : '80px', paddingBottom: config.store_pb ? `${config.store_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.store_video_url} opacity={config.store_video_opacity} fit={config.store_video_fit} />
+      <SectionVideo url={config.store_video_url} opacity={config.store_video_opacity} fit={config.store_video_fit} borderPos={config.store_video_border_pos} borderWidth={config.store_video_border_width} borderRadius={config.store_video_border_radius} borderColor={config.store_video_border_color} />
       <div className="relative max-w-5xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Glory Store</motion.p>
@@ -612,7 +660,7 @@ const HowItWorks = ({ config }: { config: Record<string, string> }) => {
 
   return (
     <section className="relative overflow-hidden" style={{ background: bg, paddingTop: config.howitworks_pt ? `${config.howitworks_pt}px` : '80px', paddingBottom: config.howitworks_pb ? `${config.howitworks_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.howitworks_video_url} opacity={config.howitworks_video_opacity} fit={config.howitworks_video_fit} />
+      <SectionVideo url={config.howitworks_video_url} opacity={config.howitworks_video_opacity} fit={config.howitworks_video_fit} borderPos={config.howitworks_video_border_pos} borderWidth={config.howitworks_video_border_width} borderRadius={config.howitworks_video_border_radius} borderColor={config.howitworks_video_border_color} />
       <div className="relative max-w-4xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Como funciona</motion.p>
@@ -654,7 +702,7 @@ const Pricing = ({
 
   return (
     <section id="planos" className="relative overflow-hidden" style={{ background: bg, paddingTop: config.pricing_pt ? `${config.pricing_pt}px` : '80px', paddingBottom: config.pricing_pb ? `${config.pricing_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.pricing_video_url} opacity={config.pricing_video_opacity} fit={config.pricing_video_fit} />
+      <SectionVideo url={config.pricing_video_url} opacity={config.pricing_video_opacity} fit={config.pricing_video_fit} borderPos={config.pricing_video_border_pos} borderWidth={config.pricing_video_border_width} borderRadius={config.pricing_video_border_radius} borderColor={config.pricing_video_border_color} />
       <div className="relative max-w-5xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
           <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Planos</motion.p>
@@ -747,7 +795,7 @@ const FinalCTA = ({ navigate, config }: { navigate: ReturnType<typeof useNavigat
 
   return (
     <section className="relative overflow-hidden" style={{ background: bg, paddingTop: config.cta_pt ? `${config.cta_pt}px` : '80px', paddingBottom: config.cta_pb ? `${config.cta_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.cta_video_url} opacity={config.cta_video_opacity} fit={config.cta_video_fit} />
+      <SectionVideo url={config.cta_video_url} opacity={config.cta_video_opacity} fit={config.cta_video_fit} borderPos={config.cta_video_border_pos} borderWidth={config.cta_video_border_width} borderRadius={config.cta_video_border_radius} borderColor={config.cta_video_border_color} />
       <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
         className="relative max-w-3xl mx-auto text-center">
         <motion.div variants={fadeUp} custom={0}
@@ -793,7 +841,7 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
 
   return (
     <footer className="relative overflow-hidden border-t" style={{ background: bg, borderColor: 'hsl(0 0% 100% / 0.06)', paddingTop: config.footer_pt ? `${config.footer_pt}px` : '40px', paddingBottom: config.footer_pb ? `${config.footer_pb}px` : '40px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.footer_video_url} opacity={config.footer_video_opacity} fit={config.footer_video_fit} />
+      <SectionVideo url={config.footer_video_url} opacity={config.footer_video_opacity} fit={config.footer_video_fit} borderPos={config.footer_video_border_pos} borderWidth={config.footer_video_border_width} borderRadius={config.footer_video_border_radius} borderColor={config.footer_video_border_color} />
       <div className="relative max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-8 mb-8">
           <div>
