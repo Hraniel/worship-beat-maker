@@ -843,9 +843,78 @@ const Index = () => {
       )}
       {/* Header */}
       {!focusMode ? (
+      !currentSongId ? (
+        /* No song selected: show selection banner AS the header */
+        <header className="flex items-center justify-between px-3 py-2 bg-primary/10 border-b border-primary/20 shrink-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Music className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-xs font-medium text-primary">
+              {songs.length === 0 ? 'Crie uma música para começar' : 'Selecione uma música do repertório'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {songs.length === 0 ? (
+              <Button
+                size="sm"
+                variant="default"
+                className="h-7 text-xs gap-1"
+                onClick={() => setOpenSetlistFromBanner(true)}
+              >
+                <Plus className="h-3 w-3" />
+                Criar
+              </Button>
+            ) : (
+              <SetlistManager
+                songs={songs}
+                currentSongId={currentSongId}
+                onSaveSong={handleSaveSong}
+                onLoadSong={handleLoadSong}
+                onDeleteSong={handleDeleteSong}
+                onReorder={reorderSetlists}
+                setlists={setlists}
+                activeSetlistId={currentSongId}
+                onOpenMusicAI={() => setSpotifySheetOpen(true)}
+              />
+            )}
+            {/* Menu button */}
+            <div className="relative">
+              <button
+                onClick={() => setMobileMenuOpen((p) => !p)}
+                className="p-1.5 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+                title="Menu">
+                <Menu className="h-4 w-4" />
+              </button>
+              {mobileMenuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => { setMobileMenuOpen(false); }} />
+                  <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]" style={{ backgroundColor: 'hsl(var(--card))' }}>
+                    <button onClick={() => { handleInstallClick(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
+                    </button>
+                    <button onClick={() => {
+                      setMobileMenuOpen(false);
+                      if (!tryAccess('spotify_ai')) return;
+                      setTimeout(() => setSpotifySheetOpen(true), 150);
+                    }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <Sparkles className="h-4 w-4 text-muted-foreground" /> Music AI
+                    </button>
+                    <button onClick={() => { setSettingsTab(undefined); setSettingsOpen(true); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors">
+                      <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
+                    </button>
+                    <div className="border-t border-border my-1" />
+                    <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors">
+                      <LogOut className="h-4 w-4" /> Sair
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </header>
+      ) : (
       <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-1.5 min-w-0 shrink-0">
-            <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-5 w-5 sm:h-6 sm:w-6" />
+            <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-5 w-5 sm:h-6 sm:w-6 hidden sm:block" />
             <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
           </div>
 
@@ -960,7 +1029,7 @@ const Index = () => {
             <TutorialGuide externalTrigger onStartRef={(fn) => { startTutorialRef.current = fn; }} onClose={() => { setSettingsTab('guide'); setSettingsOpen(true); }} />
           </div>
         </header>
-      ) : (
+      )) : (
         /* Focus mode header: only repertoire */
         <header className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card shrink-0">
           <div className="flex items-center gap-2 min-w-0">
@@ -1000,40 +1069,8 @@ const Index = () => {
         </header>
       )}
 
-      {/* Song selection banner - shown when no song is active */}
-      {!focusMode && !currentSongId && (
-        <div className="px-3 py-2.5 bg-primary/10 border-b border-primary/20 flex items-center justify-center gap-2">
-          <Music className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-xs font-medium text-primary">
-            {songs.length === 0 ? 'Crie uma música para começar' : 'Selecione uma música do repertório'}
-          </span>
-          {songs.length === 0 ? (
-            <Button
-              size="sm"
-              variant="default"
-              className="h-7 text-xs gap-1 ml-1"
-              onClick={() => setOpenSetlistFromBanner(true)}
-            >
-              <Plus className="h-3 w-3" />
-              Criar
-            </Button>
-          ) : (
-            <div className="ml-1">
-              <SetlistManager
-                songs={songs}
-                currentSongId={currentSongId}
-                onSaveSong={handleSaveSong}
-                onLoadSong={handleLoadSong}
-                onDeleteSong={handleDeleteSong}
-                onReorder={reorderSetlists}
-                setlists={setlists}
-                activeSetlistId={currentSongId}
-                onOpenMusicAI={() => setSpotifySheetOpen(true)}
-              />
-            </div>
-          )}
-        </div>
-      )}
+
+
       {/* Hidden SetlistManager to open from banner when songs.length === 0 */}
       {!currentSongId && songs.length === 0 && (
         <div className="hidden">
