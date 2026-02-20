@@ -98,46 +98,8 @@ const SectionVideo = ({ url, opacity, fit, borderPos, borderWidth, borderRadius,
   const bColor = borderColor || 'hsl(0 0% 100% / 0.2)';
   const hasBorder = bPos !== 'none' && bWidth > 0;
 
-  if (bPos === 'inset' && hasBorder) {
-    // Inset border: use box-shadow inset on a wrapper overlay
-    return (
-      <div className="absolute inset-0 pointer-events-none" style={{ overflow: 'hidden', borderRadius: `${bRadius}px` }}>
-        <video
-          src={url}
-          autoPlay muted loop playsInline
-          className="w-full h-full"
-          style={{
-            objectFit: (fit as any) || 'cover',
-            opacity: parseFloat(opacity || '0.15'),
-          }}
-        />
-        <div className="absolute inset-0" style={{ boxShadow: `inset 0 0 0 ${bWidth}px ${bColor}`, borderRadius: `${bRadius}px` }} />
-      </div>
-    );
-  }
-
-  if (bPos === 'outset' && hasBorder) {
-    // Outset border: standard border on wrapper
-    return (
-      <div className="absolute inset-0 pointer-events-none" style={{
-        border: `${bWidth}px solid ${bColor}`,
-        borderRadius: `${bRadius}px`,
-        overflow: 'hidden',
-      }}>
-        <video
-          src={url}
-          autoPlay muted loop playsInline
-          className="w-full h-full"
-          style={{
-            objectFit: (fit as any) || 'cover',
-            opacity: parseFloat(opacity || '0.15'),
-          }}
-        />
-      </div>
-    );
-  }
-
-  return (
+  // Video element (opacity only on video, never on border)
+  const videoEl = (
     <video
       src={url}
       autoPlay muted loop playsInline
@@ -145,10 +107,30 @@ const SectionVideo = ({ url, opacity, fit, borderPos, borderWidth, borderRadius,
       style={{
         objectFit: (fit as any) || 'cover',
         opacity: parseFloat(opacity || '0.15'),
+        borderRadius: hasBorder ? `${bRadius}px` : undefined,
       }}
     />
   );
+
+  // Border overlay (always full opacity, independent of video)
+  const borderEl = hasBorder ? (
+    <div className="absolute inset-0 pointer-events-none" style={{
+      borderRadius: `${bRadius}px`,
+      ...(bPos === 'inset'
+        ? { boxShadow: `inset 0 0 0 ${bWidth}px ${bColor}` }
+        : { border: `${bWidth}px solid ${bColor}` }),
+    }} />
+  ) : null;
+
+  return (
+    <>
+      {videoEl}
+      {borderEl}
+    </>
+  );
 };
+
+
 
 // Gradient divider between sections
 const Divider = ({ fromLight, darkColor }: { fromLight: boolean; darkColor: string }) => (
