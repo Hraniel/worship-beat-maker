@@ -1,46 +1,88 @@
 
 
-## Ajustar sons do Kick e Snare nos loops
+## Editor Completo da Loja no Painel Administrativo
 
-### Problemas identificados
+### Objetivo
 
-1. **Kick com muito reverb**: O decay atual e 0.8s com duracao de 1200ms - isso cria uma cauda muito longa que soa como reverb excessivo.
-2. **Snare "xiando"**: O parametro `noise: 0.7` (70% ruido branco) combinado com decay de 0.5s gera muito chiado. A frequencia de 200Hz tambem e baixa demais para uma caixa, contribuindo para o som pouco definido.
+Criar uma nova aba "Loja" no painel administrativo que permita editar dinamicamente todos os elementos visuais e textuais da Glory Store, alem dos packs que ja sao gerenciados.
 
-### Ajustes propostos
+### O que sera editavel
 
-**Kick** - reduzir reverb, manter corpo:
-- `decay`: 0.8 → **0.3** (cauda bem mais curta)
-- `durationMs`: 1200 → **600** (cortar o arquivo mais cedo)
-- Manter `freq: 50` e `punch: 0.9` (o ataque e corpo continuam bons)
+1. **Cabecalho da Loja**
+   - Titulo principal (atualmente "Glory Store" hardcoded)
+   - Subtitulo/descricao (atualmente "Descubra novos sons, packs e texturas...")
+   - Icone do titulo
 
-**Snare** - reduzir chiado, mais estalo:
-- `noise`: 0.7 → **0.4** (menos ruido branco, menos chiado)
-- `freq`: 200 → **280** (frequencia mais alta = mais "crack")
-- `decay`: 0.5 → **0.2** (cauda mais curta e seca)
-- `durationMs`: 800 → **400** (cortar mais cedo)
+2. **Secao "Minha Biblioteca"**
+   - Titulo da secao
+   - Labels ("Ativos", "Removidos")
+   - Botao "Restaurar" texto
 
-### Alteracoes no codigo
+3. **Filtros de Biblioteca**
+   - Labels dos filtros (Todos, Adquiridos, Disponiveis, Removidos)
 
-Arquivo: `supabase/functions/generate-loop-sounds/index.ts`
+4. **Categorias da Sidebar**
+   - Adicionar, editar, remover e reordenar categorias
+   - Nome, icone e subcategorias de cada grupo
+   - Controle de quais categorias aparecem nas tabs mobile
 
-Linha 34 (renderKick):
-```typescript
-// Antes
-return synthHit({ freq: 50, decay: 0.8, punch: 0.9 }, 1200, sampleRate);
-// Depois
-return synthHit({ freq: 50, decay: 0.3, punch: 0.9 }, 600, sampleRate);
+5. **Textos Gerais**
+   - Placeholder da busca
+   - Labels de contagem (ex: "pack", "packs")
+
+### Implementacao Tecnica
+
+**1. Nova tabela `store_config`**
+
+Tabela chave-valor similar a `landing_config`, para armazenar as configuracoes da loja:
+
+```text
+store_config
+  - id (uuid, PK)
+  - config_key (text, unique)
+  - config_value (text - JSON stringified)
+  - updated_at (timestamp)
 ```
 
-Linha 38 (renderSnare):
-```typescript
-// Antes
-return synthHit({ freq: 200, decay: 0.5, noise: 0.7 }, 800, sampleRate);
-// Depois
-return synthHit({ freq: 280, decay: 0.2, noise: 0.4 }, 400, sampleRate);
-```
+Chaves previstas:
+- `store_title` -> "Glory Store"
+- `store_subtitle` -> "Descubra novos sons..."
+- `library_title` -> "Minha Biblioteca"
+- `library_active_label` -> "Ativos"
+- `library_removed_label` -> "Removidos"
+- `search_placeholder` -> "Buscar packs por nome ou descricao..."
+- `filter_labels` -> JSON com labels dos filtros
+- `categories` -> JSON array com grupos de categorias (nome, icone, subcategorias, ordem)
 
-### Proximo passo
+RLS: Admins podem gerenciar, qualquer um pode ler (mesmo padrao de `landing_config`).
 
-Apos o ajuste, re-deploy da function e executar novamente para gerar os novos loops com os sons corrigidos.
+**2. Novo componente `AdminStoreEditor.tsx`**
+
+Editor com secoes colapsaveis para cada grupo de configuracao:
+
+- **Textos da Loja**: campos de texto para titulo, subtitulo, labels
+- **Categorias**: lista reordenavel com drag-and-drop para gerenciar grupos e subcategorias; botoes para adicionar/remover; seletor de icone Lucide para cada grupo
+- **Preview ao vivo**: visualizacao em tempo real das mudancas antes de salvar
+- Botao "Salvar tudo" por secao (mesmo padrao do `AdminLandingEditor`)
+
+**3. Nova aba no `AdminPackManager.tsx`**
+
+Adicionar aba "Loja" na barra de tabs do painel admin, entre "Packs" e "Analytics".
+
+**4. Hook `useStoreConfig.ts`**
+
+Hook similar ao `useLandingConfig.ts` para buscar e cachear as configuracoes da loja. Retorna valores com fallback para os valores hardcoded atuais, garantindo compatibilidade retroativa.
+
+**5. Atualizacao do `Dashboard.tsx`**
+
+Substituir todos os textos hardcoded por valores do `useStoreConfig`, com fallback para os valores atuais caso a tabela esteja vazia.
+
+### Sequencia de implementacao
+
+1. Criar tabela `store_config` com RLS
+2. Criar hook `useStoreConfig.ts`
+3. Criar componente `AdminStoreEditor.tsx`
+4. Integrar nova aba no `AdminPackManager.tsx`
+5. Atualizar `Dashboard.tsx` para usar configuracoes dinamicas
+6. Atualizar `PackDetail.tsx` para usar titulo/cores dinamicos se aplicavel
 
