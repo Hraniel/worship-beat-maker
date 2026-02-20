@@ -235,19 +235,25 @@ const TAB_KEYS: Record<string, string[]> = {
     'hero_bg', 'hero_title_color', 'hero_subtitle_color', 'hero_badge_bg', 'hero_badge_color',
     'hero_title_size', 'hero_pt', 'hero_pb',
     'hero_video_url', 'hero_video_opacity', 'hero_video_fit',
+    'hero_video_border_pos', 'hero_video_border_width', 'hero_video_border_radius', 'hero_video_border_color',
   ],
   textos: [
     'features_title', 'features_subtitle', 'store_title', 'store_subtitle',
     'plans_title', 'plans_subtitle', 'show_pricing', 'cta_title', 'cta_subtitle',
     'features_video_url', 'features_video_opacity', 'features_video_fit',
+    'features_video_border_pos', 'features_video_border_width', 'features_video_border_radius', 'features_video_border_color',
     'pricing_video_url', 'pricing_video_opacity', 'pricing_video_fit',
+    'pricing_video_border_pos', 'pricing_video_border_width', 'pricing_video_border_radius', 'pricing_video_border_color',
     'cta_video_url', 'cta_video_opacity', 'cta_video_fit',
+    'cta_video_border_pos', 'cta_video_border_width', 'cta_video_border_radius', 'cta_video_border_color',
   ],
   loja: [
     'store_video_url', 'store_video_opacity', 'store_video_fit',
+    'store_video_border_pos', 'store_video_border_width', 'store_video_border_radius', 'store_video_border_color',
   ],
   imagens: [
     'screenshots_video_url', 'screenshots_video_opacity', 'screenshots_video_fit',
+    'screenshots_video_border_pos', 'screenshots_video_border_width', 'screenshots_video_border_radius', 'screenshots_video_border_color',
   ],
   conteudo: [
     'how_main_title', 'how_step_1_title', 'how_step_1_desc', 'how_step_2_title', 'how_step_2_desc', 'how_step_3_title', 'how_step_3_desc',
@@ -255,8 +261,11 @@ const TAB_KEYS: Record<string, string[]> = {
     'footer_link_0_label', 'footer_link_0_href', 'footer_link_1_label', 'footer_link_1_href', 'footer_link_2_label', 'footer_link_2_href',
     'stat_1_value', 'stat_1_label', 'stat_2_value', 'stat_2_label', 'stat_3_value', 'stat_3_label', 'stat_4_value', 'stat_4_label',
     'howitworks_video_url', 'howitworks_video_opacity', 'howitworks_video_fit',
+    'howitworks_video_border_pos', 'howitworks_video_border_width', 'howitworks_video_border_radius', 'howitworks_video_border_color',
     'stats_video_url', 'stats_video_opacity', 'stats_video_fit',
+    'stats_video_border_pos', 'stats_video_border_width', 'stats_video_border_radius', 'stats_video_border_color',
     'footer_video_url', 'footer_video_opacity', 'footer_video_fit',
+    'footer_video_border_pos', 'footer_video_border_width', 'footer_video_border_radius', 'footer_video_border_color',
   ],
 };
 
@@ -290,8 +299,8 @@ const AdminLandingEditor: React.FC = () => {
     });
   };
 
-  const saveKey = async (key: string) => {
-    const value = rows.find(r => r.config_key === key)?.config_value ?? '';
+  const saveKey = async (key: string, overrideValue?: string) => {
+    const value = overrideValue !== undefined ? overrideValue : (rows.find(r => r.config_key === key)?.config_value ?? '');
     setSaving(key);
     try {
       // Upsert: try update first, then insert
@@ -464,7 +473,7 @@ const AdminLandingEditor: React.FC = () => {
         <div className="space-y-2">
           <video src={getVal(`${prefix}_url`)} className="w-full h-24 object-cover rounded-lg" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }}
             autoPlay muted loop playsInline />
-          <button onClick={() => { setVal(`${prefix}_url`, ''); saveKey(`${prefix}_url`); }}
+          <button onClick={() => { setVal(`${prefix}_url`, ''); saveKey(`${prefix}_url`, ''); }}
             className="text-[10px] px-2 py-1 rounded-lg transition"
             style={{ background: 'hsl(0 70% 50% / 0.15)', color: 'hsl(0 70% 60%)' }}>
             Remover vídeo
@@ -491,6 +500,56 @@ const AdminLandingEditor: React.FC = () => {
           <option value="contain" style={{ background: 'hsl(220 15% 12%)' }}>Contain (mostra todo o vídeo)</option>
           <option value="fill" style={{ background: 'hsl(220 15% 12%)' }}>Fill (estica para preencher)</option>
         </select>
+      </div>
+      {/* Border controls */}
+      <div className="pt-2 border-t space-y-3" style={{ borderColor: 'hsl(0 0% 100% / 0.06)' }}>
+        <p className="text-[10px] font-semibold uppercase tracking-wider" style={mutedStyle}>🔲 Borda do Vídeo</p>
+        <div>
+          <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Posição</label>
+          <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+            value={getVal(`${prefix}_border_pos`) || 'none'}
+            onChange={e => { setVal(`${prefix}_border_pos`, e.target.value); saveKey(`${prefix}_border_pos`); }}>
+            <option value="none" style={{ background: 'hsl(220 15% 12%)' }}>Sem borda</option>
+            <option value="inset" style={{ background: 'hsl(220 15% 12%)' }}>Interna (inset)</option>
+            <option value="outset" style={{ background: 'hsl(220 15% 12%)' }}>Externa (outset)</option>
+          </select>
+        </div>
+        {getVal(`${prefix}_border_pos`) && getVal(`${prefix}_border_pos`) !== 'none' && (
+          <>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>
+                Grossura: {getVal(`${prefix}_border_width`) || '2'}px
+              </label>
+              <input type="range" min={1} max={12} step={1}
+                value={parseInt(getVal(`${prefix}_border_width`) || '2')}
+                onChange={e => setVal(`${prefix}_border_width`, e.target.value)}
+                onMouseUp={() => saveKey(`${prefix}_border_width`)}
+                onTouchEnd={() => saveKey(`${prefix}_border_width`)}
+                className="w-full h-1.5 rounded-full accent-violet-500" />
+            </div>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cantos</label>
+              <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                value={getVal(`${prefix}_border_radius`) || '0'}
+                onChange={e => { setVal(`${prefix}_border_radius`, e.target.value); saveKey(`${prefix}_border_radius`); }}>
+                <option value="0" style={{ background: 'hsl(220 15% 12%)' }}>Sem arredondamento (0px)</option>
+                <option value="4" style={{ background: 'hsl(220 15% 12%)' }}>Leve (4px)</option>
+                <option value="8" style={{ background: 'hsl(220 15% 12%)' }}>Médio (8px)</option>
+                <option value="12" style={{ background: 'hsl(220 15% 12%)' }}>Grande (12px)</option>
+                <option value="16" style={{ background: 'hsl(220 15% 12%)' }}>Extra (16px)</option>
+                <option value="24" style={{ background: 'hsl(220 15% 12%)' }}>Arredondado (24px)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor da Borda</label>
+              <ColorFieldInline
+                value={getVal(`${prefix}_border_color`) || 'hsl(0 0% 100% / 0.2)'}
+                onChange={v => setVal(`${prefix}_border_color`, v)}
+                onBlur={() => saveKey(`${prefix}_border_color`)}
+              />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
