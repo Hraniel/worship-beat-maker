@@ -50,11 +50,11 @@ const CacheVersionGuard = () => {
       .channel('global_cache_realtime')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'landing_config', filter: "config_key=eq.app_cache_version" },
+        { event: '*', schema: 'public', table: 'landing_config', filter: "config_key=eq.app_cache_version" },
         (payload: any) => {
           const newVersion = payload.new?.config_value;
           const local = localStorage.getItem(CACHE_VERSION_KEY);
-          if (newVersion && local !== null && local !== newVersion) {
+          if (newVersion && local !== newVersion) {
             localStorage.setItem(CACHE_VERSION_KEY, newVersion);
             window.location.reload();
           }
@@ -97,11 +97,11 @@ const UserCacheVersionGuard = () => {
       .channel(`user_cache_realtime_${user.id}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'landing_config', filter: `config_key=eq.${userKey}` },
+        { event: '*', schema: 'public', table: 'landing_config', filter: `config_key=eq.${userKey}` },
         (payload: any) => {
           const newVersion = payload.new?.config_value;
           const local = localStorage.getItem(userKey);
-          if (newVersion && local !== null && local !== newVersion) {
+          if (newVersion && local !== newVersion) {
             localStorage.setItem(userKey, newVersion);
             window.location.reload();
           }

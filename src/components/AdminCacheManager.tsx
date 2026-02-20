@@ -61,22 +61,12 @@ const AdminCacheManager: React.FC = () => {
     setGlobalLoading(true);
     try {
       const ts = Date.now().toString();
-      const existing = await supabase
+      await supabase
         .from('landing_config')
-        .select('id')
-        .eq('config_key', 'app_cache_version')
-        .maybeSingle();
-
-      if (existing.data?.id) {
-        await supabase
-          .from('landing_config')
-          .update({ config_value: ts })
-          .eq('config_key', 'app_cache_version');
-      } else {
-        await supabase
-          .from('landing_config')
-          .insert({ config_key: 'app_cache_version', config_value: ts });
-      }
+        .upsert(
+          { config_key: 'app_cache_version', config_value: ts },
+          { onConflict: 'config_key' }
+        );
 
       setCurrentVersion(ts);
       toast.success('Cache global atualizado! Todos os usuários conectados serão recarregados agora.');
@@ -94,22 +84,12 @@ const AdminCacheManager: React.FC = () => {
       const userKey = `user_cache_version_${user.id}`;
       const ts = Date.now().toString();
 
-      const existing = await supabase
+      await supabase
         .from('landing_config')
-        .select('id')
-        .eq('config_key', userKey)
-        .maybeSingle();
-
-      if (existing.data?.id) {
-        await supabase
-          .from('landing_config')
-          .update({ config_value: ts })
-          .eq('config_key', userKey);
-      } else {
-        await supabase
-          .from('landing_config')
-          .insert({ config_key: userKey, config_value: ts });
-      }
+        .upsert(
+          { config_key: userKey, config_value: ts },
+          { onConflict: 'config_key' }
+        );
 
       toast.success(`O app de ${user.email} será recarregado agora.`);
     } catch (e: any) {

@@ -1,0 +1,1 @@
+ALTER TABLE public.landing_config ADD CONSTRAINT landing_config_config_key_unique UNIQUE (config_key);
