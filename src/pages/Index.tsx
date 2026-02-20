@@ -1605,14 +1605,16 @@ const Index = () => {
                 </button>
               </div>
 
-              {/* DEBUG: área de teste — REMOVER DEPOIS */}
-              <div className="shrink-0 bg-red-600 text-white text-center py-3 font-bold text-sm" style={{ paddingBottom: 'calc(12px + var(--safe-bottom, 0px))' }}>
-                ⬇️ AQUI? — Esta é a área preta? ⬇️
-              </div>
             </>
           )}
         </div>
       </footer>
+      )}
+      {/* DEBUG: área preta abaixo do footer — REMOVER DEPOIS */}
+      {!isLandscape && (
+        <div className="shrink-0 bg-red-600 text-white text-center py-2 font-bold text-xs" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          ⬇️ AQUI? — Área preta abaixo do footer ⬇️
+        </div>
       )}
       </div>
       {/* Save to repertoire prompt */}
