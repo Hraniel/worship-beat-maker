@@ -95,7 +95,9 @@ const SectionVideo = ({ url, opacity, fit, borderPos, borderWidth, borderRadius,
   const bPos = borderPos || 'none';
   const bWidth = parseInt(borderWidth || '2');
   const bRadius = parseInt(borderRadius || '0');
-  const bColor = borderColor || 'hsl(0 0% 100% / 0.2)';
+  const rawColor = borderColor || 'hsl(0 0% 100%)';
+  // Strip any alpha from the color so the border is always fully opaque
+  const bColor = rawColor.replace(/\s*\/\s*[\d.]+\s*\)/, ')');
   const hasBorder = bPos !== 'none' && bWidth > 0;
 
   // Video element (opacity only on video, never on border)
