@@ -1608,13 +1608,10 @@ const Index = () => {
             </>
           )}
         </div>
-      </footer>
-      )}
 
-      {/* Safe-area bottom bar — quick shortcuts filling the black gap on notched devices */}
-      {!isLandscape && (
+        {/* Safe-area shortcut bar — inside footer, fills the notch gap */}
         <div
-          className={`shrink-0 flex items-center justify-around bg-card/80 backdrop-blur-sm border-t border-border/30 lg:hidden ${focusMode ? 'py-0' : ''}`}
+          className={`flex items-center justify-around bg-card/80 backdrop-blur-sm border-t border-border/30 lg:hidden`}
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingTop: focusMode ? '0px' : '4px' }}
         >
           {!focusMode && (
@@ -1646,6 +1643,7 @@ const Index = () => {
             </>
           )}
         </div>
+      </footer>
       )}
       </div>
       {/* Save to repertoire prompt */}
