@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Save, Loader2, Plus, Trash2, GripVertical, X } from 'lucide-react';
+import { Save, Loader2, Plus, Trash2, GripVertical, X, Palette } from 'lucide-react';
 import { icons } from 'lucide-react';
 
 interface CategoryGroup {
@@ -27,6 +27,16 @@ const AdminStoreEditor: React.FC = () => {
   const [activeLabel, setActiveLabel] = useState('');
   const [removedLabel, setRemovedLabel] = useState('');
   const [searchPlaceholder, setSearchPlaceholder] = useState('');
+
+  // Color fields
+  const [colors, setColors] = useState<Record<string, string>>({
+    store_title_color: '#ffffff',
+    store_subtitle_color: '#a1a1aa',
+    library_title_color: '#ffffff',
+    active_label_color: '#a78bfa',
+    removed_label_color: '#f87171',
+    search_placeholder_color: '#71717a',
+  });
 
   // Filters
   const [filterAll, setFilterAll] = useState('');
@@ -56,6 +66,12 @@ const AdminStoreEditor: React.FC = () => {
         setActiveLabel(map['library_active_label']?.value ?? 'Ativos');
         setRemovedLabel(map['library_removed_label']?.value ?? 'Removidos');
         setSearchPlaceholder(map['search_placeholder']?.value ?? '');
+
+        // Load colors
+        try {
+          const savedColors = JSON.parse(map['text_colors']?.value ?? '{}');
+          setColors(prev => ({ ...prev, ...savedColors }));
+        } catch { /* keep defaults */ }
 
         try {
           const fl = JSON.parse(map['filter_labels']?.value ?? '{}');
@@ -103,8 +119,9 @@ const AdminStoreEditor: React.FC = () => {
         saveKey('library_active_label', activeLabel),
         saveKey('library_removed_label', removedLabel),
         saveKey('search_placeholder', searchPlaceholder),
+        saveKey('text_colors', JSON.stringify(colors)),
       ]);
-      toast.success('Textos salvos!');
+      toast.success('Textos e cores salvos!');
     } finally {
       setSaving(null);
     }
@@ -119,6 +136,10 @@ const AdminStoreEditor: React.FC = () => {
   const handleSaveCategories = async () => {
     await saveKey('categories', JSON.stringify(categories));
     toast.success('Categorias salvas!');
+  };
+
+  const updateColor = (key: string, value: string) => {
+    setColors(prev => ({ ...prev, [key]: value }));
   };
 
   // Category helpers
@@ -178,25 +199,52 @@ const AdminStoreEditor: React.FC = () => {
     return Icon ? <Icon className="h-4 w-4" /> : null;
   };
 
+  const textFields = [
+    { label: 'Título da Loja', value: storeTitle, set: setStoreTitle, colorKey: 'store_title_color' },
+    { label: 'Subtítulo', value: storeSubtitle, set: setStoreSubtitle, colorKey: 'store_subtitle_color' },
+    { label: 'Título "Minha Biblioteca"', value: libraryTitle, set: setLibraryTitle, colorKey: 'library_title_color' },
+    { label: 'Label "Ativos"', value: activeLabel, set: setActiveLabel, colorKey: 'active_label_color' },
+    { label: 'Label "Removidos"', value: removedLabel, set: setRemovedLabel, colorKey: 'removed_label_color' },
+    { label: 'Placeholder de Busca', value: searchPlaceholder, set: setSearchPlaceholder, colorKey: 'search_placeholder_color' },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Section: Textos */}
       <div className="rounded-xl p-4 space-y-3" style={sectionStyle}>
-        <h3 className="text-sm font-semibold" style={{ color: 'hsl(262 75% 75%)' }}>📝 Textos da Loja</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold" style={{ color: 'hsl(262 75% 75%)' }}>📝 Textos da Loja</h3>
+          <Palette className="h-3.5 w-3.5" style={{ color: 'hsl(262 75% 65%)' }} />
+        </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            { label: 'Título da Loja', value: storeTitle, set: setStoreTitle },
-            { label: 'Subtítulo', value: storeSubtitle, set: setStoreSubtitle },
-            { label: 'Título "Minha Biblioteca"', value: libraryTitle, set: setLibraryTitle },
-            { label: 'Label "Ativos"', value: activeLabel, set: setActiveLabel },
-            { label: 'Label "Removidos"', value: removedLabel, set: setRemovedLabel },
-            { label: 'Placeholder de Busca', value: searchPlaceholder, set: setSearchPlaceholder },
-          ].map(f => (
+          {textFields.map(f => (
             <div key={f.label}>
               <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={labelStyle}>{f.label}</label>
-              <input className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                value={f.value} onChange={e => f.set(e.target.value)} />
+              <div className="flex gap-1.5">
+                <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                  value={f.value} onChange={e => f.set(e.target.value)} />
+                <div className="relative shrink-0">
+                  <input
+                    type="color"
+                    value={colors[f.colorKey]}
+                    onChange={e => updateColor(f.colorKey, e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  />
+                  <div
+                    className="h-8 w-8 rounded-lg border border-white/10 cursor-pointer flex items-center justify-center"
+                    style={{ backgroundColor: colors[f.colorKey] }}
+                  >
+                    <span className="text-[8px] font-mono mix-blend-difference text-white select-none">
+                      {colors[f.colorKey].slice(1, 4).toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              {/* Preview */}
+              <span className="text-[10px] mt-0.5 block truncate" style={{ color: colors[f.colorKey] }}>
+                {f.value || 'Preview'}
+              </span>
             </div>
           ))}
         </div>
@@ -205,7 +253,7 @@ const AdminStoreEditor: React.FC = () => {
           className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-medium transition"
           style={{ background: 'hsl(262 75% 55% / 0.3)', color: 'hsl(262 75% 75%)' }}>
           {saving === 'texts' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-          Salvar Textos
+          Salvar Textos & Cores
         </button>
       </div>
 
