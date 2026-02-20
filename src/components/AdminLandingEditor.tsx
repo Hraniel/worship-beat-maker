@@ -209,6 +209,18 @@ const ImageUploadField: React.FC<{
   );
 };
 
+// Video config prefixes per section
+const VIDEO_SECTIONS = [
+  { prefix: 'stats_video', label: 'Estatísticas', hint: '1920×400px' },
+  { prefix: 'features_video', label: 'Recursos', hint: '1920×800px' },
+  { prefix: 'screenshots_video', label: 'Screenshots', hint: '1920×800px' },
+  { prefix: 'store_video', label: 'Loja de Sons', hint: '1920×600px' },
+  { prefix: 'howitworks_video', label: 'Como Funciona', hint: '1920×600px' },
+  { prefix: 'pricing_video', label: 'Planos', hint: '1920×800px' },
+  { prefix: 'cta_video', label: 'CTA Final', hint: '1920×500px' },
+  { prefix: 'footer_video', label: 'Rodapé', hint: '1920×300px' },
+];
+
 // Keys per tab used for "Save all" feature
 const TAB_KEYS: Record<string, string[]> = {
   navbar: [
@@ -227,12 +239,24 @@ const TAB_KEYS: Record<string, string[]> = {
   textos: [
     'features_title', 'features_subtitle', 'store_title', 'store_subtitle',
     'plans_title', 'plans_subtitle', 'show_pricing', 'cta_title', 'cta_subtitle',
+    'features_video_url', 'features_video_opacity', 'features_video_fit',
+    'pricing_video_url', 'pricing_video_opacity', 'pricing_video_fit',
+    'cta_video_url', 'cta_video_opacity', 'cta_video_fit',
+  ],
+  loja: [
+    'store_video_url', 'store_video_opacity', 'store_video_fit',
+  ],
+  imagens: [
+    'screenshots_video_url', 'screenshots_video_opacity', 'screenshots_video_fit',
   ],
   conteudo: [
     'how_main_title', 'how_step_1_title', 'how_step_1_desc', 'how_step_2_title', 'how_step_2_desc', 'how_step_3_title', 'how_step_3_desc',
     'footer_tagline', 'footer_copyright',
     'footer_link_0_label', 'footer_link_0_href', 'footer_link_1_label', 'footer_link_1_href', 'footer_link_2_label', 'footer_link_2_href',
     'stat_1_value', 'stat_1_label', 'stat_2_value', 'stat_2_label', 'stat_3_value', 'stat_3_label', 'stat_4_value', 'stat_4_label',
+    'howitworks_video_url', 'howitworks_video_opacity', 'howitworks_video_fit',
+    'stats_video_url', 'stats_video_opacity', 'stats_video_fit',
+    'footer_video_url', 'footer_video_opacity', 'footer_video_fit',
   ],
 };
 
@@ -387,6 +411,90 @@ const AdminLandingEditor: React.FC = () => {
   const labelStyle = { color: 'hsl(262 75% 65%)' };
   const mutedStyle = { color: 'hsl(0 0% 100% / 0.4)' };
 
+  const renderVideoBlock = (prefix: string, label: string, hint: string) => (
+    <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+      <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>🎬 Vídeo de Fundo — {label}</p>
+      <p className="text-[9px]" style={mutedStyle}>
+        Resolução sugerida: <strong>{hint}</strong>, formato <strong>MP4/WebM</strong>, máximo <strong>15MB</strong>, sem áudio, em loop (5–15s).
+      </p>
+      <div>
+        <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={mutedStyle}>URL do Vídeo</label>
+        <div className="flex gap-2">
+          <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+            value={getVal(`${prefix}_url`)}
+            onChange={e => setVal(`${prefix}_url`, e.target.value)}
+            onBlur={() => saveKey(`${prefix}_url`)}
+            placeholder="https://... ou faça upload" />
+          <button
+            onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = 'video/mp4,video/webm';
+              input.onchange = async (e: any) => {
+                const file = e.target?.files?.[0];
+                if (!file) return;
+                if (file.size > 15 * 1024 * 1024) { toast.error('Vídeo muito grande (máx 15MB)'); return; }
+                setSaving(`${prefix}_url`);
+                try {
+                  const ext = file.name.split('.').pop() || 'mp4';
+                  const path = `landing/${prefix}-${Date.now()}.${ext}`;
+                  const { error } = await supabase.storage.from('landing-assets').upload(path, file, { upsert: true });
+                  if (error) throw error;
+                  const { data } = supabase.storage.from('landing-assets').getPublicUrl(path);
+                  setVal(`${prefix}_url`, data.publicUrl);
+                  await saveKey(`${prefix}_url`);
+                  toast.success('Vídeo enviado!');
+                } catch (err: any) {
+                  toast.error(err.message || 'Erro ao enviar vídeo');
+                } finally {
+                  setSaving(null);
+                }
+              };
+              input.click();
+            }}
+            disabled={saving === `${prefix}_url`}
+            className="shrink-0 px-2.5 h-8 rounded-lg text-xs flex items-center gap-1 transition"
+            style={{ background: 'hsl(262 75% 55% / 0.2)', color: 'hsl(262 75% 65%)' }}>
+            {saving === `${prefix}_url` ? <Loader2 className="h-3 w-3 animate-spin" /> : '↑'}
+            Upload
+          </button>
+        </div>
+      </div>
+      {getVal(`${prefix}_url`) && (
+        <div className="space-y-2">
+          <video src={getVal(`${prefix}_url`)} className="w-full h-24 object-cover rounded-lg" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }}
+            autoPlay muted loop playsInline />
+          <button onClick={() => { setVal(`${prefix}_url`, ''); saveKey(`${prefix}_url`); }}
+            className="text-[10px] px-2 py-1 rounded-lg transition"
+            style={{ background: 'hsl(0 70% 50% / 0.15)', color: 'hsl(0 70% 60%)' }}>
+            Remover vídeo
+          </button>
+        </div>
+      )}
+      <div>
+        <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>
+          Opacidade: {Math.round(parseFloat(getVal(`${prefix}_opacity`) || '0.15') * 100)}%
+        </label>
+        <input type="range" min={0} max={1} step={0.05}
+          value={parseFloat(getVal(`${prefix}_opacity`) || '0.15')}
+          onChange={e => setVal(`${prefix}_opacity`, e.target.value)}
+          onMouseUp={() => saveKey(`${prefix}_opacity`)}
+          onTouchEnd={() => saveKey(`${prefix}_opacity`)}
+          className="w-full h-1.5 rounded-full accent-violet-500" />
+      </div>
+      <div>
+        <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Enquadramento</label>
+        <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+          value={getVal(`${prefix}_fit`) || 'cover'}
+          onChange={e => { setVal(`${prefix}_fit`, e.target.value); saveKey(`${prefix}_fit`); }}>
+          <option value="cover" style={{ background: 'hsl(220 15% 12%)' }}>Cover (preenche a área, corta bordas)</option>
+          <option value="contain" style={{ background: 'hsl(220 15% 12%)' }}>Contain (mostra todo o vídeo)</option>
+          <option value="fill" style={{ background: 'hsl(220 15% 12%)' }}>Fill (estica para preencher)</option>
+        </select>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <LandingPreviewDrawer open={previewOpen} onClose={() => setPreviewOpen(false)} previewUrl={LANDING_PREVIEW_URL} />
@@ -476,6 +584,9 @@ const AdminLandingEditor: React.FC = () => {
               />
             </div>
           ))}
+
+          {/* Video de fundo — Screenshots */}
+          {renderVideoBlock('screenshots_video', 'Screenshots', '1920×800px')}
 
           {/* Divider */}
           <div className="border-t" style={{ borderColor: 'hsl(0 0% 100% / 0.08)' }} />
@@ -843,6 +954,9 @@ const AdminLandingEditor: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {/* Video de fundo — Loja */}
+          {renderVideoBlock('store_video', 'Loja de Sons', '1920×600px')}
         </div>
       )}
 
@@ -945,6 +1059,11 @@ const AdminLandingEditor: React.FC = () => {
             ))}
           </div>
 
+          {/* Videos de fundo — Como Funciona, Stats, Footer */}
+          {renderVideoBlock('howitworks_video', 'Como Funciona', '1920×600px')}
+          {renderVideoBlock('stats_video', 'Estatísticas', '1920×400px')}
+          {renderVideoBlock('footer_video', 'Rodapé', '1920×300px')}
+
           {/* Force cache refresh */}
           <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cache de Usuários</p>
@@ -1019,6 +1138,11 @@ const AdminLandingEditor: React.FC = () => {
               })}
             </div>
           ))}
+
+          {/* Videos de fundo — Recursos, Planos, CTA */}
+          {renderVideoBlock('features_video', 'Recursos', '1920×800px')}
+          {renderVideoBlock('pricing_video', 'Planos', '1920×800px')}
+          {renderVideoBlock('cta_video', 'CTA Final', '1920×500px')}
 
           <button onClick={fetchData} className="flex items-center gap-1 text-[10px] transition" style={mutedStyle}>
             <RefreshCw className="h-3 w-3" /> Atualizar dados
