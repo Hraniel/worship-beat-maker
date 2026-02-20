@@ -49,8 +49,8 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
       />
 
       {/* Modal */}
-      <div className="fixed z-[201] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm">
-        <div className={`relative rounded-2xl border ${meta.border} bg-card shadow-2xl overflow-hidden`}>
+      <div className="fixed z-[201] inset-0 flex items-center justify-center p-4 pointer-events-none">
+        <div className={`pointer-events-auto relative w-[90vw] max-w-sm rounded-2xl border ${meta.border} bg-card shadow-2xl overflow-hidden`}>
 
           {/* Top accent bar */}
           <div className={`h-1 w-full ${payload.requiredTier === 'master' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' : 'bg-gradient-to-r from-violet-500 to-fuchsia-500'}`} />
