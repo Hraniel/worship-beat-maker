@@ -1,50 +1,83 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useBodyScroll } from '@/hooks/useBodyScroll';
-import { useLandingConfig, type LandingFeature } from '@/hooks/useLandingConfig';
-import logoDark from '@/assets/logo-dark.png';
-import logoLight from '@/assets/logo-light.png';
-import appPadGridDefault from '@/assets/app-pad-grid.png';
-import appSetlistDefault from '@/assets/app-setlist.png';
-import appMixerDefault from '@/assets/app-mixer.png';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useBodyScroll } from "@/hooks/useBodyScroll";
+import { useLandingConfig, type LandingFeature } from "@/hooks/useLandingConfig";
+import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
+import appPadGridDefault from "@/assets/app-pad-grid.png";
+import appSetlistDefault from "@/assets/app-setlist.png";
+import appMixerDefault from "@/assets/app-mixer.png";
 import {
-  Music, Headphones, Zap, Crown, Check, X, ChevronDown,
-  Layers, Sparkles, Volume2, ArrowRight, Drum, AudioWaveform,
-  Waves, ListMusic, SlidersHorizontal, Cpu, Smartphone,
-  Star, Radio, Mic2, Search, BarChart3,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { TIERS } from '@/lib/tiers';
+  Music,
+  Headphones,
+  Zap,
+  Crown,
+  Check,
+  X,
+  ChevronDown,
+  Layers,
+  Sparkles,
+  Volume2,
+  ArrowRight,
+  Drum,
+  AudioWaveform,
+  Waves,
+  ListMusic,
+  SlidersHorizontal,
+  Cpu,
+  Smartphone,
+  Star,
+  Radio,
+  Mic2,
+  Search,
+  BarChart3,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TIERS } from "@/lib/tiers";
 
 // Reads pad colors from localStorage (same key as the app)
-const PAD_COLORS_KEY = 'drum-pads-pad-colors';
+const PAD_COLORS_KEY = "drum-pads-pad-colors";
 type StoredPadColor = { hue: number; saturation: number; lightness: number; opacity: number };
 
 function useLivePadColors() {
   const [colors, setColors] = useState<Record<string, StoredPadColor>>(() => {
-    try { const d = localStorage.getItem(PAD_COLORS_KEY); return d ? JSON.parse(d) : {}; } catch { return {}; }
+    try {
+      const d = localStorage.getItem(PAD_COLORS_KEY);
+      return d ? JSON.parse(d) : {};
+    } catch {
+      return {};
+    }
   });
 
   useEffect(() => {
     // Listen for storage events from other tabs/windows
     const onStorage = (e: StorageEvent) => {
       if (e.key === PAD_COLORS_KEY) {
-        try { setColors(e.newValue ? JSON.parse(e.newValue) : {}); } catch { /* ignore */ }
+        try {
+          setColors(e.newValue ? JSON.parse(e.newValue) : {});
+        } catch {
+          /* ignore */
+        }
       }
     };
-    window.addEventListener('storage', onStorage);
+    window.addEventListener("storage", onStorage);
 
     // Poll localStorage every 2s (catches same-tab changes)
     const interval = setInterval(() => {
       try {
         const d = localStorage.getItem(PAD_COLORS_KEY);
         const next = d ? JSON.parse(d) : {};
-        setColors(prev => JSON.stringify(prev) !== JSON.stringify(next) ? next : prev);
-      } catch { /* ignore */ }
+        setColors((prev) => (JSON.stringify(prev) !== JSON.stringify(next) ? next : prev));
+      } catch {
+        /* ignore */
+      }
     }, 2000);
 
-    return () => { window.removeEventListener('storage', onStorage); clearInterval(interval); };
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      clearInterval(interval);
+    };
   }, []);
 
   return colors;
@@ -52,15 +85,32 @@ function useLivePadColors() {
 
 // Map icon name string → Lucide component
 const ICON_MAP: Record<string, React.ElementType> = {
-  Drum, ListMusic, SlidersHorizontal, Cpu, Waves, AudioWaveform,
-  Headphones, Smartphone, Sparkles, Music, Volume2, Layers,
-  Zap, Star, Radio, Mic2, Search, BarChart3, Crown,
+  Drum,
+  ListMusic,
+  SlidersHorizontal,
+  Cpu,
+  Waves,
+  AudioWaveform,
+  Headphones,
+  Smartphone,
+  Sparkles,
+  Music,
+  Volume2,
+  Layers,
+  Zap,
+  Star,
+  Radio,
+  Mic2,
+  Search,
+  BarChart3,
+  Crown,
 };
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: (i: number) => ({
-    opacity: 1, y: 0,
+    opacity: 1,
+    y: 0,
     transition: { delay: i * 0.1, duration: 0.55, ease: [0.22, 1, 0.36, 1] as const },
   }),
 };
@@ -69,46 +119,70 @@ const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
 // Helper: map tailwind size key to class
 const titleSizeClass = (size: string) => {
   const map: Record<string, string> = {
-    'xs': 'text-xs', 'sm': 'text-sm', 'base': 'text-base', 'lg': 'text-lg',
-    'xl': 'text-xl', '2xl': 'text-2xl', '3xl': 'text-3xl', '4xl': 'text-4xl',
-    '5xl': 'text-5xl', '6xl': 'text-6xl', '7xl': 'text-5xl sm:text-7xl',
-    '8xl': 'text-6xl sm:text-8xl',
+    xs: "text-xs",
+    sm: "text-sm",
+    base: "text-base",
+    lg: "text-lg",
+    xl: "text-xl",
+    "2xl": "text-2xl",
+    "3xl": "text-3xl",
+    "4xl": "text-4xl",
+    "5xl": "text-5xl",
+    "6xl": "text-6xl",
+    "7xl": "text-5xl sm:text-7xl",
+    "8xl": "text-6xl sm:text-8xl",
   };
-  return map[size] ?? 'text-5xl sm:text-7xl';
+  return map[size] ?? "text-5xl sm:text-7xl";
 };
 
 const DEFAULT_CATEGORIES = [
-  { name: 'Kick & Bumbo', color: '0 75% 55%', icon: '🥁' },
-  { name: 'Snare', color: '30 85% 55%', icon: '🪘' },
-  { name: 'Hi-Hat & Pratos', color: '50 80% 50%', icon: '🎵' },
-  { name: 'Loops', color: '262 75% 55%', icon: '🔁' },
-  { name: 'Continuous Pads', color: '200 80% 55%', icon: '🎹' },
-  { name: 'Efeitos', color: '340 70% 55%', icon: '✨' },
+  { name: "Kick & Bumbo", color: "0 75% 55%", icon: "🥁" },
+  { name: "Snare", color: "30 85% 55%", icon: "🪘" },
+  { name: "Hi-Hat & Pratos", color: "50 80% 50%", icon: "🎵" },
+  { name: "Loops", color: "262 75% 55%", icon: "🔁" },
+  { name: "Continuous Pads", color: "200 80% 55%", icon: "🎹" },
+  { name: "Efeitos", color: "340 70% 55%", icon: "✨" },
 ];
 
 // Reusable background video for any section
-const SectionVideo = ({ url, opacity, fit, borderPos, borderWidth, borderRadius, borderColor }: {
-  url?: string; opacity?: string; fit?: string;
-  borderPos?: string; borderWidth?: string; borderRadius?: string; borderColor?: string;
+const SectionVideo = ({
+  url,
+  opacity,
+  fit,
+  borderPos,
+  borderWidth,
+  borderRadius,
+  borderColor,
+}: {
+  url?: string;
+  opacity?: string;
+  fit?: string;
+  borderPos?: string;
+  borderWidth?: string;
+  borderRadius?: string;
+  borderColor?: string;
 }) => {
-  if (!url || url.trim() === '') return null;
-  const bPos = borderPos || 'none';
-  const bWidth = parseInt(borderWidth || '2');
-  const bRadius = parseInt(borderRadius || '0');
-  const rawColor = borderColor || 'hsl(0 0% 100%)';
+  if (!url || url.trim() === "") return null;
+  const bPos = borderPos || "none";
+  const bWidth = parseInt(borderWidth || "2");
+  const bRadius = parseInt(borderRadius || "0");
+  const rawColor = borderColor || "hsl(0 0% 100%)";
   // Strip any alpha from the color so the border is always fully opaque
-  const bColor = rawColor.replace(/\s*\/\s*[\d.]+\s*\)/, ')');
-  const hasBorder = bPos !== 'none' && bWidth > 0;
+  const bColor = rawColor.replace(/\s*\/\s*[\d.]+\s*\)/, ")");
+  const hasBorder = bPos !== "none" && bWidth > 0;
 
   // Video element (opacity only on video, never on border)
   const videoEl = (
     <video
       src={url}
-      autoPlay muted loop playsInline
+      autoPlay
+      muted
+      loop
+      playsInline
       className="absolute inset-0 w-full h-full pointer-events-none"
       style={{
-        objectFit: (fit as any) || 'cover',
-        opacity: parseFloat(opacity || '0.15'),
+        objectFit: (fit as any) || "cover",
+        opacity: parseFloat(opacity || "0.15"),
         borderRadius: hasBorder ? `${bRadius}px` : undefined,
       }}
     />
@@ -116,12 +190,15 @@ const SectionVideo = ({ url, opacity, fit, borderPos, borderWidth, borderRadius,
 
   // Border overlay (always full opacity, independent of video)
   const borderEl = hasBorder ? (
-    <div className="absolute inset-0 pointer-events-none" style={{
-      borderRadius: `${bRadius}px`,
-      ...(bPos === 'inset'
-        ? { boxShadow: `inset 0 0 0 ${bWidth}px ${bColor}` }
-        : { border: `${bWidth}px solid ${bColor}` }),
-    }} />
+    <div
+      className="absolute inset-0 pointer-events-none"
+      style={{
+        borderRadius: `${bRadius}px`,
+        ...(bPos === "inset"
+          ? { boxShadow: `inset 0 0 0 ${bWidth}px ${bColor}` }
+          : { border: `${bWidth}px solid ${bColor}` }),
+      }}
+    />
   ) : null;
 
   return (
@@ -131,8 +208,6 @@ const SectionVideo = ({ url, opacity, fit, borderPos, borderWidth, borderRadius,
     </>
   );
 };
-
-
 
 // Gradient divider between sections
 const Divider = ({ fromLight, darkColor }: { fromLight: boolean; darkColor: string }) => (
@@ -149,78 +224,108 @@ const Divider = ({ fromLight, darkColor }: { fromLight: boolean; darkColor: stri
 // Announcement Bar
 const AnnouncementBar = ({ config }: { config: Record<string, string> }) => {
   const [dismissed, setDismissed] = React.useState(false);
-  if (config.announcement_enabled !== 'true' || dismissed) return null;
-  const bg = config.announcement_bg || 'hsl(262 75% 55%)';
-  const color = config.announcement_color || 'hsl(0 0% 100%)';
-  const text = config.announcement_text || '';
-  const link = config.announcement_link || '';
-  const linkLabel = config.announcement_link_label || '';
+  if (config.announcement_enabled !== "true" || dismissed) return null;
+  const bg = config.announcement_bg || "hsl(262 75% 55%)";
+  const color = config.announcement_color || "hsl(0 0% 100%)";
+  const text = config.announcement_text || "";
+  const link = config.announcement_link || "";
+  const linkLabel = config.announcement_link_label || "";
   if (!text) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium"
-      style={{ background: bg, color, paddingTop: 'calc(env(safe-area-inset-top) + 8px)' }}>
+    <div
+      className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-2 px-4 py-2 text-xs font-medium"
+      style={{ background: bg, color, paddingTop: "calc(env(safe-area-inset-top) + 8px)" }}
+    >
       <span>{text}</span>
       {link && linkLabel && (
-        <a href={link} className="underline underline-offset-2 font-semibold hover:opacity-80 transition">{linkLabel}</a>
+        <a href={link} className="underline underline-offset-2 font-semibold hover:opacity-80 transition">
+          {linkLabel}
+        </a>
       )}
-      <button onClick={() => setDismissed(true)} className="ml-2 opacity-60 hover:opacity-100 transition text-base leading-none">&times;</button>
+      <button
+        onClick={() => setDismissed(true)}
+        className="ml-2 opacity-60 hover:opacity-100 transition text-base leading-none"
+      >
+        &times;
+      </button>
     </div>
   );
 };
 
 // Nav
-const Nav = ({ navigate, config, hasAnnouncement }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string>; hasAnnouncement: boolean }) => {
-  const navBg = config.nav_bg || 'hsl(0 0% 100% / 0.96)';
-  const navBorder = config.nav_border_color || 'hsl(0 0% 0% / 0.08)';
-  const linkColor = config.nav_link_color || 'hsl(220 15% 45%)';
-  const linkHoverColor = config.nav_link_hover_color || 'hsl(220 15% 10%)';
-  const loginLabel = config.nav_btn_login_label || 'Entrar';
-  const signupLabel = config.nav_btn_signup_label || 'Começar grátis';
-  const loginBg = config.nav_btn_login_bg || '';
-  const loginColor = config.nav_btn_login_color || '';
-  const signupBg = config.nav_btn_signup_bg || '';
-  const signupColor = config.nav_btn_signup_color || '';
+const Nav = ({
+  navigate,
+  config,
+  hasAnnouncement,
+}: {
+  navigate: ReturnType<typeof useNavigate>;
+  config: Record<string, string>;
+  hasAnnouncement: boolean;
+}) => {
+  const navBg = config.nav_bg || "hsl(0 0% 100% / 0.96)";
+  const navBorder = config.nav_border_color || "hsl(0 0% 0% / 0.08)";
+  const linkColor = config.nav_link_color || "hsl(220 15% 45%)";
+  const linkHoverColor = config.nav_link_hover_color || "hsl(220 15% 10%)";
+  const loginLabel = config.nav_btn_login_label || "Entrar";
+  const signupLabel = config.nav_btn_signup_label || "Começar grátis";
+  const loginBg = config.nav_btn_login_bg || "";
+  const loginColor = config.nav_btn_login_color || "";
+  const signupBg = config.nav_btn_signup_bg || "";
+  const signupColor = config.nav_btn_signup_color || "";
 
   const navLinks = [
-    { label: config.nav_link_0_label || 'Recursos', href: config.nav_link_0_href || '#recursos' },
-    { label: config.nav_link_1_label || 'Sons', href: config.nav_link_1_href || '#sons' },
-    { label: config.nav_link_2_label || 'Planos', href: config.nav_link_2_href || '#planos' },
+    { label: config.nav_link_0_label || "Recursos", href: config.nav_link_0_href || "#recursos" },
+    { label: config.nav_link_1_label || "Sons", href: config.nav_link_1_href || "#sons" },
+    { label: config.nav_link_2_label || "Planos", href: config.nav_link_2_href || "#planos" },
   ];
 
   return (
-    <nav className="fixed left-0 right-0 z-50 backdrop-blur-xl border-b"
+    <nav
+      className="fixed left-0 right-0 z-50 backdrop-blur-xl border-b"
       style={{
-        top: hasAnnouncement ? '32px' : '0',
+        top: hasAnnouncement ? "32px" : "0",
         background: navBg,
         borderColor: navBorder,
-        paddingTop: hasAnnouncement ? '0' : 'env(safe-area-inset-top)',
-      }}>
+        paddingTop: hasAnnouncement ? "0" : "env(safe-area-inset-top)",
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
           <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
-          {navLinks.map(l => (
-            <a key={l.href} href={l.href} className="text-sm transition hidden sm:inline"
+          {navLinks.map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="text-sm transition hidden sm:inline"
               style={{ color: linkColor }}
-              onMouseEnter={e => (e.currentTarget.style.color = linkHoverColor)}
-              onMouseLeave={e => (e.currentTarget.style.color = linkColor)}>
+              onMouseEnter={(e) => (e.currentTarget.style.color = linkHoverColor)}
+              onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
+            >
               {l.label}
             </a>
           ))}
-          <Button variant="ghost" size="sm" onClick={() => navigate('/auth')}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/auth")}
             className="text-foreground/70 hover:text-foreground"
-            style={{ ...(loginBg ? { background: loginBg } : {}), ...(loginColor ? { color: loginColor } : {}) }}>
+            style={{ ...(loginBg ? { background: loginBg } : {}), ...(loginColor ? { color: loginColor } : {}) }}
+          >
             {loginLabel}
           </Button>
-          <Button size="sm" onClick={() => navigate('/auth?mode=signup')}
+          <Button
+            size="sm"
+            onClick={() => navigate("/auth?mode=signup")}
             className="font-semibold"
             style={{
-              background: signupBg || 'hsl(220 15% 10%)',
-              color: signupColor || 'hsl(0 0% 100%)',
-            }}>
+              background: signupBg || "hsl(220 15% 10%)",
+              color: signupColor || "hsl(0 0% 100%)",
+            }}
+          >
             {signupLabel}
           </Button>
         </div>
@@ -230,12 +335,12 @@ const Nav = ({ navigate, config, hasAnnouncement }: { navigate: ReturnType<typeo
 };
 
 const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
-  const bg = config.hero_bg || 'hsl(0 0% 97%)';
-  const titleColor = config.hero_title_color || 'hsl(220 15% 10%)';
-  const titleSize = titleSizeClass(config.hero_title_size || '7xl');
-  const subtitleColor = config.hero_subtitle_color || 'hsl(220 15% 40%)';
-  const badgeBg = config.hero_badge_bg || 'hsl(262 75% 55% / 0.06)';
-  const badgeColor = config.hero_badge_color || 'hsl(262 75% 55%)';
+  const bg = config.hero_bg || "hsl(0 0% 97%)";
+  const titleColor = config.hero_title_color || "hsl(220 15% 10%)";
+  const titleSize = titleSizeClass(config.hero_title_size || "7xl");
+  const subtitleColor = config.hero_subtitle_color || "hsl(220 15% 40%)";
+  const badgeBg = config.hero_badge_bg || "hsl(262 75% 55% / 0.06)";
+  const badgeColor = config.hero_badge_color || "hsl(262 75% 55%)";
 
   const pt = config.hero_pt ? `${config.hero_pt}px` : undefined;
   const pb = config.hero_pb ? `${config.hero_pb}px` : undefined;
@@ -245,75 +350,106 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
 
   // Default pad definitions — fallback colors when user hasn't customized
   const PADS = [
-    { id: 'kick', name: 'KCK', label: 'Kick', color: '0 75% 55%' },
-    { id: 'snare', name: 'SNR', label: 'Snare', color: '30 85% 55%' },
-    { id: 'hihat-closed', name: 'HHC', label: 'Hi-Hat', color: '50 80% 50%' },
-    { id: 'hihat-open', name: 'HHO', label: 'Open HH', color: '50 80% 50%' },
-    { id: 'crash', name: 'CRS', label: 'Crash', color: '340 70% 55%' },
-    { id: 'clap', name: 'CLP', label: 'Clap', color: '140 60% 45%' },
-    { id: 'worship-loop', name: 'WSP', label: 'Loop', color: '262 75% 55%' },
-    { id: 'worship-fill', name: 'WFL', label: 'Loop 2', color: '262 75% 55%' },
+    { id: "kick", name: "KCK", label: "Kick", color: "0 75% 55%" },
+    { id: "snare", name: "SNR", label: "Snare", color: "30 85% 55%" },
+    { id: "hihat-closed", name: "HHC", label: "Hi-Hat", color: "50 80% 50%" },
+    { id: "hihat-open", name: "HHO", label: "Open HH", color: "50 80% 50%" },
+    { id: "crash", name: "CRS", label: "Crash", color: "340 70% 55%" },
+    { id: "clap", name: "CLP", label: "Clap", color: "140 60% 45%" },
+    { id: "worship-loop", name: "WSP", label: "Loop", color: "262 75% 55%" },
+    { id: "worship-fill", name: "WFL", label: "Loop 2", color: "262 75% 55%" },
   ];
 
   // Resolve color: use live customization if set, otherwise default
-  const getPadColor = (pad: typeof PADS[0]) => {
+  const getPadColor = (pad: (typeof PADS)[0]) => {
     const custom = livePadColors[pad.id];
     if (custom) return `${custom.hue} ${custom.saturation}% ${custom.lightness}%`;
     return pad.color;
   };
 
   const AMBIENT_NOTES = [
-    { note: 'C', color: '0 75% 55%' }, { note: 'D', color: '30 85% 55%' },
-    { note: 'E', color: '50 80% 50%' }, { note: 'F', color: '140 60% 45%' },
-    { note: 'G', color: '200 75% 50%' }, { note: 'A', color: '262 75% 55%' },
+    { note: "C", color: "0 75% 55%" },
+    { note: "D", color: "30 85% 55%" },
+    { note: "E", color: "50 80% 50%" },
+    { note: "F", color: "140 60% 45%" },
+    { note: "G", color: "200 75% 50%" },
+    { note: "A", color: "262 75% 55%" },
   ];
 
   return (
-    <section className="relative overflow-hidden" style={{
-      background: bg,
-      paddingTop: pt ?? 'calc(env(safe-area-inset-top) + 7rem)',
-      paddingBottom: pb ?? '0',
-    }}>
-      <SectionVideo url={config.hero_video_url} opacity={config.hero_video_opacity} fit={config.hero_video_fit} borderPos={config.hero_video_border_pos} borderWidth={config.hero_video_border_width} borderRadius={config.hero_video_border_radius} borderColor={config.hero_video_border_color} />
+    <section
+      className="relative overflow-visible"
+      style={{
+        background: bg,
+        paddingTop: pt ?? "calc(env(safe-area-inset-top) + 7rem)",
+        paddingBottom: pb ?? "0",
+      }}
+    >
+      <SectionVideo
+        url={config.hero_video_url}
+        opacity={config.hero_video_opacity}
+        fit={config.hero_video_fit}
+        borderPos={config.hero_video_border_pos}
+        borderWidth={config.hero_video_border_width}
+        borderRadius={config.hero_video_border_radius}
+        borderColor={config.hero_video_border_color}
+      />
       <div className="relative max-w-5xl mx-auto px-4 text-center pb-20">
         <motion.div initial="hidden" animate="visible" variants={stagger}>
-          <motion.div variants={fadeUp} custom={0}
+          <motion.div
+            variants={fadeUp}
+            custom={0}
             className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 mb-6"
-            style={{ border: `1px solid ${badgeColor} / 0.2`, background: badgeBg }}>
+            style={{ border: `1px solid ${badgeColor} / 0.2`, background: badgeBg }}
+          >
             <Sparkles className="h-3.5 w-3.5" style={{ color: badgeColor }} />
             <span className="text-xs font-medium" style={{ color: badgeColor }}>
-              {config.hero_badge || 'Spotify AI integrado · PWA nativo'}
+              {config.hero_badge || "Spotify AI integrado · PWA nativo"}
             </span>
           </motion.div>
 
-          <motion.h1 variants={fadeUp} custom={1}
+          <motion.h1
+            variants={fadeUp}
+            custom={1}
             className={`${titleSize} font-extrabold tracking-tight leading-[1.08] mb-6`}
-            style={{ color: titleColor }}>
-            {(config.hero_title || 'Seus pads de worship na palma da mão')
-              .split('worship').map((part, i, arr) => (
-                <React.Fragment key={i}>
-                  {part}
-                  {i < arr.length - 1 && <span className="text-primary">worship</span>}
-                </React.Fragment>
-              ))}
+            style={{ color: titleColor }}
+          >
+            {(config.hero_title || "Seus pads de worship na palma da mão").split("worship").map((part, i, arr) => (
+              <React.Fragment key={i}>
+                {part}
+                {i < arr.length - 1 && <span className="text-primary">worship</span>}
+              </React.Fragment>
+            ))}
           </motion.h1>
 
-          <motion.p variants={fadeUp} custom={2}
+          <motion.p
+            variants={fadeUp}
+            custom={2}
             className="text-lg sm:text-xl max-w-2xl mx-auto mb-10"
-            style={{ color: subtitleColor }}>
-            {config.hero_subtitle || 'Pads profissionais, metrônomo, loops, continuous pads e Glory Store — tudo que o músico de louvor precisa, em um único app.'}
+            style={{ color: subtitleColor }}
+          >
+            {config.hero_subtitle ||
+              "Pads profissionais, metrônomo, loops, continuous pads e Glory Store — tudo que o músico de louvor precisa, em um único app."}
           </motion.p>
 
           <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
+            <Button
+              size="lg"
+              onClick={() => navigate("/auth?mode=signup")}
               className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-xl"
-              style={{ boxShadow: '0 0 40px hsl(var(--primary) / 0.25)' }}>
+              style={{ boxShadow: "0 0 40px hsl(var(--primary) / 0.25)" }}
+            >
               Começar gratuitamente
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" onClick={() => {
-              document.getElementById('recursos')?.scrollIntoView({ behavior: 'smooth' });
-            }} className="text-lg px-8 py-6 rounded-xl">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => {
+                document.getElementById("recursos")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="text-lg px-8 py-6 rounded-xl"
+            >
               Ver recursos
               <ChevronDown className="ml-2 h-5 w-5" />
             </Button>
@@ -327,16 +463,19 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
           transition={{ delay: 0.5, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
           className="relative max-w-3xl mx-auto mt-16"
         >
-          <div className="relative rounded-2xl p-3 sm:p-5 shadow-2xl"
+          <div
+            className="relative rounded-2xl p-3 sm:p-5 shadow-2xl"
             style={{
-              border: '1px solid hsl(0 0% 0% / 0.1)',
-              background: 'hsl(220 15% 10%)',
-            }}>
+              border: "1px solid hsl(0 0% 0% / 0.1)",
+              background: "hsl(220 15% 10%)",
+            }}
+          >
             <div className="grid grid-cols-4 gap-2 sm:gap-3">
               {PADS.map((pad, i) => {
                 const color = getPadColor(pad);
                 return (
-                  <motion.div key={pad.id}
+                  <motion.div
+                    key={pad.id}
                     initial={{ opacity: 0, scale: 0.85 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.7 + i * 0.05, duration: 0.35 }}
@@ -345,24 +484,41 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
                       background: `linear-gradient(145deg, hsl(0 0% 9%) 0%, hsl(0 0% 5%) 100%)`,
                       border: `1.5px solid hsl(${color} / 0.28)`,
                       boxShadow: `0 0 18px hsl(${color} / 0.08), inset 0 1px 0 hsl(0 0% 100% / 0.04)`,
-                      transition: 'border-color 0.4s ease, box-shadow 0.4s ease',
-                    }}>
-                    <div className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-                      style={{ background: `hsl(${color})`, transition: 'background 0.4s ease' }} />
-                    <motion.div className="absolute inset-0 rounded-xl"
-                      style={{ background: `radial-gradient(circle at center, hsl(${color} / 0.2) 0%, transparent 70%)` }}
+                      transition: "border-color 0.4s ease, box-shadow 0.4s ease",
+                    }}
+                  >
+                    <div
+                      className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
+                      style={{ background: `hsl(${color})`, transition: "background 0.4s ease" }}
+                    />
+                    <motion.div
+                      className="absolute inset-0 rounded-xl"
+                      style={{
+                        background: `radial-gradient(circle at center, hsl(${color} / 0.2) 0%, transparent 70%)`,
+                      }}
                       animate={{ opacity: [0.3, 0.65, 0.3] }}
-                      transition={{ duration: 2 + i * 0.3, repeat: Infinity, ease: 'easeInOut' }} />
-                    <span className="relative text-base sm:text-lg font-bold tracking-wider"
-                      style={{ color: `hsl(${color})`, transition: 'color 0.4s ease' }}>{pad.name}</span>
-                    <span className="relative text-[9px] sm:text-[10px] mt-0.5" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>{pad.label}</span>
+                      transition={{ duration: 2 + i * 0.3, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    <span
+                      className="relative text-base sm:text-lg font-bold tracking-wider"
+                      style={{ color: `hsl(${color})`, transition: "color 0.4s ease" }}
+                    >
+                      {pad.name}
+                    </span>
+                    <span
+                      className="relative text-[9px] sm:text-[10px] mt-0.5"
+                      style={{ color: "hsl(0 0% 100% / 0.4)" }}
+                    >
+                      {pad.label}
+                    </span>
                   </motion.div>
                 );
               })}
             </div>
             <div className="mt-3 flex gap-1.5">
               {AMBIENT_NOTES.map((n, i) => (
-                <motion.div key={n.note}
+                <motion.div
+                  key={n.note}
                   className="flex-1 h-9 sm:h-10 rounded-lg flex items-center justify-center relative overflow-hidden"
                   style={{
                     background: `linear-gradient(180deg, hsl(${n.color} / 0.18) 0%, hsl(${n.color} / 0.04) 100%)`,
@@ -370,97 +526,155 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
                   }}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.1 + i * 0.06, duration: 0.4 }}>
-                  <motion.div className="absolute inset-0"
-                    style={{ background: `radial-gradient(ellipse at bottom, hsl(${n.color} / 0.28) 0%, transparent 80%)` }}
+                  transition={{ delay: 1.1 + i * 0.06, duration: 0.4 }}
+                >
+                  <motion.div
+                    className="absolute inset-0"
+                    style={{
+                      background: `radial-gradient(ellipse at bottom, hsl(${n.color} / 0.28) 0%, transparent 80%)`,
+                    }}
                     animate={{ opacity: [0.2, 0.55, 0.2] }}
-                    transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: 'easeInOut' }} />
-                  <span className="relative text-[10px] sm:text-xs font-semibold" style={{ color: `hsl(${n.color} / 0.85)` }}>{n.note}</span>
+                    transition={{ duration: 3 + i * 0.5, repeat: Infinity, ease: "easeInOut" }}
+                  />
+                  <span
+                    className="relative text-[10px] sm:text-xs font-semibold"
+                    style={{ color: `hsl(${n.color} / 0.85)` }}
+                  >
+                    {n.note}
+                  </span>
                 </motion.div>
               ))}
             </div>
           </div>
-          <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-16 rounded-full"
-            style={{ background: 'hsl(var(--primary) / 0.15)', filter: 'blur(60px)' }} />
+          <div
+            className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-3/4 h-16 rounded-full"
+            style={{ background: "hsl(var(--primary) / 0.15)", filter: "blur(60px)" }}
+          />
         </motion.div>
       </div>
     </section>
   );
 };
 
-
 // App Screenshots section — 3 feature mockup images
 const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
-  const bg = config.screenshots_bg || 'hsl(0 0% 97%)';
-  const titleColor = config.screenshots_title_color || 'hsl(220 15% 10%)';
-  const subtitleColor = config.screenshots_subtitle_color || 'hsl(220 15% 40%)';
+  const bg = config.screenshots_bg || "hsl(0 0% 97%)";
+  const titleColor = config.screenshots_title_color || "hsl(220 15% 10%)";
+  const subtitleColor = config.screenshots_subtitle_color || "hsl(220 15% 40%)";
 
   const shots = [
     {
-      key: 'screenshot_1',
+      key: "screenshot_1",
       defaultImg: appPadGridDefault,
-      defaultTitle: config.screenshot_1_title || 'Pad Grid',
-      defaultDesc: config.screenshot_1_desc || 'Pads totalmente personalizáveis com cores, efeitos e sons da sua biblioteca.',
+      defaultTitle: config.screenshot_1_title || "Pad Grid",
+      defaultDesc:
+        config.screenshot_1_desc || "Pads totalmente personalizáveis com cores, efeitos e sons da sua biblioteca.",
     },
     {
-      key: 'screenshot_2',
+      key: "screenshot_2",
       defaultImg: appSetlistDefault,
-      defaultTitle: config.screenshot_2_title || 'Repertório',
-      defaultDesc: config.screenshot_2_desc || 'Organize suas músicas em setlists e acesse o tom e BPM de cada uma.',
+      defaultTitle: config.screenshot_2_title || "Repertório",
+      defaultDesc: config.screenshot_2_desc || "Organize suas músicas em setlists e acesse o tom e BPM de cada uma.",
     },
     {
-      key: 'screenshot_3',
+      key: "screenshot_3",
       defaultImg: appMixerDefault,
-      defaultTitle: config.screenshot_3_title || 'Mixer',
-      defaultDesc: config.screenshot_3_desc || 'Controle de volume e pan individual por pad, em tempo real.',
+      defaultTitle: config.screenshot_3_title || "Mixer",
+      defaultDesc: config.screenshot_3_desc || "Controle de volume e pan individual por pad, em tempo real.",
     },
   ];
 
-  if (config.screenshots_enabled === 'false') return null;
+  if (config.screenshots_enabled === "false") return null;
 
   return (
-    <section className="relative overflow-hidden" style={{
-      background: bg,
-      paddingTop: config.screenshots_pt ? `${config.screenshots_pt}px` : '80px',
-      paddingBottom: config.screenshots_pb ? `${config.screenshots_pb}px` : '96px',
-      paddingLeft: '1rem',
-      paddingRight: '1rem',
-    }}>
-      <SectionVideo url={config.screenshots_video_url} opacity={config.screenshots_video_opacity} fit={config.screenshots_video_fit} borderPos={config.screenshots_video_border_pos} borderWidth={config.screenshots_video_border_width} borderRadius={config.screenshots_video_border_radius} borderColor={config.screenshots_video_border_color} />
+    <section
+      className="relative overflow-hidden"
+      style={{
+        background: bg,
+        paddingTop: config.screenshots_pt ? `${config.screenshots_pt}px` : "80px",
+        paddingBottom: config.screenshots_pb ? `${config.screenshots_pb}px` : "96px",
+        paddingLeft: "1rem",
+        paddingRight: "1rem",
+      }}
+    >
+      <SectionVideo
+        url={config.screenshots_video_url}
+        opacity={config.screenshots_video_opacity}
+        fit={config.screenshots_video_fit}
+        borderPos={config.screenshots_video_border_pos}
+        borderWidth={config.screenshots_video_border_width}
+        borderRadius={config.screenshots_video_border_radius}
+        borderColor={config.screenshots_video_border_color}
+      />
       <div className="max-w-5xl mx-auto">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-12">
-          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">App Glory Pads</motion.p>
-          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
-            {config.screenshots_title || 'Tudo que você precisa, em um só lugar'}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="text-center mb-12"
+        >
+          <motion.p
+            variants={fadeUp}
+            custom={0}
+            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
+          >
+            App Glory Pads
+          </motion.p>
+          <motion.h2
+            variants={fadeUp}
+            custom={1}
+            className="text-3xl sm:text-5xl font-extrabold mb-4"
+            style={{ color: titleColor }}
+          >
+            {config.screenshots_title || "Tudo que você precisa, em um só lugar"}
           </motion.h2>
-          <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto text-base" style={{ color: subtitleColor }}>
-            {config.screenshots_subtitle || 'Interface intuitiva feita para músicos de louvor profissionais.'}
+          <motion.p
+            variants={fadeUp}
+            custom={2}
+            className="max-w-lg mx-auto text-base"
+            style={{ color: subtitleColor }}
+          >
+            {config.screenshots_subtitle || "Interface intuitiva feita para músicos de louvor profissionais."}
           </motion.p>
         </motion.div>
 
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          variants={stagger}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+        >
           {shots.map((shot, i) => {
             const imgSrc = config[`${shot.key}_image`] || shot.defaultImg;
             const title = config[`${shot.key}_title`] || shot.defaultTitle;
             const desc = config[`${shot.key}_desc`] || shot.defaultDesc;
             return (
               <motion.div key={shot.key} variants={fadeUp} custom={i} className="group">
-                <div className="relative rounded-2xl overflow-hidden mb-4 shadow-lg"
-                  style={{ border: '1px solid hsl(0 0% 0% / 0.07)' }}>
+                <div
+                  className="relative rounded-2xl overflow-hidden mb-4 shadow-lg"
+                  style={{ border: "1px solid hsl(0 0% 0% / 0.07)" }}
+                >
                   <img
                     src={imgSrc}
                     alt={title}
                     className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    style={{ aspectRatio: '9/16', objectFit: 'cover', objectPosition: 'top' }}
+                    style={{ aspectRatio: "9/16", objectFit: "cover", objectPosition: "top" }}
                     loading="lazy"
                   />
                   {/* subtle overlay */}
-                  <div className="absolute inset-0 pointer-events-none rounded-2xl"
-                    style={{ background: 'linear-gradient(to bottom, transparent 60%, hsl(0 0% 0% / 0.12) 100%)' }} />
+                  <div
+                    className="absolute inset-0 pointer-events-none rounded-2xl"
+                    style={{ background: "linear-gradient(to bottom, transparent 60%, hsl(0 0% 0% / 0.12) 100%)" }}
+                  />
                 </div>
-                <h3 className="text-base font-bold mb-1.5" style={{ color: titleColor }}>{title}</h3>
-                <p className="text-sm leading-relaxed" style={{ color: subtitleColor }}>{desc}</p>
+                <h3 className="text-base font-bold mb-1.5" style={{ color: titleColor }}>
+                  {title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: subtitleColor }}>
+                  {desc}
+                </p>
               </motion.div>
             );
           })}
@@ -472,31 +686,64 @@ const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
 
 // Stats — dynamic styles (with optional image per stat)
 const Stats = ({ config }: { config: Record<string, string> }) => {
-  const bg = config.stats_bg || 'hsl(220 15% 7%)';
-  const valueColor = config.stats_value_color || 'hsl(0 0% 100%)';
-  const labelColor = config.stats_label_color || 'hsl(0 0% 100% / 0.4)';
+  const bg = config.stats_bg || "hsl(220 15% 7%)";
+  const valueColor = config.stats_value_color || "hsl(0 0% 100%)";
+  const labelColor = config.stats_label_color || "hsl(0 0% 100% / 0.4)";
 
   const stats = [
-    { value: config.stat_1_value || '12+', label: config.stat_1_label || 'Sons padrão inclusos', image: config.stat_1_image },
-    { value: config.stat_2_value || '∞', label: config.stat_2_label || 'Setlists por culto', image: config.stat_2_image },
-    { value: config.stat_3_value || 'AI', label: config.stat_3_label || 'Spotify integrado', image: config.stat_3_image },
-    { value: config.stat_4_value || 'PWA', label: config.stat_4_label || 'Instale no celular', image: config.stat_4_image },
+    {
+      value: config.stat_1_value || "12+",
+      label: config.stat_1_label || "Sons padrão inclusos",
+      image: config.stat_1_image,
+    },
+    {
+      value: config.stat_2_value || "∞",
+      label: config.stat_2_label || "Setlists por culto",
+      image: config.stat_2_image,
+    },
+    {
+      value: config.stat_3_value || "AI",
+      label: config.stat_3_label || "Spotify integrado",
+      image: config.stat_3_image,
+    },
+    {
+      value: config.stat_4_value || "PWA",
+      label: config.stat_4_label || "Instale no celular",
+      image: config.stat_4_image,
+    },
   ];
-  const pt = config.stats_pt ? `${config.stats_pt}px` : '64px';
-  const pb = config.stats_pb ? `${config.stats_pb}px` : '64px';
+  const pt = config.stats_pt ? `${config.stats_pt}px` : "64px";
+  const pb = config.stats_pb ? `${config.stats_pb}px` : "64px";
   return (
-    <section className="relative overflow-hidden" style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.stats_video_url} opacity={config.stats_video_opacity} fit={config.stats_video_fit} borderPos={config.stats_video_border_pos} borderWidth={config.stats_video_border_width} borderRadius={config.stats_video_border_radius} borderColor={config.stats_video_border_color} />
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }}
+    <section
+      className="relative overflow-hidden"
+      style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: "1rem", paddingRight: "1rem" }}
+    >
+      <SectionVideo
+        url={config.stats_video_url}
+        opacity={config.stats_video_opacity}
+        fit={config.stats_video_fit}
+        borderPos={config.stats_video_border_pos}
+        borderWidth={config.stats_video_border_width}
+        borderRadius={config.stats_video_border_radius}
+        borderColor={config.stats_video_border_color}
+      />
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
         variants={stagger}
-        className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+        className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center"
+      >
         {stats.map((stat, i) => (
           <motion.div key={stat.label} variants={fadeUp} custom={i} className="flex flex-col items-center">
-            {stat.image && (
-              <img src={stat.image} alt={stat.label} className="w-10 h-10 object-contain mb-3" />
-            )}
-            <div className="text-4xl sm:text-5xl font-black mb-2" style={{ color: valueColor }}>{stat.value}</div>
-            <div className="text-sm font-medium" style={{ color: labelColor }}>{stat.label}</div>
+            {stat.image && <img src={stat.image} alt={stat.label} className="w-10 h-10 object-contain mb-3" />}
+            <div className="text-4xl sm:text-5xl font-black mb-2" style={{ color: valueColor }}>
+              {stat.value}
+            </div>
+            <div className="text-sm font-medium" style={{ color: labelColor }}>
+              {stat.label}
+            </div>
           </motion.div>
         ))}
       </motion.div>
@@ -506,69 +753,127 @@ const Stats = ({ config }: { config: Record<string, string> }) => {
 
 // Features — dynamic styles
 const Features = ({
-  navigate, config, landingFeatures,
+  navigate,
+  config,
+  landingFeatures,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
   landingFeatures: LandingFeature[];
 }) => {
-  const bg = config.features_bg || 'hsl(0 0% 97%)';
-  const cardBg = config.features_card_bg || 'hsl(0 0% 100%)';
-  const cardBorder = config.features_card_border || 'hsl(0 0% 0% / 0.07)';
-  const titleColor = config.features_title_color || 'hsl(220 15% 10%)';
-  const subtitleColor = config.features_subtitle_color || 'hsl(220 15% 40%)';
+  const bg = config.features_bg || "hsl(0 0% 97%)";
+  const cardBg = config.features_card_bg || "hsl(0 0% 100%)";
+  const cardBorder = config.features_card_border || "hsl(0 0% 0% / 0.07)";
+  const titleColor = config.features_title_color || "hsl(220 15% 10%)";
+  const subtitleColor = config.features_subtitle_color || "hsl(220 15% 40%)";
 
-  const visible = landingFeatures.filter(f => f.enabled).sort((a, b) => a.sort_order - b.sort_order);
+  const visible = landingFeatures.filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order);
 
-  const pt = config.features_pt ? `${config.features_pt}px` : '80px';
-  const pb = config.features_pb ? `${config.features_pb}px` : '112px';
+  const pt = config.features_pt ? `${config.features_pt}px` : "80px";
+  const pb = config.features_pb ? `${config.features_pb}px` : "112px";
   return (
-    <section id="recursos" className="relative overflow-hidden" style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.features_video_url} opacity={config.features_video_opacity} fit={config.features_video_fit} borderPos={config.features_video_border_pos} borderWidth={config.features_video_border_width} borderRadius={config.features_video_border_radius} borderColor={config.features_video_border_color} />
+    <section
+      id="recursos"
+      className="relative overflow-hidden"
+      style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: "1rem", paddingRight: "1rem" }}
+    >
+      <SectionVideo
+        url={config.features_video_url}
+        opacity={config.features_video_opacity}
+        fit={config.features_video_fit}
+        borderPos={config.features_video_border_pos}
+        borderWidth={config.features_video_border_width}
+        borderRadius={config.features_video_border_radius}
+        borderColor={config.features_video_border_color}
+      />
       <div className="relative max-w-6xl mx-auto">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
-          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Recursos</motion.p>
-          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
-            {config.features_title || 'Tudo que você precisa para o louvor'}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="text-center mb-14"
+        >
+          <motion.p
+            variants={fadeUp}
+            custom={0}
+            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
+          >
+            Recursos
+          </motion.p>
+          <motion.h2
+            variants={fadeUp}
+            custom={1}
+            className="text-3xl sm:text-5xl font-extrabold mb-4"
+            style={{ color: titleColor }}
+          >
+            {config.features_title || "Tudo que você precisa para o louvor"}
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: subtitleColor }}>
-            {config.features_subtitle || 'Desenvolvido por músicos de louvor, para músicos de louvor.'}
+            {config.features_subtitle || "Desenvolvido por músicos de louvor, para músicos de louvor."}
           </motion.p>
         </motion.div>
 
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          variants={stagger}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
           {visible.map((f, i) => {
             const IconComponent = ICON_MAP[f.icon_name] ?? Sparkles;
             return (
-              <motion.div key={f.id} variants={fadeUp} custom={i}
+              <motion.div
+                key={f.id}
+                variants={fadeUp}
+                custom={i}
                 className="group rounded-2xl overflow-hidden hover:shadow-md transition-all duration-300"
-                style={{ border: `1px solid ${cardBorder}`, background: cardBg }}>
+                style={{ border: `1px solid ${cardBorder}`, background: cardBg }}
+              >
                 {f.image_url ? (
                   <div className="w-full h-32 overflow-hidden">
-                    <img src={f.image_url} alt={f.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img
+                      src={f.image_url}
+                      alt={f.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
                   </div>
                 ) : (
                   <div className="px-6 pt-6 pb-2">
-                    <div className="h-10 w-10 rounded-xl flex items-center justify-center mb-4 transition"
-                      style={{ background: 'hsl(var(--primary) / 0.08)' }}>
+                    <div
+                      className="h-10 w-10 rounded-xl flex items-center justify-center mb-4 transition"
+                      style={{ background: "hsl(var(--primary) / 0.08)" }}
+                    >
                       <IconComponent className="h-5 w-5 text-primary" />
                     </div>
                   </div>
                 )}
-                <div className={f.image_url ? 'px-6 pb-6 pt-4' : 'px-6 pb-6'}>
-                  <h3 className="font-semibold mb-2 text-sm" style={{ color: titleColor }}>{f.title}</h3>
-                  <p className="text-xs leading-relaxed" style={{ color: subtitleColor }}>{f.description}</p>
+                <div className={f.image_url ? "px-6 pb-6 pt-4" : "px-6 pb-6"}>
+                  <h3 className="font-semibold mb-2 text-sm" style={{ color: titleColor }}>
+                    {f.title}
+                  </h3>
+                  <p className="text-xs leading-relaxed" style={{ color: subtitleColor }}>
+                    {f.description}
+                  </p>
                 </div>
               </motion.div>
             );
           })}
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }}
-          className="mt-12 text-center">
-          <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
-            className="bg-foreground text-background hover:bg-foreground/85 text-base px-8 py-5 rounded-xl font-semibold">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.3 }}
+          className="mt-12 text-center"
+        >
+          <Button
+            size="lg"
+            onClick={() => navigate("/auth?mode=signup")}
+            className="bg-foreground text-background hover:bg-foreground/85 text-base px-8 py-5 rounded-xl font-semibold"
+          >
             Experimente grátis
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
@@ -579,46 +884,107 @@ const Features = ({
 };
 
 // Sound categories — dynamic styles
-const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
-  const bg = config.store_bg || 'hsl(220 15% 7%)';
-  const titleColor = config.store_title_color || 'hsl(0 0% 100%)';
-  const subtitleColor = config.store_subtitle_color || 'hsl(0 0% 100% / 0.45)';
+const SoundSection = ({
+  navigate,
+  config,
+}: {
+  navigate: ReturnType<typeof useNavigate>;
+  config: Record<string, string>;
+}) => {
+  const bg = config.store_bg || "hsl(220 15% 7%)";
+  const titleColor = config.store_title_color || "hsl(0 0% 100%)";
+  const subtitleColor = config.store_subtitle_color || "hsl(0 0% 100% / 0.45)";
 
   return (
-    <section id="sons" className="relative overflow-hidden" style={{ background: bg, paddingTop: config.store_pt ? `${config.store_pt}px` : '80px', paddingBottom: config.store_pb ? `${config.store_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.store_video_url} opacity={config.store_video_opacity} fit={config.store_video_fit} borderPos={config.store_video_border_pos} borderWidth={config.store_video_border_width} borderRadius={config.store_video_border_radius} borderColor={config.store_video_border_color} />
+    <section
+      id="sons"
+      className="relative overflow-hidden"
+      style={{
+        background: bg,
+        paddingTop: config.store_pt ? `${config.store_pt}px` : "80px",
+        paddingBottom: config.store_pb ? `${config.store_pb}px` : "112px",
+        paddingLeft: "1rem",
+        paddingRight: "1rem",
+      }}
+    >
+      <SectionVideo
+        url={config.store_video_url}
+        opacity={config.store_video_opacity}
+        fit={config.store_video_fit}
+        borderPos={config.store_video_border_pos}
+        borderWidth={config.store_video_border_width}
+        borderRadius={config.store_video_border_radius}
+        borderColor={config.store_video_border_color}
+      />
       <div className="relative max-w-5xl mx-auto">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
-          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Glory Store</motion.p>
-          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
-            {config.store_title || 'Uma biblioteca de sons para cada momento'}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="text-center mb-14"
+        >
+          <motion.p
+            variants={fadeUp}
+            custom={0}
+            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
+          >
+            Glory Store
+          </motion.p>
+          <motion.h2
+            variants={fadeUp}
+            custom={1}
+            className="text-3xl sm:text-5xl font-extrabold mb-4"
+            style={{ color: titleColor }}
+          >
+            {config.store_title || "Uma biblioteca de sons para cada momento"}
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: subtitleColor }}>
-            {config.store_subtitle || 'Sons de bateria secos, com reverb, loops, continuous pads, efeitos crescentes e muito mais.'}
+            {config.store_subtitle ||
+              "Sons de bateria secos, com reverb, loops, continuous pads, efeitos crescentes e muito mais."}
           </motion.p>
         </motion.div>
 
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
-          className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={stagger}
+          className="grid grid-cols-2 sm:grid-cols-3 gap-4"
+        >
           {DEFAULT_CATEGORIES.map((def, i) => {
             const name = config[`store_cat_${i}_name`] || def.name;
             const icon = config[`store_cat_${i}_emoji`] || def.icon;
-            const link = config[`store_cat_${i}_link`] || '/auth?mode=signup';
+            const link = config[`store_cat_${i}_link`] || "/auth?mode=signup";
             const catImage = config[`store_cat_${i}_image`];
             return (
-            <motion.div key={i} variants={fadeUp} custom={i}
-              className="group relative rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden"
-              style={{
-                border: `1px solid hsl(${def.color} / 0.2)`,
-                background: `linear-gradient(145deg, hsl(${def.color} / 0.08) 0%, ${bg} 100%)`,
-              }}
-              onClick={() => navigate(link)}>
-              {catImage && <img src={catImage} alt={name} className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" />}
-              <div className="relative text-3xl mb-3">{icon}</div>
-              <h3 className="relative font-bold text-lg mb-1" style={{ color: titleColor }}>{name}</h3>
-              <p className="relative text-xs" style={{ color: subtitleColor }}>Pack disponível na loja</p>
-              <div className="relative mt-2 h-1 w-8 rounded-full" style={{ background: `hsl(${def.color})` }} />
-            </motion.div>
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                custom={i}
+                className="group relative rounded-2xl p-6 hover:scale-[1.02] transition-all duration-300 cursor-pointer overflow-hidden"
+                style={{
+                  border: `1px solid hsl(${def.color} / 0.2)`,
+                  background: `linear-gradient(145deg, hsl(${def.color} / 0.08) 0%, ${bg} 100%)`,
+                }}
+                onClick={() => navigate(link)}
+              >
+                {catImage && (
+                  <img
+                    src={catImage}
+                    alt={name}
+                    className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity"
+                  />
+                )}
+                <div className="relative text-3xl mb-3">{icon}</div>
+                <h3 className="relative font-bold text-lg mb-1" style={{ color: titleColor }}>
+                  {name}
+                </h3>
+                <p className="relative text-xs" style={{ color: subtitleColor }}>
+                  Pack disponível na loja
+                </p>
+                <div className="relative mt-2 h-1 w-8 rounded-full" style={{ background: `hsl(${def.color})` }} />
+              </motion.div>
             );
           })}
         </motion.div>
@@ -629,37 +995,100 @@ const SoundSection = ({ navigate, config }: { navigate: ReturnType<typeof useNav
 
 // How it works — dynamic styles + texts
 const HowItWorks = ({ config }: { config: Record<string, string> }) => {
-  const bg = config.howitworks_bg || 'hsl(0 0% 97%)';
-  const titleColor = config.howitworks_title_color || 'hsl(220 15% 10%)';
-  const stepColor = config.howitworks_step_color || 'hsl(0 0% 0% / 0.06)';
-  const itemTitleColor = config.howitworks_item_title_color || 'hsl(220 15% 10%)';
-  const itemDescColor = config.howitworks_item_desc_color || 'hsl(220 15% 40%)';
-  const mainTitle = config.how_main_title || 'Do ensaio ao culto em 3 passos';
+  const bg = config.howitworks_bg || "hsl(0 0% 97%)";
+  const titleColor = config.howitworks_title_color || "hsl(220 15% 10%)";
+  const stepColor = config.howitworks_step_color || "hsl(0 0% 0% / 0.06)";
+  const itemTitleColor = config.howitworks_item_title_color || "hsl(220 15% 10%)";
+  const itemDescColor = config.howitworks_item_desc_color || "hsl(220 15% 40%)";
+  const mainTitle = config.how_main_title || "Do ensaio ao culto em 3 passos";
 
   const steps = [
-    { step: '01', title: config.how_step_1_title || 'Crie sua Setlist', desc: config.how_step_1_desc || 'Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.' },
-    { step: '02', title: config.how_step_2_title || 'Configure os Sons', desc: config.how_step_2_desc || 'Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.' },
-    { step: '03', title: config.how_step_3_title || 'Toque ao Vivo', desc: config.how_step_3_desc || 'No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.' },
+    {
+      step: "01",
+      title: config.how_step_1_title || "Crie sua Setlist",
+      desc:
+        config.how_step_1_desc ||
+        "Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.",
+    },
+    {
+      step: "02",
+      title: config.how_step_2_title || "Configure os Sons",
+      desc:
+        config.how_step_2_desc ||
+        "Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.",
+    },
+    {
+      step: "03",
+      title: config.how_step_3_title || "Toque ao Vivo",
+      desc:
+        config.how_step_3_desc ||
+        "No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.",
+    },
   ];
 
   return (
-    <section className="relative overflow-hidden" style={{ background: bg, paddingTop: config.howitworks_pt ? `${config.howitworks_pt}px` : '80px', paddingBottom: config.howitworks_pb ? `${config.howitworks_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.howitworks_video_url} opacity={config.howitworks_video_opacity} fit={config.howitworks_video_fit} borderPos={config.howitworks_video_border_pos} borderWidth={config.howitworks_video_border_width} borderRadius={config.howitworks_video_border_radius} borderColor={config.howitworks_video_border_color} />
+    <section
+      className="relative overflow-hidden"
+      style={{
+        background: bg,
+        paddingTop: config.howitworks_pt ? `${config.howitworks_pt}px` : "80px",
+        paddingBottom: config.howitworks_pb ? `${config.howitworks_pb}px` : "112px",
+        paddingLeft: "1rem",
+        paddingRight: "1rem",
+      }}
+    >
+      <SectionVideo
+        url={config.howitworks_video_url}
+        opacity={config.howitworks_video_opacity}
+        fit={config.howitworks_video_fit}
+        borderPos={config.howitworks_video_border_pos}
+        borderWidth={config.howitworks_video_border_width}
+        borderRadius={config.howitworks_video_border_radius}
+        borderColor={config.howitworks_video_border_color}
+      />
       <div className="relative max-w-4xl mx-auto">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
-          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Como funciona</motion.p>
-          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="text-center mb-14"
+        >
+          <motion.p
+            variants={fadeUp}
+            custom={0}
+            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
+          >
+            Como funciona
+          </motion.p>
+          <motion.h2
+            variants={fadeUp}
+            custom={1}
+            className="text-3xl sm:text-5xl font-extrabold mb-4"
+            style={{ color: titleColor }}
+          >
             {mainTitle}
           </motion.h2>
         </motion.div>
 
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={stagger}
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+        >
           {steps.map((item, i) => (
             <motion.div key={item.step} variants={fadeUp} custom={i} className="relative">
-              <div className="text-6xl font-black leading-none mb-3" style={{ color: stepColor }}>{item.step}</div>
-              <h3 className="text-lg font-bold mb-2" style={{ color: itemTitleColor }}>{item.title}</h3>
-              <p className="text-sm leading-relaxed" style={{ color: itemDescColor }}>{item.desc}</p>
+              <div className="text-6xl font-black leading-none mb-3" style={{ color: stepColor }}>
+                {item.step}
+              </div>
+              <h3 className="text-lg font-bold mb-2" style={{ color: itemTitleColor }}>
+                {item.title}
+              </h3>
+              <p className="text-sm leading-relaxed" style={{ color: itemDescColor }}>
+                {item.desc}
+              </p>
             </motion.div>
           ))}
         </motion.div>
@@ -670,94 +1099,191 @@ const HowItWorks = ({ config }: { config: Record<string, string> }) => {
 
 // Pricing — dynamic styles
 const Pricing = ({
-  navigate, config, pricing, features,
+  navigate,
+  config,
+  pricing,
+  features,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
   pricing: any[];
   features: any[];
 }) => {
-  if (config.show_pricing === 'false') return null;
+  if (config.show_pricing === "false") return null;
 
-  const bg = config.pricing_bg || 'hsl(220 15% 7%)';
-  const titleColor = config.pricing_title_color || 'hsl(0 0% 100%)';
-  const subtitleColor = config.pricing_subtitle_color || 'hsl(0 0% 100% / 0.45)';
-  const tierOrder = ['free', 'pro', 'master'];
+  const bg = config.pricing_bg || "hsl(220 15% 7%)";
+  const titleColor = config.pricing_title_color || "hsl(0 0% 100%)";
+  const subtitleColor = config.pricing_subtitle_color || "hsl(0 0% 100% / 0.45)";
+  const tierOrder = ["free", "pro", "master"];
 
   return (
-    <section id="planos" className="relative overflow-hidden" style={{ background: bg, paddingTop: config.pricing_pt ? `${config.pricing_pt}px` : '80px', paddingBottom: config.pricing_pb ? `${config.pricing_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.pricing_video_url} opacity={config.pricing_video_opacity} fit={config.pricing_video_fit} borderPos={config.pricing_video_border_pos} borderWidth={config.pricing_video_border_width} borderRadius={config.pricing_video_border_radius} borderColor={config.pricing_video_border_color} />
+    <section
+      id="planos"
+      className="relative overflow-hidden"
+      style={{
+        background: bg,
+        paddingTop: config.pricing_pt ? `${config.pricing_pt}px` : "80px",
+        paddingBottom: config.pricing_pb ? `${config.pricing_pb}px` : "112px",
+        paddingLeft: "1rem",
+        paddingRight: "1rem",
+      }}
+    >
+      <SectionVideo
+        url={config.pricing_video_url}
+        opacity={config.pricing_video_opacity}
+        fit={config.pricing_video_fit}
+        borderPos={config.pricing_video_border_pos}
+        borderWidth={config.pricing_video_border_width}
+        borderRadius={config.pricing_video_border_radius}
+        borderColor={config.pricing_video_border_color}
+      />
       <div className="relative max-w-5xl mx-auto">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={stagger} className="text-center mb-14">
-          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Planos</motion.p>
-          <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-4" style={{ color: titleColor }}>
-            {config.plans_title || 'Comece grátis. Cresça quando quiser.'}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={stagger}
+          className="text-center mb-14"
+        >
+          <motion.p
+            variants={fadeUp}
+            custom={0}
+            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
+          >
+            Planos
+          </motion.p>
+          <motion.h2
+            variants={fadeUp}
+            custom={1}
+            className="text-3xl sm:text-5xl font-extrabold mb-4"
+            style={{ color: titleColor }}
+          >
+            {config.plans_title || "Comece grátis. Cresça quando quiser."}
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: subtitleColor }}>
-            {config.plans_subtitle || 'Sem contrato, cancele quando quiser.'}
+            {config.plans_subtitle || "Sem contrato, cancele quando quiser."}
           </motion.p>
         </motion.div>
 
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-40px' }} variants={stagger}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          variants={stagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6"
+        >
           {tierOrder.map((tierKey, i) => {
-            const plan = pricing.find(p => p.tier === tierKey);
+            const plan = pricing.find((p) => p.tier === tierKey);
             if (!plan) return null;
-            const tierFeats = features.filter(f => f.tier === tierKey).sort((a: any, b: any) => a.sort_order - b.sort_order);
+            const tierFeats = features
+              .filter((f) => f.tier === tierKey)
+              .sort((a: any, b: any) => a.sort_order - b.sort_order);
 
             return (
-              <motion.div key={tierKey} variants={fadeUp} custom={i}
+              <motion.div
+                key={tierKey}
+                variants={fadeUp}
+                custom={i}
                 className="relative rounded-2xl p-7 sm:p-8 flex flex-col"
-                style={plan.highlight ? {
-                  background: 'hsl(0 0% 100%)',
-                  border: '2px solid hsl(0 0% 100%)',
-                  transform: 'scale(1.02)',
-                  boxShadow: '0 20px 60px hsl(0 0% 0% / 0.4)',
-                } : {
-                  border: '1px solid hsl(0 0% 100% / 0.1)',
-                  background: 'hsl(0 0% 100% / 0.03)',
-                }}>
+                style={
+                  plan.highlight
+                    ? {
+                        background: "hsl(0 0% 100%)",
+                        border: "2px solid hsl(0 0% 100%)",
+                        transform: "scale(1.02)",
+                        boxShadow: "0 20px 60px hsl(0 0% 0% / 0.4)",
+                      }
+                    : {
+                        border: "1px solid hsl(0 0% 100% / 0.1)",
+                        background: "hsl(0 0% 100% / 0.03)",
+                      }
+                }
+              >
                 {plan.badge_text && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full"
-                    style={{ background: 'hsl(var(--primary))', color: 'hsl(0 0% 100%)' }}>
+                  <span
+                    className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full"
+                    style={{ background: "hsl(var(--primary))", color: "hsl(0 0% 100%)" }}
+                  >
                     {plan.badge_text}
                   </span>
                 )}
                 <div className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
-                    {tierKey === 'master' && <Crown className="h-5 w-5" style={{ color: plan.highlight ? 'hsl(var(--primary))' : 'hsl(45 80% 55%)' }} />}
-                    {tierKey === 'pro' && <Zap className="h-5 w-5" style={{ color: plan.highlight ? 'hsl(var(--primary))' : 'hsl(262 75% 65%)' }} />}
-                    <h3 className="text-xl font-bold" style={{ color: plan.highlight ? 'hsl(220 15% 10%)' : 'hsl(0 0% 100%)' }}>{plan.name}</h3>
+                    {tierKey === "master" && (
+                      <Crown
+                        className="h-5 w-5"
+                        style={{ color: plan.highlight ? "hsl(var(--primary))" : "hsl(45 80% 55%)" }}
+                      />
+                    )}
+                    {tierKey === "pro" && (
+                      <Zap
+                        className="h-5 w-5"
+                        style={{ color: plan.highlight ? "hsl(var(--primary))" : "hsl(262 75% 65%)" }}
+                      />
+                    )}
+                    <h3
+                      className="text-xl font-bold"
+                      style={{ color: plan.highlight ? "hsl(220 15% 10%)" : "hsl(0 0% 100%)" }}
+                    >
+                      {plan.name}
+                    </h3>
                   </div>
-                  <div className="text-4xl font-black" style={{ color: plan.highlight ? 'hsl(220 15% 10%)' : 'hsl(0 0% 100%)' }}>
-                    {plan.price_brl === 0 ? 'Grátis' : `R$${Number(plan.price_brl).toFixed(2)}`}
-                    {plan.period && <span className="text-base font-normal ml-1" style={{ color: plan.highlight ? 'hsl(0 0% 0% / 0.4)' : 'hsl(0 0% 100% / 0.35)' }}>{plan.period}</span>}
+                  <div
+                    className="text-4xl font-black"
+                    style={{ color: plan.highlight ? "hsl(220 15% 10%)" : "hsl(0 0% 100%)" }}
+                  >
+                    {plan.price_brl === 0 ? "Grátis" : `R$${Number(plan.price_brl).toFixed(2)}`}
+                    {plan.period && (
+                      <span
+                        className="text-base font-normal ml-1"
+                        style={{ color: plan.highlight ? "hsl(0 0% 0% / 0.4)" : "hsl(0 0% 100% / 0.35)" }}
+                      >
+                        {plan.period}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <ul className="space-y-2.5 flex-1 mb-6">
                   {tierFeats.map((f: any) => (
-                    <li key={f.feature_key} className="flex items-start gap-2.5 text-sm"
-                      style={{ color: f.enabled ? (plan.highlight ? 'hsl(220 15% 15%)' : 'hsl(0 0% 100%)') : (plan.highlight ? 'hsl(0 0% 0% / 0.2)' : 'hsl(0 0% 100% / 0.2)') }}>
-                      {f.enabled
-                        ? <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: 'hsl(142 70% 50%)' }} />
-                        : <X className="h-4 w-4 shrink-0 mt-0.5" style={{ color: 'hsl(0 0% 50%)' }} />}
+                    <li
+                      key={f.feature_key}
+                      className="flex items-start gap-2.5 text-sm"
+                      style={{
+                        color: f.enabled
+                          ? plan.highlight
+                            ? "hsl(220 15% 15%)"
+                            : "hsl(0 0% 100%)"
+                          : plan.highlight
+                            ? "hsl(0 0% 0% / 0.2)"
+                            : "hsl(0 0% 100% / 0.2)",
+                      }}
+                    >
+                      {f.enabled ? (
+                        <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(142 70% 50%)" }} />
+                      ) : (
+                        <X className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(0 0% 50%)" }} />
+                      )}
                       {f.feature_label}
                     </li>
                   ))}
                 </ul>
 
                 <Button
-                  onClick={() => navigate('/auth?mode=signup')}
+                  onClick={() => navigate("/auth?mode=signup")}
                   className="w-full rounded-xl py-5 font-semibold"
-                  style={plan.highlight ? {
-                    background: 'hsl(220 15% 10%)',
-                    color: 'hsl(0 0% 100%)',
-                  } : {
-                    background: 'hsl(0 0% 100% / 0.1)',
-                    color: 'hsl(0 0% 100%)',
-                    border: '1px solid hsl(0 0% 100% / 0.15)',
-                  }}
+                  style={
+                    plan.highlight
+                      ? {
+                          background: "hsl(220 15% 10%)",
+                          color: "hsl(0 0% 100%)",
+                        }
+                      : {
+                          background: "hsl(0 0% 100% / 0.1)",
+                          color: "hsl(0 0% 100%)",
+                          border: "1px solid hsl(0 0% 100% / 0.15)",
+                        }
+                  }
                 >
                   {plan.cta_text}
                 </Button>
@@ -771,33 +1297,81 @@ const Pricing = ({
 };
 
 // CTA Final — dynamic styles
-const FinalCTA = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
-  const bg = config.cta_bg || 'hsl(0 0% 97%)';
-  const cardBg = config.cta_card_bg || 'hsl(0 0% 100%)';
-  const titleColor = config.cta_title_color || 'hsl(220 15% 10%)';
-  const subtitleColor = config.cta_subtitle_color || 'hsl(220 15% 40%)';
+const FinalCTA = ({
+  navigate,
+  config,
+}: {
+  navigate: ReturnType<typeof useNavigate>;
+  config: Record<string, string>;
+}) => {
+  const bg = config.cta_bg || "hsl(0 0% 97%)";
+  const cardBg = config.cta_card_bg || "hsl(0 0% 100%)";
+  const titleColor = config.cta_title_color || "hsl(220 15% 10%)";
+  const subtitleColor = config.cta_subtitle_color || "hsl(220 15% 40%)";
 
   return (
-    <section className="relative overflow-hidden" style={{ background: bg, paddingTop: config.cta_pt ? `${config.cta_pt}px` : '80px', paddingBottom: config.cta_pb ? `${config.cta_pb}px` : '112px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.cta_video_url} opacity={config.cta_video_opacity} fit={config.cta_video_fit} borderPos={config.cta_video_border_pos} borderWidth={config.cta_video_border_width} borderRadius={config.cta_video_border_radius} borderColor={config.cta_video_border_color} />
-      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
-        className="relative max-w-3xl mx-auto text-center">
-        <motion.div variants={fadeUp} custom={0}
+    <section
+      className="relative overflow-hidden"
+      style={{
+        background: bg,
+        paddingTop: config.cta_pt ? `${config.cta_pt}px` : "80px",
+        paddingBottom: config.cta_pb ? `${config.cta_pb}px` : "112px",
+        paddingLeft: "1rem",
+        paddingRight: "1rem",
+      }}
+    >
+      <SectionVideo
+        url={config.cta_video_url}
+        opacity={config.cta_video_opacity}
+        fit={config.cta_video_fit}
+        borderPos={config.cta_video_border_pos}
+        borderWidth={config.cta_video_border_width}
+        borderRadius={config.cta_video_border_radius}
+        borderColor={config.cta_video_border_color}
+      />
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={stagger}
+        className="relative max-w-3xl mx-auto text-center"
+      >
+        <motion.div
+          variants={fadeUp}
+          custom={0}
           className="relative rounded-3xl p-10 sm:p-16 overflow-hidden"
-          style={{ border: '1px solid hsl(0 0% 0% / 0.07)', background: cardBg }}>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full pointer-events-none"
-            style={{ background: 'hsl(var(--primary) / 0.06)', filter: 'blur(100px)' }} />
+          style={{ border: "1px solid hsl(0 0% 0% / 0.07)", background: cardBg }}
+        >
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full pointer-events-none"
+            style={{ background: "hsl(var(--primary) / 0.06)", filter: "blur(100px)" }}
+          />
           <div className="relative">
-            <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">Glory Pads</motion.p>
-            <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-5xl font-extrabold mb-5" style={{ color: titleColor }}>
-              {config.cta_title || 'Pronto para transformar seu louvor?'}
+            <motion.p
+              variants={fadeUp}
+              custom={0}
+              className="text-xs font-semibold uppercase tracking-widest text-primary mb-4"
+            >
+              Glory Pads
+            </motion.p>
+            <motion.h2
+              variants={fadeUp}
+              custom={1}
+              className="text-3xl sm:text-5xl font-extrabold mb-5"
+              style={{ color: titleColor }}
+            >
+              {config.cta_title || "Pronto para transformar seu louvor?"}
             </motion.h2>
             <motion.p variants={fadeUp} custom={2} className="mb-8 max-w-md mx-auto" style={{ color: subtitleColor }}>
-              {config.cta_subtitle || 'Junte-se a músicos que já usam o Glory Pads para criar momentos de adoração inesquecíveis.'}
+              {config.cta_subtitle ||
+                "Junte-se a músicos que já usam o Glory Pads para criar momentos de adoração inesquecíveis."}
             </motion.p>
             <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button size="lg" onClick={() => navigate('/auth?mode=signup')}
-                className="bg-foreground text-background hover:bg-foreground/85 text-lg px-10 py-6 rounded-xl font-bold">
+              <Button
+                size="lg"
+                onClick={() => navigate("/auth?mode=signup")}
+                className="bg-foreground text-background hover:bg-foreground/85 text-lg px-10 py-6 rounded-xl font-bold"
+              >
                 Começar agora — é grátis
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -811,21 +1385,39 @@ const FinalCTA = ({ navigate, config }: { navigate: ReturnType<typeof useNavigat
 
 // Footer — dynamic styles + texts + links
 const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
-  const bg = config.footer_bg || 'hsl(220 15% 5%)';
-  const textColor = config.footer_text_color || 'hsl(0 0% 100% / 0.35)';
-  const tagline = config.footer_tagline || 'A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.';
-  const copyright = config.footer_copyright || 'Glory Pads';
+  const bg = config.footer_bg || "hsl(220 15% 5%)";
+  const textColor = config.footer_text_color || "hsl(0 0% 100% / 0.35)";
+  const tagline = config.footer_tagline || "A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.";
+  const copyright = config.footer_copyright || "Glory Pads";
   const logoUrl = config.footer_logo_url;
 
   const footerLinks = [
-    { label: config.footer_link_0_label || 'Recursos', href: config.footer_link_0_href || '#recursos' },
-    { label: config.footer_link_1_label || 'Planos', href: config.footer_link_1_href || '#planos' },
-    { label: config.footer_link_2_label || 'Glory Store', href: config.footer_link_2_href || '#sons' },
+    { label: config.footer_link_0_label || "Recursos", href: config.footer_link_0_href || "#recursos" },
+    { label: config.footer_link_1_label || "Planos", href: config.footer_link_1_href || "#planos" },
+    { label: config.footer_link_2_label || "Glory Store", href: config.footer_link_2_href || "#sons" },
   ];
 
   return (
-    <footer className="relative overflow-hidden border-t" style={{ background: bg, borderColor: 'hsl(0 0% 100% / 0.06)', paddingTop: config.footer_pt ? `${config.footer_pt}px` : '40px', paddingBottom: config.footer_pb ? `${config.footer_pb}px` : '40px', paddingLeft: '1rem', paddingRight: '1rem' }}>
-      <SectionVideo url={config.footer_video_url} opacity={config.footer_video_opacity} fit={config.footer_video_fit} borderPos={config.footer_video_border_pos} borderWidth={config.footer_video_border_width} borderRadius={config.footer_video_border_radius} borderColor={config.footer_video_border_color} />
+    <footer
+      className="relative overflow-hidden border-t"
+      style={{
+        background: bg,
+        borderColor: "hsl(0 0% 100% / 0.06)",
+        paddingTop: config.footer_pt ? `${config.footer_pt}px` : "40px",
+        paddingBottom: config.footer_pb ? `${config.footer_pb}px` : "40px",
+        paddingLeft: "1rem",
+        paddingRight: "1rem",
+      }}
+    >
+      <SectionVideo
+        url={config.footer_video_url}
+        opacity={config.footer_video_opacity}
+        fit={config.footer_video_fit}
+        borderPos={config.footer_video_border_pos}
+        borderWidth={config.footer_video_border_width}
+        borderRadius={config.footer_video_border_radius}
+        borderColor={config.footer_video_border_color}
+      />
       <div className="relative max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row items-start justify-between gap-8 mb-8">
           <div>
@@ -835,26 +1427,49 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
               ) : (
                 <img src={logoLight} alt={copyright} className="h-7 w-auto" />
               )}
-              <span className="font-bold" style={{ color: 'hsl(0 0% 100%)' }}>{copyright}</span>
+              <span className="font-bold" style={{ color: "hsl(0 0% 100%)" }}>
+                {copyright}
+              </span>
             </div>
-            <p className="text-sm max-w-xs" style={{ color: textColor }}>{tagline}</p>
+            <p className="text-sm max-w-xs" style={{ color: textColor }}>
+              {tagline}
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-x-12 gap-y-2 text-sm">
-            {footerLinks.map(l => (
-              <a key={l.label} href={l.href} className="transition" style={{ color: textColor }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'hsl(0 0% 100%)')}
-                onMouseLeave={e => (e.currentTarget.style.color = textColor)}>
+            {footerLinks.map((l) => (
+              <a
+                key={l.label}
+                href={l.href}
+                className="transition"
+                style={{ color: textColor }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "hsl(0 0% 100%)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = textColor)}
+              >
                 {l.label}
               </a>
             ))}
-            <button onClick={() => navigate('/auth')} className="text-left transition" style={{ color: textColor }}>Entrar</button>
-            <button onClick={() => navigate('/auth?mode=signup')} className="text-left transition" style={{ color: textColor }}>Criar conta</button>
-            <a href="/install" className="transition" style={{ color: textColor }}>Instalar app</a>
+            <button onClick={() => navigate("/auth")} className="text-left transition" style={{ color: textColor }}>
+              Entrar
+            </button>
+            <button
+              onClick={() => navigate("/auth?mode=signup")}
+              className="text-left transition"
+              style={{ color: textColor }}
+            >
+              Criar conta
+            </button>
+            <a href="/install" className="transition" style={{ color: textColor }}>
+              Instalar app
+            </a>
           </div>
         </div>
-        <div className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"
-          style={{ borderColor: 'hsl(0 0% 100% / 0.06)', color: textColor }}>
-          <p>© {new Date().getFullYear()} {copyright}. Todos os direitos reservados.</p>
+        <div
+          className="border-t pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs"
+          style={{ borderColor: "hsl(0 0% 100% / 0.06)", color: textColor }}
+        >
+          <p>
+            © {new Date().getFullYear()} {copyright}. Todos os direitos reservados.
+          </p>
           <p>Feito com ❤️ para músicos de louvor</p>
         </div>
       </div>
@@ -868,11 +1483,19 @@ const Landing = () => {
   useBodyScroll();
   const { config, pricing, features, landingFeatures, loading } = useLandingConfig();
 
-  const darkColor = config.divider_dark_color || 'hsl(220 15% 7%)';
-  const hasAnnouncement = config.announcement_enabled === 'true' && !!config.announcement_text;
+  const darkColor = config.divider_dark_color || "hsl(220 15% 7%)";
+  const hasAnnouncement = config.announcement_enabled === "true" && !!config.announcement_text;
 
   return (
-    <div className="overflow-y-auto overflow-x-hidden">
+    <div
+      className="overflow-x-hidden"
+      style={{
+        minHeight: "100vh",
+        height: "100%",
+        backgroundColor: config?.hero_bg || "#fff",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
       <AnnouncementBar config={config} />
       <Nav navigate={navigate} config={config} hasAnnouncement={hasAnnouncement} />
 
@@ -910,9 +1533,7 @@ const Landing = () => {
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK pricing (conditional) */}
-      {!loading && (
-        <Pricing navigate={navigate} config={config} pricing={pricing} features={features} />
-      )}
+      {!loading && <Pricing navigate={navigate} config={config} pricing={pricing} features={features} />}
 
       {/* dark → white gradient */}
       <Divider fromLight={false} darkColor={darkColor} />
