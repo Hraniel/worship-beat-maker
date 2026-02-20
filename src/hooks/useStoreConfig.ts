@@ -14,6 +14,7 @@ const DEFAULTS: StoreConfigMap = {
   search_placeholder: 'Buscar packs por nome ou descrição...',
   filter_labels: '{"all":"Todos","purchased":"Adquiridos","available":"Disponíveis","removed":"Removidos"}',
   categories: '[]',
+  text_colors: '{"store_title_color":"#ffffff","store_subtitle_color":"#a1a1aa","library_title_color":"#ffffff","active_label_color":"#a78bfa","removed_label_color":"#f87171","search_placeholder_color":"#71717a"}',
 };
 
 export function useStoreConfig() {
