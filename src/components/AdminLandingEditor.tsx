@@ -222,6 +222,7 @@ const TAB_KEYS: Record<string, string[]> = {
     'hero_badge', 'hero_title', 'hero_subtitle',
     'hero_bg', 'hero_title_color', 'hero_subtitle_color', 'hero_badge_bg', 'hero_badge_color',
     'hero_title_size', 'hero_pt', 'hero_pb',
+    'hero_video_url', 'hero_video_opacity', 'hero_video_fit',
   ],
   textos: [
     'features_title', 'features_subtitle', 'store_title', 'store_subtitle',
@@ -672,6 +673,98 @@ const AdminLandingEditor: React.FC = () => {
                 </select>
               </div>
             ))}
+          </div>
+
+          {/* Vídeo de Fundo */}
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>🎬 Vídeo de Fundo</p>
+            <p className="text-[9px]" style={mutedStyle}>
+              Adicione um vídeo em loop atrás do Hero. Tamanho recomendado: <strong>1920×1080px (16:9)</strong>, formato <strong>MP4</strong>, máximo <strong>10MB</strong>. 
+              Vídeos curtos (5–15s) e sem áudio funcionam melhor.
+            </p>
+
+            {/* Video URL / Upload */}
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={mutedStyle}>URL do Vídeo</label>
+              <div className="flex gap-2">
+                <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                  value={getVal('hero_video_url')}
+                  onChange={e => setVal('hero_video_url', e.target.value)}
+                  onBlur={() => saveKey('hero_video_url')}
+                  placeholder="https://... ou faça upload" />
+                <button
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'video/mp4,video/webm';
+                    input.onchange = async (e: any) => {
+                      const file = e.target?.files?.[0];
+                      if (!file) return;
+                      if (file.size > 15 * 1024 * 1024) { toast.error('Vídeo muito grande (máx 15MB)'); return; }
+                      setSaving('hero_video_url');
+                      try {
+                        const ext = file.name.split('.').pop() || 'mp4';
+                        const path = `landing/hero-video-${Date.now()}.${ext}`;
+                        const { error } = await supabase.storage.from('landing-assets').upload(path, file, { upsert: true });
+                        if (error) throw error;
+                        const { data } = supabase.storage.from('landing-assets').getPublicUrl(path);
+                        setVal('hero_video_url', data.publicUrl);
+                        await saveKey('hero_video_url');
+                        toast.success('Vídeo enviado!');
+                      } catch (err: any) {
+                        toast.error(err.message || 'Erro ao enviar vídeo');
+                      } finally {
+                        setSaving(null);
+                      }
+                    };
+                    input.click();
+                  }}
+                  disabled={saving === 'hero_video_url'}
+                  className="shrink-0 px-2.5 h-8 rounded-lg text-xs flex items-center gap-1 transition"
+                  style={{ background: 'hsl(262 75% 55% / 0.2)', color: 'hsl(262 75% 65%)' }}>
+                  {saving === 'hero_video_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : '↑'}
+                  Upload
+                </button>
+              </div>
+            </div>
+
+            {/* Preview */}
+            {getVal('hero_video_url') && (
+              <div className="space-y-2">
+                <video src={getVal('hero_video_url')} className="w-full h-32 object-cover rounded-lg" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }}
+                  autoPlay muted loop playsInline />
+                <button onClick={() => { setVal('hero_video_url', ''); saveKey('hero_video_url'); }}
+                  className="text-[10px] px-2 py-1 rounded-lg transition"
+                  style={{ background: 'hsl(0 70% 50% / 0.15)', color: 'hsl(0 70% 60%)' }}>
+                  Remover vídeo
+                </button>
+              </div>
+            )}
+
+            {/* Opacity */}
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>
+                Opacidade do Vídeo: {Math.round(parseFloat(getVal('hero_video_opacity') || '0.15') * 100)}%
+              </label>
+              <input type="range" min={0} max={1} step={0.05}
+                value={parseFloat(getVal('hero_video_opacity') || '0.15')}
+                onChange={e => setVal('hero_video_opacity', e.target.value)}
+                onMouseUp={() => saveKey('hero_video_opacity')}
+                onTouchEnd={() => saveKey('hero_video_opacity')}
+                className="w-full h-1.5 rounded-full accent-violet-500" />
+            </div>
+
+            {/* Object fit */}
+            <div>
+              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Enquadramento</label>
+              <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                value={getVal('hero_video_fit') || 'cover'}
+                onChange={e => { setVal('hero_video_fit', e.target.value); saveKey('hero_video_fit'); }}>
+                <option value="cover" style={{ background: 'hsl(220 15% 12%)' }}>Cover (preenche a área, corta bordas)</option>
+                <option value="contain" style={{ background: 'hsl(220 15% 12%)' }}>Contain (mostra todo o vídeo)</option>
+                <option value="fill" style={{ background: 'hsl(220 15% 12%)' }}>Fill (estica para preencher)</option>
+              </select>
+            </div>
           </div>
         </div>
       )}
