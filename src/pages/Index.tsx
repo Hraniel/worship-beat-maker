@@ -1049,7 +1049,6 @@ const Index = () => {
       className="flex flex-col bg-background overflow-hidden"
       style={{
         height: "100%",
-        paddingTop: "env(safe-area-inset-top, 0px)",
         paddingLeft: "env(safe-area-inset-left, 0px)",
         paddingRight: "env(safe-area-inset-right, 0px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -1057,6 +1056,11 @@ const Index = () => {
       }}
       onPointerDown={initAudio}
     >
+      {/* Safe-area top bar — matches header color to avoid black strip */}
+      <div
+        className={`shrink-0 ${!focusMode && !currentSongId ? "bg-primary/10" : "bg-card"}`}
+        style={{ height: "env(safe-area-inset-top, 0px)" }}
+      />
       {/* Performance Mode overlay */}
       {performanceModeOpen && (
         <PerformanceMode
