@@ -31,6 +31,7 @@ const Metronome: React.FC<MetronomeProps> = ({
   const [editKeyValue, setEditKeyValue] = useState('');
   const keyInputRef = useRef<HTMLInputElement>(null);
   const [currentBeat, setCurrentBeat] = useState(0);
+  const [beatTick, setBeatTick] = useState(0);
   const [localBpm, setLocalBpm] = useState(bpm);
   const [editingBpm, setEditingBpm] = useState(false);
   const [editBpmValue, setEditBpmValue] = useState('');
@@ -89,6 +90,7 @@ const Metronome: React.FC<MetronomeProps> = ({
   useEffect(() => {
     const handler = (beat: number) => {
       setCurrentBeat(beat);
+      setBeatTick(t => t + 1);
       onBeat?.(beat);
       // Apply pending BPM on beat 0
       if (beat === 0 && pendingBpmRef.current !== null) {
@@ -215,12 +217,12 @@ const Metronome: React.FC<MetronomeProps> = ({
         <div className="flex gap-1 ml-auto">
           {Array.from({ length: beatsPerMeasure }).map((_, i) => (
             <div
-              key={i}
-              className={`w-2 h-2 rounded-full transition-all ${
+              key={isPlaying && currentBeat === i ? `${i}-${beatTick}` : i}
+              className={`w-2 h-2 rounded-full transition-colors ${
                 isPlaying && currentBeat === i
                   ? i === 0
-                    ? 'bg-primary scale-125 animate-beat-flash'
-                    : 'bg-foreground/70 scale-110 animate-beat-flash'
+                    ? 'bg-primary animate-beat-flash'
+                    : 'bg-foreground/70 animate-beat-flash'
                   : 'bg-muted-foreground/20'
               }`}
             />
