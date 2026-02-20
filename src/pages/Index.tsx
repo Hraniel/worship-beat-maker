@@ -1257,7 +1257,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-visible'}`} style={{ paddingBottom: isTablet || typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'env(safe-area-inset-bottom, 0px)' : undefined }}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden'}`} style={{ paddingBottom: isTablet || typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'env(safe-area-inset-bottom, 0px)' : undefined }}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1496,7 +1496,7 @@ const Index = () => {
               </div>
 
               {/* Page content — Metronome always mounted to keep audio alive */}
-              <div className="flex-1 overflow-visible">
+              <div className="flex-1 min-h-0 overflow-y-auto">
 
                 {/* === MIX PAGE === */}
                 <div className={footerPage === 0 ? 'h-full flex flex-col' : 'hidden'}>
