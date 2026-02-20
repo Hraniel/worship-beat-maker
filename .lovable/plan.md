@@ -1,92 +1,79 @@
 
 
-## Editor Completo da Glory Store no Painel Administrativo
+## Editar Textos e Cores da Comunidade e Rodapé no Painel Admin
 
 ### Resumo
 
-Criar a tabela `store_config`, um hook para consumir os dados, um componente editor completo e integrar tudo no painel admin e no Dashboard.
+Expandir o `AdminStoreEditor` com duas novas secoes: uma para os textos/cores da secao "Comunidade" e outra para o rodape da pagina da loja. Tambem atualizar o `CommunitySuggestions` e o `Dashboard` para consumir esses valores dinamicamente.
 
-### Passo 1 -- Tabela `store_config`
+### Novas config keys no `store_config`
 
-Criar via migracao SQL:
+Adicionar via seed SQL as seguintes chaves:
 
-```text
-store_config
-  - id (uuid, PK, default gen_random_uuid())
-  - config_key (text, UNIQUE, NOT NULL)
-  - config_value (text, NOT NULL)
-  - updated_at (timestamptz, default now())
-```
+**Comunidade:**
+- `community_title` = "Comunidade — Proximas Atualizacoes"
+- `community_subtitle` = "Vote nas ideias que voce quer ver no Glory Pads. Sua voz molda o app."
+- `community_button_label` = "Sugerir ideia"
+- `community_empty_text` = "Nenhuma sugestao ainda. Seja o primeiro!"
+- `community_login_text` = "Faca login para curtir as sugestoes que voce quer ver no app."
 
-RLS:
-- Admins: ALL (usando `has_role(auth.uid(), 'admin')`)
-- Qualquer um: SELECT (true)
+**Rodape:**
+- `footer_text` = "Glory Pads -- Feito com amor para adoradores."
+- `footer_links` = JSON com links customizaveis (ex: Termos, Privacidade, Contato)
 
-Trigger `update_updated_at_column` para auto-atualizar `updated_at`.
+**Cores (adicionadas ao JSON `text_colors` existente):**
+- `community_title_color` = "#111827"
+- `community_subtitle_color` = "#6b7280"
+- `community_button_color` = "#111827"
+- `footer_text_color` = "#9ca3af"
+- `footer_bg_color` = "#f8f8fa"
 
-Seed inicial com valores padrao: `store_title`, `store_subtitle`, `library_title`, `library_active_label`, `library_removed_label`, `search_placeholder`, `filter_labels` (JSON), `categories` (JSON array com os 6 grupos atuais do CATEGORY_GROUPS).
+### Passo 1 -- Migracao SQL
 
-### Passo 2 -- Hook `useStoreConfig.ts`
+Inserir as novas config keys com valores padrao na tabela `store_config` (INSERT com ON CONFLICT DO NOTHING para nao sobrescrever dados existentes).
 
-Mesmo padrao do `useLandingConfig.ts`:
-- Busca todas as rows de `store_config`
-- Retorna um mapa `Record<string, string>` com fallback para valores hardcoded
-- Helper `getJSON(key)` para parsear valores JSON (categorias, filtros)
-- Funcao `refetch` para recarregar apos salvar
+### Passo 2 -- Atualizar `useStoreConfig.ts`
 
-### Passo 3 -- Componente `AdminStoreEditor.tsx`
+Adicionar os novos defaults ao mapa DEFAULTS para garantir fallback caso as keys nao existam no banco.
 
-Editor com secoes usando Accordion (mesmo padrao visual do AdminLandingEditor):
+### Passo 3 -- Expandir `AdminStoreEditor.tsx`
 
-**Secao "Textos da Loja":**
-- Campo: Titulo da loja (store_title)
-- Campo: Subtitulo (store_subtitle)
-- Campo: Titulo "Minha Biblioteca" (library_title)
-- Campo: Label "Ativos" (library_active_label)
-- Campo: Label "Removidos" (library_removed_label)
-- Campo: Placeholder de busca (search_placeholder)
-- Botao "Salvar Textos"
+Adicionar duas novas secoes ao editor:
 
-**Secao "Filtros":**
-- 4 campos para os labels dos filtros (Todos, Adquiridos, Disponiveis, Removidos)
-- Botao "Salvar Filtros"
+**Secao "Comunidade":**
+- Campo: Titulo da comunidade + color picker
+- Campo: Subtitulo + color picker
+- Campo: Label do botao "Sugerir" + color picker
+- Campo: Texto estado vazio
+- Campo: Texto login
+- Botao "Salvar Comunidade"
 
-**Secao "Categorias":**
-- Lista de grupos de categorias com drag-and-drop para reordenar
-- Cada grupo: nome, icone (select com icones Lucide), subcategorias (chips editaveis)
-- Botoes para adicionar novo grupo, remover grupo, adicionar/remover subcategoria
-- Botao "Salvar Categorias"
+**Secao "Rodape":**
+- Campo: Texto do rodape + color picker
+- Campo: Cor de fundo do rodape
+- Campo: Links do rodape (JSON editavel com label + url, adicionar/remover)
+- Botao "Salvar Rodape"
 
-Estilo visual: gradientes slate/indigo consistentes com o restante do admin.
+Mesmo padrao visual das secoes existentes (color pickers inline, preview de cor).
 
-### Passo 4 -- Nova aba no AdminPackManager
+### Passo 4 -- Atualizar `CommunitySuggestions.tsx`
 
-Adicionar `'store'` ao tipo de `activeTab` e uma nova entrada na lista de tabs:
-```text
-{ key: 'store', label: '🏪 Loja' }
-```
-Renderizar `<AdminStoreEditor />` quando `activeTab === 'store'`.
+- Importar `useStoreConfig`
+- Substituir todos os textos hardcoded pelos valores dinamicos do hook
+- Aplicar cores dinamicas via `style={{ color: ... }}`
 
-### Passo 5 -- Atualizar Dashboard.tsx
+### Passo 5 -- Adicionar Rodape ao `Dashboard.tsx`
 
-Importar `useStoreConfig` e substituir:
-- `"Glory Store"` -> `storeConfig.store_title`
-- `"Descubra novos sons..."` -> `storeConfig.store_subtitle`
-- `"Minha Biblioteca"` -> `storeConfig.library_title`
-- Labels "Ativos"/"Removidos" -> valores dinamicos
-- Placeholder de busca -> valor dinamico
-- Labels dos filtros (Todos, Adquiridos, Disponiveis, Removidos) -> valores dinamicos
-- `CATEGORY_GROUPS` e `MOBILE_CATEGORIES` -> construidos a partir do JSON `categories` do banco, com fallback para os arrays hardcoded atuais
+- Renderizar um rodape abaixo de `<CommunitySuggestions />` com texto e links dinamicos
+- Aplicar cores de texto e fundo vindas do `store_config`
 
 ### Detalhes Tecnicos
 
-**Arquivos criados:**
-- `src/hooks/useStoreConfig.ts`
-- `src/components/AdminStoreEditor.tsx`
-
 **Arquivos modificados:**
-- `src/components/AdminPackManager.tsx` (nova aba + import)
-- `src/pages/Dashboard.tsx` (textos dinamicos)
+- `src/hooks/useStoreConfig.ts` -- novos defaults
+- `src/components/AdminStoreEditor.tsx` -- 2 novas secoes (Comunidade + Rodape)
+- `src/components/CommunitySuggestions.tsx` -- textos e cores dinamicos
+- `src/pages/Dashboard.tsx` -- rodape dinamico
 
-**Migracao SQL:** 1 migracao para tabela + RLS + trigger + seed
+**Migracao SQL:** INSERT de novas config keys com ON CONFLICT DO NOTHING
 
