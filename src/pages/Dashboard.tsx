@@ -643,6 +643,34 @@ const Dashboard = () => {
 
         {/* Community Suggestions */}
         <CommunitySuggestions />
+
+        {/* Dynamic Footer */}
+        {(() => {
+          const textColors = getJSON<Record<string, string>>('text_colors', {});
+          const footerLinks = getJSON<{ label: string; url: string }[]>('footer_links', []);
+          const footerText = sc('footer_text');
+          return (
+            <footer
+              className="mt-12 -mx-4 px-4 py-8 text-center"
+              style={{ backgroundColor: textColors.footer_bg_color || '#f8f8fa' }}
+            >
+              <p className="text-sm" style={{ color: textColors.footer_text_color || '#9ca3af' }}>
+                {footerText}
+              </p>
+              {footerLinks.length > 0 && (
+                <div className="flex items-center justify-center gap-4 mt-3">
+                  {footerLinks.map((link, idx) => (
+                    <a key={idx} href={link.url}
+                      className="text-xs underline hover:opacity-80 transition-opacity"
+                      style={{ color: textColors.footer_text_color || '#9ca3af' }}>
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              )}
+            </footer>
+          );
+        })()}
       </main>
     </div>
   );

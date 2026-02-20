@@ -14,7 +14,14 @@ const DEFAULTS: StoreConfigMap = {
   search_placeholder: 'Buscar packs por nome ou descrição...',
   filter_labels: '{"all":"Todos","purchased":"Adquiridos","available":"Disponíveis","removed":"Removidos"}',
   categories: '[]',
-  text_colors: '{"store_title_color":"#ffffff","store_subtitle_color":"#a1a1aa","library_title_color":"#ffffff","active_label_color":"#a78bfa","removed_label_color":"#f87171","search_placeholder_color":"#71717a"}',
+  text_colors: '{"store_title_color":"#ffffff","store_subtitle_color":"#a1a1aa","library_title_color":"#ffffff","active_label_color":"#a78bfa","removed_label_color":"#f87171","search_placeholder_color":"#71717a","community_title_color":"#111827","community_subtitle_color":"#6b7280","community_button_color":"#111827","footer_text_color":"#9ca3af","footer_bg_color":"#f8f8fa"}',
+  community_title: 'Comunidade — Próximas Atualizações',
+  community_subtitle: 'Vote nas ideias que você quer ver no Glory Pads. Sua voz molda o app.',
+  community_button_label: 'Sugerir ideia',
+  community_empty_text: 'Nenhuma sugestão ainda. Seja o primeiro!',
+  community_login_text: 'Faça login para curtir as sugestões que você quer ver no app.',
+  footer_text: 'Glory Pads — Feito com amor para adoradores.',
+  footer_links: '[{"label":"Termos","url":"/termos"},{"label":"Privacidade","url":"/privacidade"},{"label":"Contato","url":"mailto:contato@glorypads.com"}]',
 };
 
 export function useStoreConfig() {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useStoreConfig } from '@/hooks/useStoreConfig';
 import { toast } from 'sonner';
 import { Heart, Lightbulb, Plus, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,12 +18,15 @@ interface Suggestion {
 
 const CommunitySuggestions = () => {
   const { user } = useAuth();
+  const { get: sc, getJSON } = useStoreConfig();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [liking, setLiking] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', description: '' });
+
+  const textColors = getJSON<Record<string, string>>('text_colors', {});
 
   const fetchSuggestions = useCallback(async () => {
     setLoading(true);
@@ -35,7 +39,6 @@ const CommunitySuggestions = () => {
 
       if (error) throw error;
 
-      // Fetch user likes if authenticated
       let userLikedIds: Set<string> = new Set();
       if (user && data && data.length > 0) {
         const { data: likes } = await supabase
@@ -63,24 +66,14 @@ const CommunitySuggestions = () => {
 
     try {
       if (suggestion.user_liked) {
-        await supabase
-          .from('suggestion_likes')
-          .delete()
-          .eq('suggestion_id', suggestion.id)
-          .eq('user_id', user.id);
+        await supabase.from('suggestion_likes').delete().eq('suggestion_id', suggestion.id).eq('user_id', user.id);
         setSuggestions(prev => prev.map(s =>
-          s.id === suggestion.id
-            ? { ...s, likes_count: Math.max(0, s.likes_count - 1), user_liked: false }
-            : s
+          s.id === suggestion.id ? { ...s, likes_count: Math.max(0, s.likes_count - 1), user_liked: false } : s
         ));
       } else {
-        await supabase
-          .from('suggestion_likes')
-          .insert({ suggestion_id: suggestion.id, user_id: user.id });
+        await supabase.from('suggestion_likes').insert({ suggestion_id: suggestion.id, user_id: user.id });
         setSuggestions(prev => prev.map(s =>
-          s.id === suggestion.id
-            ? { ...s, likes_count: s.likes_count + 1, user_liked: true }
-            : s
+          s.id === suggestion.id ? { ...s, likes_count: s.likes_count + 1, user_liked: true } : s
         ));
       }
     } catch {
@@ -102,12 +95,7 @@ const CommunitySuggestions = () => {
     try {
       const { error } = await supabase
         .from('community_suggestions')
-        .insert({
-          user_id: user.id,
-          title: form.title.trim(),
-          description: form.description.trim(),
-          status: 'pending',
-        });
+        .insert({ user_id: user.id, title: form.title.trim(), description: form.description.trim(), status: 'pending' });
 
       if (error) throw error;
 
@@ -128,20 +116,23 @@ const CommunitySuggestions = () => {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Lightbulb className="h-5 w-5 text-amber-500" />
-            <h2 className="text-lg font-bold text-gray-900">Comunidade — Próximas Atualizações</h2>
+            <h2 className="text-lg font-bold" style={{ color: textColors.community_title_color || '#111827' }}>
+              {sc('community_title')}
+            </h2>
           </div>
-          <p className="text-sm text-gray-500 max-w-md">
-            Vote nas ideias que você quer ver no Glory Pads. Sua voz molda o app.
+          <p className="text-sm max-w-md" style={{ color: textColors.community_subtitle_color || '#6b7280' }}>
+            {sc('community_subtitle')}
           </p>
         </div>
         {user && (
           <Button
             size="sm"
             onClick={() => setShowForm(v => !v)}
-            className="shrink-0 bg-gray-900 hover:bg-gray-800 text-white rounded-xl gap-1.5 text-xs"
+            className="shrink-0 rounded-xl gap-1.5 text-xs text-white"
+            style={{ backgroundColor: textColors.community_button_color || '#111827' }}
           >
             <Plus className="h-3.5 w-3.5" />
-            Sugerir ideia
+            {sc('community_button_label')}
           </Button>
         )}
         {!user && (
@@ -169,22 +160,12 @@ const CommunitySuggestions = () => {
                 </button>
               </div>
               <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Título da ideia (ex: Modo paisagem para tablets)"
-                  value={form.title}
-                  onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                  maxLength={80}
-                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                />
-                <textarea
-                  placeholder="Descreva sua ideia em detalhes..."
-                  value={form.description}
-                  onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                  maxLength={400}
-                  rows={3}
-                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none"
-                />
+                <input type="text" placeholder="Título da ideia (ex: Modo paisagem para tablets)"
+                  value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} maxLength={80}
+                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300" />
+                <textarea placeholder="Descreva sua ideia em detalhes..."
+                  value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} maxLength={400} rows={3}
+                  className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none" />
               </div>
               <div className="flex justify-end mt-3">
                 <Button type="submit" disabled={submitting} size="sm"
@@ -211,52 +192,36 @@ const CommunitySuggestions = () => {
       ) : suggestions.length === 0 ? (
         <div className="text-center py-12 text-gray-400">
           <Lightbulb className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">Nenhuma sugestão ainda. Seja o primeiro!</p>
+          <p className="text-sm">{sc('community_empty_text')}</p>
         </div>
       ) : (
         <motion.div
-          initial="hidden"
-          animate="visible"
+          initial="hidden" animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
         >
           {suggestions.map((s, i) => (
-            <motion.div
-              key={s.id}
-              variants={{
-                hidden: { opacity: 0, y: 16 },
-                visible: { opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.4 } }
-              }}
+            <motion.div key={s.id}
+              variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.4 } } }}
               className="group relative rounded-2xl border border-gray-100 bg-white p-5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300"
             >
-              {/* Like button */}
-              <button
-                onClick={() => handleLike(s)}
-                disabled={liking === s.id}
+              <button onClick={() => handleLike(s)} disabled={liking === s.id}
                 className={`absolute top-4 right-4 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
-                  s.user_liked
-                    ? 'bg-rose-50 border-rose-200 text-rose-500'
-                    : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-rose-200 hover:text-rose-400 hover:bg-rose-50'
-                }`}
-              >
+                  s.user_liked ? 'bg-rose-50 border-rose-200 text-rose-500' : 'bg-gray-50 border-gray-200 text-gray-400 hover:border-rose-200 hover:text-rose-400 hover:bg-rose-50'
+                }`}>
                 <Heart className={`h-3.5 w-3.5 ${s.user_liked ? 'fill-rose-500 text-rose-500' : ''}`} />
                 {s.likes_count}
               </button>
-
               <div className="pr-16">
                 <h3 className="font-semibold text-gray-900 text-sm leading-snug mb-2">{s.title}</h3>
                 <p className="text-xs text-gray-500 leading-relaxed">{s.description}</p>
               </div>
-
-              {/* Popularity bar */}
               {s.likes_count > 0 && (
                 <div className="mt-4 h-0.5 bg-gray-100 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
+                  <motion.div initial={{ width: 0 }}
                     animate={{ width: `${Math.min(100, s.likes_count * 10)}%` }}
                     transition={{ delay: 0.3 + i * 0.05, duration: 0.6 }}
-                    className="h-full bg-rose-400 rounded-full"
-                  />
+                    className="h-full bg-rose-400 rounded-full" />
                 </div>
               )}
             </motion.div>
@@ -266,7 +231,7 @@ const CommunitySuggestions = () => {
 
       {!user && suggestions.length > 0 && (
         <p className="text-center text-xs text-gray-400 mt-6">
-          <a href="/auth" className="underline hover:text-gray-600">Faça login</a> para curtir as sugestões que você quer ver no app.
+          <a href="/auth" className="underline hover:text-gray-600">Faça login</a> {sc('community_login_text')}
         </p>
       )}
     </div>
