@@ -1529,21 +1529,6 @@ const Index = () => {
                       )}
                     </div>
                   </div>
-                  {/* Metronome mini-bar below faders */}
-                  <div className="flex items-center justify-center gap-3 px-3 py-0.5 shrink-0 border-t border-border/30">
-                    <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
-                    <span className="text-[10px] text-muted-foreground">BPM</span>
-                    {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-                    <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-                    <button
-                      type="button"
-                      onClick={() => setMetronomeIsPlaying((prev) => !prev)}
-                      className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
-                      title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
-                    >
-                      {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-                    </button>
-                  </div>
                 </div>
 
                 {/* === MET PAGE === always mounted but hidden when on Mix */}
@@ -1592,6 +1577,24 @@ const Index = () => {
                   </div>
                 </div>
 
+              </div>
+
+              {/* Persistent metronome mini-bar — always visible */}
+              <div className="flex items-center justify-between gap-2 px-3 py-1 shrink-0 border-t border-border/40 bg-card/80 backdrop-blur-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
+                  <span className="text-[9px] text-muted-foreground uppercase tracking-wide">BPM</span>
+                  {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
+                  <span className="text-[9px] text-muted-foreground">· {timeSignature}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMetronomeIsPlaying((prev) => !prev)}
+                  className={`p-1.5 rounded-full transition-all ${metronomeIsPlaying ? 'bg-destructive/15 text-destructive' : 'bg-primary/15 text-primary'}`}
+                  title={metronomeIsPlaying ? 'Parar metrônomo' : 'Iniciar metrônomo'}
+                >
+                  {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                </button>
               </div>
             </>
           )}
