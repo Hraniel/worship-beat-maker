@@ -59,8 +59,40 @@ serve(async (req) => {
     }
 
     const email = userData.user.email;
-    logStep("User authenticated", { email });
+    const userId = userData.user.id;
+    logStep("User authenticated", { email, userId });
 
+    // --- Check granted_tiers BEFORE Stripe ---
+    const TIER_PRODUCT_MAP: Record<string, string> = {
+      pro: "prod_Tz7nOBkWdUxb9Q",
+      master: "prod_Tz7oenwSZLQFdS",
+    };
+
+    const { data: grantedRows, error: grantedError } = await supabaseClient
+      .from("granted_tiers")
+      .select("tier, expires_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (!grantedError && grantedRows && grantedRows.length > 0) {
+      const grant = grantedRows[0];
+      const isValid = !grant.expires_at || new Date(grant.expires_at) > new Date();
+      if (isValid && TIER_PRODUCT_MAP[grant.tier]) {
+        logStep("Granted tier found and valid", { tier: grant.tier, expires_at: grant.expires_at });
+        return new Response(JSON.stringify({
+          subscribed: true,
+          product_id: TIER_PRODUCT_MAP[grant.tier],
+          subscription_end: grant.expires_at,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      logStep("Granted tier expired or unknown", { tier: grant.tier, expires_at: grant.expires_at });
+    }
+
+    // --- Fallback to Stripe ---
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
 
     // Retry Stripe customer lookup to handle intermittent API issues
