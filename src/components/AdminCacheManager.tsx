@@ -79,7 +79,7 @@ const AdminCacheManager: React.FC = () => {
       }
 
       setCurrentVersion(ts);
-      toast.success('Cache global atualizado! Todos os usuários receberão a atualização na próxima visita.');
+      toast.success('Cache global atualizado! Todos os usuários conectados serão recarregados agora.');
     } catch (e: any) {
       toast.error(e.message || 'Erro ao atualizar cache');
     } finally {
@@ -111,7 +111,7 @@ const AdminCacheManager: React.FC = () => {
           .insert({ config_key: userKey, config_value: ts });
       }
 
-      toast.success(`Cache de ${user.email} será limpo na próxima visita.`);
+      toast.success(`O app de ${user.email} será recarregado agora.`);
     } catch (e: any) {
       toast.error(e.message || 'Erro ao forçar cache do usuário');
     } finally {
@@ -136,8 +136,8 @@ const AdminCacheManager: React.FC = () => {
           <h3 className="text-sm font-semibold text-foreground">Cache Global</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Força a atualização do app para <strong>todos os usuários</strong> na próxima vez que abrirem o app.
-          Útil após publicar uma nova versão do PWA.
+          Força o recarregamento <strong>imediato</strong> do app para <strong>todos os usuários conectados</strong>.
+          Usuários offline receberão a atualização na próxima visita.
         </p>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -154,7 +154,7 @@ const AdminCacheManager: React.FC = () => {
           {globalLoading
             ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" />
             : <RefreshCw className="h-3.5 w-3.5 mr-2" />}
-          Forçar Atualização — Todos os Usuários
+          Forçar Atualização Imediata — Todos
         </Button>
       </div>
 
@@ -165,7 +165,7 @@ const AdminCacheManager: React.FC = () => {
           <h3 className="text-sm font-semibold text-foreground">Cache por Usuário</h3>
         </div>
         <p className="text-xs text-muted-foreground">
-          Força a atualização do app apenas para um usuário específico.
+          Força o recarregamento imediato do app para um usuário específico que esteja online.
         </p>
 
         {/* Search */}

@@ -27,6 +27,7 @@ const CACHE_VERSION_KEY = 'app_cache_version';
 // Global cache guard — runs for all visitors (no auth needed)
 const CacheVersionGuard = () => {
   useEffect(() => {
+    // Initial check
     supabase
       .from('landing_config')
       .select('config_value')
@@ -43,6 +44,25 @@ const CacheVersionGuard = () => {
           localStorage.setItem(CACHE_VERSION_KEY, remote);
         }
       });
+
+    // Realtime listener for immediate updates
+    const channel = supabase
+      .channel('global_cache_realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'landing_config', filter: "config_key=eq.app_cache_version" },
+        (payload: any) => {
+          const newVersion = payload.new?.config_value;
+          const local = localStorage.getItem(CACHE_VERSION_KEY);
+          if (newVersion && local !== null && local !== newVersion) {
+            localStorage.setItem(CACHE_VERSION_KEY, newVersion);
+            window.location.reload();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
   return null;
 };
@@ -53,6 +73,8 @@ const UserCacheVersionGuard = () => {
   useEffect(() => {
     if (!user?.id) return;
     const userKey = `user_cache_version_${user.id}`;
+
+    // Initial check
     supabase
       .from('landing_config')
       .select('config_value')
@@ -69,6 +91,25 @@ const UserCacheVersionGuard = () => {
           localStorage.setItem(userKey, remote);
         }
       });
+
+    // Realtime listener for immediate per-user updates
+    const channel = supabase
+      .channel(`user_cache_realtime_${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'landing_config', filter: `config_key=eq.${userKey}` },
+        (payload: any) => {
+          const newVersion = payload.new?.config_value;
+          const local = localStorage.getItem(userKey);
+          if (newVersion && local !== null && local !== newVersion) {
+            localStorage.setItem(userKey, newVersion);
+            window.location.reload();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
   return null;
 };
