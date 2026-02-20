@@ -842,16 +842,16 @@ const Index = () => {
       )}
       {/* Header */}
       {!focusMode ? (
-      <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-card shrink-0">
-          <div className="flex items-center gap-2 min-w-0 shrink-0">
-            <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-6 w-6" />
+      <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b border-border bg-card shrink-0">
+          <div className="flex items-center gap-1.5 min-w-0 shrink-0">
+            <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-5 w-5 sm:h-6 sm:w-6" />
             <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
           </div>
 
           {/* Current song name - centered */}
-          <div className="flex-1 min-w-0 mx-2 text-center">
+          <div className="flex-1 min-w-0 mx-1 sm:mx-2 text-center">
             {currentSongName &&
-          <span className="text-xs font-medium text-primary truncate block">
+          <span className="text-[11px] sm:text-xs font-medium text-primary truncate block">
                 ♪ {currentSongName}
               </span>
           }
@@ -860,18 +860,18 @@ const Index = () => {
           <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {/* Pad size controls - always visible when song selected */}
             {currentSongId && (
-            <div className="flex items-center gap-1 mr-1 border border-border rounded-md px-2 py-1" data-tutorial="pad-size">
-              <Minus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-0.5 sm:gap-1 mr-0.5 sm:mr-1 border border-border rounded-md px-1 sm:px-2 py-0.5 sm:py-1" data-tutorial="pad-size">
+              <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
               <Slider
                 value={[padSize]}
                 onValueChange={([v]) => handlePadSizeChange(v)}
                 min={PAD_SIZE_MIN}
                 max={PAD_SIZE_MAX}
                 step={5}
-                className="w-20 sm:w-28"
+                className="w-14 sm:w-28"
               />
-              <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">{padSize}%</span>
+              <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums hidden sm:inline">{padSize}%</span>
             </div>
             )}
 
@@ -1256,7 +1256,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[32vh] md:max-h-none lg:max-h-none overflow-visible'}`}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-visible'}`}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
