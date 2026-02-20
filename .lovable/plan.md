@@ -1,40 +1,46 @@
 
 
-# Correção: Cache por Usuário não funciona em tempo real
+# Correção: Plano gratuito concedido pelo admin não é reconhecido
 
 ## Problema
 
-Quando o admin clica "Forçar" para um usuário específico, duas coisas podem acontecer:
-
-1. Se a chave `user_cache_version_{userId}` **nunca foi criada** no banco, o admin faz um `INSERT`. Porém, o listener Realtime no App.tsx escuta apenas eventos de `UPDATE`, ignorando o `INSERT`.
-2. Mesmo no cenário de `UPDATE`, o guard do usuário tem uma verificação `local !== null` que pode bloquear o reload se o localStorage ainda não foi inicializado.
+A Edge Function `check-subscription` verifica **apenas o Stripe** para determinar o plano do usuário. A tabela `granted_tiers` (onde o admin salva os planos concedidos gratuitamente) nunca é consultada. Resultado: o usuário continua aparecendo como "Free" mesmo após receber o plano Pro/Master.
 
 ## Solução
 
-### 1. `src/App.tsx` -- Escutar INSERT e UPDATE
+Modificar a Edge Function `check-subscription` para consultar a tabela `granted_tiers` **antes** de consultar o Stripe. Se o usuário tiver um plano concedido (e ele não estiver expirado), retornar esse plano diretamente sem precisar ir ao Stripe.
 
-Alterar ambos os guards (global e per-user) para escutar `event: '*'` em vez de `event: 'UPDATE'`, capturando tanto INSERT quanto UPDATE.
+## Detalhes Tecnicos
 
-Remover a verificação `local !== null` do listener Realtime para que o reload aconteça mesmo se o localStorage ainda não tem valor.
+### Arquivo: `supabase/functions/check-subscription/index.ts`
 
-### 2. `src/components/AdminCacheManager.tsx` -- Usar upsert
+Apos autenticar o usuario (linha ~61), adicionar uma consulta a `granted_tiers`:
 
-Substituir a lógica de "check if exists then insert/update" por um único `upsert` tanto no cache global quanto no per-user. Isso simplifica o código e garante que sempre gera um evento consistente.
-
-Para que o `upsert` funcione na `landing_config` usando `config_key`, precisa existir uma constraint unique nessa coluna.
-
-### 3. Migration SQL -- Unique constraint em config_key
-
-```sql
-ALTER TABLE public.landing_config 
-ADD CONSTRAINT landing_config_config_key_unique UNIQUE (config_key);
+```
+1. Buscar na tabela granted_tiers WHERE user_id = userId
+2. Se encontrar um registro:
+   a. Verificar se expires_at e null (permanente) ou > now()
+   b. Se valido, mapear tier ("pro"/"master") para o product_id correspondente usando TIERS
+   c. Retornar { subscribed: true, product_id, subscription_end: expires_at }
+3. Se nao encontrar ou estiver expirado, continuar com a logica do Stripe normalmente
 ```
 
-## Resumo das mudancas
+Isso garante que:
+- Planos concedidos pelo admin tem **prioridade** sobre o Stripe
+- Planos com data de expiracao sao respeitados
+- Se nao houver concessao, o fluxo Stripe continua normalmente
+
+### Mapeamento tier -> product_id
+
+Usar os mesmos IDs definidos em `src/lib/tiers.ts`:
+- `pro` -> `prod_Tz7nOBkWdUxb9Q`
+- `master` -> `prod_Tz7oenwSZLQFdS`
+
+### Resumo
 
 | Arquivo | Mudanca |
 |---|---|
-| Migration SQL | Adiciona unique constraint em `config_key` |
-| `src/App.tsx` | Guards escutam `event: '*'` e removem check `local !== null` no Realtime |
-| `src/components/AdminCacheManager.tsx` | Substituir insert/update por `upsert` com `onConflict: 'config_key'` |
+| `supabase/functions/check-subscription/index.ts` | Consultar `granted_tiers` antes do Stripe; retornar plano concedido se valido |
+
+Nenhuma migration SQL necessaria -- a tabela `granted_tiers` ja existe com as politicas RLS corretas.
 
