@@ -817,7 +817,7 @@ const Index = () => {
   const currentSongName = currentSongId ? setlists.find((s) => s.id === currentSongId)?.name || null : null;
 
   return (
-    <div className="flex flex-col bg-background overflow-hidden" style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)', boxSizing: 'border-box' }} onPointerDown={initAudio}>
+    <div className="flex flex-col bg-background overflow-hidden" style={{ minHeight: '100dvh', height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)', boxSizing: 'border-box' }} onPointerDown={initAudio}>
       {/* Performance Mode overlay */}
       {performanceModeOpen && (
         <PerformanceMode
@@ -1612,7 +1612,7 @@ const Index = () => {
         {/* Safe-area shortcut bar — inside footer, fills the notch gap */}
         <div
           className={`flex items-center justify-around bg-card/80 backdrop-blur-sm border-t border-border/30 lg:hidden`}
-          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingTop: focusMode ? '0px' : '4px' }}
+          style={{ paddingTop: focusMode ? '0px' : '4px' }}
         >
           {!focusMode && (
             <>

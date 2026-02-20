@@ -5,6 +5,7 @@
 /* PWA safe area support */
 html, body {
   height: 100%;
+  min-height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
   background-color: hsl(240 10% 6%);
