@@ -24,7 +24,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useSetlists } from '@/hooks/useSetlists';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import UpgradeGateModal, { type UpgradeGatePayload } from '@/components/UpgradeGateModal';
-import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles, MonitorPlay } from 'lucide-react';
+import { LogOut, ChevronUp, ChevronDown, Minus, Plus, Maximize, Minimize, Play, Pause, Download, MoreVertical, Menu, RefreshCw, Bell, Settings2, ListMusic, X, Check, Lock, Music, Sliders, Sparkles, MonitorPlay, Drum, Store, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -1257,7 +1257,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-visible'}`} style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-visible'}`} style={{ paddingBottom: isTablet || typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'env(safe-area-inset-bottom, 0px)' : undefined }}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1609,6 +1609,43 @@ const Index = () => {
           )}
         </div>
       </footer>
+      )}
+
+      {/* Safe-area bottom bar — quick shortcuts filling the black gap on notched devices */}
+      {!isLandscape && (
+        <div
+          className={`shrink-0 flex items-center justify-around bg-card/80 backdrop-blur-sm border-t border-border/30 lg:hidden ${focusMode ? 'py-0' : ''}`}
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingTop: focusMode ? '0px' : '4px' }}
+        >
+          {!focusMode && (
+            <>
+              <button
+                onClick={() => { setFooterPage(1); }}
+                className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
+                title="Metrônomo"
+              >
+                <Activity className="h-4 w-4" />
+                <span className="text-[8px] font-medium">Metrônomo</span>
+              </button>
+              <button
+                onClick={() => { setFooterPage(2); }}
+                className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
+                title="Afinador"
+              >
+                <Drum className="h-4 w-4" />
+                <span className="text-[8px] font-medium">Afinador</span>
+              </button>
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
+                title="Loja"
+              >
+                <Store className="h-4 w-4" />
+                <span className="text-[8px] font-medium">Loja</span>
+              </button>
+            </>
+          )}
+        </div>
       )}
       </div>
       {/* Save to repertoire prompt */}
