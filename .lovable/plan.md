@@ -1,46 +1,42 @@
 
 
-# Correção: Plano gratuito concedido pelo admin não é reconhecido
+# Adicionar toggle de Sync (quantização) no Metrônomo
 
-## Problema
+## O que muda
 
-A Edge Function `check-subscription` verifica **apenas o Stripe** para determinar o plano do usuário. A tabela `granted_tiers` (onde o admin salva os planos concedidos gratuitamente) nunca é consultada. Resultado: o usuário continua aparecendo como "Free" mesmo após receber o plano Pro/Master.
+Atualmente, quando o metrônomo ou loops estão rodando, todos os pads são automaticamente quantizados (sincronizados ao grid de semicolcheias). O usuário quer poder ligar/desligar essa sincronização globalmente, com um botão no metrônomo.
 
-## Solução
+## Como funciona
 
-Modificar a Edge Function `check-subscription` para consultar a tabela `granted_tiers` **antes** de consultar o Stripe. Se o usuário tiver um plano concedido (e ele não estiver expirado), retornar esse plano diretamente sem precisar ir ao Stripe.
+Um botão "Sync" será adicionado na barra de controles do metrônomo. Quando ativado, os pads terão seus toques quantizados ao grid rítmico. Quando desativado, os pads tocam imediatamente ao toque, mesmo com o metrônomo ligado.
 
 ## Detalhes Tecnicos
 
-### Arquivo: `supabase/functions/check-subscription/index.ts`
+### 1. `src/lib/loop-engine.ts` -- Estado global de sync
 
-Apos autenticar o usuario (linha ~61), adicionar uma consulta a `granted_tiers`:
+Adicionar uma variavel `syncEnabled` (default `true`) com getter/setter exportados:
 
-```
-1. Buscar na tabela granted_tiers WHERE user_id = userId
-2. Se encontrar um registro:
-   a. Verificar se expires_at e null (permanente) ou > now()
-   b. Se valido, mapear tier ("pro"/"master") para o product_id correspondente usando TIERS
-   c. Retornar { subscribed: true, product_id, subscription_end: expires_at }
-3. Se nao encontrar ou estiver expirado, continuar com a logica do Stripe normalmente
-```
+- `setSyncEnabled(enabled: boolean)`
+- `isSyncEnabled(): boolean`
 
-Isso garante que:
-- Planos concedidos pelo admin tem **prioridade** sobre o Stripe
-- Planos com data de expiracao sao respeitados
-- Se nao houver concessao, o fluxo Stripe continua normalmente
+Modificar `getQuantizeDelay()` para retornar `0` quando sync estiver desabilitado.
 
-### Mapeamento tier -> product_id
+### 2. `src/components/Metronome.tsx` -- Botao Sync
 
-Usar os mesmos IDs definidos em `src/lib/tiers.ts`:
-- `pro` -> `prod_Tz7nOBkWdUxb9Q`
-- `master` -> `prod_Tz7oenwSZLQFdS`
+Adicionar um botao toggle "Sync" na linha de controles (ao lado dos botoes de formula de compasso). O botao fica destacado quando ativo (estilo similar aos botoes de time signature selecionados).
+
+O estado sera gerenciado localmente e sincronizado via `setSyncEnabled()` / `isSyncEnabled()` do loop-engine.
+
+### 3. Persistencia
+
+Salvar a preferencia no `localStorage` com a chave `drum-pads-sync-enabled` para manter entre sessoes.
 
 ### Resumo
 
 | Arquivo | Mudanca |
 |---|---|
-| `supabase/functions/check-subscription/index.ts` | Consultar `granted_tiers` antes do Stripe; retornar plano concedido se valido |
+| `src/lib/loop-engine.ts` | Adicionar `syncEnabled`, `setSyncEnabled()`, `isSyncEnabled()`; condicionar `getQuantizeDelay()` |
+| `src/components/Metronome.tsx` | Adicionar botao toggle "Sync" na UI com persistencia em localStorage |
 
-Nenhuma migration SQL necessaria -- a tabela `granted_tiers` ja existe com as politicas RLS corretas.
+Nenhuma alteracao necessaria no `DrumPad.tsx` -- ele ja usa `getQuantizeDelay()` que passara a respeitar o novo flag automaticamente.
 
