@@ -1256,7 +1256,7 @@ const Index = () => {
 
       {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
       {!isLandscape && (
-      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-visible'}`}>
+      <footer className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? 'p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer' : 'p-0 lg:p-3 max-h-[28vh] md:max-h-none lg:max-h-none overflow-hidden'}`}>
         {/* Desktop: stacked layout */}
         <div className="hidden lg:block max-w-none mx-auto space-y-1.5">
           {/* Focus mode: show exit button + song name */}
@@ -1500,7 +1500,7 @@ const Index = () => {
                 {/* === MIX PAGE === */}
                 <div className={footerPage === 0 ? 'h-full flex flex-col' : 'hidden'}>
                   {/* Faders */}
-                  <div className="flex-1 flex items-end pb-0 px-1.5 pt-2">
+                  <div className="flex items-end pb-0 px-1.5 pt-1">
                     <div className="w-full" data-tutorial="volume-master">
                       {showMixerLocked ? (
                         <button
