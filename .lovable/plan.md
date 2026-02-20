@@ -1,89 +1,38 @@
 
 
-## Video de Fundo em Todas as Secoes da Landing Page
+# Reduzir Altura dos Elementos Inferiores no Mobile
 
-### Resumo
+## Objetivo
+Diminuir a altura ocupada pelos Continuous Pads, Faders e Metrônomo minimizado para que não invadam a última fileira dos pads principais. Sem scroll — apenas compactação.
 
-Expandir o suporte a video de fundo (atualmente so no Hero) para todas as secoes da landing page, com controles independentes de URL, opacidade e enquadramento (object-fit) para cada secao. Os videos terao tamanho contido dentro da secao (nao full-screen), respeitando a altura natural do conteudo.
+## Mudanças
 
-### Secoes que receberao suporte a video
+### 1. Continuous Pads mais compactos (AmbientPads.tsx)
+- Reduzir altura dos botões de nota de `h-8` para `h-6` no mobile
+- Reduzir o gap do grid de `gap-[3px]` para `gap-[2px]`
 
-| Secao | Config prefix | Fundo |
-|-------|--------------|-------|
-| Hero | `hero_video_*` | Ja existe |
-| Stats | `stats_video_*` | Escuro |
-| Features (Recursos) | `features_video_*` | Claro |
-| App Screenshots | `screenshots_video_*` | Claro |
-| Sound Store | `store_video_*` | Escuro |
-| How It Works | `howitworks_video_*` | Claro |
-| Pricing | `pricing_video_*` | Escuro |
-| CTA Final | `cta_video_*` | Claro |
-| Footer | `footer_video_*` | Escuro |
+### 2. Container dos Continuous Pads com menos padding (LandscapeSwipePanels.tsx)
+- No mobile portrait, reduzir padding de `px-2 py-1` para `px-2 py-0.5`
+- Reduzir border para não adicionar espaço extra
 
-### Chaves de configuracao por secao (3 keys cada)
+### 3. Footer mais compacto (Index.tsx)
+- Reduzir `max-h-[28vh]` para `max-h-[22vh]` no footer mobile
+- Mini-barra BPM: reduzir padding de `py-1` para `py-0.5` e ícones de `h-4 w-4` para `h-3.5 w-3.5`
+- Faders container: reduzir padding de `pt-1` para `pt-0.5`
+- Abas Mix/Met: reduzir altura dos botões de aba
 
-Para cada secao `PREFIX`:
-- `{PREFIX}_url` -- URL do video (MP4/WebM)
-- `{PREFIX}_opacity` -- Opacidade (0 a 1, padrao 0.15)
-- `{PREFIX}_fit` -- Enquadramento: cover, contain, fill
+## Detalhes Técnicos
 
-### Passo 1 -- Landing.tsx: Componente reutilizavel de video
+### `src/components/AmbientPads.tsx`
+- Linha dos botões: trocar `h-8 md:h-10` por `h-6 md:h-10`
+- Grid: trocar `gap-[3px] md:gap-1` por `gap-[2px] md:gap-1`
 
-Criar um componente interno `SectionVideo` que recebe `url`, `opacity` e `fit`, renderizando o `<video>` com posicionamento absoluto dentro da secao. Cada secao que ja tem `position: relative` e `overflow: hidden` recebera esse componente condicionalmente.
+### `src/components/LandscapeSwipePanels.tsx`
+- Linha 68: trocar `px-2 py-1` por `px-1.5 py-0.5`
 
-Para secoes que nao tem `overflow: hidden`, adicionar a classe para que o video nao extrapole os limites da secao (enquadramento contido).
+### `src/pages/Index.tsx`
+- Footer: trocar `max-h-[28vh]` por `max-h-[22vh]`
+- Mini-barra BPM (linha ~1533): trocar `py-1` por `py-0.5`, ícones Play/Pause de `h-4 w-4` para `h-3.5 w-3.5`
+- Faders container (linha ~1503): trocar `pt-1` por `pt-0.5`
 
-### Passo 2 -- Landing.tsx: Aplicar em cada secao
-
-Adicionar `<SectionVideo>` em cada componente de secao (Stats, Features, AppScreenshots, SoundSection, HowItWorks, Pricing, FinalCTA, Footer), lendo as config keys correspondentes.
-
-Cada secao tera `position: relative` e `overflow: hidden` para garantir que o video fique contido na area visivel da secao, sem ocupar a tela inteira.
-
-### Passo 3 -- AdminLandingEditor.tsx: Bloco reutilizavel de edicao de video
-
-Criar uma funcao `renderVideoBlock(prefix, label)` que renderiza o grupo de campos:
-- Upload/URL do video
-- Preview inline
-- Botao remover
-- Slider de opacidade
-- Select de enquadramento (Cover / Contain / Fill)
-
-### Passo 4 -- AdminLandingEditor.tsx: Adicionar blocos de video nas abas
-
-- **Aba Hero**: ja existe (manter como esta)
-- **Aba Estilos** (AdminLandingStyleEditor): Adicionar blocos de video para Stats, Features, Screenshots, Store, HowItWorks, Pricing, CTA, Footer -- cada um dentro da secao de estilo correspondente
-
-Como o `AdminLandingStyleEditor` e um componente separado, os blocos de video serao adicionados no `AdminLandingEditor` nas abas relevantes:
-- Aba **Loja**: bloco de video para SoundSection
-- Aba **Imagens**: bloco de video para Screenshots
-- Aba **Conteudo**: blocos de video para HowItWorks, Stats, Footer
-- Aba **Textos**: blocos de video para Features, Pricing, CTA
-
-### Passo 5 -- Atualizar TAB_KEYS
-
-Adicionar as novas keys de video ao mapa `TAB_KEYS` para que o botao "Salvar tudo" inclua as configuracoes de video.
-
-### Recomendacoes de tamanho por secao
-
-| Secao | Resolucao sugerida | Formato | Duracao |
-|-------|--------------------|---------|---------|
-| Hero | 1920x1080 (16:9) | MP4/WebM | 5-15s |
-| Stats | 1920x400 (widescreen) | MP4/WebM | 5-10s |
-| Features | 1920x800 | MP4/WebM | 5-15s |
-| Screenshots | 1920x800 | MP4/WebM | 5-15s |
-| Store | 1920x600 | MP4/WebM | 5-10s |
-| HowItWorks | 1920x600 | MP4/WebM | 5-10s |
-| Pricing | 1920x800 | MP4/WebM | 5-10s |
-| CTA | 1920x500 | MP4/WebM | 5-10s |
-| Footer | 1920x300 | MP4/WebM | 5-10s |
-
-Todos sem audio, em loop, maximo 15MB cada.
-
-### Detalhes Tecnicos
-
-**Arquivos modificados:**
-- `src/pages/Landing.tsx` -- componente `SectionVideo` reutilizavel + integracao em todas as secoes
-- `src/components/AdminLandingEditor.tsx` -- funcao `renderVideoBlock` + blocos de video nas abas relevantes
-
-**Nenhuma migracao SQL necessaria** -- as keys sao criadas automaticamente pelo upsert existente no admin.
-
+Resultado: aproximadamente 30-40px a menos de ocupação vertical na parte inferior, liberando espaço para os pads principais.
