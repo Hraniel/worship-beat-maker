@@ -1609,12 +1609,17 @@ const Index = () => {
           )}
         </div>
 
-        {/* Safe-area shortcut bar — buttons sit inside the safe-area zone */}
+      </footer>
+      )}
+      </div>
+
+      {/* Safe-area shortcut bar — OUTSIDE overflow-hidden container so it's never clipped */}
+      {!isLandscape && (
         <div
-          className={`bg-card/80 backdrop-blur-sm border-t border-border/30 lg:hidden`}
+          className="bg-card/80 backdrop-blur-sm border-t border-border/30 shrink-0 lg:hidden"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          <div className={`flex items-center justify-around`} style={{ paddingTop: focusMode ? '0px' : '4px' }}>
+          <div className="flex items-center justify-around" style={{ paddingTop: focusMode ? '0px' : '4px' }}>
           {!focusMode && (
             <>
               <button
@@ -1645,9 +1650,7 @@ const Index = () => {
           )}
           </div>
         </div>
-      </footer>
       )}
-      </div>
       {/* Save to repertoire prompt */}
       {showSavePrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4">
