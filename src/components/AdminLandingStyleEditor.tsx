@@ -58,13 +58,45 @@ const PADDING_OPTIONS = [
 
 const STYLE_SECTIONS: StyleSection[] = [
   {
+    id: 'navbar', label: 'Barra de Navegação', emoji: '🧭',
+    fields: [
+      { key: 'navbar_bg', label: 'Fundo da Seção', type: 'color' },
+      { key: 'navbar_text_color', label: 'Cor do Texto', type: 'color' },
+      { key: 'navbar_btn_bg', label: 'Fundo do Botão CTA', type: 'color' },
+      { key: 'navbar_btn_color', label: 'Cor do Texto CTA', type: 'color' },
+    ],
+  },
+  {
+    id: 'hero', label: 'Hero (Topo)', emoji: '🏠',
+    fields: [
+      { key: 'hero_bg', label: 'Fundo da Seção', type: 'color' },
+      { key: 'hero_title_color', label: 'Cor do Título', type: 'color' },
+      { key: 'hero_title_size', label: 'Tamanho do Título', type: 'select', options: TEXT_SIZES },
+      { key: 'hero_subtitle_color', label: 'Cor do Subtítulo', type: 'color' },
+      { key: 'hero_badge_bg', label: 'Fundo do Badge', type: 'color', hint: 'Suporta transparência (ex: hsl(262 75% 55% / 0.06))' },
+      { key: 'hero_badge_color', label: 'Cor do Badge', type: 'color' },
+      { key: 'hero_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'hero_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
+    ],
+  },
+  {
     id: 'stats', label: 'Estatísticas', emoji: '📊',
     fields: [
-      { key: 'stats_bg', label: 'Fundo', type: 'color' },
+      { key: 'stats_bg', label: 'Fundo da Seção', type: 'color' },
       { key: 'stats_value_color', label: 'Cor dos Números', type: 'color' },
       { key: 'stats_label_color', label: 'Cor dos Rótulos', type: 'color', hint: 'Suporta transparência (ex: hsl(0 0% 100% / 0.4))' },
       { key: 'stats_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
       { key: 'stats_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
+    ],
+  },
+  {
+    id: 'screenshots', label: 'Screenshots', emoji: '📱',
+    fields: [
+      { key: 'screenshots_bg', label: 'Fundo da Seção', type: 'color' },
+      { key: 'screenshots_title_color', label: 'Cor do Título', type: 'color' },
+      { key: 'screenshots_subtitle_color', label: 'Cor do Subtítulo', type: 'color' },
+      { key: 'screenshots_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
+      { key: 'screenshots_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
     ],
   },
   {
@@ -82,7 +114,7 @@ const STYLE_SECTIONS: StyleSection[] = [
   {
     id: 'store', label: 'Glory Store', emoji: '🛒',
     fields: [
-      { key: 'store_bg', label: 'Fundo', type: 'color' },
+      { key: 'store_bg', label: 'Fundo da Seção', type: 'color' },
       { key: 'store_title_color', label: 'Cor do Título', type: 'color' },
       { key: 'store_subtitle_color', label: 'Cor do Subtítulo', type: 'color', hint: 'Suporta transparência' },
       { key: 'store_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
@@ -92,7 +124,7 @@ const STYLE_SECTIONS: StyleSection[] = [
   {
     id: 'howitworks', label: 'Como Funciona', emoji: '📋',
     fields: [
-      { key: 'howitworks_bg', label: 'Fundo', type: 'color' },
+      { key: 'howitworks_bg', label: 'Fundo da Seção', type: 'color' },
       { key: 'howitworks_title_color', label: 'Cor do Título', type: 'color' },
       { key: 'howitworks_step_color', label: 'Cor do Número do Passo', type: 'color', hint: 'Suporta transparência (ex: hsl(0 0% 0% / 0.06))' },
       { key: 'howitworks_item_title_color', label: 'Cor do Título do Passo', type: 'color' },
@@ -104,7 +136,7 @@ const STYLE_SECTIONS: StyleSection[] = [
   {
     id: 'pricing', label: 'Seção Planos', emoji: '💳',
     fields: [
-      { key: 'pricing_bg', label: 'Fundo', type: 'color' },
+      { key: 'pricing_bg', label: 'Fundo da Seção', type: 'color' },
       { key: 'pricing_title_color', label: 'Cor do Título', type: 'color' },
       { key: 'pricing_subtitle_color', label: 'Cor do Subtítulo', type: 'color', hint: 'Suporta transparência' },
       { key: 'pricing_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
@@ -125,7 +157,7 @@ const STYLE_SECTIONS: StyleSection[] = [
   {
     id: 'footer', label: 'Footer', emoji: '📌',
     fields: [
-      { key: 'footer_bg', label: 'Fundo', type: 'color' },
+      { key: 'footer_bg', label: 'Fundo da Seção', type: 'color' },
       { key: 'footer_text_color', label: 'Cor do Texto', type: 'color', hint: 'Suporta transparência' },
       { key: 'footer_pt', label: 'Padding Top (px)', type: 'select', options: PADDING_OPTIONS },
       { key: 'footer_pb', label: 'Padding Bottom (px)', type: 'select', options: PADDING_OPTIONS },
@@ -299,6 +331,10 @@ const AdminLandingStyleEditor: React.FC = () => {
     if (!confirm(`Restaurar valores padrão da seção "${section.label}"?`)) return;
     // Define defaults
     const DEFAULTS: Record<string, string> = {
+      navbar_bg: 'hsl(0 0% 100%)',
+      navbar_text_color: 'hsl(220 15% 10%)',
+      navbar_btn_bg: 'hsl(220 15% 10%)',
+      navbar_btn_color: 'hsl(0 0% 100%)',
       hero_bg: 'hsl(0 0% 97%)',
       hero_title_color: 'hsl(220 15% 10%)',
       hero_title_size: '7xl',
@@ -310,6 +346,10 @@ const AdminLandingStyleEditor: React.FC = () => {
       stats_value_color: 'hsl(0 0% 100%)',
       stats_label_color: 'hsl(0 0% 100% / 0.4)',
       stats_pt: '64', stats_pb: '64',
+      screenshots_bg: 'hsl(0 0% 97%)',
+      screenshots_title_color: 'hsl(220 15% 10%)',
+      screenshots_subtitle_color: 'hsl(220 15% 40%)',
+      screenshots_pt: '80', screenshots_pb: '96',
       features_bg: 'hsl(0 0% 97%)',
       features_card_bg: 'hsl(0 0% 100%)',
       features_card_border: 'hsl(0 0% 0% / 0.07)',
