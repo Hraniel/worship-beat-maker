@@ -3,7 +3,13 @@
 @tailwind utilities;
 
 /* PWA safe area support */
-html, body {
+html {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background-color: hsl(240 10% 6%);
+}
+body {
   height: 100dvh;
   min-height: 100dvh;
   overflow: hidden;

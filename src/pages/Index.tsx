@@ -1588,7 +1588,7 @@ const Index = () => {
           className="bg-card/80 backdrop-blur-sm border-t border-border/30 shrink-0 lg:hidden"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
-          <div className="flex items-center justify-center gap-6" style={{ paddingTop: focusMode ? '0px' : '4px' }}>
+          <div className="flex items-center justify-around" style={{ paddingTop: focusMode ? '0px' : '4px' }}>
           {!focusMode && (
             <>
               <button
