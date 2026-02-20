@@ -1604,6 +1604,11 @@ const Index = () => {
                   {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                 </button>
               </div>
+
+              {/* DEBUG: área de teste — REMOVER DEPOIS */}
+              <div className="shrink-0 bg-red-600 text-white text-center py-3 font-bold text-sm" style={{ paddingBottom: 'calc(12px + var(--safe-bottom, 0px))' }}>
+                ⬇️ AQUI? — Esta é a área preta? ⬇️
+              </div>
             </>
           )}
         </div>
