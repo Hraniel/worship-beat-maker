@@ -277,6 +277,10 @@ const AdminLandingEditor: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('textos');
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  // Keep a ref with latest rows so saveKey always reads fresh data
+  const rowsRef = React.useRef(rows);
+  React.useEffect(() => { rowsRef.current = rows; }, [rows]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -294,13 +298,16 @@ const AdminLandingEditor: React.FC = () => {
   const setVal = (key: string, value: string) => {
     setRows(prev => {
       const exists = prev.some(r => r.config_key === key);
-      if (exists) return prev.map(r => r.config_key === key ? { ...r, config_value: value } : r);
-      return [...prev, { id: '', config_key: key, config_value: value }];
+      const next = exists
+        ? prev.map(r => r.config_key === key ? { ...r, config_value: value } : r)
+        : [...prev, { id: '', config_key: key, config_value: value }];
+      rowsRef.current = next;
+      return next;
     });
   };
 
   const saveKey = async (key: string, overrideValue?: string) => {
-    const value = overrideValue !== undefined ? overrideValue : (rows.find(r => r.config_key === key)?.config_value ?? '');
+    const value = overrideValue !== undefined ? overrideValue : (rowsRef.current.find(r => r.config_key === key)?.config_value ?? '');
     setSaving(key);
     try {
       // Upsert: try update first, then insert
@@ -544,7 +551,7 @@ const AdminLandingEditor: React.FC = () => {
               <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor da Borda</label>
               <ColorFieldInline
                 value={getVal(`${prefix}_border_color`) || 'hsl(0 0% 100% / 0.2)'}
-                onChange={v => setVal(`${prefix}_border_color`, v)}
+                onChange={v => { setVal(`${prefix}_border_color`, v); }}
                 onBlur={() => saveKey(`${prefix}_border_color`)}
               />
             </div>
