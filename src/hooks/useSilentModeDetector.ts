@@ -12,10 +12,18 @@ export function useSilentModeDetector() {
   const [dismissed, setDismissed] = useState(false);
   const isIOS = isIOSDevice();
   const checkingRef = useRef(false);
+  const lastCheckRef = useRef(0);
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const checkSilentMode = useCallback(async () => {
     if (!isIOS || checkingRef.current) return;
+
+    // Cooldown: skip if last check was less than 5s ago
+    const now = Date.now();
+    if (now - lastCheckRef.current < 5000) return;
+
     checkingRef.current = true;
+    lastCheckRef.current = now;
 
     try {
       const ctx = getAudioContext();
@@ -58,11 +66,24 @@ export function useSilentModeDetector() {
     }
   }, [isIOS]);
 
-  const dismiss = useCallback(() => setDismissed(true), []);
+  const dismiss = useCallback(() => {
+    setDismissed(true);
+    // Auto-reset dismissed after 10s so banner can reappear
+    clearTimeout(dismissTimerRef.current);
+    dismissTimerRef.current = setTimeout(() => setDismissed(false), 10000);
+  }, []);
+
+  // Cleanup dismiss timer
+  useEffect(() => {
+    return () => clearTimeout(dismissTimerRef.current);
+  }, []);
 
   // Reset dismissed when silent mode turns off
   useEffect(() => {
-    if (!isSilent) setDismissed(false);
+    if (!isSilent) {
+      setDismissed(false);
+      clearTimeout(dismissTimerRef.current);
+    }
   }, [isSilent]);
 
   // Re-check on visibility change
@@ -70,6 +91,8 @@ export function useSilentModeDetector() {
     if (!isIOS) return;
     const handler = () => {
       if (document.visibilityState === "visible") {
+        // Reset cooldown on visibility change so check runs
+        lastCheckRef.current = 0;
         setTimeout(checkSilentMode, 500);
       }
     };
