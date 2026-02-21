@@ -7,6 +7,7 @@ interface LandscapeSwipePanelsProps {
   ambientPads: React.ReactNode;
   mixer?: React.ReactNode;
   metronome?: React.ReactNode;
+  toolsPanel?: React.ReactNode;
   focusMode?: boolean;
   // Metronome state passed from parent so landscape can control it
   bpm?: number;
@@ -28,6 +29,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
   ambientPads,
   mixer,
   metronome,
+  toolsPanel,
   focusMode,
   bpm = 120,
   onBpmChange,
@@ -47,8 +49,68 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
   const isTablet = useIsTablet();
   
 
-  // Portrait / desktop: pad grid with ambient pads beside (tablet/desktop) or below (mobile)
+  // Portrait / desktop: pad grid with side panel
   if (!isLandscape) {
+    // Tablet portrait: full side panel with all controls (scrollable)
+    if (isTablet && !isDesktop) {
+      return (
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* Pad grid — takes remaining space */}
+          <div className="flex-1 flex justify-center items-center min-h-0 overflow-hidden">
+            {padGrid}
+          </div>
+          {/* Right side panel — all controls stacked with scroll */}
+          <div className="w-[320px] shrink-0 flex flex-col min-h-0 border-l border-border/30">
+            {focusMode ? (
+              <div className="flex flex-col flex-1 min-h-0">
+                <div className="hidden">{metronome}</div>
+                <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-border/30 shrink-0">
+                  <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
+                  <span className="text-[10px] text-muted-foreground">BPM</span>
+                  {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
+                  <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
+                  <button
+                    type="button"
+                    onClick={onTogglePlay}
+                    className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? 'text-destructive hover:bg-destructive/10' : 'text-primary hover:bg-primary/10'}`}
+                  >
+                    {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+                <div className="flex-1 min-h-0 px-1.5 py-1.5 overflow-hidden">
+                  {ambientPads}
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+                {/* Faders */}
+                {mixer && (
+                  <div className="shrink-0 px-1 pt-1 pb-1">
+                    {mixer}
+                  </div>
+                )}
+                {/* Metronome */}
+                <div className="shrink-0 border-t border-border/30">
+                  {metronome}
+                </div>
+                {/* Tap Tempo */}
+                {toolsPanel && (
+                  <div className="shrink-0 border-t border-border/30 px-1 py-1">
+                    {toolsPanel}
+                  </div>
+                )}
+                {/* Continuous Pads */}
+                <div className="shrink-0 px-1.5 py-1 border-t border-border/30">
+                  {ambientPads}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Desktop / mobile portrait (original)
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className={`flex-1 flex min-h-0 ${focusMode ? 'items-start' : 'items-center'}`}>
@@ -56,8 +118,8 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
           <div className="flex-1 flex justify-center min-h-0 overflow-hidden">
             {padGrid}
           </div>
-          {/* Continuous Pads beside the grid — tablet/desktop portrait only */}
-          {(isTablet || isDesktop) && (
+          {/* Continuous Pads beside the grid — desktop portrait only */}
+          {isDesktop && (
             <div className="w-[140px] xl:w-[160px] shrink-0 self-center pr-2 pl-1">
               {ambientPads}
             </div>
