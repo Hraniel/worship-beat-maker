@@ -47,9 +47,10 @@ export function useSilentModeDetector() {
       analyser.connect(ctx.destination);
 
       osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.05);
+      osc.stop(ctx.currentTime + 0.15);
 
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Read analyser WHILE oscillator is still playing (30ms into a 150ms tone)
+      await new Promise((resolve) => setTimeout(resolve, 30));
 
       analyser.getByteFrequencyData(dataArray);
       const sum = dataArray.reduce((a, b) => a + b, 0);
