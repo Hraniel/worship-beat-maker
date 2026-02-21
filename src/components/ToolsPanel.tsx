@@ -6,10 +6,10 @@ import { Progress } from '@/components/ui/progress';
 /* ─── Tap Tempo ─── */
 const MAX_TAP_INTERVAL = 2000; // ms
 const TAP_HISTORY_SIZE = 8;
-const AUTO_APPLY_DELAY = 5000; // 5s idle before countdown starts
-const COUNTDOWN_DURATION = 5000; // 5s countdown bar
+// These are now computed from getTapAutoApplyTimeout()
 
 const AUTO_APPLY_KEY = 'drum-pads-tap-auto-apply';
+const AUTO_APPLY_TIMEOUT_KEY = 'drum-pads-tap-auto-apply-timeout';
 
 export function isTapAutoApplyEnabled(): boolean {
   const v = localStorage.getItem(AUTO_APPLY_KEY);
@@ -18,6 +18,15 @@ export function isTapAutoApplyEnabled(): boolean {
 
 export function setTapAutoApply(enabled: boolean) {
   localStorage.setItem(AUTO_APPLY_KEY, String(enabled));
+}
+
+export function getTapAutoApplyTimeout(): number {
+  const v = Number(localStorage.getItem(AUTO_APPLY_TIMEOUT_KEY));
+  return v >= 5 && v <= 30 ? v : 10;
+}
+
+export function setTapAutoApplyTimeout(seconds: number) {
+  localStorage.setItem(AUTO_APPLY_TIMEOUT_KEY, String(seconds));
 }
 
 interface ToolsPanelProps {
@@ -37,10 +46,12 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
   const countdownRef = useRef<number | null>(null);
   const countdownStartRef = useRef<number>(0);
   const autoApplyEnabled = useRef(isTapAutoApplyEnabled());
+  const autoApplyTimeout = useRef(getTapAutoApplyTimeout());
 
-  // Re-read setting when component mounts
+  // Re-read settings when component mounts
   useEffect(() => {
     autoApplyEnabled.current = isTapAutoApplyEnabled();
+    autoApplyTimeout.current = getTapAutoApplyTimeout();
   });
 
   const clearAllTimers = useCallback(() => {
@@ -60,14 +71,15 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
   }, [onBpmChange, onAutoApplied, clearAllTimers]);
 
   const startCountdown = useCallback((bpmVal: number) => {
+    const countdownMs = (autoApplyTimeout.current - 5) * 1000; // remaining after 5s idle
     setShowCountdown(true);
     countdownStartRef.current = performance.now();
 
     const tick = () => {
       const elapsed = performance.now() - countdownStartRef.current;
-      const pct = Math.min(100, (elapsed / COUNTDOWN_DURATION) * 100);
+      const pct = Math.min(100, (elapsed / countdownMs) * 100);
       setCountdownProgress(pct);
-      if (elapsed >= COUNTDOWN_DURATION) {
+      if (elapsed >= countdownMs) {
         applyAndReturn(bpmVal);
       } else {
         countdownRef.current = requestAnimationFrame(tick);
@@ -83,9 +95,10 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
     setShowCountdown(false);
     setCountdownProgress(0);
 
+    // Always wait 5s before showing the bar, then countdown fills until timeout
     idleRef.current = window.setTimeout(() => {
       startCountdown(bpmVal);
-    }, AUTO_APPLY_DELAY);
+    }, 5000);
   }, [startCountdown]);
 
   const handleTap = useCallback(() => {
@@ -172,12 +185,12 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
         ) : null}
       </div>
 
-      {/* Red countdown bar at the bottom */}
+      {/* Red countdown bar — fills left to right */}
       {showCountdown && (
         <div className="absolute bottom-0 left-0 right-0 h-1">
           <div
             className="h-full bg-destructive transition-none"
-            style={{ width: `${100 - countdownProgress}%`, marginLeft: 'auto' }}
+            style={{ width: `${countdownProgress}%` }}
           />
         </div>
       )}
