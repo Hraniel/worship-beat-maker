@@ -196,3 +196,9 @@ html.scrollable-page body {
     max-height: 28vh;
   }
 }
+
+@keyframes store-load {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(40%); }
+  100% { transform: translateX(-100%); }
+}

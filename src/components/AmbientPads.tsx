@@ -163,7 +163,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
                     relative flex items-center justify-center
                     transition-all duration-150 select-none
                     ${fullPage
-                      ? 'h-14 text-sm font-bold tracking-wider rounded-lg'
+                      ? 'h-11 text-sm font-bold tracking-wider rounded-lg'
                       : 'h-6 md:h-10 text-[10px] md:text-xs font-semibold tracking-wide rounded-[5px]'
                     }
                     ${loading || isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
@@ -173,11 +173,11 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
                   `}
                   style={{
                     backgroundColor: isActive
-                      ? fullPage ? 'hsl(0 0% 20%)' : 'hsl(0 0% 18%)'
+                      ? fullPage ? 'hsl(0 0% 24%)' : 'hsl(0 0% 18%)'
                       : fullPage ? 'hsl(0 0% 13%)' : 'hsl(0 0% 11%)',
                     boxShadow: isActive
                       ? fullPage
-                        ? 'inset 0 0 0 1.5px hsl(0 0% 30%), 0 0 14px hsl(0 0% 100% / 0.08)'
+                        ? 'inset 0 0 0 1.5px hsl(0 0% 35%), 0 0 14px hsl(0 0% 100% / 0.10)'
                         : 'inset 0 0 0 1px hsl(0 0% 28%), 0 0 10px hsl(0 0% 100% / 0.05)'
                       : fullPage
                         ? 'inset 0 0 0 1px hsl(0 0% 18%)'
