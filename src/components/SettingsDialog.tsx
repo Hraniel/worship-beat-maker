@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
-import { isTapAutoApplyEnabled, setTapAutoApply } from '@/components/ToolsPanel';
+import { isTapAutoApplyEnabled, setTapAutoApply, getTapAutoApplyTimeout, setTapAutoApplyTimeout } from '@/components/ToolsPanel';
 import { useIsMobile, useIsLandscape } from '@/hooks/use-mobile';
 import {
   isPushSupported,
@@ -267,37 +267,87 @@ function NotificationSettings() {
   );
 }
 
-// ── Tap Auto-Apply Toggle ───────────────────────────────────────────────────
+// ── Tap Tempo Settings ──────────────────────────────────────────────────────
 
-function TapAutoApplyToggle() {
+function TapTempoSettings() {
   const [enabled, setEnabled] = useState(isTapAutoApplyEnabled);
+  const [timeout, setTimeoutVal] = useState(getTapAutoApplyTimeout);
 
-  const toggle = () => {
+  const toggleEnabled = () => {
     const next = !enabled;
     setEnabled(next);
     setTapAutoApply(next);
   };
 
+  const handleTimeoutChange = (val: number) => {
+    const clamped = Math.max(5, Math.min(30, val));
+    setTimeoutVal(clamped);
+    setTapAutoApplyTimeout(clamped);
+  };
+
   return (
-    <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
-      <div>
-        <p className="text-sm font-semibold text-foreground">Tap Tempo automático</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Aplica o BPM detectado automaticamente após 10s sem tocar e volta para o Mix.
+    <div className="flex flex-col gap-3 w-full">
+      <div className="flex justify-center items-center gap-2">
+        <Timer className="h-5 w-5 text-primary" />
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tap Tempo</span>
+      </div>
+
+      {/* Toggle auto-apply */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Aplicação automática</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Após parar de tocar, o BPM detectado é aplicado automaticamente e volta para o Mix.
+          </p>
+        </div>
+        <button
+          onClick={toggleEnabled}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            enabled ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${
+              enabled ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* Timeout selector */}
+      {enabled && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-foreground">Tempo de espera</p>
+            <span className="text-sm font-bold text-primary tabular-nums">{timeout}s</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Segundos de inatividade antes de aplicar o BPM. Uma barra vermelha aparece nos últimos segundos.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={5}
+              max={30}
+              step={1}
+              value={timeout}
+              onChange={(e) => handleTimeoutChange(Number(e.target.value))}
+              className="flex-1 accent-primary h-1.5"
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>5s</span>
+            <span>30s</span>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
+        <p className="text-xs font-medium text-foreground">Como funciona?</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Toque no botão de Tap Tempo no ritmo da música. O app detecta o BPM automaticamente. Se a aplicação automática estiver ativa, após {timeout} segundos sem tocar, o BPM é aplicado e você volta para o Mix.
         </p>
       </div>
-      <button
-        onClick={toggle}
-        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-          enabled ? 'bg-primary' : 'bg-muted'
-        }`}
-      >
-        <span
-          className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${
-            enabled ? 'translate-x-5' : 'translate-x-0'
-          }`}
-        />
-      </button>
     </div>
   );
 }
@@ -306,6 +356,7 @@ function TapAutoApplyToggle() {
 
 const TAB_ITEMS = [
   { value: 'audio', label: 'Áudio', icon: Headphones },
+  { value: 'tap', label: 'Tap Tempo', icon: Timer },
   { value: 'notifications', label: 'Notificações', icon: Bell },
   { value: 'store', label: 'Loja', icon: Store },
   { value: 'plans', label: 'Planos', icon: Crown },
@@ -369,11 +420,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
               onSideChange={(v) => update({ metronomeSide: v })}
             />
-
-            {/* Tap Auto-Apply toggle */}
-            <TapAutoApplyToggle />
+          
           </div>
         );
+
+      case 'tap':
+        return <TapTempoSettings />;
 
       case 'notifications':
         return (
