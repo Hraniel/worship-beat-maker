@@ -1058,7 +1058,7 @@ const Index = () => {
     >
       {/* Safe-area top bar — matches header color to avoid black strip */}
       <div
-        className={`shrink-0 ${!focusMode && !currentSongId ? "bg-primary/10" : "bg-card"}`}
+        className="shrink-0 bg-primary/10"
         style={{ height: "env(safe-area-inset-top, 0px)" }}
       />
       {/* Performance Mode overlay */}
@@ -1190,7 +1190,7 @@ const Index = () => {
             </div>
           </header>
         ) : (
-          <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b border-border bg-card shrink-0">
+          <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b border-primary/20 bg-primary/10 shrink-0">
             <div className="flex items-center gap-1.5 min-w-0 shrink-0">
               <img
                 src={document.documentElement.classList.contains("dark") ? logoLight : logoDark}
@@ -2050,7 +2050,7 @@ const Index = () => {
                     </div>
 
                     {/* === MET PAGE === always mounted, full page */}
-                    <div className={footerPage === 1 ? "h-full flex flex-col" : "hidden"}>
+                    <div className={footerPage === 1 ? "h-full flex flex-col px-1.5 pt-0.5 pb-0" : "hidden"}>
                       <div className="flex-1 flex flex-col" data-tutorial="metronome">
                         {spotifyTrackName && (
                           <div className="px-3 py-1 border-b border-border/50 shrink-0">
