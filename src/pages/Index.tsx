@@ -97,6 +97,8 @@ import { useNotificationPrompt } from "@/hooks/useNotificationPrompt";
 import { usePresenceTracker } from "@/hooks/usePresenceTracker";
 import { useMidi } from "@/hooks/useMidi";
 import MidiIndicator from "@/components/MidiIndicator";
+import SilentModeBanner from "@/components/SilentModeBanner";
+import { useSilentModeDetector } from "@/hooks/useSilentModeDetector";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
@@ -141,6 +143,7 @@ const Index = () => {
   const isTablet = useIsTablet();
   const isDesktop = useIsDesktop();
   const footerHeight = useFooterHeight();
+  const { isSilent: showSilentMode, dismiss: dismissSilentMode } = useSilentModeDetector();
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
@@ -2154,6 +2157,7 @@ const Index = () => {
         onMidiStopLearn={midi.stopLearn}
         onMidiResetMappings={midi.resetMappings}
       />
+      <SilentModeBanner visible={showSilentMode} onDismiss={dismissSilentMode} />
       {/* Feature Gate Upgrade Modal */}
       <UpgradeGateModal
         payload={upgradeGate}
