@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano } from 'lucide-react';
+import MidiSettings from '@/components/MidiSettings';
+import type { MidiChannel, MidiDevice } from '@/lib/midi-engine';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
 import type { PadSound } from '@/lib/sounds';
@@ -60,6 +62,17 @@ interface SettingsDialogProps {
   padsStereoMode?: 'stereo' | 'mono';
   padsSide?: 'left' | 'right' | null;
   onRenamePad?: (padId: string, name: string) => void;
+  // MIDI props
+  midiSupported?: boolean;
+  midiDevices?: MidiDevice[];
+  midiChannel?: MidiChannel;
+  midiMappings?: Record<number, string>;
+  midiIsLearning?: boolean;
+  midiLearnPadId?: string | null;
+  onMidiSetChannel?: (ch: MidiChannel) => void;
+  onMidiStartLearn?: (padId: string) => void;
+  onMidiStopLearn?: () => void;
+  onMidiResetMappings?: () => void;
 }
 
 interface StereoOptionProps {
@@ -537,6 +550,7 @@ function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenam
 
 const TAB_ITEMS = [
   { value: 'audio', label: 'Áudio', icon: Headphones },
+  { value: 'midi', label: 'MIDI', icon: Piano },
   { value: 'tap', label: 'Tap Tempo', icon: Timer },
   { value: 'notifications', label: 'Notificações', icon: Bell },
   { value: 'plans', label: 'Planos', icon: Crown },
@@ -546,7 +560,7 @@ const TAB_ITEMS = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -614,6 +628,22 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             )}
           
           </div>
+        );
+
+      case 'midi':
+        return (
+          <MidiSettings
+            isMidiSupported={midiSupported ?? false}
+            connectedDevices={midiDevices ?? []}
+            channel={midiChannel ?? 'all'}
+            mappings={midiMappings ?? {}}
+            isLearning={midiIsLearning ?? false}
+            learnPadId={midiLearnPadId ?? null}
+            onSetChannel={onMidiSetChannel ?? (() => {})}
+            onStartLearn={onMidiStartLearn ?? (() => {})}
+            onStopLearn={onMidiStopLearn ?? (() => {})}
+            onResetMappings={onMidiResetMappings ?? (() => {})}
+          />
         );
 
       case 'tap':
