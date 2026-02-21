@@ -1669,7 +1669,7 @@ const Index = () => {
         {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
         {!isLandscape && (
           <footer
-            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "h-[38vh] flex-none lg:h-auto lg:flex-1" : ""}`}
+            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "h-[34vh] flex-none lg:h-auto lg:flex-1" : ""}`}
             style={{
               paddingBottom:
                 isTablet || (typeof window !== "undefined" && window.innerWidth >= 1024)
