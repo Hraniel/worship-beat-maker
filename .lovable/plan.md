@@ -1,40 +1,55 @@
 
 
-# Corrigir deteccao MIDI no Chrome PWA
+# Corrigir popup de Modo Silencioso -- disparar ao tocar um pad
 
 ## Problema
 
-O app instalado como PWA via Chrome mostra "MIDI nao suportado" porque a verificacao sincrona `isMidiSupported()` falha antes de tentar acessar a API. Em PWAs, o acesso ao `navigator.requestMIDIAccess` pode nao estar disponivel imediatamente ou precisa ser invocado para confirmar suporte.
+O detector de modo silencioso cria um **novo AudioContext** para testar, mas no iOS esse novo contexto fica "suspended" ate uma interacao do usuario -- so que a interacao acontece no contexto principal do app, nao nesse de teste. Resultado: o check sempre encontra `ctx.state === "suspended"` e retorna sem verificar nada.
+
+Alem disso, o hook roda em timer automatico (2s + a cada 5s), mas o comportamento pedido e que o popup apareca **ao tocar em um pad**.
 
 ## Solucao
 
-Mudar a estrategia: em vez de verificar sincronamente se a funcao existe e desistir, o hook vai **tentar chamar `initMidi()` diretamente** e usar o resultado (sucesso/falha) para determinar o suporte. Isso garante que mesmo em contextos onde a deteccao sincrona falha (PWA, iframes), o MIDI funcione se a API estiver realmente disponivel.
+1. Mudar o hook para expor uma funcao `triggerCheck()` que pode ser chamada sob demanda
+2. Usar o AudioContext **do app** (via `getAudioContext()`) em vez de criar um novo -- assim ele ja esta desbloqueado apos o toque no pad
+3. Chamar `triggerCheck()` dentro do `DrumPad` apos o usuario tocar em um pad
+4. Remover os timers automaticos (ou mante-los como fallback secundario, mas o gatilho principal sera o toque no pad)
 
 ## Alteracoes
 
-### 1. `src/hooks/useMidi.ts`
+### 1. `src/hooks/useSilentModeDetector.ts`
 
-- Remover a verificacao sincrona `if (!checkMidiSupported()) return`
-- Sempre tentar chamar `initMidi()` no mount
-- Usar o retorno booleano de `initMidi()` para definir `supported = true/false`
-- Manter o `initRef` para evitar dupla inicializacao
+- Importar `getAudioContext` de `@/lib/audio-engine`
+- Em `checkSilentMode`: usar o AudioContext do app em vez de criar um novo. Remover o early return de `ctx.state === "suspended"` (o contexto do app ja estara ativo)
+- Expor `triggerCheck` no retorno do hook para chamada externa
+- Manter intervalo periodico como fallback mas com delay inicial maior (5s)
 
-### 2. `src/lib/midi-engine.ts`
+### 2. `src/components/DrumPad.tsx`
 
-- Simplificar `isMidiSupported()` -- manter como utilidade mas nao como gate bloqueante
-- Garantir que `initMidi()` retorna `false` de forma segura quando a API nao existe (ja faz isso com try/catch)
+- Receber uma nova prop opcional `onPadPlayed?: () => void`
+- Chamar `onPadPlayed()` dentro da funcao `fireSound` (apos o som ser disparado, garantindo que o AudioContext esta ativo)
+
+### 3. `src/components/PadGrid.tsx`
+
+- Receber `onPadPlayed?: () => void` e repassa-la para cada `DrumPad`
+
+### 4. `src/pages/Index.tsx`
+
+- Extrair `triggerCheck` do hook `useSilentModeDetector`
+- Passar `triggerCheck` como `onPadPlayed` para o `PadGrid`
 
 ## Detalhes tecnicos
 
-O `initMidi()` ja tem try/catch e retorna `false` se `requestMIDIAccess` falhar. A mudanca principal e no hook: em vez de checar sincronamente e nunca tentar, ele tenta sempre e reage ao resultado.
-
 ```text
-Antes:
-  checkMidiSupported() === false -> nunca tenta -> mostra "nao suportado"
-
-Depois:
-  initMidi() -> tenta requestMIDIAccess
-    -> sucesso: supported = true
-    -> falha: supported = false, mostra "nao suportado"
+Fluxo:
+  Usuario toca pad
+    -> DrumPad.fireSound()
+    -> playSound() (AudioContext ativo)
+    -> onPadPlayed() chamado
+    -> triggerCheck()
+    -> Usa getAudioContext() do app (ja desbloqueado)
+    -> AnalyserNode mede output real
+    -> sum === 0 ? mostra banner : nao mostra
 ```
 
+A chave da correcao e usar o AudioContext compartilhado do app (`getAudioContext()`) que ja esta `running` apos o toque, em vez de criar um novo que sempre estara `suspended`.
