@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines } from 'lucide-react';
+import {
+  isOutputSelectionSupported,
+  getAudioOutputDevices,
+  getSavedOutputDeviceId,
+  setAudioOutputDevice,
+} from '@/lib/audio-engine';
 import MidiSettings from '@/components/MidiSettings';
 import type { MidiChannel, MidiDevice } from '@/lib/midi-engine';
 import { useNavigate } from 'react-router-dom';
@@ -145,6 +151,117 @@ const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onMo
     )}
   </div>
 );
+
+// ── Audio Output Device Selector ──────────────────────────────────────────
+
+function AudioOutputSelector() {
+  const [supported, setSupported] = useState(false);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedId, setSelectedId] = useState<string>('default');
+  const [loading, setLoading] = useState(true);
+  const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    const sup = isOutputSelectionSupported();
+    setSupported(sup);
+    if (!sup) {
+      setLoading(false);
+      return;
+    }
+
+    const saved = getSavedOutputDeviceId();
+    if (saved) setSelectedId(saved);
+
+    getAudioOutputDevices().then((devs) => {
+      setDevices(devs);
+      setLoading(false);
+    });
+
+    // Listen for device changes
+    const handleChange = () => {
+      getAudioOutputDevices().then(setDevices);
+    };
+    navigator.mediaDevices?.addEventListener('devicechange', handleChange);
+    return () => navigator.mediaDevices?.removeEventListener('devicechange', handleChange);
+  }, []);
+
+  const handleSelect = async (deviceId: string) => {
+    setSwitching(true);
+    const ok = await setAudioOutputDevice(deviceId);
+    if (ok) {
+      setSelectedId(deviceId);
+    }
+    setSwitching(false);
+  };
+
+  if (!supported) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 space-y-2 w-full">
+        <div className="flex items-center gap-2">
+          <AudioLines className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">Saída de Áudio</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Seleção de dispositivo de saída não é suportada neste navegador.
+          Use o Chrome 110+ para esta funcionalidade.
+        </p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-center">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 space-y-3 w-full">
+      <div className="flex items-center gap-2">
+        <AudioLines className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">Saída de Áudio</span>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Escolha o dispositivo de saída (placa de áudio, interface USB, fone etc.)
+      </p>
+      <div className="space-y-1">
+        {devices.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic py-2">Nenhum dispositivo encontrado</p>
+        ) : (
+          devices.map((dev) => {
+            const isActive = selectedId === dev.deviceId || (selectedId === 'default' && dev.deviceId === '');
+            return (
+              <button
+                key={dev.deviceId || 'default'}
+                onClick={() => handleSelect(dev.deviceId || 'default')}
+                disabled={switching}
+                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-md text-left transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 border border-primary/30 text-foreground'
+                    : 'hover:bg-muted/50 border border-transparent text-muted-foreground'
+                } ${switching ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-primary' : 'bg-muted'}`} />
+                <span className="text-xs font-medium truncate flex-1">
+                  {dev.label || `Dispositivo ${dev.deviceId.slice(0, 8)}`}
+                </span>
+                {isActive && switching && <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />}
+              </button>
+            );
+          })
+        )}
+      </div>
+      <button
+        onClick={() => getAudioOutputDevices().then(setDevices)}
+        className="text-xs text-primary hover:underline"
+      >
+        Atualizar lista
+      </button>
+    </div>
+  );
+}
 
 // ── Push Notification Settings ──────────────────────────────────────────────
 
@@ -596,6 +713,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
       case 'audio':
         return (
           <div className="flex flex-col gap-3 w-full">
+            <AudioOutputSelector />
             <StereoOption
               id="pads" label="Pads"
               mode={settings.padsStereo} side={settings.padsSide}

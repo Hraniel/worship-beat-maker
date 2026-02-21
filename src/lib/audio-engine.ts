@@ -635,3 +635,63 @@ export function playSound(id: string, volume = 0.7, destination?: AudioNode) {
   const fn = soundMap[id];
   if (fn) fn(volume, destination);
 }
+
+// --- AUDIO OUTPUT DEVICE SELECTION ---
+
+const OUTPUT_DEVICE_KEY = 'drum-pads-output-device';
+
+export function isOutputSelectionSupported(): boolean {
+  try {
+    return typeof AudioContext !== 'undefined' && 'setSinkId' in AudioContext.prototype;
+  } catch {
+    return false;
+  }
+}
+
+export async function getAudioOutputDevices(): Promise<MediaDeviceInfo[]> {
+  try {
+    // Request permission first (needed for device labels)
+    await navigator.mediaDevices.getUserMedia({ audio: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(() => {});
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter(d => d.kind === 'audiooutput');
+  } catch {
+    return [];
+  }
+}
+
+export function getSavedOutputDeviceId(): string | null {
+  return localStorage.getItem(OUTPUT_DEVICE_KEY);
+}
+
+export async function setAudioOutputDevice(deviceId: string): Promise<boolean> {
+  try {
+    const ctx = getAudioContext();
+    if ('setSinkId' in ctx) {
+      await (ctx as any).setSinkId(deviceId === 'default' ? '' : deviceId);
+      localStorage.setItem(OUTPUT_DEVICE_KEY, deviceId);
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error('[AudioEngine] setSinkId failed:', e);
+    return false;
+  }
+}
+
+// Restore saved output device on init
+if (typeof window !== 'undefined') {
+  const savedDevice = localStorage.getItem(OUTPUT_DEVICE_KEY);
+  if (savedDevice && isOutputSelectionSupported()) {
+    // Defer until audio context is created
+    const origGetCtx = getAudioContext;
+    let restored = false;
+    const tryRestore = () => {
+      if (restored) return;
+      restored = true;
+      setTimeout(() => {
+        setAudioOutputDevice(savedDevice).catch(() => {});
+      }, 500);
+    };
+    window.addEventListener('pointerdown', tryRestore, { once: true });
+  }
+}
