@@ -1,17 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-
-/**
- * Detects iOS silent mode by playing a tiny OscillatorNode and measuring
- * whether the AudioContext destination actually produced output.
- * 
- * The trick: on iOS, when the physical silent switch is ON, Web Audio
- * output is suppressed. We detect this by scheduling a very short tone
- * and checking if `audioContext.currentTime` advances while base time
- * stays consistent — combined with a user-interaction requirement.
- * 
- * Fallback: we simply check if the platform is iOS and periodically
- * test a silent oscillator.
- */
+import { useState, useCallback, useRef, useEffect } from "react";
+import { getAudioContext } from "@/lib/audio-engine";
 
 function isIOSDevice(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -22,33 +10,29 @@ function isIOSDevice(): boolean {
 export function useSilentModeDetector() {
   const [isSilent, setIsSilent] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval>>();
   const isIOS = isIOSDevice();
+  const checkingRef = useRef(false);
 
   const checkSilentMode = useCallback(async () => {
-    if (!isIOS) return;
+    if (!isIOS || checkingRef.current) return;
+    checkingRef.current = true;
 
     try {
-      // Create a temporary audio context for detection
-      // @ts-ignore
-      const AC = window.AudioContext || (window as any).webkitAudioContext;
-      const ctx = new AC() as AudioContext;
+      const ctx = getAudioContext();
 
-      // If context is suspended, user hasn't interacted yet — skip
-      if (ctx.state === "suspended") {
-        ctx.close();
+      // Context must be running (called after user interaction)
+      if (ctx.state !== "running") {
+        checkingRef.current = false;
         return;
       }
 
-      // Create an analyser to measure actual output
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-      // Play a very short, inaudible-frequency oscillator
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      gain.gain.value = 0.001; // Nearly silent but enough to register
+      gain.gain.value = 0.001;
       osc.frequency.value = 200;
       osc.connect(gain);
       gain.connect(analyser);
@@ -57,40 +41,31 @@ export function useSilentModeDetector() {
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.05);
 
-      // Wait a bit then check if analyser registered anything
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       analyser.getByteFrequencyData(dataArray);
       const sum = dataArray.reduce((a, b) => a + b, 0);
 
-      // On silent mode, sum will be 0 because iOS suppresses output
       setIsSilent(sum === 0);
 
       osc.disconnect();
       gain.disconnect();
       analyser.disconnect();
-      ctx.close();
     } catch {
-      // If detection fails, don't show the warning
+      // Detection failed — don't show warning
+    } finally {
+      checkingRef.current = false;
     }
   }, [isIOS]);
 
+  const dismiss = useCallback(() => setDismissed(true), []);
+
+  // Reset dismissed when silent mode turns off
   useEffect(() => {
-    if (!isIOS) return;
+    if (!isSilent) setDismissed(false);
+  }, [isSilent]);
 
-    // Check after a short delay (user needs to have interacted first)
-    const initialTimeout = setTimeout(checkSilentMode, 2000);
-
-    // Re-check periodically (user might toggle switch)
-    intervalRef.current = setInterval(checkSilentMode, 5000);
-
-    return () => {
-      clearTimeout(initialTimeout);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isIOS, checkSilentMode]);
-
-  // Also re-check on visibility change (user returns to app)
+  // Re-check on visibility change
   useEffect(() => {
     if (!isIOS) return;
     const handler = () => {
@@ -102,15 +77,9 @@ export function useSilentModeDetector() {
     return () => document.removeEventListener("visibilitychange", handler);
   }, [isIOS, checkSilentMode]);
 
-  const dismiss = useCallback(() => setDismissed(true), []);
-
-  // Reset dismissed state if silent mode is turned off and back on
-  useEffect(() => {
-    if (!isSilent) setDismissed(false);
-  }, [isSilent]);
-
   return {
     isSilent: isIOS && isSilent && !dismissed,
     dismiss,
+    triggerCheck: checkSilentMode,
   };
 }

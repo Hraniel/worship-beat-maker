@@ -143,7 +143,7 @@ const Index = () => {
   const isTablet = useIsTablet();
   const isDesktop = useIsDesktop();
   const footerHeight = useFooterHeight();
-  const { isSilent: showSilentMode, dismiss: dismissSilentMode } = useSilentModeDetector();
+  const { isSilent: showSilentMode, dismiss: dismissSilentMode, triggerCheck: triggerSilentCheck } = useSilentModeDetector();
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
@@ -1519,6 +1519,7 @@ const Index = () => {
                       });
                     }
                   }}
+                  onPadPlayed={triggerSilentCheck}
                 />
               </div>
             }
