@@ -1801,146 +1801,10 @@ const Index = () => {
               {/* Continuous Pads: now rendered beside the PadGrid in the main area (padGrid prop) */}
             </div>
 
-            {/* Tablet: Faders → Metrônomo → Continuous Pads (sem botões Mix/Met) */}
-            {isTablet && !focusMode && (
-              <div className="hidden md:block lg:hidden p-1.5 space-y-1.5 overflow-y-auto max-h-full">
-                {/* Faders with page buttons */}
-                <div className="w-full" data-tutorial="volume-master">
-                  <div className="flex items-center gap-1 mb-1">
-                    {([0, 1, 2] as const).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => setFaderPage(p)}
-                        className={`w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
-                          faderPage === p
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }`}
-                      >
-                        {p + 1}
-                      </button>
-                    ))}
-                  </div>
-                  {showMixerLocked ? (
-                    <button
-                      onClick={openMixerGate}
-                      className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
-                    >
-                      <Lock className="h-4 w-4" />
-                      <span className="text-[10px]">Mixer — Plano Pro</span>
-                    </button>
-                  ) : (
-                    <MixerStrip
-                      controlledPage={faderPage}
-                      onControlledPageChange={setFaderPage}
-                      compactFaderHeight={80}
-                      channels={[
-                        {
-                          id: "metronome",
-                          label: "Metrônomo",
-                          shortLabel: "MET",
-                          volume: metronomeVol,
-                          onChange: handleMetronomeVolChange,
-                        },
-                        {
-                          id: "ambient",
-                          label: "Continuous",
-                          shortLabel: "PAD",
-                          volume: ambientVol,
-                          onChange: (v) => {
-                            setAmbientVol(v);
-                            setAmbientVolume(v);
-                          },
-                        },
-                        ...defaultPads.slice(0, 9).map((pad) => ({
-                          id: pad.id,
-                          label: padNames[pad.id] || pad.name,
-                          shortLabel: (padNames[pad.id] || pad.name).slice(0, 3),
-                          volume: padVolumes[pad.id] ?? 0.7,
-                          onChange: (v: number) => handlePadVolumeChange(pad.id, v),
-                        })),
-                        {
-                          id: "master",
-                          label: "Master",
-                          shortLabel: "MST",
-                          volume: masterVolume,
-                          onChange: setMasterVol,
-                        },
-                      ]}
-                    />
-                  )}
-                </div>
-                {/* Metronome — below faders */}
-                <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
-                  <div className="flex items-center justify-between px-3 py-1 border-b border-border/50">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
-                      <span className="text-[10px] text-muted-foreground">BPM</span>
-                      {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
-                      <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-                    </div>
-                    {spotifyTrackName && (
-                      <span className="text-xs font-medium text-primary truncate max-w-[150px]">
-                        ♪ {spotifyTrackName}
-                      </span>
-                    )}
-                  </div>
-                  <Metronome
-                    bpm={bpm}
-                    onBpmChange={setBpm}
-                    timeSignature={timeSignature}
-                    onTimeSignatureChange={setTimeSignature}
-                    isPlaying={metronomeIsPlaying}
-                    onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
-                    songKey={spotifyKey}
-                    onKeyChange={setSpotifyKey}
-                    onUpgradeGate={setUpgradeGate}
-                  />
-                  <div data-tutorial="pan-metronome">
-                    <PanControl
-                      label="Pan Metrônomo"
-                      pan={metronomePan}
-                      onPanChange={handleMetronomePanChange}
-                      disabled={audioSettings.metronomeStereo === "mono"}
-                    />
-                  </div>
-                </div>
-                {/* Continuous Pads: now rendered beside the PadGrid in the main area */}
-              </div>
-            )}
-            {isTablet && focusMode && (
-              <div className="hidden md:flex lg:hidden flex-col px-3 py-1.5 gap-1">
-                {/* Hidden metronome to keep audio alive */}
-                <div className="hidden">
-                  <Metronome
-                    bpm={bpm}
-                    onBpmChange={setBpm}
-                    timeSignature={timeSignature}
-                    onTimeSignatureChange={setTimeSignature}
-                    isPlaying={metronomeIsPlaying}
-                    onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
-                    songKey={spotifyKey}
-                    onKeyChange={setSpotifyKey}
-                  />
-                </div>
-                <div className="flex items-center justify-center gap-3">
-                  <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
-                  <span className="text-[10px] text-muted-foreground">BPM</span>
-                  <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>
-                  <button
-                    type="button"
-                    onClick={() => setMetronomeIsPlaying((prev) => !prev)}
-                    className={`p-1.5 rounded-md transition-colors ${metronomeIsPlaying ? "text-destructive hover:bg-destructive/10" : "text-primary hover:bg-primary/10"}`}
-                  >
-                    {metronomeIsPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </button>
-                </div>
-                {/* Continuous Pads: now rendered beside the PadGrid in the main area */}
-              </div>
-            )}
+            {/* Tablet-specific sections removed — tablets now use the same tab bar as mobile */}
 
             {/* Mobile (non-tablet): tab buttons + page content */}
-            <div className={`${isTablet ? "hidden" : "lg:hidden"} h-full relative flex flex-col`}>
+            <div className="lg:hidden h-full relative flex flex-col">
               {/* Metronome always mounted (hidden) to keep audio alive in focus mode */}
               <div className="hidden">
                 <Metronome
@@ -2141,7 +2005,7 @@ const Index = () => {
       </div>
 
       {/* Safe-area shortcut bar — OUTSIDE overflow-hidden container so it's never clipped */}
-      {!isLandscape && !isTablet && (
+      {!isLandscape && (
         <div
           className="bg-card/80 backdrop-blur-sm border-t border-border/30 shrink-0 lg:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
