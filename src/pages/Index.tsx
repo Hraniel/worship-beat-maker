@@ -95,6 +95,8 @@ import { useRegisterSW } from "virtual:pwa-register/react";
 import { useUserNotifications } from "@/hooks/useUserNotifications";
 import { useNotificationPrompt } from "@/hooks/useNotificationPrompt";
 import { usePresenceTracker } from "@/hooks/usePresenceTracker";
+import { useMidi } from "@/hooks/useMidi";
+import MidiIndicator from "@/components/MidiIndicator";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
@@ -189,6 +191,7 @@ const Index = () => {
   const [editMode, setEditMode] = useState(false);
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
+  const midi = useMidi();
 
   // Mixer gate check
   const mixerFaderAccess = canAccess("mixer_faders");
@@ -1213,6 +1216,13 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+              {/* MIDI indicator */}
+              {midi.isMidiSupported && midi.connectedDevices.length > 0 && (
+                <MidiIndicator
+                  devices={midi.connectedDevices}
+                  onClick={() => { setSettingsTab('midi'); setSettingsOpen(true); }}
+                />
+              )}
               {/* Pad size controls - desktop/tablet only */}
               {currentSongId && (
                 <div
@@ -2272,8 +2282,17 @@ const Index = () => {
         padNames={padNames}
         customSounds={customSounds}
         onRenamePad={handleRenamePad}
+        midiSupported={midi.isMidiSupported}
+        midiDevices={midi.connectedDevices}
+        midiChannel={midi.channel}
+        midiMappings={midi.mappings}
+        midiIsLearning={midi.isLearning}
+        midiLearnPadId={midi.learnPadId}
+        onMidiSetChannel={midi.setChannel}
+        onMidiStartLearn={midi.startLearn}
+        onMidiStopLearn={midi.stopLearn}
+        onMidiResetMappings={midi.resetMappings}
       />
-
       {/* Feature Gate Upgrade Modal */}
       <UpgradeGateModal
         payload={upgradeGate}
