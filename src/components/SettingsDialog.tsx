@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
+import type { PadSound } from '@/lib/sounds';
 import { isTapAutoApplyEnabled, setTapAutoApply, getTapAutoApplyTimeout, setTapAutoApplyTimeout, getTapRedirectTarget, setTapRedirectTarget, type TapRedirectTarget } from '@/components/ToolsPanel';
 import { useIsMobile, useIsLandscape } from '@/hooks/use-mobile';
 import {
@@ -52,6 +53,13 @@ interface SettingsDialogProps {
   onAudioSettingsChange?: (settings: AudioSettings) => void;
   onStartTutorial?: (sectionId?: string) => void;
   initialTab?: string;
+  // Pad config data
+  pads?: PadSound[];
+  padNames?: Record<string, string>;
+  customSounds?: Record<string, string>;
+  padsStereoMode?: 'stereo' | 'mono';
+  padsSide?: 'left' | 'right' | null;
+  onRenamePad?: (padId: string, name: string) => void;
 }
 
 interface StereoOptionProps {
@@ -387,6 +395,144 @@ function TapTempoSettings() {
   );
 }
 
+// ── Pad Config List ─────────────────────────────────────────────────────────
+
+interface PadConfigListProps {
+  pads: PadSound[];
+  padNames: Record<string, string>;
+  customSounds: Record<string, string>;
+  stereoMode: 'stereo' | 'mono';
+  side: 'left' | 'right' | null;
+  onRenamePad?: (padId: string, name: string) => void;
+}
+
+function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenamePad }: PadConfigListProps) {
+  const [expandedPad, setExpandedPad] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState<string | null>(null);
+  const [nameValue, setNameValue] = useState('');
+
+  // Only show the first 8 main pads (exclude extras beyond grid)
+  const gridPads = pads.slice(0, 8);
+
+  const stereoLabel = stereoMode === 'mono' ? 'Mono' : 'Stereo';
+  const sideLabel = stereoMode === 'stereo' && side ? (side === 'left' ? 'Esquerdo' : 'Direito') : stereoMode === 'stereo' ? 'Centro' : '—';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 pt-2">
+        <FileAudio className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold text-foreground">Configuração dos Pads</span>
+      </div>
+      <p className="text-xs text-muted-foreground">Gerencie nomes e veja configurações de cada pad individualmente.</p>
+
+      <div className="rounded-lg border border-border overflow-hidden">
+        {gridPads.map((pad, i) => {
+          const isExpanded = expandedPad === pad.id;
+          const customName = padNames[pad.id];
+          const customFile = customSounds[pad.id];
+          const displayName = customName || pad.shortName;
+          const isEditingThis = editingName === pad.id;
+
+          return (
+            <div key={pad.id} className={`${i > 0 ? 'border-t border-border' : ''}`}>
+              <button
+                onClick={() => setExpandedPad(isExpanded ? null : pad.id)}
+                className="flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-muted/50 transition-colors"
+              >
+                <div
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: `hsl(var(${pad.colorVar}))` }}
+                />
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-foreground">{displayName}</span>
+                  {customFile && (
+                    <span className="ml-2 text-[10px] text-primary">●</span>
+                  )}
+                </div>
+                <span className="text-[10px] text-muted-foreground shrink-0">{stereoLabel}</span>
+                {isExpanded
+                  ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                }
+              </button>
+
+              {isExpanded && (
+                <div className="px-3 pb-3 pt-1 space-y-2 bg-muted/20">
+                  {/* Name editing */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">Nome:</span>
+                    {isEditingThis ? (
+                      <div className="flex items-center gap-1 flex-1">
+                        <input
+                          autoFocus
+                          value={nameValue}
+                          onChange={(e) => setNameValue(e.target.value.slice(0, 6))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              onRenamePad?.(pad.id, nameValue.trim());
+                              setEditingName(null);
+                            }
+                            if (e.key === 'Escape') setEditingName(null);
+                          }}
+                          maxLength={6}
+                          className="flex-1 h-7 px-2 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                        <button
+                          className="px-2 py-1 text-xs text-primary hover:bg-muted rounded"
+                          onClick={() => {
+                            onRenamePad?.(pad.id, nameValue.trim());
+                            setEditingName(null);
+                          }}
+                        >OK</button>
+                      </div>
+                    ) : (
+                      <button
+                        className="flex items-center gap-1.5 text-xs text-foreground hover:text-primary transition-colors"
+                        onClick={() => { setNameValue(customName || pad.shortName); setEditingName(pad.id); }}
+                      >
+                        <span>{displayName}</span>
+                        <Pencil className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Original name */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">Original:</span>
+                    <span className="text-xs text-muted-foreground">{pad.name}</span>
+                  </div>
+
+                  {/* Imported file */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">Arquivo:</span>
+                    <span className="text-xs text-foreground truncate">
+                      {customFile || <span className="text-muted-foreground italic">Padrão</span>}
+                    </span>
+                  </div>
+
+                  {/* Stereo/Mono */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">Modo:</span>
+                    <span className="text-xs text-foreground">{stereoLabel}</span>
+                  </div>
+
+                  {/* Side */}
+                  {stereoMode === 'stereo' && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground w-16 shrink-0">Lado:</span>
+                      <span className="text-xs text-foreground">{sideLabel}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Tab definitions ─────────────────────────────────────────────────────────
 
 const TAB_ITEMS = [
@@ -400,7 +546,7 @@ const TAB_ITEMS = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -454,6 +600,18 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
               onSideChange={(v) => update({ metronomeSide: v })}
             />
+
+            {/* Pad config list */}
+            {pads && pads.length > 0 && (
+              <PadConfigList
+                pads={pads}
+                padNames={padNames || {}}
+                customSounds={customSounds || {}}
+                stereoMode={settings.padsStereo}
+                side={settings.padsSide}
+                onRenamePad={onRenamePad}
+              />
+            )}
           
           </div>
         );
