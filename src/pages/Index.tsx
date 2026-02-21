@@ -1521,7 +1521,6 @@ const Index = () => {
                     {focusMode ? "Sair" : "Foco"}
                   </button>
                 )}
-                <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} />
               </div>
             }
             mixer={
@@ -1995,7 +1994,7 @@ const Index = () => {
                   {/* Page content — Metronome always mounted to keep audio alive */}
                   <div className="flex-1 min-h-0 overflow-y-auto">
                     {/* === MIX PAGE === */}
-                    <div className={footerPage === 0 ? "h-full flex flex-col px-1.5 pt-0.5 pb-0" : "hidden"}>
+                    <div className={footerPage === 0 ? "h-full flex flex-col" : "hidden"}>
                       {/* Faders */}
                       <div className="flex items-end pb-0">
                         <div className="w-full" data-tutorial="volume-master">
@@ -2051,7 +2050,7 @@ const Index = () => {
                     </div>
 
                     {/* === MET PAGE === always mounted, full page */}
-                    <div className={footerPage === 1 ? "h-full flex flex-col px-1.5 pt-0.5 pb-0" : "hidden"}>
+                    <div className={footerPage === 1 ? "h-full flex flex-col" : "hidden"}>
                       <div className="flex-1 flex flex-col" data-tutorial="metronome">
                         {spotifyTrackName && (
                           <div className="px-3 py-1 border-b border-border/50 shrink-0">
@@ -2082,15 +2081,13 @@ const Index = () => {
                     </div>
 
                     {/* === TAP TEMPO PAGE === */}
-                    <div className={footerPage === 2 ? "h-full flex flex-col px-1.5 pt-0.5 pb-0" : "hidden"}>
+                    <div className={footerPage === 2 ? "h-full flex flex-col" : "hidden"}>
                       <ToolsPanel bpm={bpm} onBpmChange={setBpm} onAutoApplied={() => setFooterPage(0)} />
                     </div>
 
                     {/* === CONTINUOUS PADS PAGE === */}
-                    <div className={footerPage === 3 ? "h-full flex flex-col px-1.5 pt-0.5 pb-0" : "hidden"}>
-                      <div className="flex-1 flex flex-col items-center justify-center">
-                        <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} />
-                      </div>
+                    <div className={footerPage === 3 ? "h-full flex flex-col px-1.5 pt-1 pb-0" : "hidden"}>
+                      <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} />
                     </div>
                   </div>
                 </>
