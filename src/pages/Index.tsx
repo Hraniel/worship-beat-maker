@@ -1515,12 +1515,12 @@ const Index = () => {
                 {!isTablet && !isDesktop && !isLandscape && currentSongId && !editMode && (
                   <button
                     onClick={toggleFocusMode}
-                    className="flex items-center gap-1 px-3 py-1 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors"
+                    className={`flex items-center gap-1 ${focusMode ? 'px-5 py-2 text-sm font-semibold' : 'px-3 py-1 text-xs'} text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors`}
                     title={focusMode ? "Sair do modo foco" : "Modo foco"}
                     data-tutorial="focus-mode"
                   >
-                    {focusMode ? <Minimize className="h-3 w-3" /> : <Maximize className="h-3 w-3" />}
-                    {focusMode ? "Sair" : "Foco"}
+                    {focusMode ? <Minimize className="h-4 w-4" /> : <Maximize className="h-3 w-3" />}
+                    {focusMode ? "Sair do Foco" : "Foco"}
                   </button>
                 )}
               </div>
@@ -1690,11 +1690,11 @@ const Index = () => {
                   )}
                   <button
                     onClick={toggleFocusMode}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted/60 backdrop-blur-sm rounded-full transition-colors"
+                    className="flex items-center gap-1 px-5 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground bg-muted/60 backdrop-blur-sm rounded-full transition-colors"
                     title="Sair do modo foco"
                   >
-                    <Minimize className="h-3 w-3" />
-                    Sair
+                    <Minimize className="h-4 w-4" />
+                    Sair do Foco
                   </button>
                 </div>
               )}
@@ -2113,9 +2113,16 @@ const Index = () => {
 
                     {/* === STORE LOADING PAGE === */}
                     <div className={footerPage === 4 ? "h-full flex flex-col items-center justify-center bg-background" : "hidden"}>
-                      <div className="flex flex-col items-center gap-3">
-                        <Store className="h-8 w-8 text-muted-foreground/40 animate-pulse" />
-                        <span className="text-xs text-muted-foreground">Carregando loja...</span>
+                      <div className="flex flex-col items-center gap-4">
+                        <img
+                          src={typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? logoDark : logoLight}
+                          alt="Glory Pads"
+                          className="h-10 w-auto object-contain animate-pulse"
+                        />
+                        <div className="w-32 h-0.5 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full bg-primary animate-[store-load_1.2s_ease-in-out_infinite]" style={{ width: '60%' }} />
+                        </div>
+                        <span className="text-xs text-muted-foreground">Abrindo loja...</span>
                       </div>
                     </div>
                   </div>

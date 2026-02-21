@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
 import { isTapAutoApplyEnabled, setTapAutoApply, getTapAutoApplyTimeout, setTapAutoApplyTimeout, getTapRedirectTarget, setTapRedirectTarget, type TapRedirectTarget } from '@/components/ToolsPanel';
@@ -393,7 +393,6 @@ const TAB_ITEMS = [
   { value: 'audio', label: 'Áudio', icon: Headphones },
   { value: 'tap', label: 'Tap Tempo', icon: Timer },
   { value: 'notifications', label: 'Notificações', icon: Bell },
-  { value: 'store', label: 'Loja', icon: Store },
   { value: 'plans', label: 'Planos', icon: Crown },
   { value: 'guide', label: 'Guia', icon: HelpCircle },
   { value: 'about', label: 'Sobre', icon: Info },
@@ -470,25 +469,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notificações Push</span>
             </div>
             <NotificationSettings />
-          </div>
-        );
-
-      case 'store':
-        return (
-          <div className="flex flex-col items-center gap-4 text-center w-full py-4">
-            <div className="flex items-center gap-2">
-              <Store className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Glory Store</span>
-            </div>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              Descubra novos sons, packs e texturas para elevar seu louvor.
-            </p>
-            <button
-              onClick={() => { onOpenChange(false); navigate('/dashboard'); }}
-              className="flex items-center justify-center gap-2 w-full max-w-xs px-6 py-3 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              Acessar a Loja
-            </button>
           </div>
         );
 
