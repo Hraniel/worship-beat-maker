@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
-import { isTapAutoApplyEnabled, setTapAutoApply, getTapAutoApplyTimeout, setTapAutoApplyTimeout } from '@/components/ToolsPanel';
+import { isTapAutoApplyEnabled, setTapAutoApply, getTapAutoApplyTimeout, setTapAutoApplyTimeout, getTapRedirectTarget, setTapRedirectTarget, type TapRedirectTarget } from '@/components/ToolsPanel';
 import { useIsMobile, useIsLandscape } from '@/hooks/use-mobile';
 import {
   isPushSupported,
@@ -272,6 +272,7 @@ function NotificationSettings() {
 function TapTempoSettings() {
   const [enabled, setEnabled] = useState(isTapAutoApplyEnabled);
   const [timeout, setTimeoutVal] = useState(getTapAutoApplyTimeout);
+  const [redirectTarget, setRedirectTargetState] = useState<TapRedirectTarget>(getTapRedirectTarget);
 
   const toggleEnabled = () => {
     const next = !enabled;
@@ -283,6 +284,11 @@ function TapTempoSettings() {
     const clamped = Math.max(5, Math.min(30, val));
     setTimeoutVal(clamped);
     setTapAutoApplyTimeout(clamped);
+  };
+
+  const handleRedirectChange = (target: TapRedirectTarget) => {
+    setRedirectTargetState(target);
+    setTapRedirectTarget(target);
   };
 
   return (
@@ -342,10 +348,39 @@ function TapTempoSettings() {
         </div>
       )}
 
+      {/* Redirect target */}
+      {enabled && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <p className="text-sm font-semibold text-foreground">Redirecionar após aplicar</p>
+          <p className="text-xs text-muted-foreground">
+            Escolha para qual tela ir automaticamente após o BPM ser aplicado.
+          </p>
+          <div className="flex rounded-md overflow-hidden border border-border">
+            {([
+              { value: 'mix' as TapRedirectTarget, label: 'Mix' },
+              { value: 'metronome' as TapRedirectTarget, label: 'Metrônomo' },
+              { value: 'pads' as TapRedirectTarget, label: 'Pads' },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => handleRedirectChange(opt.value)}
+                className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                  redirectTarget === opt.value
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                } ${opt.value !== 'mix' ? 'border-l border-border' : ''}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
         <p className="text-xs font-medium text-foreground">Como funciona?</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Toque no botão de Tap Tempo no ritmo da música. O app detecta o BPM automaticamente. Se a aplicação automática estiver ativa, após {timeout} segundos sem tocar, o BPM é aplicado e você volta para o Mix.
+          Toque no botão de Tap Tempo no ritmo da música. O app detecta o BPM automaticamente. Se a aplicação automática estiver ativa, após {timeout} segundos sem tocar, o BPM é aplicado e você é redirecionado para {redirectTarget === 'mix' ? 'o Mix' : redirectTarget === 'metronome' ? 'o Metrônomo' : 'os Pads'}.
         </p>
       </div>
     </div>
