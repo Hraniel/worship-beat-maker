@@ -148,8 +148,8 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
           {/* Note grid */}
           <div className={
             fullPage
-              ? "grid grid-cols-4 gap-2 flex-1 ambient-grid"
-              : "grid grid-cols-6 gap-[2px] md:gap-1 flex-1 ambient-grid"
+              ? "grid grid-cols-4 md:grid-cols-6 gap-2 flex-1 ambient-grid"
+              : "grid grid-cols-6 gap-[2px] md:gap-1.5 flex-1 ambient-grid"
           }>
             {ALL_NOTES.map((note) => {
               const isActive = activeNotes.has(note);
@@ -163,8 +163,8 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
                     relative flex items-center justify-center
                     transition-all duration-150 select-none
                     ${fullPage
-                      ? 'h-11 text-sm font-bold tracking-wider rounded-lg'
-                      : 'h-6 md:h-10 text-[10px] md:text-xs font-semibold tracking-wide rounded-[5px]'
+                      ? 'h-11 md:h-12 text-sm font-bold tracking-wider rounded-lg'
+                      : 'h-6 md:h-9 text-[10px] md:text-xs font-semibold tracking-wide rounded-[5px]'
                     }
                     ${loading || isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
                     ${isActive
