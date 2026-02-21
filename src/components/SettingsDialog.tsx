@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Headphones, Crown, HelpCircle, Store, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
+import { isTapAutoApplyEnabled, setTapAutoApply } from '@/components/ToolsPanel';
 import { useIsMobile, useIsLandscape } from '@/hooks/use-mobile';
 import {
   isPushSupported,
@@ -266,6 +267,41 @@ function NotificationSettings() {
   );
 }
 
+// ── Tap Auto-Apply Toggle ───────────────────────────────────────────────────
+
+function TapAutoApplyToggle() {
+  const [enabled, setEnabled] = useState(isTapAutoApplyEnabled);
+
+  const toggle = () => {
+    const next = !enabled;
+    setEnabled(next);
+    setTapAutoApply(next);
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+      <div>
+        <p className="text-sm font-semibold text-foreground">Tap Tempo automático</p>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Aplica o BPM detectado automaticamente após 10s sem tocar e volta para o Mix.
+        </p>
+      </div>
+      <button
+        onClick={toggle}
+        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+          enabled ? 'bg-primary' : 'bg-muted'
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${
+            enabled ? 'translate-x-5' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
 // ── Tab definitions ─────────────────────────────────────────────────────────
 
 const TAB_ITEMS = [
@@ -333,6 +369,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
               onSideChange={(v) => update({ metronomeSide: v })}
             />
+
+            {/* Tap Auto-Apply toggle */}
+            <TapAutoApplyToggle />
           </div>
         );
 

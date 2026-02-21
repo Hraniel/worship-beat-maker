@@ -2081,8 +2081,8 @@ const Index = () => {
                     </div>
 
                     {/* === TAP TEMPO PAGE === */}
-                    <div className={footerPage === 2 ? "h-full" : "hidden"}>
-                      <ToolsPanel bpm={bpm} onBpmChange={setBpm} />
+                    <div className={footerPage === 2 ? "h-full flex flex-col px-1.5 pt-0.5 pb-0" : "hidden"}>
+                      <ToolsPanel bpm={bpm} onBpmChange={setBpm} onAutoApplied={() => setFooterPage(0)} />
                     </div>
                   </div>
                 </>
