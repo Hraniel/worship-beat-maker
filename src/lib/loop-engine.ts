@@ -3,7 +3,7 @@
 // Uses Web Audio API clock (ctx.currentTime) for drift-free scheduling,
 // which keeps running even when the page is in the background / screen locked.
 
-import { getAudioContext, playSound, playMetronomeClick, getPadPanner } from './audio-engine';
+import { getAudioContext, playSound, playMetronomeClick, getPadPanner, hasCustomBuffer } from './audio-engine';
 import type { PadSound } from './sounds';
 
 // Lazy import to avoid circular deps
@@ -161,6 +161,18 @@ function tick() {
 
   // Fire loop sounds for this subdivision
   for (const [, loop] of activeLoops) {
+    // If this loop pad has a custom imported sound, play it once per bar
+    // instead of following the native loopSteps pattern
+    if (hasCustomBuffer(loop.pad.id)) {
+      const totalSubs = SUBS * (loop.pad.loopBars || 1);
+      const loopPos = currentSubdivision % totalSubs;
+      if (loopPos === 0) {
+        const panner = getPadPanner(loop.pad.id);
+        playSound(loop.pad.id, loop.volume, panner);
+        getEmitter()?.(loop.pad.id);
+      }
+      continue;
+    }
     if (!loop.pad.loopSteps) continue;
     const totalSubs = SUBS * (loop.pad.loopBars || 1);
     const loopPos = currentSubdivision % totalSubs;
