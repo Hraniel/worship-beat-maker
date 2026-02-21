@@ -1964,7 +1964,7 @@ const Index = () => {
               ) : (
                 <>
                    {/* Top bar — always rendered to reserve height, prevents pad shift */}
-                  <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0 min-h-[24px]">
+                  <div className="flex items-center gap-1 px-2 shrink-0 h-[28px]">
                     {footerPage === 0 && ([0, 1, 2] as const).map((p) => (
                       <button
                         key={p}
@@ -1978,9 +1978,6 @@ const Index = () => {
                         {p + 1}
                       </button>
                     ))}
-                    {footerPage === 2 && (
-                      <div className="h-[28px]" />
-                    )}
                   </div>
 
                   {/* Page content — Metronome always mounted to keep audio alive */}
