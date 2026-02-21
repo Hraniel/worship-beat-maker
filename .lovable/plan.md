@@ -1,28 +1,52 @@
 
 
-## Corrigir a barra preta no topo
+# Plano: Estabilizar pads e barra superior entre todas as paginas
 
-### Problema
+## Problema atual
 
-O `body` tem `position: fixed` mas nenhum `top: 0` explicito. Quando esticamos o height com `calc(100dvh + env(safe-area-inset-bottom))`, o corpo cresceu pra baixo, mas nao esta ancorado no topo da tela. Alem disso, o `html` com `height: 100%` pode nao cobrir a area do safe-area-inset-top no iOS com `viewport-fit=cover`.
+O container da "top bar" (acima do conteudo de cada aba) tem `min-h-[24px]` mas o conteudo dentro dele varia por pagina:
+- **Mix (footerPage 0)**: mostra botoes 1, 2, 3 (altura real ~24px)
+- **Tap Tempo (footerPage 2)**: insere um spacer de 28px (altura diferente!)
+- **Metronomo, Pads, Loja**: container vazio (colapsa para min-h de 24px, mas sem padding interno consistente)
 
-### Solucao
+Isso causa micro-deslocamentos nos pads principais ao trocar de aba porque a altura efetiva do "top bar" nao e exatamente a mesma em todos os casos.
 
-Duas mudancas no arquivo `src/index.css`:
+## Solucao
 
-1. **Adicionar `top: 0; left: 0;`** ao `body` (no bloco `@layer base`, linha 101, junto ao `position: fixed`) para garantir que ele se ancore no canto superior esquerdo da tela.
-
-2. **Mudar `html` de `height: 100%` para `height: 100dvh`** (linha 7) para que o elemento html tambem cubra toda a area visivel, incluindo as safe areas.
+Transformar o "top bar" em um container de **altura fixa absoluta**, igual em todas as paginas, independente do conteudo interno.
 
 ### Detalhes tecnicos
 
-**Arquivo: `src/index.css`**
+**Arquivo: `src/pages/Index.tsx`**
 
-Linha 7 - bloco `html`:
-- De: `height: 100%;`
-- Para: `height: 100dvh;`
+1. **Unificar a altura do top bar** - Trocar `min-h-[24px]` por uma altura fixa (`h-[28px]`) que acomode tanto os botoes 1,2,3 quanto o spacer do Tap Tempo. Usar `h-[28px] shrink-0` para garantir que nunca mude.
 
-Linhas 101-102 - bloco `body` dentro de `@layer base`:
-- Adicionar: `top: 0;` e `left: 0;` logo apos `position: fixed;`
+2. **Remover o spacer separado do Tap Tempo** - O `<div className="h-[28px]" />` dentro do top bar para `footerPage === 2` se torna desnecessario porque o container ja tem altura fixa de 28px.
 
-Nenhuma mudanca em componentes React. Apenas CSS.
+3. **Conteudo condicional dentro do container fixo** - Os botoes 1,2,3 continuam aparecendo apenas na Mix page, mas agora dentro de um container que sempre ocupa exatamente 28px, sem variacao.
+
+4. **Garantir que o `flex-1 min-h-0 overflow-y-auto`** do conteudo das paginas abaixo do top bar comece sempre na mesma posicao vertical.
+
+### Mudanca no codigo (unica alteracao)
+
+Linha ~1967 do Index.tsx:
+
+De:
+```text
+<div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0 min-h-[24px]">
+  {footerPage === 0 && ...botoes 1,2,3...}
+  {footerPage === 2 && <div className="h-[28px]" />}
+</div>
+```
+
+Para:
+```text
+<div className="flex items-center gap-1 px-2 shrink-0 h-[28px]">
+  {footerPage === 0 && ...botoes 1,2,3...}
+</div>
+```
+
+- `h-[28px]` fixo substitui `min-h-[24px]` + `pt-1`
+- Remove o spacer condicional do Tap Tempo
+- Resultado: mesma posicao exata dos pads em todas as 5 abas
+
