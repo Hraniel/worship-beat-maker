@@ -1211,23 +1211,23 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Pad size controls - always visible when song selected */}
+              {/* Pad size controls - desktop/tablet only */}
               {currentSongId && (
                 <div
-                  className="flex items-center gap-0.5 sm:gap-1 mr-0.5 sm:mr-1 border border-border rounded-md px-1 sm:px-2 py-0.5 sm:py-1"
+                  className="hidden sm:flex items-center gap-1 mr-1 border border-border rounded-md px-2 py-1"
                   data-tutorial="pad-size"
                 >
-                  <Minus className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
+                  <Minus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <Slider
                     value={[padSize]}
                     onValueChange={([v]) => handlePadSizeChange(v)}
                     min={PAD_SIZE_MIN}
                     max={PAD_SIZE_MAX}
                     step={5}
-                    className="w-14 sm:w-28"
+                    className="w-28"
                   />
-                  <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums hidden sm:inline">
+                  <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">
                     {padSize}%
                   </span>
                 </div>
@@ -1380,7 +1380,7 @@ const Index = () => {
             {/* Pad size controls in focus mode */}
             {currentSongId && (
               <div
-                className="flex items-center gap-1 mr-1 border border-border rounded-md px-2 py-1"
+                className="hidden sm:flex items-center gap-1 mr-1 border border-border rounded-md px-2 py-1"
                 data-tutorial="pad-size"
               >
                 <Minus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -1390,7 +1390,7 @@ const Index = () => {
                   min={PAD_SIZE_MIN}
                   max={PAD_SIZE_MAX}
                   step={5}
-                  className="w-20 sm:w-28"
+                  className="w-28"
                 />
                 <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               </div>
@@ -1600,11 +1600,6 @@ const Index = () => {
                   onClick={() => setMetronomeOpen((prev) => !prev)}
                 >
                   <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-                    {spotifyTrackName && (
-                      <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">
-                        ♪ {spotifyTrackName}
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     <button
@@ -1655,6 +1650,7 @@ const Index = () => {
                     onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
                     songKey={spotifyKey}
                     onKeyChange={setSpotifyKey}
+                    onUpgradeGate={setUpgradeGate}
                   />
                   <div data-tutorial="pan-metronome">
                     <PanControl
@@ -1771,13 +1767,6 @@ const Index = () => {
 
               {/* Metronome — below faders, always expanded */}
               <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
-                {spotifyTrackName && (
-                  <div className="px-3 py-1 border-b border-border/50">
-                    <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">
-                      ♪ {spotifyTrackName}
-                    </span>
-                  </div>
-                )}
                 <Metronome
                   bpm={bpm}
                   onBpmChange={setBpm}
@@ -1787,6 +1776,7 @@ const Index = () => {
                   onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
                   songKey={spotifyKey}
                   onKeyChange={setSpotifyKey}
+                  onUpgradeGate={setUpgradeGate}
                 />
                 <div data-tutorial="pan-metronome">
                   <PanControl
@@ -1894,6 +1884,7 @@ const Index = () => {
                     onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
                     songKey={spotifyKey}
                     onKeyChange={setSpotifyKey}
+                    onUpgradeGate={setUpgradeGate}
                   />
                   <div data-tutorial="pan-metronome">
                     <PanControl
@@ -1972,7 +1963,7 @@ const Index = () => {
                 </div>
               ) : (
                 <>
-                  {/* Top bar — always rendered to reserve height, prevents pad shift */}
+                   {/* Top bar — always rendered to reserve height, prevents pad shift */}
                   <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0 min-h-[24px]">
                     {footerPage === 0 && ([0, 1, 2] as const).map((p) => (
                       <button
@@ -1987,6 +1978,9 @@ const Index = () => {
                         {p + 1}
                       </button>
                     ))}
+                    {footerPage === 2 && (
+                      <div className="h-[28px]" />
+                    )}
                   </div>
 
                   {/* Page content — Metronome always mounted to keep audio alive */}
@@ -2066,13 +2060,6 @@ const Index = () => {
                     {/* === MET PAGE === always mounted, full page */}
                     <div className={footerPage === 1 ? "h-full flex flex-col" : "hidden"}>
                       <div className="flex-1 flex flex-col" data-tutorial="metronome">
-                        {spotifyTrackName && (
-                          <div className="px-3 py-1 border-b border-border/50 shrink-0">
-                            <span className="text-xs font-medium text-primary whitespace-nowrap animate-marquee">
-                              ♪ {spotifyTrackName}
-                            </span>
-                          </div>
-                        )}
                         <Metronome
                           bpm={bpm}
                           onBpmChange={setBpm}
@@ -2082,6 +2069,7 @@ const Index = () => {
                           onTogglePlay={() => setMetronomeIsPlaying((prev) => !prev)}
                           songKey={spotifyKey}
                           onKeyChange={setSpotifyKey}
+                          onUpgradeGate={setUpgradeGate}
                         />
                         <div data-tutorial="pan-metronome">
                           <PanControl
@@ -2117,6 +2105,14 @@ const Index = () => {
                         >
                           {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
                         </button>
+                      </div>
+                    </div>
+
+                    {/* === STORE LOADING PAGE === */}
+                    <div className={footerPage === 4 ? "h-full flex flex-col items-center justify-center bg-background" : "hidden"}>
+                      <div className="flex flex-col items-center gap-3">
+                        <Store className="h-8 w-8 text-muted-foreground/40 animate-pulse" />
+                        <span className="text-xs text-muted-foreground">Carregando loja...</span>
                       </div>
                     </div>
                   </div>
@@ -2183,7 +2179,10 @@ const Index = () => {
                   <span className="text-[8px] font-medium">Pads</span>
                 </button>
                 <button
-                  onClick={() => navigate("/dashboard")}
+                  onClick={() => {
+                    setFooterPage(4);
+                    navigate("/dashboard");
+                  }}
                   className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
                   title="Loja"
                 >

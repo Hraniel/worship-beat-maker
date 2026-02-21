@@ -16,15 +16,15 @@ interface MetronomeProps {
   onBeat?: (beat: number) => void;
   songKey?: string | null;
   onKeyChange?: (key: string) => void;
+  onUpgradeGate?: (payload: UpgradeGatePayload) => void;
 }
 
 const TIME_SIGNATURES = ['4/4', '3/4', '6/8'];
 
 const Metronome: React.FC<MetronomeProps> = ({
-  bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat, songKey, onKeyChange
+  bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat, songKey, onKeyChange, onUpgradeGate
 }) => {
   const { canAccess } = useFeatureGates();
-  const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [syncOn, setSyncOn] = useState(() => {
     const stored = localStorage.getItem('drum-pads-sync-enabled');
     const val = stored === null ? true : stored === 'true';
@@ -125,7 +125,6 @@ const Metronome: React.FC<MetronomeProps> = ({
   }, [isPlaying, onBpmChange]);
 
   return (
-    <>
     <div className="flex flex-col gap-2 px-3 py-2">
       {/* BPM + slider row */}
       <div className="flex items-center gap-1.5">
@@ -151,7 +150,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           onClick={onTogglePlay}
           variant="outline"
           size="sm"
-          className={`h-7 px-3 text-xs gap-1 ${isPlaying ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' : 'bg-foreground text-background hover:bg-foreground/90 border-foreground'}`}
+          className={`h-7 px-3 text-xs gap-1 ${isPlaying ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' : 'border-green-500 bg-green-500 text-white hover:bg-green-600'}`}
         >
           {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
           {isPlaying ? 'Stop' : 'Play'}
@@ -178,7 +177,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           onClick={() => {
             const check = canAccess('sync');
             if (!check.allowed) {
-              setUpgradeGate({ gateKey: 'sync', gateLabel: check.gate?.gate_label || 'Sync', requiredTier: check.requiredTier || 'master' });
+              onUpgradeGate?.({ gateKey: 'sync', gateLabel: check.gate?.gate_label || 'Sync', requiredTier: check.requiredTier || 'master' });
               return;
             }
             const next = !syncOn;
@@ -241,14 +240,6 @@ const Metronome: React.FC<MetronomeProps> = ({
         </div>
       </div>
     </div>
-
-    {upgradeGate && (
-      <UpgradeGateModal
-        payload={upgradeGate}
-        onClose={() => setUpgradeGate(null)}
-      />
-    )}
-    </>
   );
 };
 
