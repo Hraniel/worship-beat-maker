@@ -22,9 +22,11 @@ import { emitPadHit } from './MixerStrip';
 
 interface AmbientPadsProps {
   panDisabled?: boolean;
+  /** When true, renders larger buttons for the dedicated full-page view */
+  fullPage?: boolean;
 }
 
-const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
+const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
   const { tier } = useSubscription();
   const { canAccess } = useFeatureGates();
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
@@ -55,7 +57,6 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
   }, [ensureSamplesLoaded]);
 
   const handleToggle = useCallback(async (note: NoteName) => {
-    // Check feature gate before allowing interaction
     const gateResult = canAccess('ambient_pads');
     if (!gateResult.allowed && gateResult.gate) {
       setUpgradeGate({
@@ -106,13 +107,11 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
 
   const handlePlayPause = useCallback(() => {
     if (isPaused) {
-      // Resume paused notes
       pausedNotesRef.current.forEach(note => startAmbientNote(note));
       setActiveNotes(new Set(pausedNotesRef.current));
       setIsPaused(false);
       pausedNotesRef.current = [];
     } else {
-      // Pause active notes
       const notes = Array.from(activeNotes) as NoteName[];
       notes.forEach(note => stopAmbientNote(note));
       pausedNotesRef.current = notes;
@@ -145,9 +144,13 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
           </button>
         )}
 
-        <div className="flex gap-1">
+        <div className={fullPage ? "flex flex-col gap-2" : "flex gap-1"}>
           {/* Note grid */}
-          <div className="grid grid-cols-6 gap-[2px] md:gap-1 flex-1 ambient-grid">
+          <div className={
+            fullPage
+              ? "grid grid-cols-4 gap-2 flex-1 ambient-grid"
+              : "grid grid-cols-6 gap-[2px] md:gap-1 flex-1 ambient-grid"
+          }>
             {ALL_NOTES.map((note) => {
               const isActive = activeNotes.has(note);
               const isCustom = customNotes.has(note);
@@ -157,43 +160,56 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
                   onClick={() => !loading && handleToggle(note)}
                   disabled={loading || isLocked}
                   className={`
-                    relative flex items-center justify-center rounded-[5px]
+                    relative flex items-center justify-center
                     transition-all duration-150 select-none
-                    h-6 md:h-10 text-[10px] md:text-xs font-semibold tracking-wide
+                    ${fullPage
+                      ? 'h-14 text-sm font-bold tracking-wider rounded-lg'
+                      : 'h-6 md:h-10 text-[10px] md:text-xs font-semibold tracking-wide rounded-[5px]'
+                    }
                     ${loading || isLocked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}
                     ${isActive
                       ? 'text-foreground ring-1 ring-foreground/30'
                       : 'text-muted-foreground hover:text-foreground/80'}
                   `}
                   style={{
-                    backgroundColor: isActive ? 'hsl(0 0% 18%)' : 'hsl(0 0% 11%)',
+                    backgroundColor: isActive
+                      ? fullPage ? 'hsl(0 0% 20%)' : 'hsl(0 0% 18%)'
+                      : fullPage ? 'hsl(0 0% 13%)' : 'hsl(0 0% 11%)',
                     boxShadow: isActive
-                      ? 'inset 0 0 0 1px hsl(0 0% 28%), 0 0 10px hsl(0 0% 100% / 0.05)'
-                      : 'inset 0 0 0 1px hsl(0 0% 15%)',
+                      ? fullPage
+                        ? 'inset 0 0 0 1.5px hsl(0 0% 30%), 0 0 14px hsl(0 0% 100% / 0.08)'
+                        : 'inset 0 0 0 1px hsl(0 0% 28%), 0 0 10px hsl(0 0% 100% / 0.05)'
+                      : fullPage
+                        ? 'inset 0 0 0 1px hsl(0 0% 18%)'
+                        : 'inset 0 0 0 1px hsl(0 0% 15%)',
                   }}>
                   {note}
                   {isCustom &&
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 text-[5px] opacity-40">MP3</span>
+                    <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 opacity-40 ${fullPage ? 'text-[7px]' : 'text-[5px]'}`}>MP3</span>
                   }
                   {isActive &&
-                    <span className="absolute top-0.5 right-0.5 w-1 h-1 rounded-full animate-pulse bg-primary" />
+                    <span className={`absolute top-1 right-1 rounded-full animate-pulse bg-primary ${fullPage ? 'w-1.5 h-1.5' : 'w-1 h-1'}`} />
                   }
                 </button>
               );
             })}
           </div>
 
-          {/* Right: play/pause */}
+          {/* Play/pause */}
           {showPlayPause && (
-            <div className="flex flex-col items-center justify-end py-0.5 w-7 shrink-0">
+            <div className={
+              fullPage
+                ? "flex items-center justify-center py-1"
+                : "flex flex-col items-center justify-end py-0.5 w-7 shrink-0"
+            }>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-5 w-5 text-foreground hover:text-foreground"
+                className={fullPage ? "h-8 w-8 text-foreground hover:text-foreground" : "h-5 w-5 text-foreground hover:text-foreground"}
                 onClick={handlePlayPause}
                 title={isPaused ? 'Retomar' : 'Pausar'}
               >
-                {isPaused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+                {isPaused ? <Play className={fullPage ? "h-5 w-5" : "h-3 w-3"} /> : <Pause className={fullPage ? "h-5 w-5" : "h-3 w-3"} />}
               </Button>
             </div>
           )}
@@ -217,4 +233,3 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled }) => {
 };
 
 export default AmbientPads;
-

@@ -1972,24 +1972,22 @@ const Index = () => {
                 </div>
               ) : (
                 <>
-                  {/* Fader page buttons — only visible when Mix tab is active */}
-                  {footerPage === 0 && (
-                    <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0">
-                      {([0, 1, 2] as const).map((p) => (
-                        <button
-                          key={p}
-                          onClick={() => setFaderPage(p)}
-                          className={`relative w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
-                            faderPage === p
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          }`}
-                        >
-                          {p + 1}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  {/* Top bar — always rendered to reserve height, prevents pad shift */}
+                  <div className="flex items-center gap-1 px-2 pt-1 pb-0 shrink-0 min-h-[24px]">
+                    {footerPage === 0 && ([0, 1, 2] as const).map((p) => (
+                      <button
+                        key={p}
+                        onClick={() => setFaderPage(p)}
+                        className={`relative w-5 h-5 rounded text-[9px] font-bold transition-colors flex items-center justify-center ${
+                          faderPage === p
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {p + 1}
+                      </button>
+                    ))}
+                  </div>
 
                   {/* Page content — Metronome always mounted to keep audio alive */}
                   <div className="flex-1 min-h-0 overflow-y-auto">
@@ -2047,6 +2045,22 @@ const Index = () => {
                           )}
                         </div>
                       </div>
+                      {/* Mini metronome bar */}
+                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-1 rounded-md border border-border/30 bg-card/60">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
+                          <span className="text-[9px] text-muted-foreground">BPM</span>
+                          {spotifyKey && <span className="text-[9px] font-semibold text-primary">· {spotifyKey}</span>}
+                          <span className="text-[9px] text-muted-foreground">· {timeSignature}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMetronomeIsPlaying((prev) => !prev)}
+                          className={`p-1 rounded-md transition-colors ${metronomeIsPlaying ? "text-destructive hover:bg-destructive/10" : "text-primary hover:bg-primary/10"}`}
+                        >
+                          {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     </div>
 
                     {/* === MET PAGE === always mounted, full page */}
@@ -2086,8 +2100,24 @@ const Index = () => {
                     </div>
 
                     {/* === CONTINUOUS PADS PAGE === */}
-                    <div className={footerPage === 3 ? "h-full flex flex-col px-1.5 pt-1 pb-0" : "hidden"}>
-                      <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} />
+                    <div className={footerPage === 3 ? "h-full flex flex-col px-1.5" : "hidden"}>
+                      <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} fullPage />
+                      {/* Mini metronome bar */}
+                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-2 rounded-md border border-border/30 bg-card/60 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
+                          <span className="text-[9px] text-muted-foreground">BPM</span>
+                          {spotifyKey && <span className="text-[9px] font-semibold text-primary">· {spotifyKey}</span>}
+                          <span className="text-[9px] text-muted-foreground">· {timeSignature}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setMetronomeIsPlaying((prev) => !prev)}
+                          className={`p-1 rounded-md transition-colors ${metronomeIsPlaying ? "text-destructive hover:bg-destructive/10" : "text-primary hover:bg-primary/10"}`}
+                        >
+                          {metronomeIsPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>
