@@ -1684,10 +1684,7 @@ const Index = () => {
             className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "flex-none lg:h-auto lg:flex-1" : ""}`}
             style={{
               ...(!focusMode && !isDesktop ? { height: footerHeight } : {}),
-              paddingBottom:
-                isTablet || (typeof window !== "undefined" && window.innerWidth >= 1024)
-                  ? "env(safe-area-inset-bottom, 0px)"
-                  : undefined,
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
             }}
           >
             {/* Desktop: stacked layout */}
@@ -1806,7 +1803,7 @@ const Index = () => {
 
             {/* Tablet: Faders → Metrônomo → Continuous Pads (sem botões Mix/Met) */}
             {isTablet && !focusMode && (
-              <div className="hidden md:block lg:hidden p-1.5 space-y-1.5 overflow-y-auto">
+              <div className="hidden md:block lg:hidden p-1.5 space-y-1.5 overflow-y-auto max-h-full">
                 {/* Faders with page buttons */}
                 <div className="w-full" data-tutorial="volume-master">
                   <div className="flex items-center gap-1 mb-1">
@@ -2144,7 +2141,7 @@ const Index = () => {
       </div>
 
       {/* Safe-area shortcut bar — OUTSIDE overflow-hidden container so it's never clipped */}
-      {!isLandscape && (
+      {!isLandscape && !isTablet && (
         <div
           className="bg-card/80 backdrop-blur-sm border-t border-border/30 shrink-0 lg:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
