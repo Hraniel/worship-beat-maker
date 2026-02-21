@@ -45,6 +45,7 @@ interface DrumPadProps {
   onResetPad?: (padId: string) => void;
   onResetAllPads?: () => void;
   onGateBlocked?: (gateKey: string) => void;
+  onPadPlayed?: () => void;
 }
 
 const DrumPad: React.FC<DrumPadProps> = ({
@@ -52,7 +53,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
   isMasterTier, effects = DEFAULT_EFFECTS, pan = 0, customName, editMode, customColor, panDisabled, customSoundsCount = 0,
   bpm,
   onToggleLoop, onImportSound, onImportStoreSound, onRemoveCustomSound, onVolumeChange, onEffectsChange, onPanChange, onRename, onColorChange,
-  onResetPad, onResetAllPads, onGateBlocked
+  onResetPad, onResetAllPads, onGateBlocked, onPadPlayed
 }) => {
   const [isActive, setIsActive] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -103,6 +104,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
         playSound(pad.id, volume, panner);
       }
       emitPadHit(pad.id);
+      onPadPlayed?.();
       setIsActive(true);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       timeoutRef.current = window.setTimeout(() => setIsActive(false), 120);
@@ -119,7 +121,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
     } else {
       fireSound();
     }
-  }, [pad, volume, onToggleLoop, isLocked, goToPricing, isMaster, effects]);
+  }, [pad, volume, onToggleLoop, isLocked, goToPricing, isMaster, effects, onPadPlayed]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault();
