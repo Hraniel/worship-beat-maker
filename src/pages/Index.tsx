@@ -5,7 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import PadGrid from "@/components/PadGrid";
 import Metronome from "@/components/Metronome";
 import MixerStrip from "@/components/MixerStrip";
-import ToolsPanel from "@/components/ToolsPanel";
+import ToolsPanel, { getTapRedirectTarget } from "@/components/ToolsPanel";
 import SetlistManager from "@/components/SetlistManager";
 import MusicAISearch from "@/components/MusicAISearch";
 import AmbientPads from "@/components/AmbientPads";
@@ -1142,7 +1142,7 @@ const Index = () => {
                       }}
                     />
                     <div
-                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]"
+                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1.5 min-w-[200px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
@@ -1268,7 +1268,7 @@ const Index = () => {
                       }}
                     />
                     <div
-                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[180px]"
+                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1.5 min-w-[220px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
@@ -1669,7 +1669,7 @@ const Index = () => {
         {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
         {!isLandscape && (
           <footer
-            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"}`}
+            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "flex-[0_0_auto] max-h-[45vh] lg:max-h-none" : ""}`}
             style={{
               paddingBottom:
                 isTablet || (typeof window !== "undefined" && window.innerWidth >= 1024)
@@ -2081,11 +2081,14 @@ const Index = () => {
 
                     {/* === TAP TEMPO PAGE === */}
                     <div className={footerPage === 2 ? "h-full flex flex-col" : "hidden"}>
-                      <ToolsPanel bpm={bpm} onBpmChange={setBpm} onAutoApplied={() => setFooterPage(0)} />
+                      <ToolsPanel bpm={bpm} onBpmChange={setBpm} onAutoApplied={() => {
+                        const dest = getTapRedirectTarget();
+                        setFooterPage(dest === 'metronome' ? 1 : dest === 'pads' ? 3 : 0);
+                      }} />
                     </div>
 
                     {/* === CONTINUOUS PADS PAGE === */}
-                    <div className={footerPage === 3 ? "h-full flex flex-col px-1.5" : "hidden"}>
+                    <div className={footerPage === 3 ? "h-full flex flex-col" : "hidden"}>
                       <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} fullPage />
                       {/* Mini metronome bar */}
                       <div className="flex items-center justify-between gap-2 px-3 py-1 mt-2 rounded-md border border-border/30 bg-card/60 shrink-0">

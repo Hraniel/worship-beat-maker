@@ -10,6 +10,7 @@ const TAP_HISTORY_SIZE = 8;
 
 const AUTO_APPLY_KEY = 'drum-pads-tap-auto-apply';
 const AUTO_APPLY_TIMEOUT_KEY = 'drum-pads-tap-auto-apply-timeout';
+const TAP_REDIRECT_KEY = 'drum-pads-tap-redirect-target';
 
 export function isTapAutoApplyEnabled(): boolean {
   const v = localStorage.getItem(AUTO_APPLY_KEY);
@@ -27,6 +28,17 @@ export function getTapAutoApplyTimeout(): number {
 
 export function setTapAutoApplyTimeout(seconds: number) {
   localStorage.setItem(AUTO_APPLY_TIMEOUT_KEY, String(seconds));
+}
+
+export type TapRedirectTarget = 'mix' | 'metronome' | 'pads';
+
+export function getTapRedirectTarget(): TapRedirectTarget {
+  const v = localStorage.getItem(TAP_REDIRECT_KEY) as TapRedirectTarget | null;
+  return v === 'metronome' || v === 'pads' ? v : 'mix';
+}
+
+export function setTapRedirectTarget(target: TapRedirectTarget) {
+  localStorage.setItem(TAP_REDIRECT_KEY, String(target));
 }
 
 interface ToolsPanelProps {
