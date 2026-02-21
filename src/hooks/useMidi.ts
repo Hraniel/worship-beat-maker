@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  isMidiSupported as checkMidiSupported,
   initMidi,
   getConnectedDevices,
   getChannel,
@@ -27,9 +26,8 @@ export function useMidi() {
   const initRef = useRef(false);
 
   useEffect(() => {
-    if (!checkMidiSupported() || initRef.current) return;
+    if (initRef.current) return;
     initRef.current = true;
-    setSupported(true);
 
     onDeviceChange((devs) => setDevices([...devs]));
 
@@ -39,8 +37,11 @@ export function useMidi() {
       emitPadHit(padId);
     });
 
-    initMidi().then(() => {
-      setDevices(getConnectedDevices());
+    initMidi().then((success) => {
+      setSupported(success);
+      if (success) {
+        setDevices(getConnectedDevices());
+      }
     });
   }, []);
 
