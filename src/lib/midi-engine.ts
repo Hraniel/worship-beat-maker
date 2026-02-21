@@ -134,7 +134,11 @@ function bindInputs() {
 // ── Public API ──────────────────────────────────────────────────────────────
 
 export function isMidiSupported(): boolean {
-  return typeof navigator !== 'undefined' && 'requestMIDIAccess' in navigator;
+  try {
+    return typeof navigator !== 'undefined' && typeof (navigator as any).requestMIDIAccess === 'function';
+  } catch {
+    return false;
+  }
 }
 
 export async function initMidi(): Promise<boolean> {
