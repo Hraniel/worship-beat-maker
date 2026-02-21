@@ -250,10 +250,12 @@ const DrumPad: React.FC<DrumPadProps> = ({
           {customName || pad.shortName}
         </span>
 
-        {/* Full name as muted subtitle */}
-        <span className={`${sizes.name} text-muted-foreground max-w-full truncate px-1 text-center mt-0.5`}>
-          {pad.name}
-        </span>
+        {/* Full name as muted subtitle — hidden when user imported a custom sound */}
+        {!hasCustomSound && (
+          <span className={`${sizes.name} text-muted-foreground max-w-full truncate px-1 text-center mt-0.5`}>
+            {pad.name}
+          </span>
+        )}
 
         {pad.isLoop && (
           <div className="absolute top-1.5 right-1 flex items-center gap-0.5">

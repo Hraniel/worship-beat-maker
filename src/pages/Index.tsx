@@ -2268,6 +2268,10 @@ const Index = () => {
           if (startTutorialRef.current) startTutorialRef.current(sectionId);
         }}
         initialTab={settingsTab}
+        pads={defaultPads}
+        padNames={padNames}
+        customSounds={customSounds}
+        onRenamePad={handleRenamePad}
       />
 
       {/* Feature Gate Upgrade Modal */}
