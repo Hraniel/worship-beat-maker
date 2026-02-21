@@ -1539,6 +1539,9 @@ const Index = () => {
                 )}
               </div>
             }
+            toolsPanel={
+              <ToolsPanel bpm={bpm} onBpmChange={setBpm} onAutoApplied={() => {}} />
+            }
             mixer={
               !focusMode ? (
                 <div data-tutorial="volume-master" className="flex flex-col gap-1">
@@ -1683,7 +1686,7 @@ const Index = () => {
         </main>
 
         {/* Footer - hidden in landscape since mixer/metronome are in side panel */}
-        {!isLandscape && (
+        {!isLandscape && !isTablet && (
           <footer
             className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "flex-none lg:h-auto lg:flex-1" : ""}`}
             style={{
@@ -2009,7 +2012,7 @@ const Index = () => {
       </div>
 
       {/* Safe-area shortcut bar — OUTSIDE overflow-hidden container so it's never clipped */}
-      {!isLandscape && (
+      {!isLandscape && !isTablet && (
         <div
           className="bg-card/80 backdrop-blur-sm border-t border-border/30 shrink-0 lg:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
