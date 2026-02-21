@@ -1,35 +1,41 @@
 
-# Plano: Containers fixos com altura calculada (Opção B)
 
-## Diagnóstico raiz
+# Plano: Estabilizar pads e conteudo das abas (sem tocar Landing nem Loja)
 
-O `<footer>` mobile NÃO tem altura fixa. Ele usa `shrink-0` (não encolhe) mas cresce livremente com o conteúdo. Como cada aba (Mix, Met, Tap, Pads, Loja) tem conteúdo de altura diferente, o footer muda de tamanho, empurrando a `<main>` (pads) para cima/baixo.
+## Arquivos que NAO serao alterados
+- `src/pages/Landing.tsx` — intacto
+- `src/pages/Dashboard.tsx` — intacto
+- Nenhum outro arquivo alem do `src/pages/Index.tsx`
 
-### Estrutura atual (mobile):
+## Problema
+
+Na linha 1672 do `Index.tsx`, o footer mobile usa:
 ```
-div.flex-1.flex-col.overflow-hidden
-  ├── main.flex-1 (pad grid) — ocupa o espaço restante
-  └── footer.shrink-0 (SEM altura fixa!) — cresce com conteúdo
-      └── div.h-full.flex-col
-          ├── top bar h-[28px] (OK, fixo)
-          └── div.flex-1 (conteúdo da aba — VARIÁVEL!)
+flex-[0_0_auto] max-h-[45vh]
+```
+Isso significa que o footer tem tamanho baseado no conteudo (auto), com um teto de 45vh. Como cada aba (Mix, Met, Tap, Pads) tem conteudo de altura diferente, o footer muda de tamanho e os pads se movem.
+
+## O que sera alterado
+
+### Unica mudanca: linha 1672 do `src/pages/Index.tsx`
+
+Trocar apenas as classes de dimensionamento do footer no modo nao-foco:
+
+**De:**
+```
+flex-[0_0_auto] max-h-[45vh] lg:max-h-none
 ```
 
-## Solução: Footer com altura fixa no mobile
+**Para:**
+```
+h-[45vh] flex-none lg:h-auto lg:flex-1
+```
 
-### Mudanças em `src/pages/Index.tsx`:
+Isso faz o footer ter SEMPRE a mesma altura (45vh) no mobile, independente de qual aba esta ativa. Os pads, Mix, Metronomo e Tap ficam todos na mesma posicao.
 
-1. **Footer mobile: definir altura fixa** — Adicionar uma classe de altura fixa para o footer no mobile (ex: `h-[45vh]` ou `max-h-[280px]`) para que ele nunca mude de tamanho independente do conteúdo da aba ativa. O conteúdo interno faz scroll se necessário.
+### Nada mais sera alterado
 
-2. **Unificar padding das 5 abas** — A aba Pads (footerPage 3) tem `px-1.5` extra que as outras não têm. Remover ou adicionar a todas para uniformidade.
+- As 5 abas internas (Mix, Met, Tap, Pads, Loja) continuam exatamente como estao
+- O conteudo que nao couber rola internamente (o `overflow-y-auto` da linha 1984 ja cuida disso)
+- Nenhum padding, margem ou estrutura interna sera mexido
 
-3. **Conteúdo da aba com overflow-y-auto** — Já existe no container pai, mas cada aba individual deve respeitar `h-full` sem expandir além do container fixo.
-
-### Alternativa mais precisa:
-
-Em vez de altura fixa em vh/px, usar a abordagem `overflow-hidden` no footer + `h-full` nos containers internos para que o footer nunca cresça além do espaço alocado pelo flex. O problema atual é que `shrink-0` impede o footer de encolher, permitindo que cresça indefinidamente.
-
-**Trocar `shrink-0` por uma altura controlada:**
-- Mobile não-focus: substituir `overflow-hidden` (já existe!) + garantir que o container interno use `h-full overflow-hidden` em vez de crescer.
-
-O verdadeiro fix é garantir que o footer tenha `flex-shrink: 0` E `flex-grow: 0` E `flex-basis` fixo, OU simplesmente uma altura fixa.
