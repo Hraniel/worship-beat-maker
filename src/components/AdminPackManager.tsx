@@ -20,6 +20,7 @@ import AdminStoreEditor from '@/components/AdminStoreEditor';
 import AdminAppConfigEditor from '@/components/AdminAppConfigEditor';
 import AdminBanManager from '@/components/AdminBanManager';
 import AdminCancellationViewer from '@/components/AdminCancellationViewer';
+import AdminDashboardSummary from '@/components/AdminDashboardSummary';
 import { broadcastPushNotification } from '@/lib/push-notifications';
 
 
@@ -582,6 +583,8 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   return (
     <div className="space-y-4">
+      {/* Dashboard summary */}
+      <AdminDashboardSummary />
       {/* Image cropper modal */}
       <ImageCropperModal
         open={cropperOpen}

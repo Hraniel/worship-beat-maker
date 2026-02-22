@@ -107,6 +107,7 @@ import { useMidi } from "@/hooks/useMidi";
 import MidiIndicator from "@/components/MidiIndicator";
 import SilentModeBanner from "@/components/SilentModeBanner";
 import { useSilentModeDetector } from "@/hooks/useSilentModeDetector";
+import { useAppConfig } from "@/hooks/useAppConfig";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
@@ -147,6 +148,7 @@ const Index = () => {
   const { canAccess } = useFeatureGates();
   usePresenceTracker(user?.id);
   const isOnline = useOnlineStatus();
+  const { isEnabled: appFeatureEnabled } = useAppConfig();
   const isLandscape = useIsLandscape();
   const isTablet = useIsTablet();
   const isDesktop = useIsDesktop();

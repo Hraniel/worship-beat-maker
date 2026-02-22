@@ -104,6 +104,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Search,
   BarChart3,
   Crown,
+  MonitorPlay: Star,
 };
 
 const fadeUp = {
