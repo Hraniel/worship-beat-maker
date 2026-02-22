@@ -117,6 +117,7 @@ function saveCCMappings(m: Record<number, CCFunctionId>) {
 }
 
 export function midiNoteToName(note: number): string {
+  if (note >= 1000) return `CC ${note - 1000}`;
   const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const octave = Math.floor(note / 12) - 1;
   return `${names[note % 12]}${octave}`;
@@ -171,10 +172,9 @@ function handleMidiMessage(e: MIDIMessageEvent) {
   const note = data[1];
   const velocity = data[2];
 
-  // Note On: filter by note channel
+  // Note On: filter by note channel (bypass channel filter in learn mode)
   if (type === 0x90 && velocity > 0) {
-    if (channel !== 'all' && msgChannel !== channel) return;
-    // Learn mode: capture note and return
+    // Learn mode: capture note regardless of channel
     if (learnPadId) {
       mappings[note] = learnPadId;
       saveMappings(mappings);
@@ -184,16 +184,31 @@ function handleMidiMessage(e: MIDIMessageEvent) {
       return;
     }
 
+    if (channel !== 'all' && msgChannel !== channel) return;
+
     const padId = mappings[note];
     if (padId) {
       noteOnCb?.(padId, velocity / 127);
     }
   }
 
+  // Note On with velocity 0 treated as Note Off — also capture in learn mode
+  // Some controllers send CC for buttons; capture CC during note learn as fallback
+  if (type === 0xb0 && learnPadId) {
+    // Use CC number as a pseudo-note mapping (offset by 1000 to avoid collision)
+    const pseudoNote = 1000 + note;
+    mappings[pseudoNote] = learnPadId;
+    saveMappings(mappings);
+    learnCb?.(pseudoNote);
+    learnPadId = null;
+    learnCb = null;
+    return;
+  }
+
   // Control Change (CC): filter by CC channel
-  if (type === 0xb0) {
+  if (type === 0xb0 && !learnPadId) {
     if (ccChannel !== 'all' && msgChannel !== ccChannel) return;
-    // CC Learn mode: capture CC number and return
+    // CC Learn mode: capture CC number and return (bypass channel filter)
     if (ccLearnFunctionId) {
       // Remove any existing mapping for this function
       for (const [key, val] of Object.entries(ccMappings)) {
@@ -206,6 +221,14 @@ function handleMidiMessage(e: MIDIMessageEvent) {
       ccLearnCb?.(note);
       ccLearnFunctionId = null;
       ccLearnCb = null;
+      return;
+    }
+
+    // Check if this CC is mapped as a pad trigger (pseudo-note)
+    const pseudoNote = 1000 + note;
+    const padId = mappings[pseudoNote];
+    if (padId && velocity > 0) {
+      noteOnCb?.(padId, velocity / 127);
       return;
     }
 

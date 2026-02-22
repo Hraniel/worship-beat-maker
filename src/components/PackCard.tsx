@@ -128,11 +128,11 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
     >
       {/* Banner or color header — square aspect */}
       {hasBanner ? (
-        <div className="w-full aspect-square overflow-hidden">
+        <div className="w-full aspect-[4/3] overflow-hidden">
           <img src={bannerUrl!} alt={pack.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
       ) : (
-        <div className={`w-full aspect-square ${pack.color} flex items-center justify-center`}>
+        <div className={`w-full aspect-[4/3] ${pack.color} flex items-center justify-center`}>
           <div className="text-white opacity-60">{lucideIcon}</div>
         </div>
       )}

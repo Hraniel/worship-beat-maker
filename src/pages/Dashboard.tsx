@@ -433,8 +433,68 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Search + Library filter row */}
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          {/* Mobile: categories + filters above search */}
+          <div className="lg:hidden space-y-3 mb-4">
+            {/* Categories button + library filters row */}
+            <div className="flex gap-2 items-center flex-wrap">
+              {/* Distinct categories button */}
+              <button
+                onClick={() => setShowMobileFilter(v => !v)}
+                className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-bold border-2 transition-colors bg-violet-600 text-white border-violet-600 hover:bg-violet-700 shadow-sm"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                {activeCategory === 'Todos' ? 'Categorias' : activeCategory}
+              </button>
+              {/* Library status filters */}
+              {(() => {
+                const fl = getJSON<Record<string, string>>('filter_labels', { all: 'Todos', purchased: 'Adquiridos', available: 'Disponíveis', removed: 'Removidos' });
+                return [
+                  { key: 'all' as const, label: fl.all ?? 'Todos', icon: <Store className="h-3 w-3" /> },
+                  { key: 'acquired' as const, label: fl.purchased ?? 'Adquiridos', icon: <CheckCircle className="h-3 w-3" /> },
+                  { key: 'available' as const, label: fl.available ?? 'Disponíveis', icon: <BookOpen className="h-3 w-3" /> },
+                  { key: 'removed' as const, label: fl.removed ?? 'Removidos', icon: <Package className="h-3 w-3" /> },
+                ];
+              })().map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setLibraryFilter(f.key)}
+                  className={`flex items-center gap-1 h-8 px-3 rounded-full text-xs font-medium border transition-colors ${
+                    libraryFilter === f.key
+                      ? 'bg-gray-900 text-white border-gray-900'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {f.icon}
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {/* Search bar */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                placeholder={sc('search_placeholder')}
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full h-10 pl-9 pr-9 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-300"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-gray-500">
+              <span className="font-semibold text-gray-900">{activeCategory}</span> · {filteredPacks.length} packs
+            </p>
+          </div>
+
+          {/* Desktop: search + filters */}
+          <div className="hidden lg:flex flex-col sm:flex-row gap-3 mb-4">
             <div className="relative max-w-md flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
               <input
@@ -453,7 +513,6 @@ const Dashboard = () => {
                 </button>
               )}
             </div>
-            {/* Library status filter */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {(() => {
                 const fl = getJSON<Record<string, string>>('filter_labels', { all: 'Todos', purchased: 'Adquiridos', available: 'Disponíveis', removed: 'Removidos' });
@@ -481,74 +540,55 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Mobile: category sidebar drawer + filter button */}
-        <div className="lg:hidden mb-5">
-          <div className="flex gap-2 items-center">
-            {/* Category sidebar toggle */}
-            <button
-              onClick={() => setShowMobileFilter(v => !v)}
-              className={`shrink-0 flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-medium border transition-colors ${
-                showMobileFilter ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600'
-              }`}
-            >
-              <Filter className="h-3 w-3" />
-              Categorias
-            </button>
-            <span className="text-xs text-gray-500">
-              <span className="font-semibold text-gray-900">{activeCategory}</span> · {filteredPacks.length} packs
-            </span>
-          </div>
-
-          {/* Mobile category side drawer */}
-          {showMobileFilter && (
-            <>
-              <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setShowMobileFilter(false)} />
-              <div className="fixed left-0 top-0 bottom-0 z-50 w-64 bg-white shadow-2xl animate-slide-in-left flex flex-col">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                  <span className="text-sm font-bold text-gray-900">Categorias</span>
-                  <button onClick={() => setShowMobileFilter(false)} className="p-1 text-gray-400 hover:text-gray-600">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
-                  {CATEGORY_GROUPS.map(group => (
-                    <div key={group.key}>
-                      <button
-                        onClick={() => group.children.length > 0 ? toggleGroup(group.key) : handleSelectCategory(group.key)}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                          isGroupActive(group) ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {group.icon}
-                          {group.label}
-                        </div>
-                        {group.children.length > 0 && (
-                          <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedGroups[group.key] ? 'rotate-90' : ''}`} />
-                        )}
-                      </button>
-                      {group.children.length > 0 && expandedGroups[group.key] && (
-                        <div className="ml-4 mt-1 space-y-0.5">
-                          {group.children.map(child => (
-                            <button
-                              key={child}
-                              onClick={() => handleSelectCategory(child)}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
-                                activeCategory === child ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                              }`}
-                            >
-                              {child}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+        {/* Mobile category side drawer */}
+        {showMobileFilter && (
+          <>
+            <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setShowMobileFilter(false)} />
+            <div className="fixed left-0 top-0 bottom-0 z-50 w-64 bg-white shadow-2xl animate-slide-in-left flex flex-col lg:hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                <span className="text-sm font-bold text-gray-900">Categorias</span>
+                <button onClick={() => setShowMobileFilter(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-            </>
-          )}
-        </div>
+              <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
+                {CATEGORY_GROUPS.map(group => (
+                  <div key={group.key}>
+                    <button
+                      onClick={() => group.children.length > 0 ? toggleGroup(group.key) : handleSelectCategory(group.key)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                        isGroupActive(group) ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {group.icon}
+                        {group.label}
+                      </div>
+                      {group.children.length > 0 && (
+                        <ChevronRight className={`h-3.5 w-3.5 transition-transform ${expandedGroups[group.key] ? 'rotate-90' : ''}`} />
+                      )}
+                    </button>
+                    {group.children.length > 0 && expandedGroups[group.key] && (
+                      <div className="ml-4 mt-1 space-y-0.5">
+                        {group.children.map(child => (
+                          <button
+                            key={child}
+                            onClick={() => handleSelectCategory(child)}
+                            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${
+                              activeCategory === child ? 'bg-gray-100 text-gray-900 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                            }`}
+                          >
+                            {child}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Desktop layout: sidebar + grid */}
         <div className="hidden lg:flex gap-8">
