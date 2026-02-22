@@ -1297,19 +1297,20 @@ const Index = () => {
           </header>
         ) : (
           <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b border-primary/20 bg-primary/10 shrink-0">
-            {/* Left: Event name */}
+            {/* Left: Event name (mobile + tablet/desktop) */}
             <div className="flex items-center gap-1.5 min-w-0 shrink-0">
-              <img
-                src={document.documentElement.classList.contains("dark") ? logoLight : logoDark}
-                alt="DPW"
-                className="h-5 w-5 sm:h-6 sm:w-6 hidden sm:block"
-              />
               {selectedEvent ? (
-                <span className="text-[11px] sm:text-xs font-semibold text-primary truncate max-w-[90px] sm:max-w-[140px]">
+                <span className="text-[11px] sm:text-xs font-semibold text-primary truncate max-w-[90px] sm:max-w-[160px]">
                   {selectedEvent.name}
                 </span>
               ) : (
-                <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
+                <div className="flex items-center gap-1.5">
+                  <img
+                    src={document.documentElement.classList.contains("dark") ? logoLight : logoDark}
+                    alt="DPW"
+                    className="h-5 w-5 sm:h-6 sm:w-6 hidden sm:block"
+                  />
+                </div>
               )}
             </div>
 
@@ -1325,9 +1326,37 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* Repertório + Prev/Next together */}
+              {/* Prev/Next + MIDI indicator — left of Repertório */}
+              {!editMode && currentSongId && navSongs.length > 0 && (
+                <>
+                  <button
+                    onClick={handlePrevSong}
+                    disabled={!hasPrevSong}
+                    className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Música anterior"
+                  >
+                    <SkipBack className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={handleNextSong}
+                    disabled={!hasNextSong}
+                    className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Próxima música"
+                  >
+                    <SkipForward className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
+              {/* MIDI indicator */}
+              {midi.isMidiSupported && midi.connectedDevices.length > 0 && (
+                <MidiIndicator
+                  devices={midi.connectedDevices}
+                  onClick={() => { setSettingsTab('midi'); setSettingsOpen(true); }}
+                />
+              )}
+              {/* Repertório */}
               {!editMode && currentSongId && (
-                <div className="flex items-center gap-0.5" data-tutorial="setlist">
+                <div data-tutorial="setlist">
                   <SetlistManager
                     songs={songs}
                     currentSongId={currentSongId}
@@ -1342,34 +1371,7 @@ const Index = () => {
                     onSelectEvent={handleSelectEvent}
                     externalEvents={setlistEventsHook}
                   />
-                  {navSongs.length > 0 && (
-                    <>
-                      <button
-                        onClick={handlePrevSong}
-                        disabled={!hasPrevSong}
-                        className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="Música anterior"
-                      >
-                        <SkipBack className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={handleNextSong}
-                        disabled={!hasNextSong}
-                        className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        title="Próxima música"
-                      >
-                        <SkipForward className="h-3.5 w-3.5" />
-                      </button>
-                    </>
-                  )}
                 </div>
-              )}
-              {/* MIDI indicator */}
-              {midi.isMidiSupported && midi.connectedDevices.length > 0 && (
-                <MidiIndicator
-                  devices={midi.connectedDevices}
-                  onClick={() => { setSettingsTab('midi'); setSettingsOpen(true); }}
-                />
               )}
 
               {/* Unified menu */}
