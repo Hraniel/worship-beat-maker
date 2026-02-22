@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   ListMusic, Plus, Trash2, ChevronRight, GripVertical, Share2, Link2, Eye, EyeOff,
-  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, Zap, Crown,
+  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, Zap, Crown, FolderOpen,
 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format, parseISO } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
@@ -123,10 +124,12 @@ interface EventCardProps {
   onAddSong: (eventId: string, song: EventSong) => void;
   onRemoveSong: (eventId: string, songId: string) => void;
   onReorderSongs: (eventId: string, songs: EventSong[]) => void;
+  onSaveSong: (name: string) => void;
+  onLoadSong: (song: SetlistSong) => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
-  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs,
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -135,6 +138,8 @@ const EventCard: React.FC<EventCardProps> = ({
   const [toggling, setToggling] = useState(false);
   const [showAddSong, setShowAddSong] = useState(false);
   const [selectedSongId, setSelectedSongId] = useState('');
+  const [showNewSong, setShowNewSong] = useState(false);
+  const [newSongName, setNewSongName] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -303,7 +308,43 @@ const EventCard: React.FC<EventCardProps> = ({
 
           {/* Add song row */}
           <div className="px-3 py-2 border-t border-border/40">
-            {showAddSong ? (
+            {showNewSong ? (
+              <div className="flex flex-col gap-1.5 mb-2">
+                <p className="text-[10px] font-semibold text-muted-foreground">Criar nova música</p>
+                <div className="flex gap-1.5">
+                  <Input
+                    placeholder="Nome da música..."
+                    value={newSongName}
+                    onChange={e => setNewSongName(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && newSongName.trim()) {
+                        onSaveSong(newSongName.trim());
+                        setNewSongName('');
+                        setShowNewSong(false);
+                      }
+                    }}
+                    className="h-7 text-xs bg-background flex-1"
+                  />
+                  <button
+                    onClick={() => {
+                      if (newSongName.trim()) {
+                        onSaveSong(newSongName.trim());
+                        setNewSongName('');
+                        setShowNewSong(false);
+                      }
+                    }}
+                    disabled={!newSongName.trim()}
+                    className="h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
+                    Salvar
+                  </button>
+                  <button
+                    onClick={() => { setShowNewSong(false); setNewSongName(''); }}
+                    className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted">
+                    <X className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+            ) : showAddSong ? (
               <div className="flex gap-1.5">
                 <select
                   value={selectedSongId}
@@ -330,11 +371,18 @@ const EventCard: React.FC<EventCardProps> = ({
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setShowAddSong(true)}
-                className="w-full flex items-center justify-center gap-1.5 h-7 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-dashed border-border/60">
-                <Plus className="h-3 w-3" /> Adicionar música
-              </button>
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => setShowAddSong(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 h-7 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-dashed border-border/60">
+                  <Plus className="h-3 w-3" /> Adicionar existente
+                </button>
+                <button
+                  onClick={() => setShowNewSong(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 h-7 text-[11px] text-primary hover:text-primary hover:bg-primary/10 rounded-md transition-colors border border-dashed border-primary/30">
+                  <Music className="h-3 w-3" /> Criar música
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -501,7 +549,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         </SheetHeader>
         <div className="mt-4 space-y-4 flex-1 overflow-y-auto pb-4" style={{ overscrollBehavior: 'contain' }}>
 
-          {/* Events section */}
+          {/* Events section - main content */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
@@ -509,7 +557,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 Eventos Programados
               </p>
               <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1" onClick={() => setShowCreateEvent(p => !p)}>
-                <Plus className="h-3 w-3" /> Novo
+                <Plus className="h-3 w-3" /> Novo Evento
               </Button>
             </div>
 
@@ -518,7 +566,14 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             )}
 
             {events.length === 0 && !showCreateEvent && (
-              <p className="text-xs text-muted-foreground text-center py-3">Nenhum evento criado</p>
+              <div className="text-center py-6 space-y-2">
+                <Calendar className="h-8 w-8 text-muted-foreground/40 mx-auto" />
+                <p className="text-sm text-muted-foreground">Nenhum evento programado</p>
+                <p className="text-[11px] text-muted-foreground/60">Crie um evento para organizar seu repertório</p>
+                <Button size="sm" variant="outline" className="h-7 text-xs gap-1 mt-1" onClick={() => setShowCreateEvent(true)}>
+                  <Plus className="h-3 w-3" /> Criar primeiro evento
+                </Button>
+              </div>
             )}
 
             {events.map(event => (
@@ -532,40 +587,48 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 onAddSong={addSongToEvent}
                 onRemoveSong={removeSongFromEvent}
                 onReorderSongs={reorderEventSongs}
+                onSaveSong={onSaveSong}
+                onLoadSong={onLoadSong}
               />
             ))}
           </div>
 
-          {/* Save current config as song */}
-          <div className="pt-2 border-t border-border space-y-3">
-            <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-              <Music className="h-3.5 w-3.5 text-primary" />
-              Músicas Salvas
-            </p>
-            <div className="flex gap-2">
-              <Input placeholder="Nome da música..." value={newName} onChange={(e) => setNewName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="bg-background" />
-              <Button size="icon" onClick={handleSave} disabled={!newName.trim()}>
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* Saved songs - collapsible menu at bottom */}
+          <Collapsible>
+            <CollapsibleTrigger className="w-full flex items-center justify-between px-1 py-2 border-t border-border group">
+              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <FolderOpen className="h-3.5 w-3.5" />
+                Músicas Salvas ({songs.length})
+              </p>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 pt-1">
+              {/* Save current config as song */}
+              <div className="flex gap-2">
+                <Input placeholder="Salvar config atual..." value={newName} onChange={(e) => setNewName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="bg-background h-8 text-xs" />
+                <Button size="icon" className="h-8 w-8 shrink-0" onClick={handleSave} disabled={!newName.trim()}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
 
-            {/* Songs list */}
-            <div className="space-y-1">
-              {songs.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma música salva ainda</p>
-              )}
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={songs.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                  {songs.map((song) => (
-                    <SortableItem key={song.id} song={song} isActive={currentSongId === song.id}
-                      onLoad={() => { onLoadSong(song); setOpen(false); }}
-                      onDelete={() => onDeleteSong(song.id)} />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            </div>
-          </div>
+              {/* Songs list */}
+              <div className="space-y-1">
+                {songs.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-3">Nenhuma música salva ainda</p>
+                )}
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                  <SortableContext items={songs.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+                    {songs.map((song) => (
+                      <SortableItem key={song.id} song={song} isActive={currentSongId === song.id}
+                        onLoad={() => { onLoadSong(song); setOpen(false); }}
+                        onDelete={() => onDeleteSong(song.id)} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
 
         </div>
       </SheetContent>
