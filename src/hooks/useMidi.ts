@@ -8,11 +8,17 @@ import {
   resetMappings as engineResetMappings,
   startLearn as engineStartLearn,
   stopLearn as engineStopLearn,
+  getCCMappings,
+  resetCCMappings as engineResetCCMappings,
+  startCCLearn as engineStartCCLearn,
+  stopCCLearn as engineStopCCLearn,
+  getCCFunctionForCC,
   onNoteOn,
   onCC,
   onDeviceChange,
   type MidiDevice,
   type MidiChannel,
+  type CCFunctionId,
 } from '@/lib/midi-engine';
 import { playSound, getPadPanner } from '@/lib/audio-engine';
 import { applyEffects, getEffectInput, hasActiveEffects, type PadEffects } from '@/lib/audio-effects';
@@ -38,8 +44,11 @@ export function useMidi(
   const [devices, setDevices] = useState<MidiDevice[]>([]);
   const [channel, setChannelState] = useState<MidiChannel>(getChannel());
   const [mappings, setMappingsState] = useState<Record<number, string>>(getMappings());
+  const [ccMappingsState, setCCMappingsState] = useState<Record<number, CCFunctionId>>(getCCMappings());
   const [isLearning, setIsLearning] = useState(false);
   const [learnPadId, setLearnPadId] = useState<string | null>(null);
+  const [isCCLearning, setIsCCLearning] = useState(false);
+  const [ccLearnFunctionId, setCCLearnFunctionId] = useState<CCFunctionId | null>(null);
   const initRef = useRef(false);
   const padEffectsRef = useRef(padEffects);
   const isMasterRef = useRef(isMasterTier);
@@ -61,7 +70,6 @@ export function useMidi(
     onNoteOn((padId, velocity) => {
       const fx = padEffectsRef.current?.[padId];
       const master = isMasterRef.current ?? false;
-      // Multiply MIDI velocity by fader volume (default 0.7)
       const faderVol = padVolumesRef.current?.[padId] ?? 0.7;
       const finalVol = velocity * faderVol;
 
@@ -76,54 +84,42 @@ export function useMidi(
       emitPadHit(padId);
     });
 
-    // CC mapping: use standard CC numbers
-    // CC 7 = Master Volume, CC 1-9 mapped to pad faders, CC 10 = Metronome Vol
-    // CC 20 = BPM (coarse, mapped 40-240), CC 21 = Metronome start/stop toggle (value >= 64 = on)
     onCC((cc, value, _ch) => {
       const cbs = ccCallbacksRef.current;
       if (!cbs) return;
       const normalized = value / 127;
 
-      // CC 7: Master volume
-      if (cc === 7) {
-        cbs.onMasterVolumeCC?.(normalized);
-        return;
-      }
-      // CC 1-9: Pad fader volumes (mapped to pad indices)
-      if (cc >= 1 && cc <= 9) {
-        // Map CC 1-9 to pad IDs from current mappings
-        const padIds = ['kick', 'snare', 'hihat-closed', 'hihat-open', 'crash', 'clap', 'ride', 'loop-worship-1', 'loop-worship-2'];
-        const padId = padIds[cc - 1];
-        if (padId) {
-          cbs.onPadVolumeCC?.(padId, normalized);
+      const fn = getCCFunctionForCC(cc);
+      if (!fn) return;
+
+      switch (fn) {
+        case 'master-volume':
+          cbs.onMasterVolumeCC?.(normalized);
+          break;
+        case 'metronome-volume':
+          cbs.onMetronomeVolumeCC?.(normalized);
+          break;
+        case 'bpm': {
+          const bpm = Math.round(40 + (value / 127) * 200);
+          cbs.onBpmCC?.(bpm);
+          break;
         }
-        return;
-      }
-      // CC 10: Metronome volume
-      if (cc === 10) {
-        cbs.onMetronomeVolumeCC?.(normalized);
-        return;
-      }
-      // CC 20: BPM (map 0-127 to 40-240)
-      if (cc === 20) {
-        const bpm = Math.round(40 + (value / 127) * 200);
-        cbs.onBpmCC?.(bpm);
-        return;
-      }
-      // CC 21: Metronome toggle (>= 64 = trigger toggle)
-      if (cc === 21 && value >= 64) {
-        cbs.onMetronomeToggleCC?.();
-        return;
-      }
-      // CC 22: Previous song (>= 64 = trigger)
-      if (cc === 22 && value >= 64) {
-        cbs.onPrevSongCC?.();
-        return;
-      }
-      // CC 23: Next song (>= 64 = trigger)
-      if (cc === 23 && value >= 64) {
-        cbs.onNextSongCC?.();
-        return;
+        case 'metronome-toggle':
+          if (value >= 64) cbs.onMetronomeToggleCC?.();
+          break;
+        case 'prev-song':
+          if (value >= 64) cbs.onPrevSongCC?.();
+          break;
+        case 'next-song':
+          if (value >= 64) cbs.onNextSongCC?.();
+          break;
+        default:
+          // pad-volume-{padId}
+          if (fn.startsWith('pad-volume-')) {
+            const padId = fn.replace('pad-volume-', '');
+            cbs.onPadVolumeCC?.(padId, normalized);
+          }
+          break;
       }
     });
 
@@ -161,6 +157,27 @@ export function useMidi(
     setMappingsState(getMappings());
   }, []);
 
+  const startCCLearn = useCallback((functionId: CCFunctionId) => {
+    setIsCCLearning(true);
+    setCCLearnFunctionId(functionId);
+    engineStartCCLearn(functionId, () => {
+      setCCMappingsState(getCCMappings());
+      setIsCCLearning(false);
+      setCCLearnFunctionId(null);
+    });
+  }, []);
+
+  const stopCCLearn = useCallback(() => {
+    engineStopCCLearn();
+    setIsCCLearning(false);
+    setCCLearnFunctionId(null);
+  }, []);
+
+  const resetCCMappings = useCallback(() => {
+    engineResetCCMappings();
+    setCCMappingsState(getCCMappings());
+  }, []);
+
   return {
     isMidiSupported: supported,
     connectedDevices: devices,
@@ -172,5 +189,11 @@ export function useMidi(
     startLearn,
     stopLearn,
     resetMappings,
+    ccMappings: ccMappingsState,
+    isCCLearning,
+    ccLearnFunctionId,
+    startCCLearn,
+    stopCCLearn,
+    resetCCMappings,
   };
 }

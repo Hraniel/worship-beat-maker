@@ -2222,6 +2222,12 @@ const Index = () => {
         onMidiStartLearn={midi.startLearn}
         onMidiStopLearn={midi.stopLearn}
         onMidiResetMappings={midi.resetMappings}
+        midiCCMappings={midi.ccMappings}
+        midiIsCCLearning={midi.isCCLearning}
+        midiCCLearnFunctionId={midi.ccLearnFunctionId}
+        onMidiStartCCLearn={midi.startCCLearn}
+        onMidiStopCCLearn={midi.stopCCLearn}
+        onMidiResetCCMappings={midi.resetCCMappings}
       />
       <SilentModeBanner visible={showSilentMode} onDismiss={dismissSilentMode} />
       {/* Feature Gate Upgrade Modal */}
