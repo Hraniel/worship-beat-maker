@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 
 const MOBILE_BREAKPOINT = 768;
 
-const FACTOR = 0.38;
-const MIN_HEIGHT = 220;
-const MAX_HEIGHT = 360;
+const FACTOR = 0.34;
+const MIN_HEIGHT = 200;
+const MAX_HEIGHT = 320;
 
 const TABLET_FACTOR = 0.32;
 const TABLET_MIN_HEIGHT = 220;
