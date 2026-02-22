@@ -72,10 +72,12 @@ interface SettingsDialogProps {
   midiSupported?: boolean;
   midiDevices?: MidiDevice[];
   midiChannel?: MidiChannel;
+  midiCCChannel?: MidiChannel;
   midiMappings?: Record<number, string>;
   midiIsLearning?: boolean;
   midiLearnPadId?: string | null;
   onMidiSetChannel?: (ch: MidiChannel) => void;
+  onMidiSetCCChannel?: (ch: MidiChannel) => void;
   onMidiStartLearn?: (padId: string) => void;
   onMidiStopLearn?: () => void;
   onMidiResetMappings?: () => void;
@@ -683,7 +685,7 @@ const TAB_ITEMS = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiCCChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiSetCCChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -760,10 +762,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             isMidiSupported={midiSupported ?? false}
             connectedDevices={midiDevices ?? []}
             channel={midiChannel ?? 'all'}
+            ccChannel={midiCCChannel ?? 'all'}
             mappings={midiMappings ?? {}}
             isLearning={midiIsLearning ?? false}
             learnPadId={midiLearnPadId ?? null}
             onSetChannel={onMidiSetChannel ?? (() => {})}
+            onSetCCChannel={onMidiSetCCChannel ?? (() => {})}
             onStartLearn={onMidiStartLearn ?? (() => {})}
             onStopLearn={onMidiStopLearn ?? (() => {})}
             onResetMappings={onMidiResetMappings ?? (() => {})}

@@ -16,10 +16,12 @@ interface MidiSettingsProps {
   isMidiSupported: boolean;
   connectedDevices: MidiDevice[];
   channel: MidiChannel;
+  ccChannel: MidiChannel;
   mappings: Record<number, string>;
   isLearning: boolean;
   learnPadId: string | null;
   onSetChannel: (ch: MidiChannel) => void;
+  onSetCCChannel: (ch: MidiChannel) => void;
   onStartLearn: (padId: string) => void;
   onStopLearn: () => void;
   onResetMappings: () => void;
@@ -44,10 +46,12 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
   isMidiSupported,
   connectedDevices,
   channel,
+  ccChannel,
   mappings,
   isLearning,
   learnPadId,
   onSetChannel,
+  onSetCCChannel,
   onStartLearn,
   onStopLearn,
   onResetMappings,
@@ -106,26 +110,48 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
         {hasDevice && <span className="w-2.5 h-2.5 rounded-full bg-green-500 shrink-0" />}
       </div>
 
-      {/* Section 2: Channel selector */}
-      <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-        <p className="text-sm font-semibold text-foreground">Canal MIDI</p>
-        <p className="text-xs text-muted-foreground">Filtra mensagens pelo canal selecionado.</p>
-        <Select
-          value={String(channel)}
-          onValueChange={(v) => onSetChannel(v === 'all' ? 'all' : Number(v))}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os canais</SelectItem>
-            {Array.from({ length: 16 }, (_, i) => i + 1).map((ch) => (
-              <SelectItem key={ch} value={String(ch)}>
-                Canal {ch}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Section 2: Channel selectors */}
+      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-foreground">Canal das Notas (Pads)</p>
+          <p className="text-xs text-muted-foreground">Filtra notas MIDI para os pads.</p>
+          <Select
+            value={String(channel)}
+            onValueChange={(v) => onSetChannel(v === 'all' ? 'all' : Number(v))}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os canais</SelectItem>
+              {Array.from({ length: 16 }, (_, i) => i + 1).map((ch) => (
+                <SelectItem key={ch} value={String(ch)}>
+                  Canal {ch}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="border-t border-border pt-3 space-y-2">
+          <p className="text-sm font-semibold text-foreground">Canal dos CCs (Faders/Knobs)</p>
+          <p className="text-xs text-muted-foreground">Filtra mensagens CC para volumes, BPM, etc.</p>
+          <Select
+            value={String(ccChannel)}
+            onValueChange={(v) => onSetCCChannel(v === 'all' ? 'all' : Number(v))}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os canais</SelectItem>
+              {Array.from({ length: 16 }, (_, i) => i + 1).map((ch) => (
+                <SelectItem key={ch} value={String(ch)}>
+                  Canal {ch}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Section 3: Pad mapping */}

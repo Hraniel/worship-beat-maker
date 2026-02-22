@@ -52,6 +52,7 @@ const DEFAULT_CC_MAPPINGS: Record<number, CCFunctionId> = {
 };
 
 const LS_CHANNEL = 'midi-channel';
+const LS_CC_CHANNEL = 'midi-cc-channel';
 const LS_MAPPINGS = 'midi-mappings';
 const LS_CC_MAPPINGS = 'midi-cc-mappings';
 
@@ -70,6 +71,21 @@ function loadChannel(): MidiChannel {
 
 function saveChannel(ch: MidiChannel) {
   localStorage.setItem(LS_CHANNEL, String(ch));
+}
+
+function loadCCChannel(): MidiChannel {
+  try {
+    const raw = localStorage.getItem(LS_CC_CHANNEL);
+    if (!raw || raw === 'all') return 'all';
+    const n = Number(raw);
+    return n >= 1 && n <= 16 ? n : 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+function saveCCChannel(ch: MidiChannel) {
+  localStorage.setItem(LS_CC_CHANNEL, String(ch));
 }
 
 function loadMappings(): Record<number, string> {
@@ -116,6 +132,7 @@ type CCLearnCallback = (cc: number) => void;
 
 let midiAccess: MIDIAccess | null = null;
 let channel: MidiChannel = loadChannel();
+let ccChannel: MidiChannel = loadCCChannel();
 let mappings: Record<number, string> = loadMappings();
 let ccMappings: Record<number, CCFunctionId> = loadCCMappings();
 
@@ -154,11 +171,9 @@ function handleMidiMessage(e: MIDIMessageEvent) {
   const note = data[1];
   const velocity = data[2];
 
-  // Channel filter
-  if (channel !== 'all' && msgChannel !== channel) return;
-
-  // Note On (velocity 0 = Note Off)
+  // Note On: filter by note channel
   if (type === 0x90 && velocity > 0) {
+    if (channel !== 'all' && msgChannel !== channel) return;
     // Learn mode: capture note and return
     if (learnPadId) {
       mappings[note] = learnPadId;
@@ -175,8 +190,9 @@ function handleMidiMessage(e: MIDIMessageEvent) {
     }
   }
 
-  // Control Change (CC)
+  // Control Change (CC): filter by CC channel
   if (type === 0xb0) {
+    if (ccChannel !== 'all' && msgChannel !== ccChannel) return;
     // CC Learn mode: capture CC number and return
     if (ccLearnFunctionId) {
       // Remove any existing mapping for this function
@@ -248,6 +264,15 @@ export function getChannel(): MidiChannel {
 export function setChannel(ch: MidiChannel) {
   channel = ch;
   saveChannel(ch);
+}
+
+export function getCCChannel(): MidiChannel {
+  return ccChannel;
+}
+
+export function setCCChannel(ch: MidiChannel) {
+  ccChannel = ch;
+  saveCCChannel(ch);
 }
 
 export function getMappings(): Record<number, string> {
