@@ -17,6 +17,9 @@ import AdminNotificationManager from '@/components/AdminNotificationManager';
 import AdminLandingEditor from '@/components/AdminLandingEditor';
 import AdminCacheManager from '@/components/AdminCacheManager';
 import AdminStoreEditor from '@/components/AdminStoreEditor';
+import AdminAppConfigEditor from '@/components/AdminAppConfigEditor';
+import AdminBanManager from '@/components/AdminBanManager';
+import AdminCancellationViewer from '@/components/AdminCancellationViewer';
 import { broadcastPushNotification } from '@/lib/push-notifications';
 
 
@@ -75,7 +78,7 @@ interface BatchProgress {
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache' | 'store'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache' | 'store' | 'app-config' | 'bans' | 'cancellations'>('packs');
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -643,17 +646,10 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
             { key: 'store', label: '🎨 Visual' },
             { key: 'pricing', label: '💳 Planos' },
           ] as const).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {tab.label}
-            </button>
+                activeTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}>{tab.label}</button>
           ))}
         </div>
         {/* Group: Landing Page */}
@@ -663,39 +659,39 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
             { key: 'landing', label: '🌐 Landing Page' },
             { key: 'cache', label: '🗑️ Cache' },
           ] as const).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {tab.label}
-            </button>
+                activeTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}>{tab.label}</button>
           ))}
         </div>
-        {/* Group: Usuários */}
+        {/* Group: App */}
+        <div className="flex gap-1 flex-wrap items-center">
+          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mr-1">App</span>
+          {([
+            { key: 'app-config', label: '⚙️ Configurações' },
+          ] as const).map(tab => (
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                activeTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}>{tab.label}</button>
+          ))}
+        </div>
+        {/* Group: Gestão */}
         <div className="flex gap-1 flex-wrap items-center">
           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mr-1">Gestão</span>
           {([
             { key: 'users', label: '👥 Usuários' },
+            { key: 'bans', label: '🚫 Bans' },
             { key: 'analytics', label: '📊 Analytics' },
             { key: 'notifications', label: '🔔 Notificações' },
             { key: 'suggestions', label: '💡 Sugestões' },
+            { key: 'cancellations', label: '📉 Cancelamentos' },
           ] as const).map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
+            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
-                activeTab === tab.key
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
-            >
-              {tab.label}
-            </button>
+                activeTab === tab.key ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}>{tab.label}</button>
           ))}
         </div>
       </div>
@@ -708,6 +704,9 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       {activeTab === 'landing' && <AdminLandingEditor />}
       {activeTab === 'store' && <AdminStoreEditor />}
       {activeTab === 'cache' && <AdminCacheManager />}
+      {activeTab === 'app-config' && <AdminAppConfigEditor />}
+      {activeTab === 'bans' && <AdminBanManager />}
+      {activeTab === 'cancellations' && <AdminCancellationViewer />}
 
       {activeTab === 'packs' && (
         <>

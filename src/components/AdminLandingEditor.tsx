@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
-import { Save, Loader2, Eye, EyeOff, RefreshCw, LayoutGrid, Type, MonitorPlay, Palette, Layout, ShoppingBag, Settings2, AlignLeft, NavigationIcon, Megaphone, Images } from 'lucide-react';
+import { Save, Loader2, Eye, EyeOff, RefreshCw, MonitorPlay, ChevronDown, ChevronUp } from 'lucide-react';
 import AdminLandingFeaturesEditor from './AdminLandingFeaturesEditor';
-import AdminLandingStyleEditor from './AdminLandingStyleEditor';
 import AdminImageBank from './AdminImageBank';
 import LandingPreviewDrawer from './LandingPreviewDrawer';
 import ImageCropperModal from './ImageCropperModal';
@@ -17,41 +16,23 @@ interface ConfigRow {
   config_value: string;
 }
 
-const SECTION_LABELS: Record<string, string> = {
-  hero_title: 'Título Principal (Hero)',
-  hero_subtitle: 'Subtítulo (Hero)',
-  hero_badge: 'Badge (Hero)',
-  features_title: 'Título — Seção Recursos',
-  features_subtitle: 'Subtítulo — Seção Recursos',
-  how_it_works_title: 'Título — Seção Como Funciona',
-  how_it_works_subtitle: 'Subtítulo — Seção Como Funciona',
-  store_title: 'Título — Seção Loja',
-  store_subtitle: 'Subtítulo — Seção Loja',
-  plans_title: 'Título — Seção Planos',
-  plans_subtitle: 'Subtítulo — Seção Planos',
-  show_pricing: 'Mostrar preços na landing page',
-  cta_title: 'Título — CTA Final',
-  cta_subtitle: 'Subtítulo — CTA Final',
-  stat_1_value: 'Stat 1 — Valor',
-  stat_1_label: 'Stat 1 — Rótulo',
-  stat_2_value: 'Stat 2 — Valor',
-  stat_2_label: 'Stat 2 — Rótulo',
-  stat_3_value: 'Stat 3 — Valor',
-  stat_3_label: 'Stat 3 — Rótulo',
-  stat_4_value: 'Stat 4 — Valor',
-  stat_4_label: 'Stat 4 — Rótulo',
-};
+type ActiveTab = 'navbar' | 'hero' | 'stats' | 'screenshots' | 'recursos' | 'loja' | 'steps' | 'planos' | 'cta' | 'footer' | 'midia';
 
-const SECTION_GROUPS = [
-  { label: 'Seção Recursos', keys: ['features_title', 'features_subtitle'] },
-  { label: 'Seção Loja', keys: ['store_title', 'store_subtitle'] },
-  { label: 'Seção Planos', keys: ['plans_title', 'plans_subtitle', 'show_pricing'] },
-  { label: 'CTA Final', keys: ['cta_title', 'cta_subtitle'] },
+const TABS: { id: ActiveTab; label: string; emoji: string }[] = [
+  { id: 'navbar', label: 'Navbar', emoji: '🧭' },
+  { id: 'hero', label: 'Hero', emoji: '🏠' },
+  { id: 'stats', label: 'Stats', emoji: '📊' },
+  { id: 'screenshots', label: 'Screenshots', emoji: '📱' },
+  { id: 'recursos', label: 'Recursos', emoji: '⚡' },
+  { id: 'loja', label: 'Loja', emoji: '🛒' },
+  { id: 'steps', label: 'Passos', emoji: '📋' },
+  { id: 'planos', label: 'Planos', emoji: '💳' },
+  { id: 'cta', label: 'CTA', emoji: '🚀' },
+  { id: 'footer', label: 'Footer', emoji: '📌' },
+  { id: 'midia', label: 'Mídia', emoji: '🖼️' },
 ];
 
-type ActiveTab = 'textos' | 'hero' | 'recursos' | 'estilos' | 'loja' | 'conteudo' | 'navbar' | 'imagens';
-
-// ── ColorField (inline, same logic as AdminLandingStyleEditor) ────────────────
+// ── Color helpers ────────────────────────────────────────────────────────────
 const hslToHex = (hslStr: string): string => {
   try {
     const m = hslStr.match(/hsl\(\s*([\d.]+)\s+([\d.]+)%\s+([\d.]+)%/);
@@ -102,14 +83,14 @@ const ColorFieldInline: React.FC<{ value: string; onChange: (v:string)=>void; on
   </div>
 );
 
-const TEXT_SIZES_HERO = [
+const TEXT_SIZES = [
   { value: 'xs', label: 'XS' }, { value: 'sm', label: 'SM' }, { value: 'base', label: 'Base' },
   { value: 'lg', label: 'LG' }, { value: 'xl', label: 'XL' }, { value: '2xl', label: '2XL' },
   { value: '3xl', label: '3XL' }, { value: '4xl', label: '4XL' }, { value: '5xl', label: '5XL' },
   { value: '6xl', label: '6XL' }, { value: '7xl', label: '7XL' }, { value: '8xl', label: '8XL' },
 ];
 
-const PADDING_OPTS_HERO = [
+const PADDING_OPTS = [
   { value: '0', label: '0px' }, { value: '8', label: '8px' }, { value: '16', label: '16px' },
   { value: '24', label: '24px' }, { value: '32', label: '32px' }, { value: '40', label: '40px' },
   { value: '48', label: '48px' }, { value: '56', label: '56px' }, { value: '64', label: '64px' },
@@ -117,24 +98,16 @@ const PADDING_OPTS_HERO = [
   { value: '128', label: '128px' },
 ];
 
-// Default store categories
 const DEFAULT_CATS = [
-  { name: 'Kick & Bumbo', emoji: '🥁' },
-  { name: 'Snare', emoji: '🪘' },
-  { name: 'Hi-Hat & Pratos', emoji: '🎵' },
-  { name: 'Loops', emoji: '🔁' },
-  { name: 'Continuous Pads', emoji: '🎹' },
-  { name: 'Efeitos', emoji: '✨' },
+  { name: 'Kick & Bumbo', emoji: '🥁' }, { name: 'Snare', emoji: '🪘' },
+  { name: 'Hi-Hat & Pratos', emoji: '🎵' }, { name: 'Loops', emoji: '🔁' },
+  { name: 'Continuous Pads', emoji: '🎹' }, { name: 'Efeitos', emoji: '✨' },
 ];
 
+// ── Image upload field ───────────────────────────────────────────────────────
 const ImageUploadField: React.FC<{
-  keyPrefix: string;
-  label: string;
-  hint: string;
-  value: string;
-  onChange: (v: string) => void;
-  onSave: () => void;
-  saving: boolean;
+  keyPrefix: string; label: string; hint: string; value: string;
+  onChange: (v: string) => void; onSave: () => void; saving: boolean;
   aspectRatio?: '1:1' | '16:9' | 'free';
 }> = ({ label, hint, value, onChange, onSave, saving, aspectRatio = 'free' }) => {
   const [uploading, setUploading] = useState(false);
@@ -153,131 +126,44 @@ const ImageUploadField: React.FC<{
       onChange(data.publicUrl);
       onSave();
       toast.success('Imagem enviada!');
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao enviar imagem');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleFileSelected = (file: File) => {
-    setPendingFile(file);
-    setCropperOpen(true);
-  };
-
-  const handleCropSave = (croppedFile: File) => {
-    setCropperOpen(false);
-    setPendingFile(null);
-    doUpload(croppedFile);
-  };
-
-  const handleCropCancel = () => {
-    setCropperOpen(false);
-    setPendingFile(null);
+    } catch (e: any) { toast.error(e.message || 'Erro ao enviar imagem'); }
+    finally { setUploading(false); }
   };
 
   return (
     <div className="space-y-1.5">
-      <ImageCropperModal
-        open={cropperOpen}
-        file={pendingFile}
-        aspectRatio={aspectRatio}
-        title={label}
-        onSave={handleCropSave}
-        onCancel={handleCropCancel}
-      />
+      <ImageCropperModal open={cropperOpen} file={pendingFile} aspectRatio={aspectRatio} title={label}
+        onSave={(f) => { setCropperOpen(false); setPendingFile(null); doUpload(f); }}
+        onCancel={() => { setCropperOpen(false); setPendingFile(null); }} />
       <label className="text-[10px] font-medium uppercase tracking-wider block" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>{label}</label>
       <p className="text-[9px]" style={{ color: 'hsl(262 75% 65%)' }}>📐 {hint}</p>
       <div className="flex gap-2">
         <input type="text" value={value} onChange={e => onChange(e.target.value)} onBlur={onSave}
-          placeholder="URL da imagem..."
-          className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none"
+          placeholder="URL da imagem..." className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none"
           style={{ border: '1px solid hsl(0 0% 100% / 0.1)', background: 'hsl(0 0% 100% / 0.05)', color: 'hsl(0 0% 100%)' }} />
-        <button onClick={() => inputRef.current?.click()}
-          disabled={uploading}
+        <button onClick={() => inputRef.current?.click()} disabled={uploading}
           className="shrink-0 px-2.5 h-8 rounded-lg text-xs flex items-center gap-1 transition"
           style={{ background: 'hsl(262 75% 55% / 0.2)', color: 'hsl(262 75% 65%)' }}>
-          {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : '↑'}
-          Upload
+          {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : '↑'} Upload
         </button>
-        {saving && <Loader2 className="h-4 w-4 animate-spin self-center" style={{ color: 'hsl(262 75% 65%)' }} />}
       </div>
       {value && <img src={value} alt="" className="w-full h-16 object-cover rounded-lg mt-1" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }} />}
       <input ref={inputRef} type="file" accept="image/*" className="hidden"
-        onChange={e => { const f = e.target.files?.[0]; if (f) handleFileSelected(f); e.target.value = ''; }} />
+        onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingFile(f); setCropperOpen(true); } e.target.value = ''; }} />
     </div>
   );
 };
 
-// Video config prefixes per section
-const VIDEO_SECTIONS = [
-  { prefix: 'stats_video', label: 'Estatísticas', hint: '1920×400px' },
-  { prefix: 'features_video', label: 'Recursos', hint: '1920×800px' },
-  { prefix: 'screenshots_video', label: 'Screenshots', hint: '1920×800px' },
-  { prefix: 'store_video', label: 'Loja de Sons', hint: '1920×600px' },
-  { prefix: 'howitworks_video', label: 'Como Funciona', hint: '1920×600px' },
-  { prefix: 'pricing_video', label: 'Planos', hint: '1920×800px' },
-  { prefix: 'cta_video', label: 'CTA Final', hint: '1920×500px' },
-  { prefix: 'footer_video', label: 'Rodapé', hint: '1920×300px' },
-];
-
-// Keys per tab used for "Save all" feature
-const TAB_KEYS: Record<string, string[]> = {
-  navbar: [
-    'announcement_enabled', 'announcement_text', 'announcement_link', 'announcement_link_label', 'announcement_bg', 'announcement_color',
-    'nav_link_0_label', 'nav_link_0_href', 'nav_link_1_label', 'nav_link_1_href', 'nav_link_2_label', 'nav_link_2_href',
-    'nav_btn_login_label', 'nav_btn_signup_label',
-    'nav_bg', 'nav_border_color', 'nav_link_color', 'nav_link_hover_color',
-    'nav_btn_login_bg', 'nav_btn_login_color', 'nav_btn_signup_bg', 'nav_btn_signup_color',
-  ],
-  hero: [
-    'hero_badge', 'hero_title', 'hero_subtitle',
-    'hero_bg', 'hero_title_color', 'hero_subtitle_color', 'hero_badge_bg', 'hero_badge_color',
-    'hero_title_size', 'hero_pt', 'hero_pb',
-    'hero_video_url', 'hero_video_opacity', 'hero_video_fit',
-    'hero_video_border_pos', 'hero_video_border_width', 'hero_video_border_radius', 'hero_video_border_color',
-  ],
-  textos: [
-    'features_title', 'features_subtitle', 'store_title', 'store_subtitle',
-    'plans_title', 'plans_subtitle', 'show_pricing', 'cta_title', 'cta_subtitle',
-    'features_video_url', 'features_video_opacity', 'features_video_fit',
-    'features_video_border_pos', 'features_video_border_width', 'features_video_border_radius', 'features_video_border_color',
-    'pricing_video_url', 'pricing_video_opacity', 'pricing_video_fit',
-    'pricing_video_border_pos', 'pricing_video_border_width', 'pricing_video_border_radius', 'pricing_video_border_color',
-    'cta_video_url', 'cta_video_opacity', 'cta_video_fit',
-    'cta_video_border_pos', 'cta_video_border_width', 'cta_video_border_radius', 'cta_video_border_color',
-  ],
-  loja: [
-    'store_video_url', 'store_video_opacity', 'store_video_fit',
-    'store_video_border_pos', 'store_video_border_width', 'store_video_border_radius', 'store_video_border_color',
-  ],
-  imagens: [
-    'screenshots_video_url', 'screenshots_video_opacity', 'screenshots_video_fit',
-    'screenshots_video_border_pos', 'screenshots_video_border_width', 'screenshots_video_border_radius', 'screenshots_video_border_color',
-  ],
-  conteudo: [
-    'how_main_title', 'how_step_1_title', 'how_step_1_desc', 'how_step_2_title', 'how_step_2_desc', 'how_step_3_title', 'how_step_3_desc',
-    'footer_tagline', 'footer_copyright',
-    'footer_link_0_label', 'footer_link_0_href', 'footer_link_1_label', 'footer_link_1_href', 'footer_link_2_label', 'footer_link_2_href',
-    'stat_1_value', 'stat_1_label', 'stat_2_value', 'stat_2_label', 'stat_3_value', 'stat_3_label', 'stat_4_value', 'stat_4_label',
-    'howitworks_video_url', 'howitworks_video_opacity', 'howitworks_video_fit',
-    'howitworks_video_border_pos', 'howitworks_video_border_width', 'howitworks_video_border_radius', 'howitworks_video_border_color',
-    'stats_video_url', 'stats_video_opacity', 'stats_video_fit',
-    'stats_video_border_pos', 'stats_video_border_width', 'stats_video_border_radius', 'stats_video_border_color',
-    'footer_video_url', 'footer_video_opacity', 'footer_video_fit',
-    'footer_video_border_pos', 'footer_video_border_width', 'footer_video_border_radius', 'footer_video_border_color',
-  ],
-};
-
+// ── Main Component ───────────────────────────────────────────────────────────
 const AdminLandingEditor: React.FC = () => {
   const [rows, setRows] = useState<ConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [savingAll, setSavingAll] = useState(false);
-  const [activeTab, setActiveTab] = useState<ActiveTab>('textos');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('hero');
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [openStyle, setOpenStyle] = useState(false);
 
-  // Keep a ref with latest rows so saveKey always reads fresh data
   const rowsRef = React.useRef(rows);
   React.useEffect(() => { rowsRef.current = rows; }, [rows]);
 
@@ -286,15 +172,12 @@ const AdminLandingEditor: React.FC = () => {
     try {
       const { data } = await supabase.from('landing_config').select('*').order('config_key');
       if (data) setRows(data as ConfigRow[]);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
 
   const getVal = (key: string) => rows.find(r => r.config_key === key)?.config_value ?? '';
-
   const setVal = (key: string, value: string) => {
     setRows(prev => {
       const exists = prev.some(r => r.config_key === key);
@@ -310,56 +193,14 @@ const AdminLandingEditor: React.FC = () => {
     const value = overrideValue !== undefined ? overrideValue : (rowsRef.current.find(r => r.config_key === key)?.config_value ?? '');
     setSaving(key);
     try {
-      // Upsert: try update first, then insert
       const { data: existing } = await supabase.from('landing_config').select('id').eq('config_key', key).maybeSingle();
-      if (existing) {
-        await supabase.from('landing_config').update({ config_value: value }).eq('config_key', key);
-      } else {
-        await supabase.from('landing_config').insert({ config_key: key, config_value: value });
-      }
-    } catch (e: any) {
-      toast.error(e.message || 'Erro ao salvar');
-    } finally {
-      setSaving(null);
-    }
+      if (existing) await supabase.from('landing_config').update({ config_value: value }).eq('config_key', key);
+      else await supabase.from('landing_config').insert({ config_key: key, config_value: value });
+    } catch (e: any) { toast.error(e.message || 'Erro ao salvar'); }
+    finally { setSaving(null); }
   };
 
-  const saveKeyAndToast = async (key: string) => {
-    await saveKey(key);
-    toast.success('Salvo!');
-  };
-
-  const saveAllKeys = async () => {
-    const keys = TAB_KEYS[activeTab];
-    if (!keys) return;
-    setSavingAll(true);
-    try {
-      await Promise.all(keys.map(k => saveKey(k)));
-      toast.success('Todas as alterações salvas!');
-    } catch {
-      toast.error('Erro ao salvar algumas chaves');
-    } finally {
-      setSavingAll(false);
-    }
-  };
-
-  const toggleShowPricing = async (v: boolean) => {
-    setVal('show_pricing', v ? 'true' : 'false');
-    setSaving('show_pricing');
-    try {
-      const existing = rows.find(r => r.config_key === 'show_pricing');
-      if (existing?.id) {
-        await supabase.from('landing_config').update({ config_value: v ? 'true' : 'false' }).eq('config_key', 'show_pricing');
-      } else {
-        await supabase.from('landing_config').insert({ config_key: 'show_pricing', config_value: v ? 'true' : 'false' });
-      }
-      toast.success(v ? 'Preços visíveis na landing' : 'Preços ocultos na landing');
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setSaving(null);
-    }
-  };
+  const saveKeyAndToast = async (key: string) => { await saveKey(key); toast.success('Salvo!'); };
 
   const forceCacheRefresh = async () => {
     const ts = Date.now().toString();
@@ -367,51 +208,36 @@ const AdminLandingEditor: React.FC = () => {
     setSaving('app_cache_version');
     try {
       const existing = rows.find(r => r.config_key === 'app_cache_version');
-      if (existing?.id) {
-        await supabase.from('landing_config').update({ config_value: ts }).eq('config_key', 'app_cache_version');
-      } else {
-        await supabase.from('landing_config').insert({ config_key: 'app_cache_version', config_value: ts });
-      }
-      toast.success('Cache forçado! Todos os usuários receberão atualização na próxima visita.');
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setSaving(null);
-    }
+      if (existing?.id) await supabase.from('landing_config').update({ config_value: ts }).eq('config_key', 'app_cache_version');
+      else await supabase.from('landing_config').insert({ config_key: 'app_cache_version', config_value: ts });
+      toast.success('Cache forçado!');
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(null); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'hsl(262 75% 65%)' }} />
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center py-12">
+      <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'hsl(262 75% 65%)' }} />
+    </div>
+  );
 
-  const showPricing = getVal('show_pricing') === 'true';
+  // ── Shared styles ──────────────────────────────────────────────────────────
+  const inputStyle = { border: '1px solid hsl(0 0% 100% / 0.1)', background: 'hsl(0 0% 100% / 0.05)', color: 'hsl(0 0% 100%)' };
+  const groupStyle = { border: '1px solid hsl(0 0% 100% / 0.08)', background: 'hsl(0 0% 100% / 0.02)' };
+  const labelStyle = { color: 'hsl(262 75% 65%)' };
+  const mutedStyle = { color: 'hsl(0 0% 100% / 0.4)' };
 
-  const TABS: { id: ActiveTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'textos', label: 'Geral', icon: <Type className="h-3 w-3" /> },
-    { id: 'hero', label: 'Hero', icon: <Layout className="h-3 w-3" /> },
-    { id: 'navbar', label: 'Navbar', icon: <NavigationIcon className="h-3 w-3" /> },
-    { id: 'recursos', label: 'Recursos', icon: <LayoutGrid className="h-3 w-3" /> },
-    { id: 'loja', label: 'Loja', icon: <ShoppingBag className="h-3 w-3" /> },
-    { id: 'imagens', label: 'Imagens', icon: <Images className="h-3 w-3" /> },
-    { id: 'conteudo', label: 'Conteúdo', icon: <AlignLeft className="h-3 w-3" /> },
-    { id: 'estilos', label: 'Estilos', icon: <Palette className="h-3 w-3" /> },
-  ];
-
+  // ── Render helpers ─────────────────────────────────────────────────────────
   const renderTextField = (key: string, label: string, long = false, placeholder = '') => (
     <div key={key}>
-      <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>{label}</label>
+      <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={mutedStyle}>{label}</label>
       <div className="flex gap-2">
         {long ? (
           <textarea className="flex-1 px-2.5 py-1.5 text-xs rounded-lg resize-none focus:outline-none"
-            style={{ border: '1px solid hsl(0 0% 100% / 0.1)', background: 'hsl(0 0% 100% / 0.05)', color: 'hsl(0 0% 100%)', minHeight: '60px' }}
+            style={{ ...inputStyle, minHeight: '60px' }}
             value={getVal(key)} onChange={e => setVal(key, e.target.value)} onBlur={() => saveKey(key)} placeholder={placeholder} />
         ) : (
-          <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none"
-            style={{ border: '1px solid hsl(0 0% 100% / 0.1)', background: 'hsl(0 0% 100% / 0.05)', color: 'hsl(0 0% 100%)' }}
+          <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
             value={getVal(key)} onChange={e => setVal(key, e.target.value)} onBlur={() => saveKey(key)} placeholder={placeholder} />
         )}
         <button onClick={() => saveKeyAndToast(key)} disabled={saving === key}
@@ -422,57 +248,62 @@ const AdminLandingEditor: React.FC = () => {
     </div>
   );
 
-  const inputStyle = { border: '1px solid hsl(0 0% 100% / 0.1)', background: 'hsl(0 0% 100% / 0.05)', color: 'hsl(0 0% 100%)' };
-  const groupStyle = { border: '1px solid hsl(0 0% 100% / 0.08)', background: 'hsl(0 0% 100% / 0.02)' };
-  const labelStyle = { color: 'hsl(262 75% 65%)' };
-  const mutedStyle = { color: 'hsl(0 0% 100% / 0.4)' };
+  const renderColorField = (key: string, label: string, hint?: string) => (
+    <div key={key}>
+      <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>{label}</label>
+      <ColorFieldInline value={getVal(key)} onChange={v => setVal(key, v)} onBlur={() => saveKey(key)} hint={hint} />
+    </div>
+  );
+
+  const renderSelectField = (key: string, label: string, options: { value: string; label: string }[]) => (
+    <div key={key}>
+      <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>{label}</label>
+      <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+        value={getVal(key)} onChange={e => { setVal(key, e.target.value); saveKey(key); }}>
+        {options.map(o => <option key={o.value} value={o.value} style={{ background: 'hsl(220 15% 12%)' }}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+
+  const renderPaddingFields = (prefix: string) => (
+    <div className="grid grid-cols-2 gap-3">
+      {renderSelectField(`${prefix}_pt`, 'Padding Top', PADDING_OPTS)}
+      {renderSelectField(`${prefix}_pb`, 'Padding Bottom', PADDING_OPTS)}
+    </div>
+  );
 
   const renderVideoBlock = (prefix: string, label: string, hint: string) => (
     <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
       <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>🎬 Vídeo de Fundo — {label}</p>
-      <p className="text-[9px]" style={mutedStyle}>
-        Resolução sugerida: <strong>{hint}</strong>, formato <strong>MP4/WebM</strong>, máximo <strong>15MB</strong>, sem áudio, em loop (5–15s).
-      </p>
+      <p className="text-[9px]" style={mutedStyle}>Resolução: <strong>{hint}</strong>, MP4/WebM, máx 15MB, sem áudio, loop 5–15s.</p>
       <div>
         <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={mutedStyle}>URL do Vídeo</label>
         <div className="flex gap-2">
           <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-            value={getVal(`${prefix}_url`)}
-            onChange={e => setVal(`${prefix}_url`, e.target.value)}
-            onBlur={() => saveKey(`${prefix}_url`)}
-            placeholder="https://... ou faça upload" />
-          <button
-            onClick={() => {
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = 'video/mp4,video/webm';
-              input.onchange = async (e: any) => {
-                const file = e.target?.files?.[0];
-                if (!file) return;
-                if (file.size > 15 * 1024 * 1024) { toast.error('Vídeo muito grande (máx 15MB)'); return; }
-                setSaving(`${prefix}_url`);
-                try {
-                  const ext = file.name.split('.').pop() || 'mp4';
-                  const path = `landing/${prefix}-${Date.now()}.${ext}`;
-                  const { error } = await supabase.storage.from('landing-assets').upload(path, file, { upsert: true });
-                  if (error) throw error;
-                  const { data } = supabase.storage.from('landing-assets').getPublicUrl(path);
-                  setVal(`${prefix}_url`, data.publicUrl);
-                  await saveKey(`${prefix}_url`);
-                  toast.success('Vídeo enviado!');
-                } catch (err: any) {
-                  toast.error(err.message || 'Erro ao enviar vídeo');
-                } finally {
-                  setSaving(null);
-                }
-              };
-              input.click();
-            }}
-            disabled={saving === `${prefix}_url`}
+            value={getVal(`${prefix}_url`)} onChange={e => setVal(`${prefix}_url`, e.target.value)}
+            onBlur={() => saveKey(`${prefix}_url`)} placeholder="https://..." />
+          <button onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = 'video/mp4,video/webm';
+            input.onchange = async (e: any) => {
+              const file = e.target?.files?.[0]; if (!file) return;
+              if (file.size > 15 * 1024 * 1024) { toast.error('Vídeo muito grande (máx 15MB)'); return; }
+              setSaving(`${prefix}_url`);
+              try {
+                const ext = file.name.split('.').pop() || 'mp4';
+                const path = `landing/${prefix}-${Date.now()}.${ext}`;
+                const { error } = await supabase.storage.from('landing-assets').upload(path, file, { upsert: true });
+                if (error) throw error;
+                const { data } = supabase.storage.from('landing-assets').getPublicUrl(path);
+                setVal(`${prefix}_url`, data.publicUrl); await saveKey(`${prefix}_url`);
+                toast.success('Vídeo enviado!');
+              } catch (err: any) { toast.error(err.message); } finally { setSaving(null); }
+            };
+            input.click();
+          }} disabled={saving === `${prefix}_url`}
             className="shrink-0 px-2.5 h-8 rounded-lg text-xs flex items-center gap-1 transition"
             style={{ background: 'hsl(262 75% 55% / 0.2)', color: 'hsl(262 75% 65%)' }}>
-            {saving === `${prefix}_url` ? <Loader2 className="h-3 w-3 animate-spin" /> : '↑'}
-            Upload
+            {saving === `${prefix}_url` ? <Loader2 className="h-3 w-3 animate-spin" /> : '↑'} Upload
           </button>
         </div>
       </div>
@@ -482,9 +313,7 @@ const AdminLandingEditor: React.FC = () => {
             autoPlay muted loop playsInline />
           <button onClick={() => { setVal(`${prefix}_url`, ''); saveKey(`${prefix}_url`, ''); }}
             className="text-[10px] px-2 py-1 rounded-lg transition"
-            style={{ background: 'hsl(0 70% 50% / 0.15)', color: 'hsl(0 70% 60%)' }}>
-            Remover vídeo
-          </button>
+            style={{ background: 'hsl(0 70% 50% / 0.15)', color: 'hsl(0 70% 60%)' }}>Remover vídeo</button>
         </div>
       )}
       <div>
@@ -494,727 +323,448 @@ const AdminLandingEditor: React.FC = () => {
         <input type="range" min={0} max={1} step={0.05}
           value={parseFloat(getVal(`${prefix}_opacity`) || '0.15')}
           onChange={e => setVal(`${prefix}_opacity`, e.target.value)}
-          onMouseUp={() => saveKey(`${prefix}_opacity`)}
-          onTouchEnd={() => saveKey(`${prefix}_opacity`)}
+          onMouseUp={() => saveKey(`${prefix}_opacity`)} onTouchEnd={() => saveKey(`${prefix}_opacity`)}
           className="w-full h-1.5 rounded-full accent-violet-500" />
       </div>
-      <div>
-        <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Enquadramento</label>
-        <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-          value={getVal(`${prefix}_fit`) || 'cover'}
-          onChange={e => { setVal(`${prefix}_fit`, e.target.value); saveKey(`${prefix}_fit`); }}>
-          <option value="cover" style={{ background: 'hsl(220 15% 12%)' }}>Cover (preenche a área, corta bordas)</option>
-          <option value="contain" style={{ background: 'hsl(220 15% 12%)' }}>Contain (mostra todo o vídeo)</option>
-          <option value="fill" style={{ background: 'hsl(220 15% 12%)' }}>Fill (estica para preencher)</option>
-        </select>
-      </div>
-      {/* Border controls */}
-      <div className="pt-2 border-t space-y-3" style={{ borderColor: 'hsl(0 0% 100% / 0.06)' }}>
-        <p className="text-[10px] font-semibold uppercase tracking-wider" style={mutedStyle}>🔲 Borda do Vídeo</p>
-        <div>
-          <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Posição</label>
-          <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-            value={getVal(`${prefix}_border_pos`) || 'none'}
-            onChange={e => { setVal(`${prefix}_border_pos`, e.target.value); saveKey(`${prefix}_border_pos`); }}>
-            <option value="none" style={{ background: 'hsl(220 15% 12%)' }}>Sem borda</option>
-            <option value="inset" style={{ background: 'hsl(220 15% 12%)' }}>Interna (inset)</option>
-            <option value="outset" style={{ background: 'hsl(220 15% 12%)' }}>Externa (outset)</option>
-          </select>
-        </div>
-        {getVal(`${prefix}_border_pos`) && getVal(`${prefix}_border_pos`) !== 'none' && (
-          <>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>
-                Grossura: {getVal(`${prefix}_border_width`) || '2'}px
-              </label>
-              <input type="range" min={1} max={12} step={1}
-                value={parseInt(getVal(`${prefix}_border_width`) || '2')}
-                onChange={e => setVal(`${prefix}_border_width`, e.target.value)}
-                onMouseUp={() => saveKey(`${prefix}_border_width`)}
-                onTouchEnd={() => saveKey(`${prefix}_border_width`)}
-                className="w-full h-1.5 rounded-full accent-violet-500" />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cantos</label>
-              <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                value={getVal(`${prefix}_border_radius`) || '0'}
-                onChange={e => { setVal(`${prefix}_border_radius`, e.target.value); saveKey(`${prefix}_border_radius`); }}>
-                <option value="0" style={{ background: 'hsl(220 15% 12%)' }}>Sem arredondamento (0px)</option>
-                <option value="4" style={{ background: 'hsl(220 15% 12%)' }}>Leve (4px)</option>
-                <option value="8" style={{ background: 'hsl(220 15% 12%)' }}>Médio (8px)</option>
-                <option value="12" style={{ background: 'hsl(220 15% 12%)' }}>Grande (12px)</option>
-                <option value="16" style={{ background: 'hsl(220 15% 12%)' }}>Extra (16px)</option>
-                <option value="24" style={{ background: 'hsl(220 15% 12%)' }}>Arredondado (24px)</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor da Borda</label>
-              <ColorFieldInline
-                value={getVal(`${prefix}_border_color`) || 'hsl(0 0% 100% / 0.2)'}
-                onChange={v => { setVal(`${prefix}_border_color`, v); }}
-                onBlur={() => saveKey(`${prefix}_border_color`)}
-              />
-            </div>
-          </>
-        )}
-      </div>
+      {renderSelectField(`${prefix}_fit`, 'Enquadramento', [
+        { value: 'cover', label: 'Cover' }, { value: 'contain', label: 'Contain' }, { value: 'fill', label: 'Fill' },
+      ])}
     </div>
   );
 
+  const renderStyleCollapsible = (children: React.ReactNode) => (
+    <div className="rounded-xl overflow-hidden" style={groupStyle}>
+      <button onClick={() => setOpenStyle(!openStyle)}
+        className="w-full flex items-center justify-between px-4 py-2.5 text-xs font-semibold"
+        style={{ color: 'hsl(262 75% 75%)' }}>
+        🎨 Estilos da Seção
+        {openStyle ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+      </button>
+      {openStyle && <div className="px-4 pb-4 space-y-3">{children}</div>}
+    </div>
+  );
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4">
       <LandingPreviewDrawer open={previewOpen} onClose={() => setPreviewOpen(false)} previewUrl={LANDING_PREVIEW_URL} />
 
-      {/* Header row: tabs + preview button */}
+      {/* Tab bar */}
       <div className="flex items-center gap-2">
-        <div className="flex flex-1 bg-white/5 rounded-lg p-0.5 gap-0.5 flex-wrap">
+        <div className="flex flex-1 overflow-x-auto gap-0.5 bg-white/5 rounded-lg p-0.5 scrollbar-hide">
           {TABS.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 h-7 flex items-center justify-center gap-1.5 rounded-md text-xs font-medium transition-colors min-w-[60px] ${
+            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setOpenStyle(false); }}
+              className={`shrink-0 h-7 px-2.5 flex items-center gap-1 rounded-md text-[11px] font-medium transition-colors ${
                 activeTab === tab.id ? 'bg-violet-600 text-white shadow-sm' : 'text-white/50 hover:text-white'
               }`}>
-              {tab.icon} {tab.label}
+              {tab.emoji} {tab.label}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {TAB_KEYS[activeTab] && (
-            <button onClick={saveAllKeys} disabled={savingAll}
-              className="flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-semibold transition-all"
-              style={{ background: 'hsl(142 70% 40% / 0.2)', color: 'hsl(142 70% 55%)', border: '1px solid hsl(142 70% 40% / 0.35)' }}
-              title="Salvar todas as alterações desta aba">
-              {savingAll ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">Salvar tudo</span>
-            </button>
-          )}
-          <button onClick={() => setPreviewOpen(true)}
-            className="flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all"
-            style={{ background: 'hsl(262 75% 55% / 0.15)', color: 'hsl(262 75% 70%)', border: '1px solid hsl(262 75% 55% / 0.3)' }}
-            title="Preview ao vivo da landing page">
-            <MonitorPlay className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Preview</span>
-          </button>
-        </div>
+        <button onClick={() => setPreviewOpen(true)}
+          className="shrink-0 flex items-center gap-1.5 h-7 px-3 rounded-lg text-xs font-medium transition-all"
+          style={{ background: 'hsl(262 75% 55% / 0.15)', color: 'hsl(262 75% 70%)', border: '1px solid hsl(262 75% 55% / 0.3)' }}>
+          <MonitorPlay className="h-3.5 w-3.5" /> Preview
+        </button>
       </div>
 
-      {/* ── Recursos tab ── */}
-      {activeTab === 'recursos' && <AdminLandingFeaturesEditor />}
-
-      {/* ── Estilos tab ── */}
-      {activeTab === 'estilos' && <AdminLandingStyleEditor />}
-
-      {/* ── Imagens tab ── */}
-      {activeTab === 'imagens' && (
-        <div className="space-y-5">
-          <p className="text-[11px]" style={mutedStyle}>
-            Gerencie as imagens do banco, configure os screenshots do app exibidos na landing page e ajuste textos e visibilidade da seção.
-          </p>
-
-          {/* Screenshot section toggle + texts */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Seção Screenshots do App</p>
-              <div className="flex items-center gap-2">
-                {getVal('screenshots_enabled') !== 'false'
-                  ? <Eye className="h-3.5 w-3.5" style={{ color: 'hsl(142 70% 50%)' }} />
-                  : <EyeOff className="h-3.5 w-3.5" style={{ color: 'hsl(0 0% 40%)' }} />}
-                <Switch
-                  checked={getVal('screenshots_enabled') !== 'false'}
-                  onCheckedChange={v => { setVal('screenshots_enabled', v ? 'true' : 'false'); saveKey('screenshots_enabled'); }}
-                />
-              </div>
-            </div>
-            {renderTextField('screenshots_title', 'Título da Seção', false, 'Tudo que você precisa, em um só lugar')}
-            {renderTextField('screenshots_subtitle', 'Subtítulo da Seção', true, 'Interface intuitiva feita para músicos...')}
-          </div>
-
-          {/* Individual screenshot images */}
-          {[
-            { n: 1, label: 'Screenshot 1 — Pad Grid', defaultTitle: 'Pad Grid' },
-            { n: 2, label: 'Screenshot 2 — Repertório', defaultTitle: 'Repertório' },
-            { n: 3, label: 'Screenshot 3 — Mixer', defaultTitle: 'Mixer' },
-          ].map(({ n, label, defaultTitle }) => (
-            <div key={n} className="rounded-xl p-4 space-y-3" style={groupStyle}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>{label}</p>
-              {renderTextField(`screenshot_${n}_title`, 'Título', false, defaultTitle)}
-              {renderTextField(`screenshot_${n}_desc`, 'Descrição', true)}
-              <ImageUploadField
-                keyPrefix={`screenshot_${n}_image`}
-                label="Imagem do Screenshot"
-                hint="Proporção sugerida: 9:16 (ex: 400×711px) — PNG/JPEG de alta qualidade"
-                value={getVal(`screenshot_${n}_image`)}
-                onChange={v => setVal(`screenshot_${n}_image`, v)}
-                onSave={() => saveKey(`screenshot_${n}_image`)}
-                saving={saving === `screenshot_${n}_image`}
-                aspectRatio="free"
-              />
-            </div>
-          ))}
-
-          {/* Video de fundo — Screenshots */}
-          {renderVideoBlock('screenshots_video', 'Screenshots', '1920×800px')}
-
-          {/* Divider */}
-          <div className="border-t" style={{ borderColor: 'hsl(0 0% 100% / 0.08)' }} />
-
-          {/* Image bank */}
-          <div className="rounded-xl p-4" style={groupStyle}>
-            <AdminImageBank />
-          </div>
-        </div>
-      )}
-
-      {/* ── Navbar tab ── */}
+      {/* ── NAVBAR ── */}
       {activeTab === 'navbar' && (
-        <div className="space-y-5">
-          <p className="text-[11px]" style={mutedStyle}>Configure a barra de navegação e a barra de anúncio da landing page.</p>
-
-          {/* Barra de Anúncio */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+        <div className="space-y-4">
+          {/* Announcement */}
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
             <div className="flex items-center justify-between">
-              <p className="text-[10px] font-semibold uppercase tracking-wider flex items-center gap-1.5" style={labelStyle}>
-                <Megaphone className="h-3 w-3" /> Barra de Anúncio
-              </p>
-              <div className="flex items-center gap-2">
-                {getVal('announcement_enabled') === 'true'
-                  ? <Eye className="h-3.5 w-3.5" style={{ color: 'hsl(142 70% 50%)' }} />
-                  : <EyeOff className="h-3.5 w-3.5" style={{ color: 'hsl(0 0% 40%)' }} />}
-                <Switch
-                  checked={getVal('announcement_enabled') === 'true'}
-                  onCheckedChange={v => { setVal('announcement_enabled', v ? 'true' : 'false'); saveKey('announcement_enabled'); }}
-                />
-              </div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>📢 Barra de Anúncio</p>
+              <Switch checked={getVal('announcement_enabled') === 'true'}
+                onCheckedChange={v => { setVal('announcement_enabled', v ? 'true' : 'false'); saveKey('announcement_enabled'); }} />
             </div>
-            {renderTextField('announcement_text', 'Texto do Anúncio', false, 'Ex: 🎉 Novidade: Glory Pads 2.0 já disponível!')}
-            {renderTextField('announcement_link', 'Link (opcional)', false, '/auth?mode=signup')}
-            {renderTextField('announcement_link_label', 'Rótulo do Link (opcional)', false, 'Saiba mais →')}
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
-              <ColorFieldInline value={getVal('announcement_bg') || 'hsl(262 75% 55%)'} onChange={v => setVal('announcement_bg', v)} onBlur={() => saveKey('announcement_bg')} />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Texto</label>
-              <ColorFieldInline value={getVal('announcement_color') || 'hsl(0 0% 100%)'} onChange={v => setVal('announcement_color', v)} onBlur={() => saveKey('announcement_color')} />
-            </div>
+            {renderTextField('announcement_text', 'Texto', false, '🎉 Novidade!')}
+            {renderTextField('announcement_link', 'Link', false, '/auth?mode=signup')}
+            {renderTextField('announcement_link_label', 'Rótulo do Link', false, 'Saiba mais →')}
+            {renderColorField('announcement_bg', 'Cor de Fundo')}
+            {renderColorField('announcement_color', 'Cor do Texto')}
           </div>
 
-          {/* Links da Navbar */}
+          {/* Nav links */}
           <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Links de Navegação</p>
-            <p className="text-[9px]" style={mutedStyle}>Defina os 3 links que aparecem no menu. Use âncoras (#recursos) ou rotas (/pricing).</p>
             {[0, 1, 2].map(i => (
               <div key={i} className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Rótulo {i + 1}</label>
                   <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                    value={getVal(`nav_link_${i}_label`)}
-                    onChange={e => setVal(`nav_link_${i}_label`, e.target.value)}
-                    onBlur={() => saveKey(`nav_link_${i}_label`)}
-                    placeholder={['Recursos', 'Sons', 'Planos'][i]} />
+                    value={getVal(`nav_link_${i}_label`)} onChange={e => setVal(`nav_link_${i}_label`, e.target.value)}
+                    onBlur={() => saveKey(`nav_link_${i}_label`)} placeholder={['Recursos', 'Sons', 'Planos'][i]} />
                 </div>
                 <div>
                   <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Href {i + 1}</label>
                   <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                    value={getVal(`nav_link_${i}_href`)}
-                    onChange={e => setVal(`nav_link_${i}_href`, e.target.value)}
-                    onBlur={() => saveKey(`nav_link_${i}_href`)}
-                    placeholder={['#recursos', '#sons', '#planos'][i]} />
+                    value={getVal(`nav_link_${i}_href`)} onChange={e => setVal(`nav_link_${i}_href`, e.target.value)}
+                    onBlur={() => saveKey(`nav_link_${i}_href`)} placeholder={['#recursos', '#sons', '#planos'][i]} />
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Botões da Navbar */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Botões da Navbar</p>
-
-            {/* Botão Entrar */}
-            <div className="space-y-2.5 pb-3" style={{ borderBottom: '1px solid hsl(0 0% 100% / 0.06)' }}>
-              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Entrar"</p>
-              {renderTextField('nav_btn_login_label', 'Rótulo', false, 'Entrar')}
-              <div>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Rótulo</label>
-                <ColorFieldInline key="nav_btn_login_color" value={getVal('nav_btn_login_color') || 'hsl(220 15% 30%)'} onChange={v => setVal('nav_btn_login_color', v)} onBlur={() => saveKey('nav_btn_login_color')} />
-              </div>
-            </div>
-
-            {/* Botão Criar Conta */}
-            <div className="space-y-2.5">
-              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Começar grátis"</p>
-              {renderTextField('nav_btn_signup_label', 'Rótulo', false, 'Começar grátis')}
-              <div>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Rótulo</label>
-                <ColorFieldInline key="nav_btn_signup_color" value={getVal('nav_btn_signup_color') || 'hsl(0 0% 100%)'} onChange={v => setVal('nav_btn_signup_color', v)} onBlur={() => saveKey('nav_btn_signup_color')} />
-              </div>
-            </div>
+          {/* Nav buttons */}
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Botões</p>
+            {renderTextField('nav_btn_login_label', 'Rótulo "Entrar"', false, 'Entrar')}
+            {renderTextField('nav_btn_signup_label', 'Rótulo "Criar Conta"', false, 'Começar grátis')}
           </div>
 
-          {/* Cores da Navbar */}
-          {/* Cores da Navbar */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores da Navbar</p>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
-              <ColorFieldInline value={getVal('nav_bg') || 'hsl(0 0% 100% / 0.96)'} onChange={v => setVal('nav_bg', v)} onBlur={() => saveKey('nav_bg')} hint="Suporta transparência (ex: hsl(0 0% 100% / 0.96))" />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor da Borda</label>
-              <ColorFieldInline value={getVal('nav_border_color') || 'hsl(0 0% 0% / 0.08)'} onChange={v => setVal('nav_border_color', v)} onBlur={() => saveKey('nav_border_color')} />
-            </div>
-          </div>
-
-          {/* Cores dos Links de Navegação */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores dos Links de Navegação</p>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor Normal</label>
-              <ColorFieldInline value={getVal('nav_link_color') || 'hsl(220 15% 45%)'} onChange={v => setVal('nav_link_color', v)} onBlur={() => saveKey('nav_link_color')} />
-            </div>
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor Hover</label>
-              <ColorFieldInline value={getVal('nav_link_hover_color') || 'hsl(220 15% 15%)'} onChange={v => setVal('nav_link_hover_color', v)} onBlur={() => saveKey('nav_link_hover_color')} />
-            </div>
-          </div>
-
-          {/* Cores dos Botões */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores dos Botões da Navbar</p>
-            <p className="text-[9px]" style={mutedStyle}>Botão "Entrar" (secundário) e botão "Criar Conta" (principal).</p>
-            <div className="space-y-3 pb-3" style={{ borderBottom: '1px solid hsl(0 0% 100% / 0.06)' }}>
-              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Entrar"</p>
-              <div>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
-                <ColorFieldInline value={getVal('nav_btn_login_bg') || 'hsl(0 0% 0% / 0)'} onChange={v => setVal('nav_btn_login_bg', v)} onBlur={() => saveKey('nav_btn_login_bg')} hint="Use hsl(0 0% 0% / 0) para transparente" />
-              </div>
-              <div>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Texto</label>
-                <ColorFieldInline value={getVal('nav_btn_login_color') || 'hsl(220 15% 30%)'} onChange={v => setVal('nav_btn_login_color', v)} onBlur={() => saveKey('nav_btn_login_color')} />
-              </div>
-            </div>
-            <div className="space-y-3">
-              <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Botão "Começar grátis"</p>
-              <div>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor de Fundo</label>
-                <ColorFieldInline value={getVal('nav_btn_signup_bg') || 'hsl(262 80% 55%)'} onChange={v => setVal('nav_btn_signup_bg', v)} onBlur={() => saveKey('nav_btn_signup_bg')} />
-              </div>
-              <div>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Cor do Texto</label>
-                <ColorFieldInline value={getVal('nav_btn_signup_color') || 'hsl(0 0% 100%)'} onChange={v => setVal('nav_btn_signup_color', v)} onBlur={() => saveKey('nav_btn_signup_color')} />
-              </div>
-            </div>
-          </div>
+          {/* Nav styles */}
+          {renderStyleCollapsible(<>
+            {renderColorField('nav_bg', 'Fundo da Navbar', 'Suporta transparência')}
+            {renderColorField('nav_border_color', 'Cor da Borda')}
+            {renderColorField('nav_link_color', 'Cor dos Links')}
+            {renderColorField('nav_link_hover_color', 'Cor Hover dos Links')}
+            {renderColorField('nav_btn_login_bg', 'Fundo Botão Entrar')}
+            {renderColorField('nav_btn_login_color', 'Cor Texto Entrar')}
+            {renderColorField('nav_btn_signup_bg', 'Fundo Botão Criar Conta')}
+            {renderColorField('nav_btn_signup_color', 'Cor Texto Criar Conta')}
+          </>)}
         </div>
       )}
 
-      {/* ── Hero tab ── */}
+      {/* ── HERO ── */}
       {activeTab === 'hero' && (
-        <div className="space-y-5">
-          <p className="text-[11px]" style={mutedStyle}>Edite o conteúdo, cores e espaçamento da seção Hero.</p>
+        <div className="space-y-4">
           <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Conteúdo</p>
-            {renderTextField('hero_badge', 'Texto do Badge')}
+            {renderTextField('hero_badge', 'Badge')}
             {renderTextField('hero_title', 'Título Principal', true)}
             {renderTextField('hero_subtitle', 'Subtítulo', true)}
           </div>
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cores & Tipografia</p>
-            {([
-              { key: 'hero_bg', label: 'Cor de Fundo da Seção' },
-              { key: 'hero_title_color', label: 'Cor do Título' },
-              { key: 'hero_subtitle_color', label: 'Cor do Subtítulo' },
-              { key: 'hero_badge_bg', label: 'Fundo do Badge', hint: 'Suporta transparência (ex: hsl(262 75% 55% / 0.06))' },
-              { key: 'hero_badge_color', label: 'Cor do Texto do Badge' },
-            ] as { key: string; label: string; hint?: string }[]).map(({ key, label, hint }) => (
-              <div key={key}>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>{label}</label>
-                <ColorFieldInline value={getVal(key)} onChange={v => setVal(key, v)} onBlur={() => saveKey(key)} hint={hint} />
-              </div>
-            ))}
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Tamanho do Título</label>
-              <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                value={getVal('hero_title_size')}
-                onChange={e => { setVal('hero_title_size', e.target.value); saveKey('hero_title_size'); }}>
-                {TEXT_SIZES_HERO.map(o => <option key={o.value} value={o.value} style={{ background: 'hsl(220 15% 12%)' }}>{o.label}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Espaçamento</p>
-            {([{ key: 'hero_pt', label: 'Padding Top' }, { key: 'hero_pb', label: 'Padding Bottom' }] as { key: string; label: string }[]).map(({ key, label }) => (
-              <div key={key}>
-                <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>{label}</label>
-                <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                  value={getVal(key)} onChange={e => { setVal(key, e.target.value); saveKey(key); }}>
-                  {PADDING_OPTS_HERO.map(o => <option key={o.value} value={o.value} style={{ background: 'hsl(220 15% 12%)' }}>{o.label}</option>)}
-                </select>
-              </div>
-            ))}
-          </div>
 
-          {/* Vídeo de Fundo */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>🎬 Vídeo de Fundo</p>
-            <p className="text-[9px]" style={mutedStyle}>
-              Adicione um vídeo em loop atrás do Hero. Tamanho recomendado: <strong>1920×1080px (16:9)</strong>, formato <strong>MP4</strong>, máximo <strong>10MB</strong>. 
-              Vídeos curtos (5–15s) e sem áudio funcionam melhor.
-            </p>
+          {renderStyleCollapsible(<>
+            {renderColorField('hero_bg', 'Fundo da Seção')}
+            {renderColorField('hero_title_color', 'Cor do Título')}
+            {renderColorField('hero_subtitle_color', 'Cor do Subtítulo')}
+            {renderColorField('hero_badge_bg', 'Fundo do Badge', 'Suporta transparência')}
+            {renderColorField('hero_badge_color', 'Cor do Badge')}
+            {renderSelectField('hero_title_size', 'Tamanho do Título', TEXT_SIZES)}
+            {renderPaddingFields('hero')}
+          </>)}
 
-            {/* Video URL / Upload */}
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={mutedStyle}>URL do Vídeo</label>
-              <div className="flex gap-2">
-                <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                  value={getVal('hero_video_url')}
-                  onChange={e => setVal('hero_video_url', e.target.value)}
-                  onBlur={() => saveKey('hero_video_url')}
-                  placeholder="https://... ou faça upload" />
-                <button
-                  onClick={() => {
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'video/mp4,video/webm';
-                    input.onchange = async (e: any) => {
-                      const file = e.target?.files?.[0];
-                      if (!file) return;
-                      if (file.size > 15 * 1024 * 1024) { toast.error('Vídeo muito grande (máx 15MB)'); return; }
-                      setSaving('hero_video_url');
-                      try {
-                        const ext = file.name.split('.').pop() || 'mp4';
-                        const path = `landing/hero-video-${Date.now()}.${ext}`;
-                        const { error } = await supabase.storage.from('landing-assets').upload(path, file, { upsert: true });
-                        if (error) throw error;
-                        const { data } = supabase.storage.from('landing-assets').getPublicUrl(path);
-                        setVal('hero_video_url', data.publicUrl);
-                        await saveKey('hero_video_url');
-                        toast.success('Vídeo enviado!');
-                      } catch (err: any) {
-                        toast.error(err.message || 'Erro ao enviar vídeo');
-                      } finally {
-                        setSaving(null);
-                      }
-                    };
-                    input.click();
-                  }}
-                  disabled={saving === 'hero_video_url'}
-                  className="shrink-0 px-2.5 h-8 rounded-lg text-xs flex items-center gap-1 transition"
-                  style={{ background: 'hsl(262 75% 55% / 0.2)', color: 'hsl(262 75% 65%)' }}>
-                  {saving === 'hero_video_url' ? <Loader2 className="h-3 w-3 animate-spin" /> : '↑'}
-                  Upload
-                </button>
-              </div>
-            </div>
-
-            {/* Preview */}
-            {getVal('hero_video_url') && (
-              <div className="space-y-2">
-                <video src={getVal('hero_video_url')} className="w-full h-32 object-cover rounded-lg" style={{ border: '1px solid hsl(0 0% 100% / 0.1)' }}
-                  autoPlay muted loop playsInline />
-                <button onClick={() => { setVal('hero_video_url', ''); saveKey('hero_video_url'); }}
-                  className="text-[10px] px-2 py-1 rounded-lg transition"
-                  style={{ background: 'hsl(0 70% 50% / 0.15)', color: 'hsl(0 70% 60%)' }}>
-                  Remover vídeo
-                </button>
-              </div>
-            )}
-
-            {/* Opacity */}
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>
-                Opacidade do Vídeo: {Math.round(parseFloat(getVal('hero_video_opacity') || '0.15') * 100)}%
-              </label>
-              <input type="range" min={0} max={1} step={0.05}
-                value={parseFloat(getVal('hero_video_opacity') || '0.15')}
-                onChange={e => setVal('hero_video_opacity', e.target.value)}
-                onMouseUp={() => saveKey('hero_video_opacity')}
-                onTouchEnd={() => saveKey('hero_video_opacity')}
-                className="w-full h-1.5 rounded-full accent-violet-500" />
-            </div>
-
-            {/* Object fit */}
-            <div>
-              <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>Enquadramento</label>
-              <select className="w-full h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                value={getVal('hero_video_fit') || 'cover'}
-                onChange={e => { setVal('hero_video_fit', e.target.value); saveKey('hero_video_fit'); }}>
-                <option value="cover" style={{ background: 'hsl(220 15% 12%)' }}>Cover (preenche a área, corta bordas)</option>
-                <option value="contain" style={{ background: 'hsl(220 15% 12%)' }}>Contain (mostra todo o vídeo)</option>
-                <option value="fill" style={{ background: 'hsl(220 15% 12%)' }}>Fill (estica para preencher)</option>
-              </select>
-            </div>
-          </div>
+          {renderVideoBlock('hero_video', 'Hero', '1920×1080px')}
         </div>
       )}
 
-      {/* ── Loja tab ── */}
-      {activeTab === 'loja' && (
-        <div className="space-y-5">
-          <p className="text-[11px]" style={mutedStyle}>Configure a seção Glory Store: imagem de fundo, transparência e cards de categoria.</p>
-
-          {/* Fundo */}
+      {/* ── STATS ── */}
+      {activeTab === 'stats' && (
+        <div className="space-y-4">
           <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Fundo da Seção</p>
-            <ImageUploadField
-              keyPrefix="store_bg_image"
-              label="Imagem de Fundo"
-              hint="Tamanho sugerido: 1920×600px (JPEG, <500KB)"
-              value={getVal('store_bg_image')}
-              onChange={v => setVal('store_bg_image', v)}
-              onSave={() => saveKey('store_bg_image')}
-              saving={saving === 'store_bg_image'}
-              aspectRatio="16:9"
-            />
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Estatísticas</p>
+            {[1, 2, 3, 4].map(n => (
+              <div key={n} className="space-y-2 pb-3" style={{ borderBottom: n < 4 ? '1px solid hsl(0 0% 100% / 0.06)' : 'none' }}>
+                <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Stat {n}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Valor</label>
+                    <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                      value={getVal(`stat_${n}_value`)} onChange={e => setVal(`stat_${n}_value`, e.target.value)}
+                      onBlur={() => saveKey(`stat_${n}_value`)} placeholder="10k+" />
+                  </div>
+                  <div>
+                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Rótulo</label>
+                    <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                      value={getVal(`stat_${n}_label`)} onChange={e => setVal(`stat_${n}_label`, e.target.value)}
+                      onBlur={() => saveKey(`stat_${n}_label`)} placeholder="Usuários" />
+                  </div>
+                </div>
+                <ImageUploadField keyPrefix={`stat_${n}_image`} label="Imagem (opcional)" hint="120×120px PNG transparente"
+                  value={getVal(`stat_${n}_image`)} onChange={v => setVal(`stat_${n}_image`, v)}
+                  onSave={() => saveKey(`stat_${n}_image`)} saving={saving === `stat_${n}_image`} aspectRatio="1:1" />
+              </div>
+            ))}
+          </div>
+
+          {renderStyleCollapsible(<>
+            {renderColorField('stats_bg', 'Fundo da Seção')}
+            {renderColorField('stats_value_color', 'Cor dos Números')}
+            {renderColorField('stats_label_color', 'Cor dos Rótulos', 'Suporta transparência')}
+            {renderPaddingFields('stats')}
+          </>)}
+
+          {renderVideoBlock('stats_video', 'Estatísticas', '1920×400px')}
+        </div>
+      )}
+
+      {/* ── SCREENSHOTS ── */}
+      {activeTab === 'screenshots' && (
+        <div className="space-y-4">
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Seção Screenshots</p>
+              <div className="flex items-center gap-2">
+                {getVal('screenshots_enabled') !== 'false' ? <Eye className="h-3.5 w-3.5" style={{ color: 'hsl(142 70% 50%)' }} /> : <EyeOff className="h-3.5 w-3.5" style={{ color: 'hsl(0 0% 40%)' }} />}
+                <Switch checked={getVal('screenshots_enabled') !== 'false'}
+                  onCheckedChange={v => { setVal('screenshots_enabled', v ? 'true' : 'false'); saveKey('screenshots_enabled'); }} />
+              </div>
+            </div>
+            {renderTextField('screenshots_title', 'Título', false, 'Tudo que você precisa')}
+            {renderTextField('screenshots_subtitle', 'Subtítulo', true, 'Interface intuitiva...')}
+          </div>
+
+          {[1, 2, 3].map(n => (
+            <div key={n} className="rounded-xl p-4 space-y-3" style={groupStyle}>
+              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Screenshot {n}</p>
+              {renderTextField(`screenshot_${n}_title`, 'Título')}
+              {renderTextField(`screenshot_${n}_desc`, 'Descrição', true)}
+              <ImageUploadField keyPrefix={`screenshot_${n}_image`} label="Imagem" hint="9:16 (400×711px)"
+                value={getVal(`screenshot_${n}_image`)} onChange={v => setVal(`screenshot_${n}_image`, v)}
+                onSave={() => saveKey(`screenshot_${n}_image`)} saving={saving === `screenshot_${n}_image`} aspectRatio="free" />
+            </div>
+          ))}
+
+          {renderStyleCollapsible(<>
+            {renderColorField('screenshots_bg', 'Fundo da Seção')}
+            {renderColorField('screenshots_title_color', 'Cor do Título')}
+            {renderColorField('screenshots_subtitle_color', 'Cor do Subtítulo')}
+            {renderPaddingFields('screenshots')}
+          </>)}
+
+          {renderVideoBlock('screenshots_video', 'Screenshots', '1920×800px')}
+        </div>
+      )}
+
+      {/* ── RECURSOS ── */}
+      {activeTab === 'recursos' && (
+        <div className="space-y-4">
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Textos da Seção</p>
+            {renderTextField('features_title', 'Título', false, 'Recursos')}
+            {renderTextField('features_subtitle', 'Subtítulo', true)}
+          </div>
+
+          <AdminLandingFeaturesEditor />
+
+          {renderStyleCollapsible(<>
+            {renderColorField('features_bg', 'Fundo da Seção')}
+            {renderColorField('features_card_bg', 'Fundo dos Cards')}
+            {renderColorField('features_card_border', 'Borda dos Cards', 'Suporta transparência')}
+            {renderColorField('features_title_color', 'Cor do Título')}
+            {renderColorField('features_subtitle_color', 'Cor do Subtítulo')}
+            {renderPaddingFields('features')}
+          </>)}
+
+          {renderVideoBlock('features_video', 'Recursos', '1920×800px')}
+        </div>
+      )}
+
+      {/* ── LOJA ── */}
+      {activeTab === 'loja' && (
+        <div className="space-y-4">
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Textos da Seção</p>
+            {renderTextField('store_title', 'Título', false, 'Glory Store')}
+            {renderTextField('store_subtitle', 'Subtítulo', true)}
+          </div>
+
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Imagem de Fundo</p>
+            <ImageUploadField keyPrefix="store_bg_image" label="Fundo" hint="1920×600px JPEG"
+              value={getVal('store_bg_image')} onChange={v => setVal('store_bg_image', v)}
+              onSave={() => saveKey('store_bg_image')} saving={saving === 'store_bg_image'} aspectRatio="16:9" />
             <div>
               <label className="text-[10px] font-medium uppercase tracking-wider mb-1.5 block" style={mutedStyle}>
-                Transparência da Imagem: {Math.round(parseFloat(getVal('store_bg_image_opacity') || '0.3') * 100)}%
+                Transparência: {Math.round(parseFloat(getVal('store_bg_image_opacity') || '0.3') * 100)}%
               </label>
               <input type="range" min={0} max={1} step={0.05}
                 value={parseFloat(getVal('store_bg_image_opacity') || '0.3')}
                 onChange={e => setVal('store_bg_image_opacity', e.target.value)}
-                onMouseUp={() => saveKey('store_bg_image_opacity')}
-                onTouchEnd={() => saveKey('store_bg_image_opacity')}
+                onMouseUp={() => saveKey('store_bg_image_opacity')} onTouchEnd={() => saveKey('store_bg_image_opacity')}
                 className="w-full h-1.5 rounded-full accent-violet-500" />
             </div>
           </div>
 
-          {/* Categorias */}
-          <div className="rounded-xl p-4 space-y-5" style={groupStyle}>
+          {/* Category cards */}
+          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Categorias (6 cards)</p>
             {DEFAULT_CATS.map((def, i) => (
-              <div key={i} className="space-y-2 pb-4" style={{ borderBottom: i < 5 ? '1px solid hsl(0 0% 100% / 0.06)' : 'none' }}>
-                <p className="text-[10px] font-semibold" style={{ color: 'hsl(0 0% 100% / 0.6)' }}>Card {i + 1} — {getVal(`store_cat_${i}_name`) || def.name}</p>
+              <div key={i} className="space-y-2 pb-3" style={{ borderBottom: i < 5 ? '1px solid hsl(0 0% 100% / 0.06)' : 'none' }}>
+                <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>{def.emoji} Card {i + 1}</p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Nome</label>
+                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Título</label>
                     <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                      value={getVal(`store_cat_${i}_name`) || def.name}
-                      onChange={e => setVal(`store_cat_${i}_name`, e.target.value)}
-                      onBlur={() => saveKey(`store_cat_${i}_name`)} />
+                      value={getVal(`store_cat_${i}_title`) || def.name}
+                      onChange={e => setVal(`store_cat_${i}_title`, e.target.value)}
+                      onBlur={() => saveKey(`store_cat_${i}_title`)} />
                   </div>
                   <div>
-                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Emoji</label>
+                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Link</label>
                     <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                      value={getVal(`store_cat_${i}_emoji`) || def.emoji}
-                      onChange={e => setVal(`store_cat_${i}_emoji`, e.target.value)}
-                      onBlur={() => saveKey(`store_cat_${i}_emoji`)} />
+                      value={getVal(`store_cat_${i}_link`)} onChange={e => setVal(`store_cat_${i}_link`, e.target.value)}
+                      onBlur={() => saveKey(`store_cat_${i}_link`)} placeholder="/auth?mode=signup" />
                   </div>
                 </div>
-                <div>
-                  <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Link ao clicar (ex: /store/uuid)</label>
-                  <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                    placeholder="/auth?mode=signup"
-                    value={getVal(`store_cat_${i}_link`)}
-                    onChange={e => setVal(`store_cat_${i}_link`, e.target.value)}
-                    onBlur={() => saveKey(`store_cat_${i}_link`)} />
-                </div>
-                <ImageUploadField
-                  keyPrefix={`store_cat_${i}_image`}
-                  label="Imagem do Card"
-                  hint="Tamanho sugerido: 400×400px (PNG/JPEG)"
-                  value={getVal(`store_cat_${i}_image`)}
-                  onChange={v => setVal(`store_cat_${i}_image`, v)}
-                  onSave={() => saveKey(`store_cat_${i}_image`)}
-                  saving={saving === `store_cat_${i}_image`}
-                  aspectRatio="1:1"
-                />
+                <ImageUploadField keyPrefix={`store_cat_${i}_image`} label="Imagem" hint="400×400px"
+                  value={getVal(`store_cat_${i}_image`)} onChange={v => setVal(`store_cat_${i}_image`, v)}
+                  onSave={() => saveKey(`store_cat_${i}_image`)} saving={saving === `store_cat_${i}_image`} aspectRatio="1:1" />
               </div>
             ))}
           </div>
 
-          {/* Video de fundo — Loja */}
-          {renderVideoBlock('store_video', 'Loja de Sons', '1920×600px')}
+          {renderStyleCollapsible(<>
+            {renderColorField('store_bg', 'Fundo da Seção')}
+            {renderColorField('store_title_color', 'Cor do Título')}
+            {renderColorField('store_subtitle_color', 'Cor do Subtítulo', 'Suporta transparência')}
+            {renderPaddingFields('store')}
+          </>)}
+
+          {renderVideoBlock('store_video', 'Loja', '1920×600px')}
         </div>
       )}
 
-      {/* ── Conteúdo tab: HowItWorks + Footer + Stats imagens + Cache ── */}
-      {activeTab === 'conteudo' && (
-        <div className="space-y-5">
-          <p className="text-[11px]" style={mutedStyle}>Textos de "Como Funciona", Rodapé, imagens de Estatísticas e controle de cache.</p>
-
-          {/* Como Funciona */}
+      {/* ── STEPS (Como Funciona) ── */}
+      {activeTab === 'steps' && (
+        <div className="space-y-4">
           <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Como Funciona</p>
             {renderTextField('how_main_title', 'Título da Seção', true, 'Do ensaio ao culto em 3 passos')}
-            <div className="space-y-3 pt-1">
-              {[1, 2, 3].map(n => (
-                <div key={n} className="space-y-2 pb-3" style={{ borderBottom: n < 3 ? '1px solid hsl(0 0% 100% / 0.06)' : 'none' }}>
-                  <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Passo {n}</p>
-                  {renderTextField(`how_step_${n}_title`, 'Título', false, ['Crie sua Setlist', 'Configure os Sons', 'Toque ao Vivo'][n-1])}
-                  {renderTextField(`how_step_${n}_desc`, 'Descrição', true)}
-                </div>
-              ))}
+            {[1, 2, 3].map(n => (
+              <div key={n} className="space-y-2 pb-3" style={{ borderBottom: n < 3 ? '1px solid hsl(0 0% 100% / 0.06)' : 'none' }}>
+                <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Passo {n}</p>
+                {renderTextField(`how_step_${n}_title`, 'Título')}
+                {renderTextField(`how_step_${n}_desc`, 'Descrição', true)}
+              </div>
+            ))}
+          </div>
+
+          {renderStyleCollapsible(<>
+            {renderColorField('howitworks_bg', 'Fundo da Seção')}
+            {renderColorField('howitworks_title_color', 'Cor do Título')}
+            {renderColorField('howitworks_step_color', 'Cor do Número', 'Suporta transparência')}
+            {renderColorField('howitworks_item_title_color', 'Cor do Título do Passo')}
+            {renderColorField('howitworks_item_desc_color', 'Cor da Descrição')}
+            {renderPaddingFields('howitworks')}
+          </>)}
+
+          {renderVideoBlock('howitworks_video', 'Como Funciona', '1920×600px')}
+        </div>
+      )}
+
+      {/* ── PLANOS ── */}
+      {activeTab === 'planos' && (
+        <div className="space-y-4">
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Seção Planos</p>
+            {renderTextField('plans_title', 'Título')}
+            {renderTextField('plans_subtitle', 'Subtítulo', true)}
+            <div className="flex items-center justify-between py-1">
+              <div>
+                <p className="text-xs" style={{ color: 'hsl(0 0% 100% / 0.8)' }}>Mostrar preços</p>
+                <p className="text-[10px]" style={mutedStyle}>Visibilidade da seção de preços</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {getVal('show_pricing') === 'true' ? <Eye className="h-3.5 w-3.5" style={{ color: 'hsl(142 70% 50%)' }} /> : <EyeOff className="h-3.5 w-3.5" style={{ color: 'hsl(0 0% 40%)' }} />}
+                <Switch checked={getVal('show_pricing') === 'true'}
+                  onCheckedChange={v => { setVal('show_pricing', v ? 'true' : 'false'); saveKey('show_pricing'); toast.success(v ? 'Preços visíveis' : 'Preços ocultos'); }} />
+              </div>
             </div>
           </div>
 
-          {/* Footer textos */}
+          {renderStyleCollapsible(<>
+            {renderColorField('pricing_bg', 'Fundo da Seção')}
+            {renderColorField('pricing_title_color', 'Cor do Título')}
+            {renderColorField('pricing_subtitle_color', 'Cor do Subtítulo', 'Suporta transparência')}
+            {renderPaddingFields('pricing')}
+          </>)}
+
+          {renderVideoBlock('pricing_video', 'Planos', '1920×800px')}
+        </div>
+      )}
+
+      {/* ── CTA ── */}
+      {activeTab === 'cta' && (
+        <div className="space-y-4">
           <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Rodapé — Textos</p>
-            {renderTextField('footer_tagline', 'Tagline (descrição)', true, 'A ferramenta definitiva para músicos de louvor...')}
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>CTA Final</p>
+            {renderTextField('cta_title', 'Título')}
+            {renderTextField('cta_subtitle', 'Subtítulo', true)}
+            {renderTextField('cta_button_label', 'Texto do Botão', false, 'Começar agora — é grátis')}
+            {renderTextField('cta_button_link', 'Link do Botão', false, '/auth?mode=signup')}
+          </div>
+
+          {renderStyleCollapsible(<>
+            {renderColorField('cta_bg', 'Fundo da Seção')}
+            {renderColorField('cta_card_bg', 'Fundo do Card')}
+            {renderColorField('cta_title_color', 'Cor do Título')}
+            {renderColorField('cta_subtitle_color', 'Cor do Subtítulo')}
+            {renderPaddingFields('cta')}
+          </>)}
+
+          {renderVideoBlock('cta_video', 'CTA Final', '1920×500px')}
+        </div>
+      )}
+
+      {/* ── FOOTER ── */}
+      {activeTab === 'footer' && (
+        <div className="space-y-4">
+          <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
+            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Textos do Rodapé</p>
+            {renderTextField('footer_tagline', 'Tagline', true, 'A ferramenta definitiva para músicos de louvor...')}
             {renderTextField('footer_copyright', 'Nome Copyright', false, 'Glory Pads')}
             <div className="space-y-2 pt-1">
-              <p className="text-[9px] font-semibold uppercase tracking-wider" style={mutedStyle}>Links do Rodapé (3 links)</p>
+              <p className="text-[9px] font-semibold uppercase tracking-wider" style={mutedStyle}>Links do Rodapé</p>
               {[0, 1, 2].map(i => (
                 <div key={i} className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Rótulo {i+1}</label>
                     <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                      value={getVal(`footer_link_${i}_label`)}
-                      onChange={e => setVal(`footer_link_${i}_label`, e.target.value)}
-                      onBlur={() => saveKey(`footer_link_${i}_label`)}
-                      placeholder={['Recursos', 'Planos', 'Glory Store'][i]} />
+                      value={getVal(`footer_link_${i}_label`)} onChange={e => setVal(`footer_link_${i}_label`, e.target.value)}
+                      onBlur={() => saveKey(`footer_link_${i}_label`)} placeholder={['Recursos', 'Planos', 'Glory Store'][i]} />
                   </div>
                   <div>
                     <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Href {i+1}</label>
                     <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                      value={getVal(`footer_link_${i}_href`)}
-                      onChange={e => setVal(`footer_link_${i}_href`, e.target.value)}
-                      onBlur={() => saveKey(`footer_link_${i}_href`)}
-                      placeholder={['#recursos', '#planos', '#sons'][i]} />
+                      value={getVal(`footer_link_${i}_href`)} onChange={e => setVal(`footer_link_${i}_href`, e.target.value)}
+                      onBlur={() => saveKey(`footer_link_${i}_href`)} placeholder={['#recursos', '#planos', '#sons'][i]} />
                   </div>
                 </div>
               ))}
             </div>
-            <ImageUploadField
-              keyPrefix="footer_logo_url"
-              label="Logo do Rodapé (opcional)"
-              hint="Tamanho sugerido: 40×40px (SVG/PNG transparente)"
-              value={getVal('footer_logo_url')}
-              onChange={v => setVal('footer_logo_url', v)}
-              onSave={() => saveKey('footer_logo_url')}
-              saving={saving === 'footer_logo_url'}
-              aspectRatio="1:1"
-            />
+            <ImageUploadField keyPrefix="footer_logo_url" label="Logo (opcional)" hint="40×40px SVG/PNG"
+              value={getVal('footer_logo_url')} onChange={v => setVal('footer_logo_url', v)}
+              onSave={() => saveKey('footer_logo_url')} saving={saving === 'footer_logo_url'} aspectRatio="1:1" />
           </div>
 
-          {/* Stats — textos + imagens */}
-          <div className="rounded-xl p-4 space-y-4" style={groupStyle}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Estatísticas</p>
-            <p className="text-[9px]" style={mutedStyle}>Edite valor, rótulo e imagem de cada estatística. A imagem aparece acima do valor (40×40px).</p>
-            {[1, 2, 3, 4].map(n => (
-              <div key={n} className="space-y-2 pb-4" style={{ borderBottom: n < 4 ? '1px solid hsl(0 0% 100% / 0.06)' : 'none' }}>
-                <p className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>Estatística {n}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Valor</label>
-                    <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                      value={getVal(`stat_${n}_value`)}
-                      onChange={e => setVal(`stat_${n}_value`, e.target.value)}
-                      onBlur={() => saveKey(`stat_${n}_value`)}
-                      placeholder="Ex: 10k+" />
-                  </div>
-                  <div>
-                    <label className="text-[9px] uppercase tracking-wider block mb-1" style={mutedStyle}>Rótulo</label>
-                    <input className="w-full h-7 px-2 text-xs rounded-lg focus:outline-none" style={inputStyle}
-                      value={getVal(`stat_${n}_label`)}
-                      onChange={e => setVal(`stat_${n}_label`, e.target.value)}
-                      onBlur={() => saveKey(`stat_${n}_label`)}
-                      placeholder="Ex: Usuários ativos" />
-                  </div>
-                </div>
-                <ImageUploadField
-                  keyPrefix={`stat_${n}_image`}
-                  label="Imagem (opcional)"
-                  hint="Tamanho sugerido: 120×120px (PNG transparente)"
-                  value={getVal(`stat_${n}_image`)}
-                  onChange={v => setVal(`stat_${n}_image`, v)}
-                  onSave={() => saveKey(`stat_${n}_image`)}
-                  saving={saving === `stat_${n}_image`}
-                  aspectRatio="1:1"
-                />
-              </div>
-            ))}
-          </div>
+          {renderStyleCollapsible(<>
+            {renderColorField('footer_bg', 'Fundo da Seção')}
+            {renderColorField('footer_text_color', 'Cor do Texto', 'Suporta transparência')}
+            {renderColorField('divider_dark_color', 'Cor dos Divisores', 'Cor das seções escuras')}
+            {renderPaddingFields('footer')}
+          </>)}
 
-          {/* Videos de fundo — Como Funciona, Stats, Footer */}
-          {renderVideoBlock('howitworks_video', 'Como Funciona', '1920×600px')}
-          {renderVideoBlock('stats_video', 'Estatísticas', '1920×400px')}
           {renderVideoBlock('footer_video', 'Rodapé', '1920×300px')}
 
-          {/* Force cache refresh */}
+          {/* Cache */}
           <div className="rounded-xl p-4 space-y-3" style={groupStyle}>
             <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>Cache de Usuários</p>
-            <p className="text-[9px]" style={mutedStyle}>
-              Ao clicar, todos os usuários receberão uma atualização forçada na próxima vez que abrirem o app. 
-              Útil após atualizações importantes.
-            </p>
-            <button
-              onClick={forceCacheRefresh}
-              disabled={saving === 'app_cache_version'}
+            <p className="text-[9px]" style={mutedStyle}>Força atualização para todos os usuários.</p>
+            <button onClick={forceCacheRefresh} disabled={saving === 'app_cache_version'}
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition"
-              style={{ background: 'hsl(0 75% 50% / 0.15)', color: 'hsl(0 75% 65%)', border: '1px solid hsl(0 75% 50% / 0.3)' }}
-            >
+              style={{ background: 'hsl(0 75% 50% / 0.15)', color: 'hsl(0 75% 65%)', border: '1px solid hsl(0 75% 50% / 0.3)' }}>
               {saving === 'app_cache_version' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-              Forçar Atualização de Cache
+              Forçar Atualização
             </button>
-            {getVal('app_cache_version') && (
-              <p className="text-[9px]" style={{ color: 'hsl(0 0% 100% / 0.3)' }}>
-                Versão atual: {new Date(parseInt(getVal('app_cache_version'))).toLocaleString('pt-BR')}
-              </p>
-            )}
           </div>
         </div>
       )}
 
-      {/* ── Textos tab ── */}
-      {activeTab === 'textos' && (
-        <div className="space-y-5">
-          <p className="text-[11px]" style={mutedStyle}>Edite o conteúdo textual da landing page. As alterações ficam visíveis imediatamente.</p>
-
-          {SECTION_GROUPS.map(group => (
-            <div key={group.label} className="rounded-xl p-4 space-y-3" style={groupStyle}>
-              <p className="text-[10px] font-semibold uppercase tracking-wider" style={labelStyle}>{group.label}</p>
-              {group.keys.map(key => {
-                if (key === 'show_pricing') {
-                  return (
-                    <div key={key} className="flex items-center justify-between py-1">
-                      <div>
-                        <p className="text-xs" style={{ color: 'hsl(0 0% 100% / 0.8)' }}>{SECTION_LABELS[key]}</p>
-                        <p className="text-[10px]" style={mutedStyle}>Controla a visibilidade da seção de preços</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {showPricing ? <Eye className="h-3.5 w-3.5" style={{ color: 'hsl(142 70% 50%)' }} /> : <EyeOff className="h-3.5 w-3.5" style={{ color: 'hsl(0 0% 40%)' }} />}
-                        <Switch checked={showPricing} onCheckedChange={toggleShowPricing} />
-                      </div>
-                    </div>
-                  );
-                }
-                const isLong = key.includes('subtitle') || key.includes('title');
-                return (
-                  <div key={key}>
-                    <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={mutedStyle}>
-                      {SECTION_LABELS[key] || key}
-                    </label>
-                    <div className="flex gap-2">
-                      {isLong ? (
-                        <textarea className="flex-1 px-2.5 py-1.5 text-xs rounded-lg resize-none focus:outline-none"
-                          style={{ border: '1px solid hsl(0 0% 100% / 0.1)', background: 'hsl(0 0% 100% / 0.05)', color: 'hsl(0 0% 100%)', minHeight: '60px' }}
-                          value={getVal(key)} onChange={e => setVal(key, e.target.value)} onBlur={() => saveKey(key)} />
-                      ) : (
-                        <input className="flex-1 h-8 px-2.5 text-xs rounded-lg focus:outline-none"
-                          style={{ border: '1px solid hsl(0 0% 100% / 0.1)', background: 'hsl(0 0% 100% / 0.05)', color: 'hsl(0 0% 100%)' }}
-                          value={getVal(key)} onChange={e => setVal(key, e.target.value)} onBlur={() => saveKey(key)} />
-                      )}
-                      <button onClick={() => saveKeyAndToast(key)} disabled={saving === key}
-                        className="shrink-0 p-1.5 rounded-lg transition" style={{ background: 'hsl(262 75% 55% / 0.2)', color: 'hsl(262 75% 65%)' }}>
-                        {saving === key ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* Videos de fundo — Recursos, Planos, CTA */}
-          {renderVideoBlock('features_video', 'Recursos', '1920×800px')}
-          {renderVideoBlock('pricing_video', 'Planos', '1920×800px')}
-          {renderVideoBlock('cta_video', 'CTA Final', '1920×500px')}
-
-          <button onClick={fetchData} className="flex items-center gap-1 text-[10px] transition" style={mutedStyle}>
-            <RefreshCw className="h-3 w-3" /> Atualizar dados
-          </button>
+      {/* ── MÍDIA ── */}
+      {activeTab === 'midia' && (
+        <div className="rounded-xl p-4" style={groupStyle}>
+          <AdminImageBank />
         </div>
       )}
+
+      {/* Refresh data */}
+      <button onClick={fetchData} className="flex items-center gap-1 text-[10px] transition" style={mutedStyle}>
+        <RefreshCw className="h-3 w-3" /> Atualizar dados
+      </button>
     </div>
   );
 };
