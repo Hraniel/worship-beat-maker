@@ -14,9 +14,10 @@ import {
   type MidiChannel,
 } from '@/lib/midi-engine';
 import { playSound, getPadPanner } from '@/lib/audio-engine';
+import { applyEffects, getEffectInput, hasActiveEffects, type PadEffects } from '@/lib/audio-effects';
 import { emitPadHit } from '@/components/MixerStrip';
 
-export function useMidi() {
+export function useMidi(padEffects?: Record<string, PadEffects>, isMasterTier?: boolean) {
   const [supported, setSupported] = useState(false);
   const [devices, setDevices] = useState<MidiDevice[]>([]);
   const [channel, setChannelState] = useState<MidiChannel>(getChannel());
@@ -24,6 +25,12 @@ export function useMidi() {
   const [isLearning, setIsLearning] = useState(false);
   const [learnPadId, setLearnPadId] = useState<string | null>(null);
   const initRef = useRef(false);
+  const padEffectsRef = useRef(padEffects);
+  const isMasterRef = useRef(isMasterTier);
+
+  // Keep refs in sync
+  padEffectsRef.current = padEffects;
+  isMasterRef.current = isMasterTier;
 
   useEffect(() => {
     if (initRef.current) return;
@@ -32,8 +39,17 @@ export function useMidi() {
     onDeviceChange((devs) => setDevices([...devs]));
 
     onNoteOn((padId, velocity) => {
-      const panner = getPadPanner(padId);
-      playSound(padId, velocity, panner);
+      const fx = padEffectsRef.current?.[padId];
+      const master = isMasterRef.current ?? false;
+
+      if (master && fx && hasActiveEffects(fx)) {
+        applyEffects(padId, fx);
+        const dest = getEffectInput(padId);
+        playSound(padId, velocity, dest);
+      } else {
+        const panner = getPadPanner(padId);
+        playSound(padId, velocity, panner);
+      }
       emitPadHit(padId);
     });
 
