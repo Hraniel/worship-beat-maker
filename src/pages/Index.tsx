@@ -218,7 +218,8 @@ const Index = () => {
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
-  const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current);
+  const midiGateAccess = canAccess('midi');
+  const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed);
 
   // Mixer gate check
   const mixerFaderAccess = canAccess("mixer_faders");
