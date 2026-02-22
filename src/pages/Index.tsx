@@ -1537,6 +1537,7 @@ const Index = () => {
                     {focusMode ? "Sair do Foco" : "Foco"}
                   </button>
                 )}
+                <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} fullPage={isTablet} />
               </div>
             }
             toolsPanel={
