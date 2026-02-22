@@ -95,7 +95,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
                 </div>
                 {/* Tap Tempo */}
                 {toolsPanel && (
-                  <div className="shrink-0 border-t border-border/30 px-1 py-1">
+                  <div className="shrink-0 border-t border-border/30 px-1 py-1 min-h-[260px]">
                     {toolsPanel}
                   </div>
                 )}
