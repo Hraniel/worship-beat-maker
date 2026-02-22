@@ -43,6 +43,7 @@ export function useMidi(
   isMasterTier?: boolean,
   padVolumes?: Record<string, number>,
   ccCallbacks?: MidiCCCallbacks,
+  midiEnabled: boolean = true,
 ) {
   const [supported, setSupported] = useState(false);
   const [devices, setDevices] = useState<MidiDevice[]>([]);
@@ -59,12 +60,14 @@ export function useMidi(
   const isMasterRef = useRef(isMasterTier);
   const padVolumesRef = useRef(padVolumes);
   const ccCallbacksRef = useRef(ccCallbacks);
+  const midiEnabledRef = useRef(midiEnabled);
 
   // Keep refs in sync
   padEffectsRef.current = padEffects;
   isMasterRef.current = isMasterTier;
   padVolumesRef.current = padVolumes;
   ccCallbacksRef.current = ccCallbacks;
+  midiEnabledRef.current = midiEnabled;
 
   useEffect(() => {
     if (initRef.current) return;
@@ -73,6 +76,7 @@ export function useMidi(
     onDeviceChange((devs) => setDevices([...devs]));
 
     onNoteOn((padId, velocity) => {
+      if (!midiEnabledRef.current) return; // Block MIDI when gate not allowed
       const fx = padEffectsRef.current?.[padId];
       const master = isMasterRef.current ?? false;
       const faderVol = padVolumesRef.current?.[padId] ?? 0.7;
@@ -90,6 +94,7 @@ export function useMidi(
     });
 
     onCC((cc, value, _ch) => {
+      if (!midiEnabledRef.current) return; // Block MIDI CC when gate not allowed
       const cbs = ccCallbacksRef.current;
       if (!cbs) return;
       const normalized = value / 127;
