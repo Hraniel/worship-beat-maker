@@ -312,6 +312,18 @@ export function resetMappings() {
   saveMappings(mappings);
 }
 
+/** Bulk-replace all note mappings (used when loading a song) */
+export function setAllMappings(m: Record<number, string>) {
+  mappings = { ...m };
+  saveMappings(mappings);
+}
+
+/** Bulk-replace all CC mappings (used when loading a song) */
+export function setAllCCMappings(m: Record<number, CCFunctionId>) {
+  ccMappings = { ...m };
+  saveCCMappings(ccMappings);
+}
+
 export function removeMapping(note: number) {
   delete mappings[note];
   saveMappings(mappings);

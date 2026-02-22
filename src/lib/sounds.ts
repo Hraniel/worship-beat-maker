@@ -70,6 +70,10 @@ export interface SetlistSong {
   padPans?: Record<string, number>;
   padEffects?: Record<string, any>;
   customSounds?: Record<string, string>;
+  midiMappings?: Record<number, string>;
+  midiCCMappings?: Record<number, string>;
+  midiChannel?: string | number;
+  midiCCChannel?: string | number;
 }
 
 export interface Setlist {
