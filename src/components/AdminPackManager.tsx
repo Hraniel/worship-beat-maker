@@ -633,34 +633,71 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         }}
       />
 
-      {/* Tab navigation */}
-      <div className="flex gap-1 flex-wrap">
-        {([
-          { key: 'packs', label: '📦 Packs' },
-          { key: 'analytics', label: '📊 Analytics' },
-          { key: 'users', label: '👥 Usuários' },
-          { key: 'notifications', label: '🔔 Notificações' },
-          { key: 'suggestions', label: '💡 Sugestões' },
-          { key: 'pricing', label: '💳 Planos' },
-          { key: 'landing', label: '🌐 Landing' },
-          { key: 'store', label: '🏪 Loja' },
-          { key: 'cache', label: '🗑️ Cache' },
-        ] as const).map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              activeTab === tab.key
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {tab.label}
-            {activeTab === tab.key && tab.key !== 'packs' && (
-              <X className="h-3 w-3 opacity-70" />
-            )}
-          </button>
-        ))}
+      {/* Tab navigation — organized by groups */}
+      <div className="space-y-2">
+        {/* Group: Loja */}
+        <div className="flex gap-1 flex-wrap items-center">
+          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mr-1">Loja</span>
+          {([
+            { key: 'packs', label: '📦 Packs' },
+            { key: 'store', label: '🎨 Visual' },
+            { key: 'pricing', label: '💳 Planos' },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Group: Landing Page */}
+        <div className="flex gap-1 flex-wrap items-center">
+          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mr-1">Site</span>
+          {([
+            { key: 'landing', label: '🌐 Landing Page' },
+            { key: 'cache', label: '🗑️ Cache' },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        {/* Group: Usuários */}
+        <div className="flex gap-1 flex-wrap items-center">
+          <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mr-1">Gestão</span>
+          {([
+            { key: 'users', label: '👥 Usuários' },
+            { key: 'analytics', label: '📊 Analytics' },
+            { key: 'notifications', label: '🔔 Notificações' },
+            { key: 'suggestions', label: '💡 Sugestões' },
+          ] as const).map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(prev => prev === tab.key ? 'packs' : tab.key)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {activeTab === 'analytics' && <AdminAnalytics />}
@@ -785,7 +822,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                 <div key={pack.id} className="bg-card border border-border rounded-xl overflow-hidden">
                   {/* Banner preview */}
                   {hasBanner && (
-                    <div className="relative h-20 w-full overflow-hidden bg-muted">
+                    <div className="relative h-14 w-full overflow-hidden bg-muted">
                       <img src={bannerDisplayUrl!} alt="banner" className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <button
