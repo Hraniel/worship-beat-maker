@@ -218,8 +218,9 @@ const Index = () => {
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
+  const loopPadIds = useMemo(() => new Set(defaultPads.filter(p => p.isLoop).map(p => p.id)), []);
   const midiNoteCallbacksRef = useRef<import('@/hooks/useMidi').MidiNoteCallbacks>({
-    isLoopPad: (padId: string) => !!defaultPads.find(p => p.id === padId)?.isLoop,
+    isLoopPad: (padId: string) => loopPadIds.has(padId),
   });
   const midiGateAccess = canAccess('midi');
   const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed, midiNoteCallbacksRef.current);
