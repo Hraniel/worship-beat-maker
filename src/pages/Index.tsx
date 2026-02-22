@@ -218,8 +218,11 @@ const Index = () => {
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
+  const midiNoteCallbacksRef = useRef<import('@/hooks/useMidi').MidiNoteCallbacks>({
+    isLoopPad: (padId: string) => !!defaultPads.find(p => p.id === padId)?.isLoop,
+  });
   const midiGateAccess = canAccess('midi');
-  const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed);
+  const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed, midiNoteCallbacksRef.current);
 
   // Mixer gate check
   const mixerFaderAccess = canAccess("mixer_faders");
@@ -629,6 +632,9 @@ const Index = () => {
     },
     [padVolumes],
   );
+
+  // Keep MIDI note callbacks in sync with latest toggleLoop
+  midiNoteCallbacksRef.current.onLoopToggle = toggleLoop;
 
   // Custom sound import
   const handleImportSound = useCallback(
