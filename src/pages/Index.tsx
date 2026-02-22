@@ -54,6 +54,8 @@ import {
   LogOut,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Minus,
   Plus,
   Maximize,
@@ -78,6 +80,8 @@ import {
   Activity,
   Timer,
   Music2,
+  SkipBack,
+  SkipForward,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -889,14 +893,7 @@ const Index = () => {
     setMetronomeVolume(v);
   }, []);
 
-  // Keep MIDI CC callbacks in sync with latest closures
-  midiCCCallbacksRef.current = {
-    onPadVolumeCC: handlePadVolumeChange,
-    onMasterVolumeCC: setMasterVol,
-    onMetronomeVolumeCC: handleMetronomeVolChange,
-    onBpmCC: setBpm,
-    onMetronomeToggleCC: () => setMetronomeIsPlaying((prev) => !prev),
-  };
+  // MIDI CC callbacks ref updated below after songs/handleLoadSong are defined
 
 
   // Setlist management — now backed by database
@@ -1062,7 +1059,38 @@ const Index = () => {
     [deleteSetlist, currentSongId],
   );
 
+  // Prev/Next song navigation
+  const handlePrevSong = useCallback(() => {
+    if (!currentSongId || songs.length < 2) return;
+    const idx = songs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId);
+    if (idx <= 0) return;
+    handleLoadSong(songs[idx - 1]);
+  }, [currentSongId, songs, handleLoadSong]);
+
+  const handleNextSong = useCallback(() => {
+    if (!currentSongId || songs.length < 2) return;
+    const idx = songs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId);
+    if (idx < 0 || idx >= songs.length - 1) return;
+    handleLoadSong(songs[idx + 1]);
+  }, [currentSongId, songs, handleLoadSong]);
+
+  // Keep MIDI CC callbacks in sync
+  midiCCCallbacksRef.current = {
+    onPadVolumeCC: handlePadVolumeChange,
+    onMasterVolumeCC: setMasterVol,
+    onMetronomeVolumeCC: handleMetronomeVolChange,
+    onBpmCC: setBpm,
+    onMetronomeToggleCC: () => setMetronomeIsPlaying((prev) => !prev),
+    onPrevSongCC: handlePrevSong,
+    onNextSongCC: handleNextSong,
+  };
+
   const currentSongName = currentSongId ? setlists.find((s) => s.id === currentSongId)?.name || null : null;
+
+  // Current song index for prev/next button states
+  const currentSongIndex = currentSongId ? songs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId) : -1;
+  const hasPrevSong = currentSongIndex > 0;
+  const hasNextSong = currentSongIndex >= 0 && currentSongIndex < songs.length - 1;
 
   return (
     <div
@@ -1220,12 +1248,34 @@ const Index = () => {
               <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
             </div>
 
-            {/* Current song name - centered */}
-            <div className="flex-1 min-w-0 mx-1 sm:mx-2 text-center">
+            {/* Prev/Next song + Current song name - centered */}
+            <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center gap-1">
+              {/* Prev button - tablet/desktop only */}
+              {songs.length > 1 && (
+                <button
+                  onClick={handlePrevSong}
+                  disabled={!hasPrevSong}
+                  className="hidden sm:flex p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Música anterior (MIDI CC 22)"
+                >
+                  <SkipBack className="h-3.5 w-3.5" />
+                </button>
+              )}
               {currentSongName && (
                 <span className="text-[11px] sm:text-xs font-medium text-primary truncate block">
                   ♪ {currentSongName}
                 </span>
+              )}
+              {/* Next button - tablet/desktop only */}
+              {songs.length > 1 && (
+                <button
+                  onClick={handleNextSong}
+                  disabled={!hasNextSong}
+                  className="hidden sm:flex p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Próxima música (MIDI CC 23)"
+                >
+                  <SkipForward className="h-3.5 w-3.5" />
+                </button>
               )}
             </div>
 
