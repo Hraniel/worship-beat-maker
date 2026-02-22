@@ -37,6 +37,9 @@ interface SetlistManagerProps {
   onOpenMusicAI?: () => void;
   forceOpen?: boolean;
   onForceOpenChange?: () => void;
+  selectedEventId?: string | null;
+  onSelectEvent?: (eventId: string | null) => void;
+  externalEvents?: ReturnType<typeof useSetlistEvents>;
 }
 
 interface SortableItemProps {
@@ -80,13 +83,14 @@ interface SortableEventSongProps {
   song: EventSong;
   index: number;
   onRemove: () => void;
+  onClick?: () => void;
 }
 
-const SortableEventSong: React.FC<SortableEventSongProps> = ({ song, index, onRemove }) => {
+const SortableEventSong: React.FC<SortableEventSongProps> = ({ song, index, onRemove, onClick }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
   return (
-    <div ref={setNodeRef} style={style} className="flex items-center gap-2 px-3 py-1.5 group">
+    <div ref={setNodeRef} style={style} className="flex items-center gap-2 px-3 py-1.5 group cursor-pointer hover:bg-muted/50 transition-colors" onClick={onClick}>
       <button className="touch-none p-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
         {...attributes} {...listeners}>
         <GripVertical className="h-3.5 w-3.5" />
@@ -122,10 +126,12 @@ interface EventCardProps {
   onSaveSong: (name: string, bpm?: number, key?: string, timeSignature?: string) => void;
   onLoadSong: (song: SetlistSong) => void;
   onOpenMusicAI?: () => void;
+  onSelectEvent?: (eventId: string) => void;
+  isSelected?: boolean;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
-  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI,
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -199,7 +205,7 @@ const EventCard: React.FC<EventCardProps> = ({
   const availableSongs = allSongs.filter(s => !event.songs_data.some(es => es.id === s.id));
 
   return (
-    <div className="bg-muted/30 border border-border rounded-lg overflow-hidden">
+    <div className={`bg-muted/30 border rounded-lg overflow-hidden ${isSelected ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border'}`}>
       {/* Header */}
       <div className="px-3 py-2.5">
         {editing ? (
@@ -245,6 +251,12 @@ const EventCard: React.FC<EventCardProps> = ({
               <p className="text-[10px] text-muted-foreground">{formatDate(event.event_date)} · {event.songs_data.length} músicas</p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => onSelectEvent?.(isSelected ? null : event.id)}
+                className={`h-6 px-2 rounded text-[10px] font-medium transition-colors ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+              >
+                {isSelected ? '✓ Ativo' : 'Selecionar'}
+              </button>
               <button onClick={() => setEditing(true)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted">
                 <Edit2 className="h-3 w-3 text-muted-foreground" />
               </button>
@@ -298,6 +310,26 @@ const EventCard: React.FC<EventCardProps> = ({
                       song={song}
                       index={idx}
                       onRemove={() => onRemoveSong(event.id, song.id)}
+                      onClick={() => {
+                        onSelectEvent?.(event.id);
+                        // Convert EventSong to SetlistSong format for loading
+                        const setlistSong: SetlistSong = {
+                          id: song.id,
+                          name: song.name,
+                          bpm: song.bpm,
+                          timeSignature: song.timeSignature,
+                          key: song.key || null,
+                          pads: [],
+                          padVolumes: {},
+                          padNames: {},
+                          padPans: {},
+                          padEffects: {},
+                          customSounds: {},
+                        };
+                        // Try to find the full song in allSongs
+                        const fullSong = allSongs.find(s => s.id === song.id);
+                        onLoadSong(fullSong || setlistSong);
+                      }}
                     />
                   ))}
                 </div>
@@ -472,11 +504,12 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({ onSubmit, onCancel })
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder, onOpenMusicAI,
-  forceOpen, onForceOpenChange,
+  forceOpen, onForceOpenChange, selectedEventId, onSelectEvent, externalEvents,
 }) => {
   const [open, setOpen] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = useSetlistEvents();
+  const internalEvents = useSetlistEvents();
+  const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = externalEvents || internalEvents;
 
   // Open sheet when forceOpen prop becomes true
   useEffect(() => {
@@ -549,6 +582,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 onSaveSong={onSaveSong}
                 onLoadSong={onLoadSong}
                 onOpenMusicAI={onOpenMusicAI}
+                onSelectEvent={onSelectEvent}
+                isSelected={selectedEventId === event.id}
               />
             ))}
           </div>

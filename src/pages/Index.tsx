@@ -49,6 +49,7 @@ import { type PadColor } from "@/components/PadColorPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useSetlists } from "@/hooks/useSetlists";
+import { useSetlistEvents, type EventSong } from "@/hooks/useSetlistEvents";
 import { useFeatureGates } from "@/hooks/useFeatureGates";
 import UpgradeGateModal, { type UpgradeGatePayload } from "@/components/UpgradeGateModal";
 import {
@@ -152,6 +153,7 @@ const Index = () => {
   const footerHeight = useFooterHeight();
   const { isSilent: showSilentMode, dismiss: dismissSilentMode, triggerCheck: triggerSilentCheck } = useSilentModeDetector();
   const { setlists, createSetlist, updateSetlist, deleteSetlist, reorderSetlists } = useSetlists();
+  const setlistEventsHook = useSetlistEvents();
   const navigate = useNavigate();
   const [masterVolume, setMasterVol] = useState(0.7);
   const [metronomeVol, setMetronomeVol] = useState(getMetronomeVolume);
@@ -202,6 +204,7 @@ const Index = () => {
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
   const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current);
 
@@ -1063,20 +1066,45 @@ const Index = () => {
     [deleteSetlist, currentSongId],
   );
 
-  // Prev/Next song navigation
+  // Selected event data
+  const selectedEvent = selectedEventId ? setlistEventsHook.events.find(e => e.id === selectedEventId) : null;
+  const selectedEventSongs = selectedEvent?.songs_data || [];
+
+  // Navigation songs: if an event is selected, navigate within event songs; otherwise use all songs
+  const navSongs = selectedEventId && selectedEventSongs.length > 0
+    ? selectedEventSongs.map(es => {
+        // Try to find full song data from saved songs
+        const fullSong = songs.find(s => s.id === es.id);
+        return fullSong || {
+          id: es.id,
+          name: es.name,
+          bpm: es.bpm,
+          timeSignature: es.timeSignature,
+          key: es.key || null,
+          pads: defaultPads,
+          padVolumes: {},
+          padNames: {},
+          padPans: {},
+          padEffects: {},
+          customSounds: {},
+        } as SetlistSong;
+      })
+    : songs;
+
+  // Prev/Next song navigation (within selected event or all songs)
   const handlePrevSong = useCallback(() => {
-    if (!currentSongId || songs.length < 2) return;
-    const idx = songs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId);
+    if (!currentSongId || navSongs.length < 2) return;
+    const idx = navSongs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId);
     if (idx <= 0) return;
-    handleLoadSong(songs[idx - 1]);
-  }, [currentSongId, songs, handleLoadSong]);
+    handleLoadSong(navSongs[idx - 1]);
+  }, [currentSongId, navSongs, handleLoadSong]);
 
   const handleNextSong = useCallback(() => {
-    if (!currentSongId || songs.length < 2) return;
-    const idx = songs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId);
-    if (idx < 0 || idx >= songs.length - 1) return;
-    handleLoadSong(songs[idx + 1]);
-  }, [currentSongId, songs, handleLoadSong]);
+    if (!currentSongId || navSongs.length < 2) return;
+    const idx = navSongs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId);
+    if (idx < 0 || idx >= navSongs.length - 1) return;
+    handleLoadSong(navSongs[idx + 1]);
+  }, [currentSongId, navSongs, handleLoadSong]);
 
   // Keep MIDI CC callbacks in sync
   midiCCCallbacksRef.current = {
@@ -1091,10 +1119,10 @@ const Index = () => {
 
   const currentSongName = currentSongId ? setlists.find((s) => s.id === currentSongId)?.name || null : null;
 
-  // Current song index for prev/next button states
-  const currentSongIndex = currentSongId ? songs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId) : -1;
+  // Current song index for prev/next button states (within navSongs)
+  const currentSongIndex = currentSongId ? navSongs.findIndex((s: any) => (s._setlistId || s.id) === currentSongId) : -1;
   const hasPrevSong = currentSongIndex > 0;
-  const hasNextSong = currentSongIndex >= 0 && currentSongIndex < songs.length - 1;
+  const hasNextSong = currentSongIndex >= 0 && currentSongIndex < navSongs.length - 1;
 
   return (
     <div
@@ -1164,6 +1192,9 @@ const Index = () => {
                 onOpenMusicAI={() => setSpotifySheetOpen(true)}
                 forceOpen={openSetlistFromBanner}
                 onForceOpenChange={() => setOpenSetlistFromBanner(false)}
+                selectedEventId={selectedEventId}
+                onSelectEvent={setSelectedEventId}
+                externalEvents={setlistEventsHook}
               />
               <div className="relative">
                 <button
@@ -1250,15 +1281,20 @@ const Index = () => {
               <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
             </div>
 
-            {/* Prev/Next song + Current song name - centered */}
+            {/* Event name + Prev/Next song navigation - centered */}
             <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center gap-1">
-              {/* Prev button - tablet/desktop only */}
-              {songs.length > 1 && (
+              {selectedEvent && (
+                <span className="text-[10px] text-muted-foreground truncate max-w-[80px] sm:max-w-[120px] shrink-0">
+                  {selectedEvent.name}:
+                </span>
+              )}
+              {/* Prev button */}
+              {navSongs.length > 1 && (
                 <button
                   onClick={handlePrevSong}
                   disabled={!hasPrevSong}
-                  className="hidden sm:flex p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Música anterior (MIDI CC 22)"
+                  className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Música anterior"
                 >
                   <SkipBack className="h-3.5 w-3.5" />
                 </button>
@@ -1268,13 +1304,13 @@ const Index = () => {
                   ♪ {currentSongName}
                 </span>
               )}
-              {/* Next button - tablet/desktop only */}
-              {songs.length > 1 && (
+              {/* Next button */}
+              {navSongs.length > 1 && (
                 <button
                   onClick={handleNextSong}
                   disabled={!hasNextSong}
-                  className="hidden sm:flex p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Próxima música (MIDI CC 23)"
+                  className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title="Próxima música"
                 >
                   <SkipForward className="h-3.5 w-3.5" />
                 </button>
@@ -1324,6 +1360,9 @@ const Index = () => {
                     setlists={setlists}
                     activeSetlistId={currentSongId}
                     onOpenMusicAI={() => setSpotifySheetOpen(true)}
+                    selectedEventId={selectedEventId}
+                    onSelectEvent={setSelectedEventId}
+                    externalEvents={setlistEventsHook}
                   />
                 </div>
               )}
@@ -1494,6 +1533,9 @@ const Index = () => {
                   setlists={setlists}
                   activeSetlistId={currentSongId}
                   onOpenMusicAI={() => setSpotifySheetOpen(true)}
+                  selectedEventId={selectedEventId}
+                  onSelectEvent={setSelectedEventId}
+                  externalEvents={setlistEventsHook}
                 />
               </div>
             )}
