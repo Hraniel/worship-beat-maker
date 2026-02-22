@@ -202,3 +202,12 @@ html.scrollable-page body {
   50% { transform: translateX(40%); }
   100% { transform: translateX(-100%); }
 }
+
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s ease-out forwards;
+}

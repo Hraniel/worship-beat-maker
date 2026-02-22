@@ -1464,6 +1464,15 @@ const Index = () => {
                         <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
                       </button>
                       <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          navigate("/dashboard");
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      >
+                        <Store className="h-4 w-4 text-muted-foreground" /> Glory Store
+                      </button>
+                      <button
                         onClick={async () => {
                           setMobileMenuOpen(false);
                           if ("caches" in window) {
@@ -2163,19 +2172,21 @@ const Index = () => {
                     </div>
 
                     {/* === STORE LOADING PAGE === */}
-                    <div className={footerPage === 4 ? "h-full flex flex-col items-center justify-center bg-background" : "hidden"}>
-                      <div className="flex flex-col items-center gap-4">
-                        <img
-                          src={typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? logoDark : logoLight}
-                          alt="Glory Pads"
-                          className="h-10 w-auto object-contain animate-pulse"
-                        />
-                        <div className="w-32 h-0.5 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full rounded-full bg-primary animate-[store-load_1.2s_ease-in-out_infinite]" style={{ width: '60%' }} />
+                    {footerPage === 4 && (
+                      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white">
+                        <div className="flex flex-col items-center gap-4">
+                          <img
+                            src={logoDark}
+                            alt="Glory Pads"
+                            className="h-10 w-auto object-contain animate-pulse"
+                          />
+                          <div className="w-32 h-0.5 rounded-full bg-gray-200 overflow-hidden">
+                            <div className="h-full rounded-full bg-gray-900 animate-[store-load_1.2s_ease-in-out_infinite]" style={{ width: '60%' }} />
+                          </div>
+                          <span className="text-xs text-gray-500">Abrindo loja...</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">Abrindo loja...</span>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </>
               )}
