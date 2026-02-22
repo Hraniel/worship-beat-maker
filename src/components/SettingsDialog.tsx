@@ -761,7 +761,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         );
 
       case 'midi': {
-        const midiAccess = canAccess('midi_support');
+        const midiAccess = canAccess('midi');
         if (!midiAccess.allowed) {
           return (
             <div className="flex flex-col items-center gap-4 py-10 text-center">
