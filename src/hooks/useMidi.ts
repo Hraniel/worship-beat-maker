@@ -198,6 +198,14 @@ export function useMidi(
     setCCMappingsState(getCCMappings());
   }, []);
 
+  const refreshMappings = useCallback(() => {
+    setMappingsState(getMappings());
+  }, []);
+
+  const refreshCCMappings = useCallback(() => {
+    setCCMappingsState(getCCMappings());
+  }, []);
+
   return {
     isMidiSupported: supported,
     connectedDevices: devices,
@@ -219,5 +227,7 @@ export function useMidi(
     startCCLearn,
     stopCCLearn,
     resetCCMappings,
+    refreshMappings,
+    refreshCCMappings,
   };
 }

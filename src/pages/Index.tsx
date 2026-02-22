@@ -104,6 +104,16 @@ import { useUserNotifications } from "@/hooks/useUserNotifications";
 import { useNotificationPrompt } from "@/hooks/useNotificationPrompt";
 import { usePresenceTracker } from "@/hooks/usePresenceTracker";
 import { useMidi } from "@/hooks/useMidi";
+import {
+  getMappings as getMidiMappings,
+  getCCMappings as getMidiCCMappings,
+  getChannel as getMidiChannel,
+  getCCChannel as getMidiCCChannel,
+  setAllMappings,
+  setAllCCMappings,
+  setChannel as setMidiEngineChannel,
+  setCCChannel as setMidiEngineCCChannel,
+} from "@/lib/midi-engine";
 import MidiIndicator from "@/components/MidiIndicator";
 import SilentModeBanner from "@/components/SilentModeBanner";
 import { useSilentModeDetector } from "@/hooks/useSilentModeDetector";
@@ -943,6 +953,10 @@ const Index = () => {
       padPans: { ...padPans },
       padEffects: { ...padEffects },
       customSounds: { ...customSounds },
+      midiMappings: getMidiMappings(),
+      midiCCMappings: getMidiCCMappings() as any,
+      midiChannel: getMidiChannel(),
+      midiCCChannel: getMidiCCChannel(),
     };
     // Save audio buffers for this song
     const customPadIds = Object.keys(customSounds);
@@ -1055,8 +1069,26 @@ const Index = () => {
       // Apply restored pan and effects to audio engine
       Object.entries(song.padPans || {}).forEach(([id, pan]) => setPadPan(id, pan));
       Object.entries(song.padEffects || {}).forEach(([id, fx]) => applyEffects(id, fx));
+
+      // Restore MIDI mappings for this song
+      if (song.midiMappings) {
+        setAllMappings(song.midiMappings);
+        midi.refreshMappings?.();
+      }
+      if (song.midiCCMappings) {
+        setAllCCMappings(song.midiCCMappings as any);
+        midi.refreshCCMappings?.();
+      }
+      if (song.midiChannel !== undefined) {
+        setMidiEngineChannel(song.midiChannel as any);
+        midi.setChannel(song.midiChannel as any);
+      }
+      if (song.midiCCChannel !== undefined) {
+        setMidiEngineCCChannel(song.midiCCChannel as any);
+        midi.setCCChannel(song.midiCCChannel as any);
+      }
     },
-    [autoSaveCurrentSong, customSounds],
+    [autoSaveCurrentSong, customSounds, midi],
   );
 
   const handleDeleteSong = useCallback(
