@@ -1253,6 +1253,15 @@ const Index = () => {
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false);
+                          setTimeout(() => setSavedSongsOpen(true), 150);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      >
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
                           if (!tryAccess("spotify_ai")) return;
                           setTimeout(() => setSpotifySheetOpen(true), 150);
                         }}
@@ -1405,6 +1414,15 @@ const Index = () => {
                         <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                       </button>
                       <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setTimeout(() => setSavedSongsOpen(true), 150);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      >
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
+                      </button>
+                      <button
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                         onClick={() => {
                           setMobileMenuOpen(false);
@@ -1541,44 +1559,66 @@ const Index = () => {
       )}
 
       {/* Hidden SetlistManager to open from banner when songs.length === 0 */}
-      {/* Saved songs sheet - opened from menu */}
-      <Sheet open={savedSongsOpen} onOpenChange={setSavedSongsOpen}>
-        <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden">
-          <SheetHeader>
-            <SheetTitle className="text-foreground flex items-center gap-2">
-              <FolderOpen className="h-4 w-4" />
-              Músicas Salvas
-            </SheetTitle>
-            <SheetDescription className="text-muted-foreground">
-              {songs.length} música{songs.length !== 1 ? 's' : ''} salva{songs.length !== 1 ? 's' : ''}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="mt-4 space-y-1 flex-1 overflow-y-auto pb-4" style={{ overscrollBehavior: 'contain' }}>
-            {songs.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">Nenhuma música salva ainda. Crie músicas dentro dos eventos programados.</p>
-            ) : (
-              songs.map((song) => (
-                <div
-                  key={song.id}
-                  className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${currentSongId === song.id ? 'bg-primary/20 border border-primary/30' : 'hover:bg-muted'}`}
-                  onClick={() => { handleLoadSong(song); setSavedSongsOpen(false); }}
-                >
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate text-foreground">{song.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}</p>
+      {/* Saved songs popup - opened from menu */}
+      {savedSongsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4" onClick={() => setSavedSongsOpen(false)}>
+          <div
+            className="bg-card border border-border rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col animate-fade-in-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <div className="flex items-center gap-2">
+                <FolderOpen className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold text-foreground">Músicas Salvas</span>
+                <span className="text-[10px] text-muted-foreground">({songs.length})</span>
+              </div>
+              <button onClick={() => setSavedSongsOpen(false)} className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1" style={{ overscrollBehavior: 'contain' }}>
+              {songs.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">Nenhuma música salva ainda. Crie músicas dentro dos eventos programados.</p>
+              ) : (
+                songs.map((song) => (
+                  <div
+                    key={song.id}
+                    className={`flex items-center gap-2 p-2 rounded-md transition-colors ${currentSongId === song.id ? 'bg-primary/20 border border-primary/30' : 'hover:bg-muted'}`}
+                  >
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { handleLoadSong(song); setSavedSongsOpen(false); }}>
+                      <p className="text-sm font-medium truncate text-foreground">{song.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}{song.key ? ` · ${song.key}` : ''}</p>
+                    </div>
+                    {selectedEventId && (
+                      <button
+                        onClick={() => {
+                          const ev = setlistEventsHook.events.find(e => e.id === selectedEventId);
+                          if (ev?.songs_data.some(es => es.id === song.id)) {
+                            toast.error('Música já está no evento');
+                            return;
+                          }
+                          setlistEventsHook.addSongToEvent(selectedEventId, {
+                            id: song.id,
+                            name: song.name,
+                            bpm: song.bpm,
+                            timeSignature: song.timeSignature,
+                            key: song.key,
+                          });
+                          toast.success('Música adicionada ao repertório!');
+                        }}
+                        className="shrink-0 px-2 py-1 text-[10px] font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors"
+                        title="Adicionar ao repertório"
+                      >
+                        + Repertório
+                      </button>
+                    )}
                   </div>
-                  {song.key && (
-                    <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
-                      {song.key}
-                    </span>
-                  )}
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
 
       {/* Info bar - hidden in focus mode */}
       {!focusMode && currentSongId && (
@@ -2202,7 +2242,7 @@ const Index = () => {
                 <button
                   onClick={() => {
                     setFooterPage(4);
-                    navigate("/dashboard");
+                    setTimeout(() => navigate("/dashboard"), 800);
                   }}
                   className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
                   title="Loja"
@@ -2295,6 +2335,8 @@ const Index = () => {
         onMidiStartLearn={midi.startLearn}
         onMidiStopLearn={midi.stopLearn}
         onMidiResetMappings={midi.resetMappings}
+        onMidiRemoveNoteMapping={midi.removeNoteMapping}
+        onMidiRemoveCCMapping={midi.removeSingleCCMapping}
         midiCCMappings={midi.ccMappings}
         midiIsCCLearning={midi.isCCLearning}
         midiCCLearnFunctionId={midi.ccLearnFunctionId}

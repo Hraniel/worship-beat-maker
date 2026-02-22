@@ -8,6 +8,8 @@ import {
   setCCChannel as engineSetCCChannel,
   getMappings,
   resetMappings as engineResetMappings,
+  removeMapping as engineRemoveMapping,
+  removeCCMapping as engineRemoveCCMapping,
   startLearn as engineStartLearn,
   stopLearn as engineStopLearn,
   getCCMappings,
@@ -165,6 +167,16 @@ export function useMidi(
     setMappingsState(getMappings());
   }, []);
 
+  const removeNoteMapping = useCallback((note: number) => {
+    engineRemoveMapping(note);
+    setMappingsState(getMappings());
+  }, []);
+
+  const removeSingleCCMapping = useCallback((cc: number) => {
+    engineRemoveCCMapping(cc);
+    setCCMappingsState(getCCMappings());
+  }, []);
+
   const startCCLearn = useCallback((functionId: CCFunctionId) => {
     setIsCCLearning(true);
     setCCLearnFunctionId(functionId);
@@ -199,6 +211,8 @@ export function useMidi(
     startLearn,
     stopLearn,
     resetMappings,
+    removeNoteMapping,
+    removeSingleCCMapping,
     ccMappings: ccMappingsState,
     isCCLearning,
     ccLearnFunctionId,

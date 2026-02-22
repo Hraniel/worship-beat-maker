@@ -1,5 +1,5 @@
 import React from 'react';
-import { Piano, Usb, AlertTriangle, RotateCcw, Ear, SlidersHorizontal } from 'lucide-react';
+import { Piano, Usb, AlertTriangle, RotateCcw, Ear, SlidersHorizontal, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { defaultPads } from '@/lib/sounds';
@@ -25,6 +25,8 @@ interface MidiSettingsProps {
   onStartLearn: (padId: string) => void;
   onStopLearn: () => void;
   onResetMappings: () => void;
+  onRemoveNoteMapping?: (note: number) => void;
+  onRemoveCCMapping?: (cc: number) => void;
   ccMappings: Record<number, CCFunctionId>;
   isCCLearning: boolean;
   ccLearnFunctionId: CCFunctionId | null;
@@ -55,6 +57,8 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
   onStartLearn,
   onStopLearn,
   onResetMappings,
+  onRemoveNoteMapping,
+  onRemoveCCMapping,
   ccMappings,
   isCCLearning,
   ccLearnFunctionId,
@@ -196,16 +200,29 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                   Cancelar
                 </Button>
               ) : (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
-                  onClick={() => onStartLearn(pad.id)}
-                  disabled={anyLearning}
-                >
-                  <Ear className="h-3 w-3 mr-1" />
-                  Aprender
-                </Button>
+                <div className="flex items-center gap-0.5">
+                  {note !== null && onRemoveNoteMapping && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => onRemoveNoteMapping(note)}
+                      title="Remover mapeamento"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => onStartLearn(pad.id)}
+                    disabled={anyLearning}
+                  >
+                    <Ear className="h-3 w-3 mr-1" />
+                    Aprender
+                  </Button>
+                </div>
               )}
             </div>
           );
@@ -263,16 +280,29 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                   Cancelar
                 </Button>
               ) : (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
-                  onClick={() => onStartCCLearn(fn.id)}
-                  disabled={anyLearning}
-                >
-                  <Ear className="h-3 w-3 mr-1" />
-                  Aprender
-                </Button>
+                <div className="flex items-center gap-0.5">
+                  {cc !== null && onRemoveCCMapping && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => onRemoveCCMapping(cc)}
+                      title="Remover mapeamento"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-xs"
+                    onClick={() => onStartCCLearn(fn.id)}
+                    disabled={anyLearning}
+                  >
+                    <Ear className="h-3 w-3 mr-1" />
+                    Aprender
+                  </Button>
+                </div>
               )}
             </div>
           );

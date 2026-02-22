@@ -289,6 +289,16 @@ export function resetMappings() {
   saveMappings(mappings);
 }
 
+export function removeMapping(note: number) {
+  delete mappings[note];
+  saveMappings(mappings);
+}
+
+export function removeCCMapping(cc: number) {
+  delete ccMappings[cc];
+  saveCCMappings(ccMappings);
+}
+
 export function getDefaultMappings(): Record<number, string> {
   return { ...DEFAULT_MAPPINGS };
 }

@@ -87,6 +87,8 @@ interface SettingsDialogProps {
   onMidiStartCCLearn?: (functionId: CCFunctionId) => void;
   onMidiStopCCLearn?: () => void;
   onMidiResetCCMappings?: () => void;
+  onMidiRemoveNoteMapping?: (note: number) => void;
+  onMidiRemoveCCMapping?: (cc: number) => void;
 }
 
 interface StereoOptionProps {
@@ -685,7 +687,7 @@ const TAB_ITEMS = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiCCChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiSetCCChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiCCChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiSetCCChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings, onMidiRemoveNoteMapping, onMidiRemoveCCMapping }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -771,6 +773,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             onStartLearn={onMidiStartLearn ?? (() => {})}
             onStopLearn={onMidiStopLearn ?? (() => {})}
             onResetMappings={onMidiResetMappings ?? (() => {})}
+            onRemoveNoteMapping={onMidiRemoveNoteMapping}
+            onRemoveCCMapping={onMidiRemoveCCMapping}
             ccMappings={midiCCMappings ?? {}}
             isCCLearning={midiIsCCLearning ?? false}
             ccLearnFunctionId={midiCCLearnFunctionId ?? null}
