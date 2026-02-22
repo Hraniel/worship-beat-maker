@@ -1306,7 +1306,7 @@ const Index = () => {
               />
               {selectedEvent ? (
                 <span className="text-[11px] sm:text-xs font-semibold text-primary truncate max-w-[90px] sm:max-w-[140px]">
-                  📋 {selectedEvent.name}
+                  {selectedEvent.name}
                 </span>
               ) : (
                 <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
@@ -1325,36 +1325,7 @@ const Index = () => {
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-              {/* MIDI indicator */}
-              {midi.isMidiSupported && midi.connectedDevices.length > 0 && (
-                <MidiIndicator
-                  devices={midi.connectedDevices}
-                  onClick={() => { setSettingsTab('midi'); setSettingsOpen(true); }}
-                />
-              )}
-              {/* Pad size controls - desktop/tablet only */}
-              {currentSongId && (
-                <div
-                  className="hidden sm:flex items-center gap-1 mr-1 border border-border rounded-md px-2 py-1"
-                  data-tutorial="pad-size"
-                >
-                  <Minus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <Slider
-                    value={[padSize]}
-                    onValueChange={([v]) => handlePadSizeChange(v)}
-                    min={PAD_SIZE_MIN}
-                    max={PAD_SIZE_MAX}
-                    step={5}
-                    className="w-28"
-                  />
-                  <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-[10px] text-muted-foreground w-7 text-right tabular-nums">
-                    {padSize}%
-                  </span>
-                </div>
-              )}
-
-              {/* Repertório + Prev/Next */}
+              {/* Repertório + Prev/Next together */}
               {!editMode && currentSongId && (
                 <div className="flex items-center gap-0.5" data-tutorial="setlist">
                   <SetlistManager
@@ -1392,6 +1363,13 @@ const Index = () => {
                     </>
                   )}
                 </div>
+              )}
+              {/* MIDI indicator */}
+              {midi.isMidiSupported && midi.connectedDevices.length > 0 && (
+                <MidiIndicator
+                  devices={midi.connectedDevices}
+                  onClick={() => { setSettingsTab('midi'); setSettingsOpen(true); }}
+                />
               )}
 
               {/* Unified menu */}
