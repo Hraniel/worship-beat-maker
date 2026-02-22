@@ -1,36 +1,24 @@
 
 
-# Corrigir banner de modo silencioso: cooldown + reaparecer ao reativar
+## Adicionar `navigator.requestMIDIAccess()` no midi-engine
 
-## Problemas identificados
+O codigo sera inserido na funcao `initMidi()` do arquivo `src/lib/midi-engine.ts`, que ja e o local correto onde o acesso MIDI e solicitado.
 
-1. **Sem cooldown**: A cada toque de pad, a detecao completa roda (cria oscilador, analyser, espera 100ms). Isso e desnecessario e pode impactar performance.
-2. **Banner nao reaparece**: Quando o usuario fecha o banner e depois reativa o modo silencioso, o estado `dismissed` nunca e resetado porque `isSilent` nunca chegou a ser `false` (ou a transicao foi perdida entre checks).
+### Mudanca
 
-## Solucao
+**Arquivo: `src/lib/midi-engine.ts`** - Funcao `initMidi()`
 
-### `src/hooks/useSilentModeDetector.ts`
+Atualmente a funcao ja chama `navigator.requestMIDIAccess({ sysex: false })`. Vamos adicionar os logs de `console.log("MIDI enabled:", midi)` e `console.error("MIDI failed:", err)` ao fluxo existente, mantendo toda a logica atual funcionando.
 
-1. **Adicionar cooldown de 5 segundos** no `triggerCheck`: usar um `lastCheckRef` com timestamp. Se a ultima verificacao foi ha menos de 5s, ignorar.
+O `try/catch` existente sera atualizado para incluir esses logs:
+- No sucesso: `console.log("MIDI enabled:", midiAccess)` apos obter o acesso
+- No erro: `console.error("MIDI failed:", err)` no catch (ja existe um `console.warn`, sera complementado)
 
-2. **Resetar `dismissed` automaticamente apos 10 segundos**: quando o usuario fecha o banner, em vez de ficar `dismissed` para sempre (ate `isSilent` mudar), agendar um reset apos 10s. Assim, se o dispositivo ainda estiver em modo silencioso no proximo toque apos 10s, o banner reaparece.
-
-3. **Manter o reset quando `isSilent` vira `false`**: isso garante que ao desativar o silencioso e reativar, o banner aparece imediatamente no proximo toque.
+Nenhum outro arquivo precisa ser alterado.
 
 ### Detalhes tecnicos
 
-```text
-Fluxo com cooldown:
-  Toque no pad -> triggerCheck()
-    -> Verifica lastCheckRef: menos de 5s? -> ignora
-    -> Mais de 5s? -> roda deteccao -> atualiza lastCheckRef
-
-Fluxo de dismiss com auto-reset:
-  Usuario fecha banner -> dismissed = true
-    -> setTimeout(10s) -> dismissed = false
-    -> Proximo toque apos cooldown -> deteccao roda novamente
-    -> Se ainda silencioso -> banner reaparece
-```
-
-Apenas o arquivo `src/hooks/useSilentModeDetector.ts` sera alterado.
+- A chamada ja existe no codigo, apenas os logs serao adicionados
+- No iOS/Safari a funcao `isMidiSupported()` retorna `false` e a funcao nem tenta chamar `requestMIDIAccess`. Para garantir que a tentativa aconteca mesmo no Safari, a verificacao `isMidiSupported()` sera mantida mas os logs serao adicionados para depuracao
+- Se o usuario quiser forcar a tentativa mesmo quando `requestMIDIAccess` nao existe, podemos remover o early return — mas isso causaria erro no Safari. A abordagem segura e manter o check e logar quando nao suportado
 
