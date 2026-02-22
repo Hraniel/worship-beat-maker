@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock } from 'lucide-react';
+import { useFeatureGates } from '@/hooks/useFeatureGates';
 import {
   isOutputSelectionSupported,
   getAudioOutputDevices,
@@ -691,6 +692,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { canAccess } = useFeatureGates();
   const isMobile = useIsMobile();
   const isLandscape = useIsLandscape();
   const isMobilePortrait = isMobile && !isLandscape;
@@ -758,7 +760,31 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           </div>
         );
 
-      case 'midi':
+      case 'midi': {
+        const midiAccess = canAccess('midi');
+        if (!midiAccess.allowed) {
+          return (
+            <div className="flex flex-col items-center gap-4 py-10 text-center">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                <Lock className="h-7 w-7 text-primary" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-semibold text-foreground">
+                  {midiAccess.gate?.gate_label ?? 'Controlador MIDI'}
+                </p>
+                <p className="text-sm text-muted-foreground max-w-xs">
+                  Recurso disponível a partir do plano <span className="font-semibold capitalize text-primary">{midiAccess.requiredTier ?? 'Pro'}</span>.
+                </p>
+              </div>
+              <button
+                className="mt-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                onClick={() => navigate('/pricing')}
+              >
+                Ver planos
+              </button>
+            </div>
+          );
+        }
         return (
           <MidiSettings
             isMidiSupported={midiSupported ?? false}
@@ -783,6 +809,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             onResetCCMappings={onMidiResetCCMappings ?? (() => {})}
           />
         );
+      }
 
       case 'tap':
         return <TapTempoSettings />;
