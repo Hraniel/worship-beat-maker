@@ -553,18 +553,19 @@ export function playSnareReverb(volume = 0.6, destination?: AudioNode) {
 }
 
 
-export function playMetronomeClick(accent = false, volume = 0.3) {
+export function playMetronomeClick(accent = false, volume = 0.3, startTime?: number) {
   const ctx = getAudioContext();
+  const t = startTime ?? ctx.currentTime;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
   gain.connect(getMetronomePanner());
   osc.frequency.value = accent ? 1200 : 800;
   osc.type = 'sine';
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.05);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+  osc.start(t);
+  osc.stop(t + 0.05);
 }
 
 // Map sound IDs to play functions
@@ -606,30 +607,30 @@ export function hasCustomBuffer(padId: string): boolean {
   return customBuffers.has(padId);
 }
 
-function playCustomBuffer(padId: string, volume = 0.7, destination?: AudioNode) {
+function playCustomBuffer(padId: string, volume = 0.7, destination?: AudioNode, startTime?: number) {
   const buffer = customBuffers.get(padId);
   if (!buffer) return;
   const ctx = getAudioContext();
+  const t = startTime ?? ctx.currentTime;
   const source = ctx.createBufferSource();
   source.buffer = buffer;
   const gain = ctx.createGain();
   gain.gain.value = volume;
   source.connect(gain);
-  // Route through pad panner if no custom destination
   if (destination) {
     gain.connect(destination);
   } else {
     gain.connect(getPadPanner(padId));
   }
-  source.start(0);
+  source.start(t);
 }
 
 /**
  * Play a sound, optionally routing through a custom destination node (e.g. effects chain).
  */
-export function playSound(id: string, volume = 0.7, destination?: AudioNode) {
+export function playSound(id: string, volume = 0.7, destination?: AudioNode, startTime?: number) {
   if (customBuffers.has(id)) {
-    playCustomBuffer(id, volume, destination);
+    playCustomBuffer(id, volume, destination, startTime);
     return;
   }
   const fn = soundMap[id];
