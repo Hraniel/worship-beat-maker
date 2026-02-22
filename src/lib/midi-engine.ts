@@ -149,9 +149,13 @@ export function isMidiSupported(): boolean {
 }
 
 export async function initMidi(): Promise<boolean> {
-  if (!isMidiSupported()) return false;
+  if (!isMidiSupported()) {
+    console.warn('MIDI not supported in this browser');
+    return false;
+  }
   try {
     midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+    console.log("MIDI enabled:", midiAccess);
     bindInputs();
 
     midiAccess.onstatechange = () => {
@@ -162,7 +166,7 @@ export async function initMidi(): Promise<boolean> {
     deviceChangeCb?.(collectDevices());
     return true;
   } catch (err) {
-    console.warn('MIDI access denied or unavailable', err);
+    console.error("MIDI failed:", err);
     return false;
   }
 }
