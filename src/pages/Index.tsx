@@ -1073,7 +1073,6 @@ const Index = () => {
   // Navigation songs: if an event is selected, navigate within event songs; otherwise use all songs
   const navSongs = selectedEventId && selectedEventSongs.length > 0
     ? selectedEventSongs.map(es => {
-        // Try to find full song data from saved songs
         const fullSong = songs.find(s => s.id === es.id);
         return fullSong || {
           id: es.id,
@@ -1090,6 +1089,32 @@ const Index = () => {
         } as SetlistSong;
       })
     : songs;
+
+  // Handle event selection: auto-load first song
+  const handleSelectEvent = useCallback((eventId: string | null) => {
+    setSelectedEventId(eventId);
+    if (eventId) {
+      const ev = setlistEventsHook.events.find(e => e.id === eventId);
+      if (ev && ev.songs_data.length > 0) {
+        const firstSong = ev.songs_data[0];
+        const fullSong = songs.find(s => s.id === firstSong.id);
+        const songToLoad: SetlistSong = fullSong || {
+          id: firstSong.id,
+          name: firstSong.name,
+          bpm: firstSong.bpm,
+          timeSignature: firstSong.timeSignature,
+          key: firstSong.key || null,
+          pads: defaultPads,
+          padVolumes: {},
+          padNames: {},
+          padPans: {},
+          padEffects: {},
+          customSounds: {},
+        };
+        handleLoadSong(songToLoad);
+      }
+    }
+  }, [setlistEventsHook.events, songs, handleLoadSong]);
 
   // Prev/Next song navigation (within selected event or all songs)
   const handlePrevSong = useCallback(() => {
@@ -1193,7 +1218,7 @@ const Index = () => {
                 forceOpen={openSetlistFromBanner}
                 onForceOpenChange={() => setOpenSetlistFromBanner(false)}
                 selectedEventId={selectedEventId}
-                onSelectEvent={setSelectedEventId}
+                onSelectEvent={handleSelectEvent}
                 externalEvents={setlistEventsHook}
               />
               <div className="relative">
@@ -1272,49 +1297,31 @@ const Index = () => {
           </header>
         ) : (
           <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b border-primary/20 bg-primary/10 shrink-0">
+            {/* Left: Event name */}
             <div className="flex items-center gap-1.5 min-w-0 shrink-0">
               <img
                 src={document.documentElement.classList.contains("dark") ? logoLight : logoDark}
                 alt="DPW"
                 className="h-5 w-5 sm:h-6 sm:w-6 hidden sm:block"
               />
-              <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
+              {selectedEvent ? (
+                <span className="text-[11px] sm:text-xs font-semibold text-primary truncate max-w-[90px] sm:max-w-[140px]">
+                  📋 {selectedEvent.name}
+                </span>
+              ) : (
+                <h1 className="text-sm font-bold text-foreground tracking-tight hidden sm:block">Glory Pads</h1>
+              )}
             </div>
 
-            {/* Event name + Prev/Next song navigation - centered */}
-            <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center gap-1">
-              {selectedEvent && (
-                <span className="text-[10px] text-muted-foreground truncate max-w-[80px] sm:max-w-[120px] shrink-0">
-                  {selectedEvent.name}:
-                </span>
-              )}
-              {/* Prev button */}
-              {navSongs.length > 1 && (
-                <button
-                  onClick={handlePrevSong}
-                  disabled={!hasPrevSong}
-                  className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Música anterior"
-                >
-                  <SkipBack className="h-3.5 w-3.5" />
-                </button>
-              )}
-              {currentSongName && (
+            {/* Center: Current song name */}
+            <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center">
+              {currentSongName ? (
                 <span className="text-[11px] sm:text-xs font-medium text-primary truncate block">
                   ♪ {currentSongName}
                 </span>
-              )}
-              {/* Next button */}
-              {navSongs.length > 1 && (
-                <button
-                  onClick={handleNextSong}
-                  disabled={!hasNextSong}
-                  className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Próxima música"
-                >
-                  <SkipForward className="h-3.5 w-3.5" />
-                </button>
-              )}
+              ) : selectedEvent && selectedEventSongs.length === 0 ? (
+                <span className="text-[10px] text-muted-foreground italic">Nenhuma música no repertório</span>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -1347,9 +1354,9 @@ const Index = () => {
                 </div>
               )}
 
-              {/* Repertório - hidden in edit mode or when no song selected */}
+              {/* Repertório + Prev/Next */}
               {!editMode && currentSongId && (
-                <div data-tutorial="setlist">
+                <div className="flex items-center gap-0.5" data-tutorial="setlist">
                   <SetlistManager
                     songs={songs}
                     currentSongId={currentSongId}
@@ -1361,9 +1368,29 @@ const Index = () => {
                     activeSetlistId={currentSongId}
                     onOpenMusicAI={() => setSpotifySheetOpen(true)}
                     selectedEventId={selectedEventId}
-                    onSelectEvent={setSelectedEventId}
+                    onSelectEvent={handleSelectEvent}
                     externalEvents={setlistEventsHook}
                   />
+                  {navSongs.length > 0 && (
+                    <>
+                      <button
+                        onClick={handlePrevSong}
+                        disabled={!hasPrevSong}
+                        className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Música anterior"
+                      >
+                        <SkipBack className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={handleNextSong}
+                        disabled={!hasNextSong}
+                        className="p-1 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        title="Próxima música"
+                      >
+                        <SkipForward className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1534,7 +1561,7 @@ const Index = () => {
                   activeSetlistId={currentSongId}
                   onOpenMusicAI={() => setSpotifySheetOpen(true)}
                   selectedEventId={selectedEventId}
-                  onSelectEvent={setSelectedEventId}
+                  onSelectEvent={handleSelectEvent}
                   externalEvents={setlistEventsHook}
                 />
               </div>
