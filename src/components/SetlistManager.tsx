@@ -241,22 +241,19 @@ const EventCard: React.FC<EventCardProps> = ({
           </div>
         ) : (
           /* View mode: row layout */
-          <div className="flex items-center gap-2">
-            <button onClick={() => setExpanded(p => !p)} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => { onSelectEvent?.(isSelected ? null : event.id); setExpanded(p => !p); }}>
+            <button onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0">
               {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
             <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
-            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setExpanded(p => !p)}>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{event.name}</p>
               <p className="text-[10px] text-muted-foreground">{formatDate(event.event_date)} · {event.songs_data.length} músicas</p>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => onSelectEvent?.(isSelected ? null : event.id)}
-                className={`h-6 px-2 rounded text-[10px] font-medium transition-colors ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
-              >
-                {isSelected ? '✓ Ativo' : 'Selecionar'}
-              </button>
+            {isSelected && (
+              <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">✓ Ativo</span>
+            )}
+            <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
               <button onClick={() => setEditing(true)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted">
                 <Edit2 className="h-3 w-3 text-muted-foreground" />
               </button>
