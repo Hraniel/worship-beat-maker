@@ -126,19 +126,14 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
       className="group relative bg-white rounded-2xl border border-gray-200/80 hover:shadow-lg hover:border-gray-300 transition-all duration-200 overflow-hidden cursor-pointer flex flex-col"
       onClick={handleCardClick}
     >
-      {/* Banner or color header */}
+      {/* Banner or color header — square aspect */}
       {hasBanner ? (
-        <div className="w-full h-32 overflow-hidden">
+        <div className="w-full aspect-square overflow-hidden">
           <img src={bannerUrl!} alt={pack.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         </div>
       ) : (
-        <div className={`w-full h-24 ${pack.color} flex items-center justify-center`}>
-          <div className="text-white/80">
-            {imageIconUrl
-              ? <img src={imageIconUrl} alt={pack.name} className="h-10 w-10 rounded-xl object-cover" />
-              : <div className="text-white opacity-60">{lucideIcon}</div>
-            }
-          </div>
+        <div className={`w-full aspect-square ${pack.color} flex items-center justify-center`}>
+          <div className="text-white opacity-60">{lucideIcon}</div>
         </div>
       )}
 
@@ -148,15 +143,6 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 mb-2 inline-block">
             {pack.tag}
           </span>
-        )}
-
-        {/* Icon when there's a banner */}
-        {hasBanner && (
-          <div className={`h-9 w-9 rounded-xl ${isImageIcon ? '' : pack.color} flex items-center justify-center mb-2 ${isImageIcon ? '' : 'text-white'} shadow-sm overflow-hidden`}>
-            {isImageIcon
-              ? <img src={imageIconUrl!} alt={pack.name} className="h-full w-full object-cover" />
-              : lucideIcon}
-          </div>
         )}
 
         <h3 className="font-semibold text-sm text-gray-900 mb-1 leading-snug">{pack.name}</h3>
