@@ -176,11 +176,35 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
         Resetar mapeamento padrão
       </Button>
 
-      {/* Section 5: Info */}
+      {/* Section 5: CC Mapping Reference */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <p className="text-sm font-semibold text-foreground">Mapeamento de CCs</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Configure estes CCs no seu controlador MIDI para controle remoto.
+          </p>
+        </div>
+        {[
+          { cc: '1–9', desc: 'Volume dos Pads (faders)' },
+          { cc: '7', desc: 'Volume Master' },
+          { cc: '10', desc: 'Volume do Metrônomo' },
+          { cc: '20', desc: 'BPM (40–240)' },
+          { cc: '21', desc: 'Play/Pause Metrônomo (≥64)' },
+          { cc: '22', desc: 'Música Anterior (≥64)' },
+          { cc: '23', desc: 'Próxima Música (≥64)' },
+        ].map((item, i) => (
+          <div key={i} className={`flex items-center gap-3 px-4 py-2 ${i > 0 ? 'border-t border-border' : ''}`}>
+            <span className="text-xs font-mono font-bold text-primary w-10 shrink-0">CC {item.cc}</span>
+            <span className="text-xs text-muted-foreground">{item.desc}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Section 6: Info */}
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
         <p className="text-xs font-medium text-foreground">Como funciona?</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Conecte um controlador MIDI via USB ou Bluetooth. O app detecta automaticamente e permite tocar os pads com sensibilidade de velocity. Use o modo "Aprender" para personalizar o mapeamento de cada tecla.
+          Conecte um controlador MIDI via USB ou Bluetooth. O app detecta automaticamente e permite tocar os pads com sensibilidade de velocity. Use o modo "Aprender" para personalizar o mapeamento de cada tecla. Configure os CCs acima no seu controlador para controle remoto de volumes, BPM e navegação.
         </p>
       </div>
     </div>

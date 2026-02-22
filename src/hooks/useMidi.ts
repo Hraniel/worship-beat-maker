@@ -24,6 +24,8 @@ export interface MidiCCCallbacks {
   onMetronomeVolumeCC?: (volume: number) => void;
   onBpmCC?: (bpm: number) => void;
   onMetronomeToggleCC?: () => void;
+  onPrevSongCC?: () => void;
+  onNextSongCC?: () => void;
 }
 
 export function useMidi(
@@ -111,6 +113,16 @@ export function useMidi(
       // CC 21: Metronome toggle (>= 64 = trigger toggle)
       if (cc === 21 && value >= 64) {
         cbs.onMetronomeToggleCC?.();
+        return;
+      }
+      // CC 22: Previous song (>= 64 = trigger)
+      if (cc === 22 && value >= 64) {
+        cbs.onPrevSongCC?.();
+        return;
+      }
+      // CC 23: Next song (>= 64 = trigger)
+      if (cc === 23 && value >= 64) {
+        cbs.onNextSongCC?.();
         return;
       }
     });
