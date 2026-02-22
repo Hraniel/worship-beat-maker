@@ -51,8 +51,8 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
 
   // Portrait / desktop: pad grid with side panel
   if (!isLandscape) {
-    // Tablet portrait: full side panel with all controls (scrollable)
-    if (isTablet && !isDesktop) {
+    // Tablet & Desktop portrait: full side panel with all controls (scrollable)
+    if (isTablet || isDesktop) {
       return (
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Pad grid — takes remaining space */}
@@ -60,7 +60,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
             {padGrid}
           </div>
           {/* Right side panel — all controls stacked with scroll */}
-          <div className="w-[320px] shrink-0 flex flex-col min-h-0 border-l border-border/30">
+          <div className={`${isDesktop ? 'w-[360px]' : 'w-[320px]'} shrink-0 flex flex-col min-h-0 border-l border-border/30`}>
             {focusMode ? (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="hidden">{metronome}</div>
@@ -110,7 +110,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
       );
     }
 
-    // Desktop / mobile portrait (original)
+    // Mobile portrait (original)
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className={`flex-1 flex min-h-0 ${focusMode ? 'items-start' : 'items-center'}`}>
@@ -118,19 +118,11 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
           <div className="flex-1 flex justify-center min-h-0 overflow-hidden">
             {padGrid}
           </div>
-          {/* Continuous Pads beside the grid — desktop portrait only */}
-          {isDesktop && (
-            <div className="w-[140px] xl:w-[160px] shrink-0 self-center pr-2 pl-1">
-              {ambientPads}
-            </div>
-          )}
         </div>
         {/* Mobile portrait: Continuous Pads below the grid */}
-        {!isDesktop && !isTablet && (
-          <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-1.5 py-0' : 'px-1.5 py-0.5'}`}>
-            {ambientPads}
-          </div>
-        )}
+        <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-1.5 py-0' : 'px-1.5 py-0.5'}`}>
+          {ambientPads}
+        </div>
       </div>
     );
   }
