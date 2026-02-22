@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import {
   Save, Loader2, Crown, Zap, Lock, Unlock, Plus, Trash2, RefreshCw,
   Music, Mic2, Waves, Sparkles, Activity, Radio, ListMusic, SlidersHorizontal,
-  AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp,
+  AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp, Cpu,
   GripVertical,
 } from 'lucide-react';
 import type { PlanPricing, PlanFeature, FeatureGate } from '@/hooks/useLandingConfig';
@@ -92,11 +92,20 @@ const APP_FEATURES_CATALOG: {
     ],
   },
   {
+    category: 'MIDI & Hardware',
+    icon: <Cpu className="h-3.5 w-3.5" />,
+    features: [
+      { key: 'midi_support', label: 'Suporte MIDI', description: 'Conectar controladores MIDI externos aos pads', tier: 'master' },
+      { key: 'midi_mapping', label: 'Mapeamento MIDI', description: 'Configurar notas e canais MIDI por pad', tier: 'master' },
+    ],
+  },
+  {
     category: 'Customização Visual',
     icon: <Palette className="h-3.5 w-3.5" />,
     features: [
       { key: 'zoom_popup', label: 'Zoom nos pads', description: 'Ampliar visualização do pad em toque', tier: 'free' },
       { key: 'landscape_swipe', label: 'Painéis deslizantes (landscape)', description: 'Navegar entre painéis no modo paisagem', tier: 'pro' },
+      { key: 'custom_pad_colors', label: 'Cores personalizadas', description: 'Escolher cores individuais para cada pad', tier: 'pro' },
     ],
   },
 ];
