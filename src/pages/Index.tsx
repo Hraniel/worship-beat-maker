@@ -2215,10 +2215,12 @@ const Index = () => {
         midiSupported={midi.isMidiSupported}
         midiDevices={midi.connectedDevices}
         midiChannel={midi.channel}
+        midiCCChannel={midi.ccChannel}
         midiMappings={midi.mappings}
         midiIsLearning={midi.isLearning}
         midiLearnPadId={midi.learnPadId}
         onMidiSetChannel={midi.setChannel}
+        onMidiSetCCChannel={midi.setCCChannel}
         onMidiStartLearn={midi.startLearn}
         onMidiStopLearn={midi.stopLearn}
         onMidiResetMappings={midi.resetMappings}

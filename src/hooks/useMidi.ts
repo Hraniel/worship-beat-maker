@@ -4,6 +4,8 @@ import {
   getConnectedDevices,
   getChannel,
   setChannel as engineSetChannel,
+  getCCChannel,
+  setCCChannel as engineSetCCChannel,
   getMappings,
   resetMappings as engineResetMappings,
   startLearn as engineStartLearn,
@@ -43,6 +45,7 @@ export function useMidi(
   const [supported, setSupported] = useState(false);
   const [devices, setDevices] = useState<MidiDevice[]>([]);
   const [channel, setChannelState] = useState<MidiChannel>(getChannel());
+  const [ccChannelState, setCCChannelState] = useState<MidiChannel>(getCCChannel());
   const [mappings, setMappingsState] = useState<Record<number, string>>(getMappings());
   const [ccMappingsState, setCCMappingsState] = useState<Record<number, CCFunctionId>>(getCCMappings());
   const [isLearning, setIsLearning] = useState(false);
@@ -136,6 +139,11 @@ export function useMidi(
     setChannelState(ch);
   }, []);
 
+  const setCCChannel = useCallback((ch: MidiChannel) => {
+    engineSetCCChannel(ch);
+    setCCChannelState(ch);
+  }, []);
+
   const startLearn = useCallback((padId: string) => {
     setIsLearning(true);
     setLearnPadId(padId);
@@ -183,6 +191,8 @@ export function useMidi(
     connectedDevices: devices,
     channel,
     setChannel,
+    ccChannel: ccChannelState,
+    setCCChannel,
     mappings,
     isLearning,
     learnPadId,
