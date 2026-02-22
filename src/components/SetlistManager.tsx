@@ -420,11 +420,11 @@ const EventCard: React.FC<EventCardProps> = ({
                 </div>
               </div>
             ) : showAddSong ? (
-              <div className="flex gap-1.5">
+              <div className="flex flex-col gap-1.5">
                 <select
                   value={selectedSongId}
                   onChange={e => setSelectedSongId(e.target.value)}
-                  className="flex-1 h-7 px-2 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none">
+                  className="w-full h-7 px-2 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none">
                   <option value="">— Selecionar música —</option>
                   {availableSongs.length === 0
                     ? <option disabled value="">Nenhuma música disponível</option>
@@ -433,17 +433,19 @@ const EventCard: React.FC<EventCardProps> = ({
                     ))
                   }
                 </select>
-                <button
-                  onClick={handleAddSong}
-                  disabled={!selectedSongId}
-                  className="h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
-                  Adicionar
-                </button>
-                <button
-                  onClick={() => { setShowAddSong(false); setSelectedSongId(''); }}
-                  className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted">
-                  <X className="h-3 w-3 text-muted-foreground" />
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={handleAddSong}
+                    disabled={!selectedSongId}
+                    className="flex-1 h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
+                    Adicionar
+                  </button>
+                  <button
+                    onClick={() => { setShowAddSong(false); setSelectedSongId(''); }}
+                    className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted shrink-0">
+                    <X className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="flex gap-1.5">

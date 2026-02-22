@@ -1224,10 +1224,10 @@ const Index = () => {
               <div className="relative">
                 <button
                   onClick={() => setMobileMenuOpen((p) => !p)}
-                  className="p-1.5 rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+                  className="p-2 rounded-md text-primary-foreground hover:bg-primary/20 transition-colors"
                   title="Menu"
                 >
-                  <Menu className="h-4 w-4" />
+                  <Menu className="h-5 w-5" />
                 </button>
                 {mobileMenuOpen && (
                   <>
@@ -1253,21 +1253,21 @@ const Index = () => {
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false);
-                          setTimeout(() => setSavedSongsOpen(true), 150);
-                        }}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                      >
-                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMobileMenuOpen(false);
                           if (!tryAccess("spotify_ai")) return;
                           setTimeout(() => setSpotifySheetOpen(true), 150);
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
                         <Sparkles className="h-4 w-4 text-muted-foreground" /> Music AI
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditMode((p) => !p);
+                          setMobileMenuOpen(false);
+                        }}
+                        className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? "text-primary font-medium bg-primary/10" : "text-foreground hover:bg-muted"}`}
+                      >
+                        <Settings2 className="h-4 w-4" /> {editMode ? "Sair do modo edição" : "Modo Edição"}
                       </button>
                       <button
                         onClick={() => {
@@ -1378,10 +1378,10 @@ const Index = () => {
               <div className="relative">
                 <button
                   onClick={() => setMobileMenuOpen((p) => !p)}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors relative"
+                  className="p-2 rounded-md text-primary-foreground hover:bg-primary/20 transition-colors relative"
                   title="Menu"
                 >
-                  <Menu className="h-4 w-4" />
+                  <Menu className="h-5 w-5" />
                 </button>
                 {mobileMenuOpen && (
                   <>
@@ -1405,13 +1405,14 @@ const Index = () => {
                         <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                       </button>
                       <button
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                         onClick={() => {
                           setMobileMenuOpen(false);
-                          setTimeout(() => setSavedSongsOpen(true), 150);
+                          if (!tryAccess("spotify_ai")) return;
+                          setTimeout(() => setSpotifySheetOpen(true), 150);
                         }}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
+                        <Sparkles className="h-4 w-4 text-muted-foreground" /> Music AI
                       </button>
                       {currentSongId && songs.length > 0 && (
                         <button
@@ -1433,17 +1434,6 @@ const Index = () => {
                         className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? "text-primary font-medium bg-primary/10" : "text-foreground hover:bg-muted"}`}
                       >
                         <Settings2 className="h-4 w-4" /> {editMode ? "Sair do modo edição" : "Modo Edição"}
-                      </button>
-                      <button
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          if (!tryAccess("spotify_ai")) return;
-                          setTimeout(() => setSpotifySheetOpen(true), 150);
-                        }}
-                      >
-                        <Sparkles className="h-4 w-4 text-muted-foreground" />
-                        Music AI
                       </button>
                       <button
                         onClick={() => {
