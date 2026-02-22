@@ -65,6 +65,7 @@ export function midiNoteToName(note: number): string {
 // ── Engine singleton ────────────────────────────────────────────────────────
 
 type NoteOnCallback = (padId: string, velocity: number) => void;
+type CCCallback = (cc: number, value: number, channel: number) => void;
 type DeviceChangeCallback = (devices: MidiDevice[]) => void;
 type LearnCallback = (note: number) => void;
 
@@ -73,6 +74,7 @@ let channel: MidiChannel = loadChannel();
 let mappings: Record<number, string> = loadMappings();
 
 let noteOnCb: NoteOnCallback | null = null;
+let ccCb: CCCallback | null = null;
 let deviceChangeCb: DeviceChangeCallback | null = null;
 
 // Learn mode
@@ -121,6 +123,11 @@ function handleMidiMessage(e: MIDIMessageEvent) {
     if (padId) {
       noteOnCb?.(padId, velocity / 127);
     }
+  }
+
+  // Control Change (CC)
+  if (type === 0xb0) {
+    ccCb?.(note, velocity, msgChannel); // note = CC number, velocity = CC value
   }
 }
 
@@ -217,4 +224,8 @@ export function onNoteOn(cb: NoteOnCallback) {
 
 export function onDeviceChange(cb: DeviceChangeCallback) {
   deviceChangeCb = cb;
+}
+
+export function onCC(cb: CCCallback) {
+  ccCb = cb;
 }

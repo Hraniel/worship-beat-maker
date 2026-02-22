@@ -194,7 +194,8 @@ const Index = () => {
   const [editMode, setEditMode] = useState(false);
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
-  const midi = useMidi(padEffects, tier === 'master');
+  const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
+  const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current);
 
   // Mixer gate check
   const mixerFaderAccess = canAccess("mixer_faders");
@@ -887,6 +888,16 @@ const Index = () => {
     setMetronomeVol(v);
     setMetronomeVolume(v);
   }, []);
+
+  // Keep MIDI CC callbacks in sync with latest closures
+  midiCCCallbacksRef.current = {
+    onPadVolumeCC: handlePadVolumeChange,
+    onMasterVolumeCC: setMasterVol,
+    onMetronomeVolumeCC: handleMetronomeVolChange,
+    onBpmCC: setBpm,
+    onMetronomeToggleCC: () => setMetronomeIsPlaying((prev) => !prev),
+  };
+
 
   // Setlist management — now backed by database
   const songs = setlists.flatMap((sl) =>
