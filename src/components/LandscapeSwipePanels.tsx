@@ -110,7 +110,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
       );
     }
 
-    // Mobile portrait (original)
+    // Mobile portrait (original) — continuous pads handled by footer tab
     return (
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <div className={`flex-1 flex min-h-0 ${focusMode ? 'items-start' : 'items-center'}`}>
@@ -118,10 +118,6 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
           <div className="flex-1 flex justify-center min-h-0 overflow-hidden">
             {padGrid}
           </div>
-        </div>
-        {/* Mobile portrait: Continuous Pads below the grid */}
-        <div className={`shrink-0 border-t border-border/30 ${focusMode ? 'px-1.5 py-0' : 'px-1.5 py-0.5'}`}>
-          {ambientPads}
         </div>
       </div>
     );
