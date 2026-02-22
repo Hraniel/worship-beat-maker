@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  ListMusic, Plus, Trash2, ChevronRight, GripVertical, Share2, Link2, Eye, EyeOff,
-  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, Zap, Crown, FolderOpen,
+  ListMusic, Plus, Trash2, GripVertical, Share2, Link2, Eye, EyeOff,
+  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, ChevronRight,
 } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format, parseISO } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
@@ -13,9 +12,6 @@ import { Input } from '@/components/ui/input';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription
 } from '@/components/ui/sheet';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
   type DragEndEvent,
@@ -28,12 +24,11 @@ import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import type { SetlistSong } from '@/lib/sounds';
 import { useSetlistEvents, type SetlistEvent, type EventSong } from '@/hooks/useSetlistEvents';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface SetlistManagerProps {
   songs: SetlistSong[];
   currentSongId: string | null;
-  onSaveSong: (name: string) => void;
+  onSaveSong: (name: string, bpm?: number, key?: string, timeSignature?: string) => void;
   onLoadSong: (song: SetlistSong) => void;
   onDeleteSong: (id: string) => void;
   onReorder?: (ids: string[]) => void;
@@ -124,12 +119,13 @@ interface EventCardProps {
   onAddSong: (eventId: string, song: EventSong) => void;
   onRemoveSong: (eventId: string, songId: string) => void;
   onReorderSongs: (eventId: string, songs: EventSong[]) => void;
-  onSaveSong: (name: string) => void;
+  onSaveSong: (name: string, bpm?: number, key?: string, timeSignature?: string) => void;
   onLoadSong: (song: SetlistSong) => void;
+  onOpenMusicAI?: () => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
-  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong,
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -140,6 +136,9 @@ const EventCard: React.FC<EventCardProps> = ({
   const [selectedSongId, setSelectedSongId] = useState('');
   const [showNewSong, setShowNewSong] = useState(false);
   const [newSongName, setNewSongName] = useState('');
+  const [newSongBpm, setNewSongBpm] = useState('120');
+  const [newSongKey, setNewSongKey] = useState('');
+  const [newSongTimeSignature, setNewSongTimeSignature] = useState('4/4');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -309,36 +308,83 @@ const EventCard: React.FC<EventCardProps> = ({
           {/* Add song row */}
           <div className="px-3 py-2 border-t border-border/40">
             {showNewSong ? (
-              <div className="flex flex-col gap-1.5 mb-2">
+              <div className="flex flex-col gap-2 mb-2">
                 <p className="text-[10px] font-semibold text-muted-foreground">Criar nova música</p>
+                <Input
+                  placeholder="Nome da música..."
+                  value={newSongName}
+                  onChange={e => setNewSongName(e.target.value)}
+                  className="h-7 text-xs bg-background"
+                />
                 <div className="flex gap-1.5">
-                  <Input
-                    placeholder="Nome da música..."
-                    value={newSongName}
-                    onChange={e => setNewSongName(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && newSongName.trim()) {
-                        onSaveSong(newSongName.trim());
-                        setNewSongName('');
-                        setShowNewSong(false);
-                      }
-                    }}
-                    className="h-7 text-xs bg-background flex-1"
-                  />
+                  <div className="flex-1">
+                    <label className="text-[9px] text-muted-foreground mb-0.5 block">BPM</label>
+                    <Input
+                      type="number"
+                      placeholder="120"
+                      value={newSongBpm}
+                      onChange={e => setNewSongBpm(e.target.value)}
+                      className="h-7 text-xs bg-background"
+                      min={40}
+                      max={240}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[9px] text-muted-foreground mb-0.5 block">Tom</label>
+                    <select
+                      value={newSongKey}
+                      onChange={e => setNewSongKey(e.target.value)}
+                      className="w-full h-7 px-2 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none"
+                    >
+                      <option value="">—</option>
+                      {['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B',
+                        'Cm', 'C#m', 'Dm', 'D#m', 'Em', 'Fm', 'F#m', 'Gm', 'G#m', 'Am', 'A#m', 'Bm'].map(k => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-[9px] text-muted-foreground mb-0.5 block">Compasso</label>
+                    <select
+                      value={newSongTimeSignature}
+                      onChange={e => setNewSongTimeSignature(e.target.value)}
+                      className="w-full h-7 px-2 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none"
+                    >
+                      {['2/4', '3/4', '4/4', '6/8'].map(ts => (
+                        <option key={ts} value={ts}>{ts}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-1.5">
                   <button
                     onClick={() => {
                       if (newSongName.trim()) {
-                        onSaveSong(newSongName.trim());
+                        const bpmVal = Math.max(40, Math.min(240, parseInt(newSongBpm) || 120));
+                        onSaveSong(newSongName.trim(), bpmVal, newSongKey || undefined, newSongTimeSignature);
                         setNewSongName('');
+                        setNewSongBpm('120');
+                        setNewSongKey('');
+                        setNewSongTimeSignature('4/4');
                         setShowNewSong(false);
                       }
                     }}
                     disabled={!newSongName.trim()}
-                    className="h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
+                    className="flex-1 h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
                     Salvar
                   </button>
+                  {onOpenMusicAI && (
+                    <button
+                      onClick={() => {
+                        setShowNewSong(false);
+                        onOpenMusicAI();
+                      }}
+                      className="flex-1 h-7 px-2.5 text-xs rounded-md bg-accent text-accent-foreground hover:bg-accent/80 transition-colors flex items-center justify-center gap-1">
+                      <Sparkles className="h-3 w-3" /> Music AI
+                    </button>
+                  )}
                   <button
-                    onClick={() => { setShowNewSong(false); setNewSongName(''); }}
+                    onClick={() => { setShowNewSong(false); setNewSongName(''); setNewSongBpm('120'); setNewSongKey(''); setNewSongTimeSignature('4/4'); }}
                     className="h-7 w-7 rounded-md flex items-center justify-center hover:bg-muted">
                     <X className="h-3 w-3 text-muted-foreground" />
                   </button>
@@ -428,11 +474,8 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder, onOpenMusicAI,
   forceOpen, onForceOpenChange,
 }) => {
-  const [newName, setNewName] = useState('');
   const [open, setOpen] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
-  const [showMusicAISuggestion, setShowMusicAISuggestion] = useState(false);
-  const { tier } = useSubscription();
   const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = useSetlistEvents();
 
   // Open sheet when forceOpen prop becomes true
@@ -443,96 +486,12 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     }
   }, [forceOpen]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
-  const handleSave = () => {
-    if (!newName.trim()) return;
-    // For Pro/Master users with no saved songs, suggest Music AI first
-    if (songs.length === 0 && (tier === 'pro' || tier === 'master') && onOpenMusicAI) {
-      setShowMusicAISuggestion(true);
-      return;
-    }
-    onSaveSong(newName.trim());
-    setNewName('');
-  };
-
-  const handleSaveManually = () => {
-    setShowMusicAISuggestion(false);
-    onSaveSong(newName.trim());
-    setNewName('');
-  };
-
-  const handleOpenMusicAI = () => {
-    setShowMusicAISuggestion(false);
-    setOpen(false);
-    onOpenMusicAI?.();
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIndex = songs.findIndex((s) => s.id === active.id);
-    const newIndex = songs.findIndex((s) => s.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-    onReorder?.(arrayMove(songs, oldIndex, newIndex).map((s) => s.id));
-  };
-
   const handleCreateEvent = async (name: string, date: string) => {
     const ev = await createEvent(name, date);
     if (ev) setShowCreateEvent(false);
   };
 
-  const TierIcon = tier === 'master' ? Crown : Zap;
-
   return (
-    <>
-    {/* Music AI Suggestion Modal */}
-    <Dialog open={showMusicAISuggestion} onOpenChange={setShowMusicAISuggestion}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-foreground">
-            <span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10">
-              <Sparkles className="h-4 w-4 text-primary" />
-            </span>
-            Criar com Music AI?
-          </DialogTitle>
-          <DialogDescription className="text-muted-foreground text-sm leading-relaxed">
-            Você ainda não tem músicas salvas. Como usuário{' '}
-            <span className="font-semibold text-primary inline-flex items-center gap-0.5">
-              <TierIcon className="h-3 w-3" />
-              {tier === 'master' ? 'Master' : 'Pro'}
-            </span>
-            , você pode usar o <strong>Music AI</strong> para buscar uma música e aplicar automaticamente BPM, tom e configurações de pads.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col gap-2 mt-1">
-          <button
-            onClick={handleOpenMusicAI}
-            className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors text-left"
-          >
-            <Sparkles className="h-5 w-5 text-primary shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">Usar Music AI</p>
-              <p className="text-[11px] text-muted-foreground">Buscar e configurar tudo automaticamente</p>
-            </div>
-          </button>
-          <button
-            onClick={handleSaveManually}
-            className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border hover:bg-muted transition-colors text-left"
-          >
-            <Music className="h-5 w-5 text-muted-foreground shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Salvar manualmente</p>
-              <p className="text-[11px] text-muted-foreground">Continuar com os ajustes atuais</p>
-            </div>
-          </button>
-        </div>
-      </DialogContent>
-    </Dialog>
-
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
@@ -544,7 +503,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
         <SheetHeader>
           <SheetTitle className="text-foreground">Repertório</SheetTitle>
           <SheetDescription className="text-muted-foreground">
-            Salve músicas e organize eventos por data
+            Organize seus eventos e músicas por data
           </SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-4 flex-1 overflow-y-auto pb-4" style={{ overscrollBehavior: 'contain' }}>
@@ -589,51 +548,15 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 onReorderSongs={reorderEventSongs}
                 onSaveSong={onSaveSong}
                 onLoadSong={onLoadSong}
+                onOpenMusicAI={onOpenMusicAI}
               />
             ))}
           </div>
 
-          {/* Saved songs - collapsible menu at bottom */}
-          <Collapsible>
-            <CollapsibleTrigger className="w-full flex items-center justify-between px-1 py-2 border-t border-border group">
-              <p className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <FolderOpen className="h-3.5 w-3.5" />
-                Músicas Salvas ({songs.length})
-              </p>
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-2 pt-1">
-              {/* Save current config as song */}
-              <div className="flex gap-2">
-                <Input placeholder="Salvar config atual..." value={newName} onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSave()} className="bg-background h-8 text-xs" />
-                <Button size="icon" className="h-8 w-8 shrink-0" onClick={handleSave} disabled={!newName.trim()}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Songs list */}
-              <div className="space-y-1">
-                {songs.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-3">Nenhuma música salva ainda</p>
-                )}
-                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <SortableContext items={songs.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                    {songs.map((song) => (
-                      <SortableItem key={song.id} song={song} isActive={currentSongId === song.id}
-                        onLoad={() => { onLoadSong(song); setOpen(false); }}
-                        onDelete={() => onDeleteSong(song.id)} />
-                    ))}
-                  </SortableContext>
-                </DndContext>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
 
         </div>
       </SheetContent>
     </Sheet>
-    </>
   );
 };
 

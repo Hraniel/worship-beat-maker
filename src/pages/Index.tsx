@@ -12,6 +12,7 @@ import AmbientPads from "@/components/AmbientPads";
 import LandscapeSwipePanels from "@/components/LandscapeSwipePanels";
 import { useIsLandscape, useIsTablet, useIsDesktop } from "@/hooks/use-mobile";
 import { useFooterHeight } from "@/hooks/useFooterHeight";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   setMasterVolume,
   getAudioContext,
@@ -82,6 +83,8 @@ import {
   Music2,
   SkipBack,
   SkipForward,
+  Calendar,
+  FolderOpen,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -198,6 +201,7 @@ const Index = () => {
   const [editMode, setEditMode] = useState(false);
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
+  const [savedSongsOpen, setSavedSongsOpen] = useState(false);
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
   const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current);
 
@@ -973,13 +977,13 @@ const Index = () => {
   }, [spotifyKey, currentSongId]);
 
   const handleSaveSong = useCallback(
-    async (name: string) => {
+    async (name: string, overrideBpm?: number, overrideKey?: string, overrideTimeSignature?: string) => {
       const song: SetlistSong = {
         id: Date.now().toString(),
         name,
-        bpm,
-        timeSignature,
-        key: spotifyKey,
+        bpm: overrideBpm ?? bpm,
+        timeSignature: overrideTimeSignature ?? timeSignature,
+        key: overrideKey ?? spotifyKey,
         pads: defaultPads,
         padVolumes: { ...padVolumes },
         padNames: { ...padNames },
@@ -1142,36 +1146,25 @@ const Index = () => {
           /* No song selected: show selection banner AS the header */
           <header className="flex items-center justify-between px-3 py-2 bg-primary/10 border-b border-primary/20 shrink-0">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <Music className="h-4 w-4 text-primary shrink-0" />
+              <Calendar className="h-4 w-4 text-primary shrink-0" />
               <span className="text-xs font-medium text-primary">
-                {songs.length === 0 ? "Crie uma música para começar" : "Selecione uma música do repertório"}
+                Crie um evento programado para começar
               </span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              {songs.length === 0 ? (
-                <Button
-                  size="sm"
-                  variant="default"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => setOpenSetlistFromBanner(true)}
-                >
-                  <Plus className="h-3 w-3" />
-                  Criar
-                </Button>
-              ) : (
-                <SetlistManager
-                  songs={songs}
-                  currentSongId={currentSongId}
-                  onSaveSong={handleSaveSong}
-                  onLoadSong={handleLoadSong}
-                  onDeleteSong={handleDeleteSong}
-                  onReorder={reorderSetlists}
-                  setlists={setlists}
-                  activeSetlistId={currentSongId}
-                  onOpenMusicAI={() => setSpotifySheetOpen(true)}
-                />
-              )}
-              {/* Menu button */}
+              <SetlistManager
+                songs={songs}
+                currentSongId={currentSongId}
+                onSaveSong={handleSaveSong}
+                onLoadSong={handleLoadSong}
+                onDeleteSong={handleDeleteSong}
+                onReorder={reorderSetlists}
+                setlists={setlists}
+                activeSetlistId={currentSongId}
+                onOpenMusicAI={() => setSpotifySheetOpen(true)}
+                forceOpen={openSetlistFromBanner}
+                onForceOpenChange={() => setOpenSetlistFromBanner(false)}
+              />
               <div className="relative">
                 <button
                   onClick={() => setMobileMenuOpen((p) => !p)}
@@ -1200,6 +1193,15 @@ const Index = () => {
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
                         <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setTimeout(() => setSavedSongsOpen(true), 150);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      >
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
                       </button>
                       <button
                         onClick={() => {
@@ -1356,6 +1358,15 @@ const Index = () => {
                       >
                         <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
                       </button>
+                      <button
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setTimeout(() => setSavedSongsOpen(true), 150);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                      >
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
+                      </button>
                       {currentSongId && songs.length > 0 && (
                         <button
                           onClick={() => {
@@ -1491,23 +1502,44 @@ const Index = () => {
       )}
 
       {/* Hidden SetlistManager to open from banner when songs.length === 0 */}
-      {!currentSongId && songs.length === 0 && (
-        <div className="hidden">
-          <SetlistManager
-            songs={songs}
-            currentSongId={currentSongId}
-            onSaveSong={handleSaveSong}
-            onLoadSong={handleLoadSong}
-            onDeleteSong={handleDeleteSong}
-            onReorder={reorderSetlists}
-            setlists={setlists}
-            activeSetlistId={currentSongId}
-            onOpenMusicAI={() => setSpotifySheetOpen(true)}
-            forceOpen={openSetlistFromBanner}
-            onForceOpenChange={() => setOpenSetlistFromBanner(false)}
-          />
-        </div>
-      )}
+      {/* Saved songs sheet - opened from menu */}
+      <Sheet open={savedSongsOpen} onOpenChange={setSavedSongsOpen}>
+        <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden">
+          <SheetHeader>
+            <SheetTitle className="text-foreground flex items-center gap-2">
+              <FolderOpen className="h-4 w-4" />
+              Músicas Salvas
+            </SheetTitle>
+            <SheetDescription className="text-muted-foreground">
+              {songs.length} música{songs.length !== 1 ? 's' : ''} salva{songs.length !== 1 ? 's' : ''}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 space-y-1 flex-1 overflow-y-auto pb-4" style={{ overscrollBehavior: 'contain' }}>
+            {songs.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-6">Nenhuma música salva ainda. Crie músicas dentro dos eventos programados.</p>
+            ) : (
+              songs.map((song) => (
+                <div
+                  key={song.id}
+                  className={`flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors ${currentSongId === song.id ? 'bg-primary/20 border border-primary/30' : 'hover:bg-muted'}`}
+                  onClick={() => { handleLoadSong(song); setSavedSongsOpen(false); }}
+                >
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate text-foreground">{song.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}</p>
+                  </div>
+                  {song.key && (
+                    <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                      {song.key}
+                    </span>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Info bar - hidden in focus mode */}
       {!focusMode && currentSongId && (
