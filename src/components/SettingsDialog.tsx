@@ -8,7 +8,7 @@ import {
   setAudioOutputDevice,
 } from '@/lib/audio-engine';
 import MidiSettings from '@/components/MidiSettings';
-import type { MidiChannel, MidiDevice } from '@/lib/midi-engine';
+import type { MidiChannel, MidiDevice, CCFunctionId } from '@/lib/midi-engine';
 import { useNavigate } from 'react-router-dom';
 import { TUTORIAL_SECTIONS } from '@/components/TutorialGuide';
 import type { PadSound } from '@/lib/sounds';
@@ -79,6 +79,12 @@ interface SettingsDialogProps {
   onMidiStartLearn?: (padId: string) => void;
   onMidiStopLearn?: () => void;
   onMidiResetMappings?: () => void;
+  midiCCMappings?: Record<number, CCFunctionId>;
+  midiIsCCLearning?: boolean;
+  midiCCLearnFunctionId?: CCFunctionId | null;
+  onMidiStartCCLearn?: (functionId: CCFunctionId) => void;
+  onMidiStopCCLearn?: () => void;
+  onMidiResetCCMappings?: () => void;
 }
 
 interface StereoOptionProps {
@@ -677,7 +683,7 @@ const TAB_ITEMS = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings }) => {
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -761,6 +767,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             onStartLearn={onMidiStartLearn ?? (() => {})}
             onStopLearn={onMidiStopLearn ?? (() => {})}
             onResetMappings={onMidiResetMappings ?? (() => {})}
+            ccMappings={midiCCMappings ?? {}}
+            isCCLearning={midiIsCCLearning ?? false}
+            ccLearnFunctionId={midiCCLearnFunctionId ?? null}
+            onStartCCLearn={onMidiStartCCLearn ?? (() => {})}
+            onStopCCLearn={onMidiStopCCLearn ?? (() => {})}
+            onResetCCMappings={onMidiResetCCMappings ?? (() => {})}
           />
         );
 

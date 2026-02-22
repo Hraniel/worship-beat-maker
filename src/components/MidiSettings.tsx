@@ -1,9 +1,16 @@
 import React from 'react';
-import { Piano, Usb, AlertTriangle, RotateCcw, Ear } from 'lucide-react';
+import { Piano, Usb, AlertTriangle, RotateCcw, Ear, SlidersHorizontal } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { defaultPads } from '@/lib/sounds';
-import { midiNoteToName, type MidiChannel, type MidiDevice } from '@/lib/midi-engine';
+import {
+  midiNoteToName,
+  CC_FUNCTIONS,
+  findCCForFunction,
+  type MidiChannel,
+  type MidiDevice,
+  type CCFunctionId,
+} from '@/lib/midi-engine';
 
 interface MidiSettingsProps {
   isMidiSupported: boolean;
@@ -16,6 +23,12 @@ interface MidiSettingsProps {
   onStartLearn: (padId: string) => void;
   onStopLearn: () => void;
   onResetMappings: () => void;
+  ccMappings: Record<number, CCFunctionId>;
+  isCCLearning: boolean;
+  ccLearnFunctionId: CCFunctionId | null;
+  onStartCCLearn: (functionId: CCFunctionId) => void;
+  onStopCCLearn: () => void;
+  onResetCCMappings: () => void;
 }
 
 const gridPads = defaultPads.slice(0, 8);
@@ -38,6 +51,12 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
   onStartLearn,
   onStopLearn,
   onResetMappings,
+  ccMappings,
+  isCCLearning,
+  ccLearnFunctionId,
+  onStartCCLearn,
+  onStopCCLearn,
+  onResetCCMappings,
 }) => {
   // Browser not supported
   if (!isMidiSupported) {
@@ -52,6 +71,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
   }
 
   const hasDevice = connectedDevices.length > 0;
+  const anyLearning = isLearning || isCCLearning;
 
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -155,7 +175,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                   variant="ghost"
                   className="h-7 text-xs"
                   onClick={() => onStartLearn(pad.id)}
-                  disabled={isLearning}
+                  disabled={anyLearning}
                 >
                   <Ear className="h-3 w-3 mr-1" />
                   Aprender
@@ -166,45 +186,88 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
         })}
       </div>
 
-      {/* Section 4: Actions */}
+      {/* Reset pad mappings */}
       <Button
         variant="outline"
         className="w-full gap-2"
         onClick={onResetMappings}
       >
         <RotateCcw className="h-4 w-4" />
-        Resetar mapeamento padrão
+        Resetar mapeamento de pads
       </Button>
 
-      {/* Section 5: CC Mapping Reference */}
+      {/* Section 4: CC Mapping (Learnable) */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <p className="text-sm font-semibold text-foreground">Mapeamento de CCs</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Configure estes CCs no seu controlador MIDI para controle remoto.
-          </p>
-        </div>
-        {[
-          { cc: '1–9', desc: 'Volume dos Pads (faders)' },
-          { cc: '7', desc: 'Volume Master' },
-          { cc: '10', desc: 'Volume do Metrônomo' },
-          { cc: '20', desc: 'BPM (40–240)' },
-          { cc: '21', desc: 'Play/Pause Metrônomo (≥64)' },
-          { cc: '22', desc: 'Música Anterior (≥64)' },
-          { cc: '23', desc: 'Próxima Música (≥64)' },
-        ].map((item, i) => (
-          <div key={i} className={`flex items-center gap-3 px-4 py-2 ${i > 0 ? 'border-t border-border' : ''}`}>
-            <span className="text-xs font-mono font-bold text-primary w-10 shrink-0">CC {item.cc}</span>
-            <span className="text-xs text-muted-foreground">{item.desc}</span>
+        <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Mapeamento de CCs</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Associe controles CC (faders, knobs, botões) às funções. Use "Aprender" para mapear pelo controlador.
+            </p>
           </div>
-        ))}
+        </div>
+        {CC_FUNCTIONS.map((fn, i) => {
+          const cc = findCCForFunction(fn.id);
+          const isThisCCLearning = isCCLearning && ccLearnFunctionId === fn.id;
+          return (
+            <div
+              key={fn.id}
+              className={`flex items-center gap-3 px-4 py-2.5 ${i > 0 ? 'border-t border-border' : ''} ${
+                isThisCCLearning ? 'bg-primary/10 animate-pulse' : ''
+              }`}
+            >
+              <span className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">
+                {fn.label}
+              </span>
+              <span className="text-xs font-mono text-muted-foreground tabular-nums shrink-0 w-16 text-right">
+                {isThisCCLearning
+                  ? 'Mova...'
+                  : cc !== null
+                  ? `CC ${cc}`
+                  : '—'}
+              </span>
+              {isThisCCLearning ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-destructive"
+                  onClick={onStopCCLearn}
+                >
+                  Cancelar
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => onStartCCLearn(fn.id)}
+                  disabled={anyLearning}
+                >
+                  <Ear className="h-3 w-3 mr-1" />
+                  Aprender
+                </Button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Section 6: Info */}
+      {/* Reset CC mappings */}
+      <Button
+        variant="outline"
+        className="w-full gap-2"
+        onClick={onResetCCMappings}
+      >
+        <RotateCcw className="h-4 w-4" />
+        Resetar mapeamento de CCs
+      </Button>
+
+      {/* Section 5: Info */}
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
         <p className="text-xs font-medium text-foreground">Como funciona?</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Conecte um controlador MIDI via USB ou Bluetooth. O app detecta automaticamente e permite tocar os pads com sensibilidade de velocity. Use o modo "Aprender" para personalizar o mapeamento de cada tecla. Configure os CCs acima no seu controlador para controle remoto de volumes, BPM e navegação.
+          Conecte um controlador MIDI via USB ou Bluetooth. O app detecta automaticamente e permite tocar os pads com sensibilidade de velocity. Use o modo "Aprender" para personalizar o mapeamento de cada tecla, fader ou knob. Mova o controle desejado no seu controlador para associá-lo à função.
         </p>
       </div>
     </div>
