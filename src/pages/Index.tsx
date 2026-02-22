@@ -2029,7 +2029,7 @@ const Index = () => {
               ) : (
                 <>
                    {/* Top bar — always rendered to reserve height, prevents pad shift */}
-                  <div className="flex items-center gap-1 px-2 shrink-0 h-[20px]">
+                  <div className="flex items-center gap-1 px-2 shrink-0 h-[28px]">
                     {footerPage === 0 && ([0, 1, 2] as const).map((p) => (
                       <button
                         key={p}
@@ -2046,7 +2046,7 @@ const Index = () => {
                   </div>
 
                   {/* Page content — Metronome always mounted to keep audio alive */}
-                  <div className="flex-1 min-h-0 overflow-y-auto">
+                  <div className="flex-1 min-h-0 overflow-hidden">
                     {/* === MIX PAGE === */}
                     <div className={footerPage === 0 ? "h-full flex flex-col" : "hidden"}>
                       {/* Faders */}
