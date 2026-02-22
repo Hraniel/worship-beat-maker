@@ -13,15 +13,18 @@ Deno.serve(async (req) => {
     if (!authHeader) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-    const userClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+
+    // Validate JWT via getClaims (avoids session-not-found errors in PWA)
+    const anonClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } },
     });
-
-    const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsErr } = await anonClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    const userId = claimsData.claims.sub as string;
 
     // Check admin
-    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
+    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', userId).eq('role', 'admin').maybeSingle();
     if (!roleData) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
 
     const body = req.method === 'GET' ? null : await req.json().catch(() => null);
@@ -111,7 +114,7 @@ Deno.serve(async (req) => {
         email: email || '',
         ip_address: ip || null,
         reason,
-        banned_by: user.id,
+        banned_by: userId,
         ban_type: banType || 'permanent',
         expires_at: expiresAt,
       });
@@ -134,7 +137,7 @@ Deno.serve(async (req) => {
       await supabase.from('granted_tiers').upsert({
         user_id: targetUserId,
         tier,
-        granted_by: user.id,
+        granted_by: userId,
         note: note || null,
       }, { onConflict: 'user_id' });
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
