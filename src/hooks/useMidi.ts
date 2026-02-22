@@ -38,12 +38,18 @@ export interface MidiCCCallbacks {
   onNextSongCC?: () => void;
 }
 
+export interface MidiNoteCallbacks {
+  onLoopToggle?: (padId: string) => void;
+  isLoopPad?: (padId: string) => boolean;
+}
+
 export function useMidi(
   padEffects?: Record<string, PadEffects>,
   isMasterTier?: boolean,
   padVolumes?: Record<string, number>,
   ccCallbacks?: MidiCCCallbacks,
   midiEnabled: boolean = true,
+  noteCallbacks?: MidiNoteCallbacks,
 ) {
   const [supported, setSupported] = useState(false);
   const [devices, setDevices] = useState<MidiDevice[]>([]);
@@ -61,6 +67,7 @@ export function useMidi(
   const padVolumesRef = useRef(padVolumes);
   const ccCallbacksRef = useRef(ccCallbacks);
   const midiEnabledRef = useRef(midiEnabled);
+  const noteCallbacksRef = useRef(noteCallbacks);
 
   // Keep refs in sync
   padEffectsRef.current = padEffects;
@@ -68,6 +75,7 @@ export function useMidi(
   padVolumesRef.current = padVolumes;
   ccCallbacksRef.current = ccCallbacks;
   midiEnabledRef.current = midiEnabled;
+  noteCallbacksRef.current = noteCallbacks;
 
   useEffect(() => {
     if (initRef.current) return;
@@ -76,7 +84,16 @@ export function useMidi(
     onDeviceChange((devs) => setDevices([...devs]));
 
     onNoteOn((padId, velocity) => {
-      if (!midiEnabledRef.current) return; // Block MIDI when gate not allowed
+      if (!midiEnabledRef.current) return;
+
+      // If it's a loop pad, toggle the loop instead of playing the sound directly
+      const noteCbs = noteCallbacksRef.current;
+      if (noteCbs?.isLoopPad?.(padId)) {
+        noteCbs.onLoopToggle?.(padId);
+        emitPadHit(padId);
+        return;
+      }
+
       const fx = padEffectsRef.current?.[padId];
       const master = isMasterRef.current ?? false;
       const faderVol = padVolumesRef.current?.[padId] ?? 0.7;
