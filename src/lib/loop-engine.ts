@@ -53,8 +53,7 @@ let forceLoopBeat1 = false;
 // Disable metronome downbeat accent
 let metronomeAccentEnabled = true;
 
-// Metronome count-in (pre-count) beats before loops start
-let countInEnabled = false;
+// Count-in removed
 
 export function setSyncEnabled(enabled: boolean) {
   syncEnabled = enabled;
@@ -82,13 +81,12 @@ export function isMetronomeAccent(): boolean {
   return metronomeAccentEnabled;
 }
 
-export function setCountIn(enabled: boolean) {
-  countInEnabled = enabled;
-  localStorage.setItem('glory-count-in', String(enabled));
+export function setCountIn(_enabled: boolean) {
+  // no-op — count-in removed
 }
 
 export function isCountIn(): boolean {
-  return countInEnabled;
+  return false;
 }
 
 // Load persisted settings
@@ -97,8 +95,6 @@ try {
   if (b1 !== null) forceLoopBeat1 = b1 === 'true';
   const acc = localStorage.getItem('glory-metronome-accent');
   if (acc !== null) metronomeAccentEnabled = acc === 'true';
-  const ci = localStorage.getItem('glory-count-in');
-  if (ci !== null) countInEnabled = ci === 'true';
 } catch {}
 
 function getSubdivisionsPerBar(): number {
@@ -289,22 +285,20 @@ function schedulerTick() {
 
   const intervalSec = 60 / currentBpm / 4; // duration of one 16th note
 
-  // Compute max loop length for wrapping
   const SUBS = getSubdivisionsPerBar();
-  let maxSubs = SUBS;
-  for (const [, loop] of activeLoops) {
-    const s = SUBS * (loop.pad.loopBars || 1);
-    if (s > maxSubs) maxSubs = s;
-  }
 
   // Schedule all subdivisions that fall within the lookahead window
   while (nextTickAudioTime < ctx.currentTime + SCHEDULE_AHEAD_TIME) {
     scheduleSubdivision(currentSubdivision, nextTickAudioTime);
     lastTickTime = performance.now();
 
-    // Advance
+    // Advance — wrap at bar boundary only (keeps metronome & loops aligned)
     nextTickAudioTime += intervalSec;
-    currentSubdivision = (currentSubdivision + 1) % maxSubs;
+    currentSubdivision = currentSubdivision + 1;
+    // Wrap at a large multiple of SUBS to prevent overflow while staying bar-aligned
+    if (currentSubdivision >= SUBS * 256) {
+      currentSubdivision = 0;
+    }
   }
 }
 
