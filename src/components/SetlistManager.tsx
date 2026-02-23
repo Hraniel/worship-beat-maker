@@ -133,8 +133,8 @@ interface EventCardProps {
   onCloseAndOpenSavedSongs?: (eventId: string) => void;
 }
 
-const EventCard: React.FC<EventCardProps> = ({
-  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs, onCloseAndOpenSavedSongs,
+const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs, onCloseAndOpenSavedSongs, expandTrigger,
 }) => {
   const [expanded, setExpanded] = useState(isSelected ?? false);
   const [editing, setEditing] = useState(false);
@@ -149,10 +149,10 @@ const EventCard: React.FC<EventCardProps> = ({
   const [newSongKey, setNewSongKey] = useState('');
   const [newSongTimeSignature, setNewSongTimeSignature] = useState('4/4');
 
-  // Keep expanded in sync when isSelected changes externally
+  // Auto-expand active event whenever the sheet opens
   useEffect(() => {
-    if (isSelected) setExpanded(true);
-  }, [isSelected]);
+    if (isSelected && expandTrigger) setExpanded(true);
+  }, [expandTrigger]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -516,6 +516,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   forceOpen, onForceOpenChange, selectedEventId, onSelectEvent, externalEvents, onOpenSavedSongs,
 }) => {
   const [open, setOpen] = useState(false);
+  const [expandCounter, setExpandCounter] = useState(0);
   const wasOpenBeforeSavedSongs = useRef(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const internalEvents = useSetlistEvents();
@@ -525,9 +526,16 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   useEffect(() => {
     if (forceOpen) {
       setOpen(true);
+      setExpandCounter(c => c + 1);
       onForceOpenChange?.();
     }
   }, [forceOpen]);
+
+  // Bump expand counter when user opens sheet manually
+  const handleOpenChange = (v: boolean) => {
+    setOpen(v);
+    if (v) setExpandCounter(c => c + 1);
+  };
 
   const handleCreateEvent = async (name: string, date: string) => {
     const ev = await createEvent(name, date);
@@ -535,7 +543,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
           <ListMusic className="h-4 w-4" />
@@ -594,6 +602,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 onOpenMusicAI={onOpenMusicAI}
                 onSelectEvent={onSelectEvent}
                 isSelected={selectedEventId === event.id}
+                expandTrigger={expandCounter}
                 onOpenSavedSongs={onOpenSavedSongs}
                 onCloseAndOpenSavedSongs={(eventId) => {
                   onSelectEvent?.(eventId);

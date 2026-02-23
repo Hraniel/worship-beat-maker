@@ -1429,6 +1429,8 @@ const Index = () => {
                     setlists={setlists}
                     activeSetlistId={currentSongId}
                     onOpenMusicAI={() => setSpotifySheetOpen(true)}
+                    forceOpen={openSetlistFromBanner}
+                    onForceOpenChange={() => setOpenSetlistFromBanner(false)}
                     selectedEventId={selectedEventId}
                     onSelectEvent={handleSelectEvent}
                     externalEvents={setlistEventsHook}
@@ -1610,12 +1612,14 @@ const Index = () => {
                   onReorder={reorderSetlists}
                   setlists={setlists}
                   activeSetlistId={currentSongId}
-                  onOpenMusicAI={() => setSpotifySheetOpen(true)}
-                  selectedEventId={selectedEventId}
-                  onSelectEvent={handleSelectEvent}
-                  externalEvents={setlistEventsHook}
-                  onOpenSavedSongs={() => { reopenSetlistRef.current = true; setSavedSongsOpen(true); }}
-                />
+                   onOpenMusicAI={() => setSpotifySheetOpen(true)}
+                   forceOpen={openSetlistFromBanner}
+                   onForceOpenChange={() => setOpenSetlistFromBanner(false)}
+                   selectedEventId={selectedEventId}
+                   onSelectEvent={handleSelectEvent}
+                   externalEvents={setlistEventsHook}
+                   onOpenSavedSongs={() => { reopenSetlistRef.current = true; setSavedSongsOpen(true); }}
+                 />
               </div>
             )}
           </div>
