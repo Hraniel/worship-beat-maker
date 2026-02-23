@@ -2,10 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
 import logoDark from '@/assets/logo-dark.png';
-import imgPadGrid from '@/assets/app-pad-grid.png';
-import imgMixer from '@/assets/app-mixer.png';
-import imgMetronome from '@/assets/app-metronome.png';
-import imgSetlist from '@/assets/app-setlist.png';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Search, Drum, Music, Waves, Sliders, Clock, Bluetooth,
@@ -54,7 +50,7 @@ const CATEGORIES: TutorialCategory[] = [
     label: 'Pads de Bateria',
     icon: <Drum className="h-5 w-5" />,
     description: 'A tela principal do app. Os pads são botões interativos que reproduzem sons de bateria, percussão e loops ao toque.',
-    screenshot: imgPadGrid,
+    // screenshot will be added when real screenshots are provided
     articles: [
       {
         title: 'Tocando os Pads',
@@ -84,7 +80,7 @@ const CATEGORIES: TutorialCategory[] = [
     label: 'Repertório & Eventos',
     icon: <ListMusic className="h-5 w-5" />,
     description: 'O sistema de repertório permite organizar músicas por evento (culto, ensaio, show), salvando todas as configurações de cada música automaticamente.',
-    screenshot: imgSetlist,
+    // screenshot will be added when real screenshots are provided
     articles: [
       {
         title: 'Criando e Gerenciando Eventos',
@@ -131,7 +127,7 @@ const CATEGORIES: TutorialCategory[] = [
     label: 'Volume & Mixer',
     icon: <Volume2 className="h-5 w-5" />,
     description: 'O mixer de faders oferece controle granular de volume para cada pad, metrônomo, continuous pads e saída master.',
-    screenshot: imgMixer,
+    // screenshot will be added when real screenshots are provided
     articles: [
       {
         title: 'Mixer de Faders',
@@ -150,7 +146,7 @@ const CATEGORIES: TutorialCategory[] = [
     label: 'Metrônomo',
     icon: <Clock className="h-5 w-5" />,
     description: 'Metrônomo integrado com controle de BPM, compasso, sync de loops e indicador visual de batidas.',
-    screenshot: imgMetronome,
+    // screenshot will be added when real screenshots are provided
     articles: [
       {
         title: 'Configurando o Metrônomo',
