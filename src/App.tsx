@@ -18,6 +18,7 @@ import PackDetail from "./pages/PackDetail";
 import SharedSetlist from "./pages/SharedSetlist";
 import VapidGenerator from "./pages/VapidGenerator";
 import Help from "./pages/Help";
+import MyTickets from "./pages/MyTickets";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AppLoadingScreen from "@/components/AppLoadingScreen";
@@ -165,6 +166,7 @@ const App = () => (
                     <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
                     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                     <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+                    <Route path="/my-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
                     <Route path="/store/:packId" element={<ProtectedRoute><PackDetail /></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
