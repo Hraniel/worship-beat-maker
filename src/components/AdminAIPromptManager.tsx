@@ -287,14 +287,11 @@ export default function AdminAIPromptManager() {
           );
           applied++;
         }
-        // Dismiss all accepted (including review) so they don't reappear
+        // Mark applied suggestions as dismissed so they don't reappear
         for (const s of accepted) {
           addDismissedSuggestion(s.title);
         }
-        const reviewCount = accepted.length - applicable.length;
-        const msg = applied > 0 ? `${applied} alteração(ões) aplicada(s)` : '';
-        const msg2 = reviewCount > 0 ? `${reviewCount} descartada(s)` : '';
-        toast.success([msg, msg2].filter(Boolean).join(' e ') + '!');
+        toast.success(`${applied > 0 ? `${applied} alteração(ões) aplicada(s)` : 'Sugestões marcadas como concluídas'}!`);
         setAuditResults(prev => prev.filter(s => !s.accepted));
       } catch (e) {
         console.error(e);
@@ -389,7 +386,7 @@ export default function AdminAIPromptManager() {
                 </div>
                 <Button size="sm" onClick={applyAuditSuggestions} disabled={applyingAudit || !auditResults.some(s => s.accepted)} className="text-xs">
                   {applyingAudit ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
-                  Aplicar / Descartar Selecionadas
+                  Aplicar Selecionadas
                 </Button>
               </div>
 
