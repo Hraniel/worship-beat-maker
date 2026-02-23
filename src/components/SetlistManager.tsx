@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ListMusic, Plus, Trash2, GripVertical, Share2, Link2, Eye, EyeOff,
   Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, ChevronRight,
@@ -130,10 +130,11 @@ interface EventCardProps {
   onSelectEvent?: (eventId: string) => void;
   isSelected?: boolean;
   onOpenSavedSongs?: () => void;
+  onCloseAndOpenSavedSongs?: (eventId: string) => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
-  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs,
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs, onCloseAndOpenSavedSongs,
 }) => {
   const [expanded, setExpanded] = useState(isSelected ?? false);
   const [editing, setEditing] = useState(false);
@@ -457,7 +458,9 @@ const EventCard: React.FC<EventCardProps> = ({
             ) : (
               <div className="flex gap-1.5">
                 <button
-                  onClick={() => { onSelectEvent?.(event.id); onOpenSavedSongs?.(); }}
+                  onClick={() => {
+                    onCloseAndOpenSavedSongs?.(event.id);
+                  }}
                   className="flex-1 flex items-center justify-center gap-1.5 h-7 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-dashed border-border/60">
                   <Plus className="h-3 w-3" /> Adicionar existente
                 </button>
@@ -513,6 +516,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   forceOpen, onForceOpenChange, selectedEventId, onSelectEvent, externalEvents, onOpenSavedSongs,
 }) => {
   const [open, setOpen] = useState(false);
+  const wasOpenBeforeSavedSongs = useRef(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const internalEvents = useSetlistEvents();
   const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = externalEvents || internalEvents;
@@ -591,6 +595,12 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 onSelectEvent={onSelectEvent}
                 isSelected={selectedEventId === event.id}
                 onOpenSavedSongs={onOpenSavedSongs}
+                onCloseAndOpenSavedSongs={(eventId) => {
+                  onSelectEvent?.(eventId);
+                  wasOpenBeforeSavedSongs.current = true;
+                  setOpen(false);
+                  setTimeout(() => onOpenSavedSongs?.(), 200);
+                }}
               />
             ))}
           </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity } from 'lucide-react';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import {
   isOutputSelectionSupported,
@@ -8,6 +8,11 @@ import {
   getSavedOutputDeviceId,
   setAudioOutputDevice,
 } from '@/lib/audio-engine';
+import {
+  setForceLoopBeat1, isForceLoopBeat1,
+  setMetronomeAccent, isMetronomeAccent,
+  setCountIn, isCountIn,
+} from '@/lib/loop-engine';
 import MidiSettings from '@/components/MidiSettings';
 import type { MidiChannel, MidiDevice, CCFunctionId } from '@/lib/midi-engine';
 import { useNavigate } from 'react-router-dom';
@@ -674,10 +679,89 @@ function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenam
   );
 }
 
+// ── Metronome Settings ──────────────────────────────────────────────────────
+
+function MetronomeSettingsPanel() {
+  const [forceB1, setForceB1] = useState(isForceLoopBeat1);
+  const [accent, setAccent] = useState(isMetronomeAccent);
+  const [countIn, setCountInState] = useState(isCountIn);
+
+  return (
+    <div className="flex flex-col gap-3 w-full">
+      <div className="flex justify-center items-center gap-2">
+        <Activity className="h-5 w-5 text-primary" />
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Metrônomo</span>
+      </div>
+
+      {/* Force loop start on beat 1 */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Loop sempre na batida 1</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Ao ativar um loop, ele sempre recomeça da batida 1, independente do momento em que foi disparado.
+          </p>
+        </div>
+        <button
+          onClick={() => { const next = !forceB1; setForceB1(next); setForceLoopBeat1(next); }}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            forceB1 ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${forceB1 ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Metronome accent */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Acentuação do tempo forte</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Desative para remover a ênfase (tom agudo) no primeiro tempo de cada compasso.
+          </p>
+        </div>
+        <button
+          onClick={() => { const next = !accent; setAccent(next); setMetronomeAccent(next); }}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            accent ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${accent ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Count-in */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Contagem prévia (Count-in)</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Toca um compasso de contagem antes de iniciar os loops. Útil para entrar no tempo certo.
+          </p>
+        </div>
+        <button
+          onClick={() => { const next = !countIn; setCountInState(next); setCountIn(next); }}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            countIn ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${countIn ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
+        <p className="text-xs font-medium text-foreground">Dica</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          A opção "Loop sempre na batida 1" é ideal para worship, garantindo que o loop esteja sempre sincronizado com o compasso mesmo ao ser ativado fora do tempo forte.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Tab definitions ─────────────────────────────────────────────────────────
 
 const TAB_ITEMS = [
   { value: 'audio', label: 'Áudio', icon: Headphones },
+  { value: 'metronome', label: 'Metrônomo', icon: Activity },
   { value: 'midi', label: 'MIDI', icon: Piano },
   { value: 'tap', label: 'Tap Tempo', icon: Timer },
   { value: 'notifications', label: 'Notificações', icon: Bell },
@@ -810,6 +894,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           />
         );
       }
+
+      case 'metronome':
+        return <MetronomeSettingsPanel />;
 
       case 'tap':
         return <TapTempoSettings />;
