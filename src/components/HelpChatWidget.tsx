@@ -85,6 +85,7 @@ export default function HelpChatWidget() {
       <button
         onClick={() => setOpen(true)}
         className="fixed bottom-20 right-4 z-50 h-14 w-14 rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700 active:scale-95 transition-all flex items-center justify-center"
+        style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
         aria-label="Abrir chat de ajuda"
       >
         <MessageCircle className="h-6 w-6" />
@@ -93,7 +94,10 @@ export default function HelpChatWidget() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-white sm:inset-auto sm:bottom-20 sm:right-4 sm:w-[400px] sm:h-[560px] sm:rounded-2xl sm:shadow-2xl sm:border border-border overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-white sm:inset-auto sm:bottom-20 sm:right-4 sm:w-[400px] sm:h-[560px] sm:rounded-2xl sm:shadow-2xl sm:border border-border overflow-hidden"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white shrink-0">
         <div className="flex items-center gap-2">
@@ -144,18 +148,26 @@ export default function HelpChatWidget() {
       </ScrollArea>
 
       {/* Input */}
-      <div className="px-3 py-2 border-t border-violet-200 shrink-0 bg-white">
+      <div className="px-3 py-2 border-t border-violet-200 shrink-0 bg-white" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
         <form
           onSubmit={(e) => { e.preventDefault(); send(); }}
-          className="flex items-center gap-2"
+          className="flex items-end gap-2"
         >
-          <input
-            ref={inputRef}
+          <textarea
+            ref={inputRef as any}
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
             placeholder="Digite sua dúvida..."
             disabled={loading}
-            className="flex-1 rounded-full border border-input bg-muted/50 px-4 py-2 text-sm text-black placeholder:text-violet-400 outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50"
+            rows={1}
+            className="flex-1 rounded-2xl border border-input bg-muted/50 px-4 py-2 text-sm text-black placeholder:text-violet-400 outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50 resize-none max-h-24 overflow-y-auto"
+            style={{ minHeight: '38px' }}
           />
           <Button
             type="submit"

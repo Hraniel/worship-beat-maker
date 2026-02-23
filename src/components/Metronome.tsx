@@ -126,6 +126,32 @@ const Metronome: React.FC<MetronomeProps> = ({
 
   return (
     <div className="flex flex-col gap-2 px-3 py-2">
+      {/* BPM display */}
+      <div className="flex items-center justify-center gap-2">
+        {editingBpm ? (
+          <input
+            ref={inputRef}
+            type="number"
+            value={editBpmValue}
+            onChange={(e) => setEditBpmValue(e.target.value)}
+            onBlur={commitBpmEdit}
+            onKeyDown={handleBpmKeyDown}
+            className="w-16 h-8 text-lg font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
+            min={40}
+            max={240}
+          />
+        ) : (
+          <button
+            className="text-2xl font-bold text-foreground tabular-nums hover:bg-muted rounded px-2 py-0.5 transition-colors"
+            onClick={handleBpmClick}
+            title="Clique para editar BPM"
+          >
+            {localBpm}
+          </button>
+        )}
+        <span className="text-xs text-muted-foreground font-medium">BPM</span>
+      </div>
+
       {/* BPM + slider row */}
       <div className="flex items-center gap-1.5">
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleBpmButton(Math.max(40, localBpm - 1))}>
