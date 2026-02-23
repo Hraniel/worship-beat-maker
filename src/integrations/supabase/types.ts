@@ -746,7 +746,51 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_plan_pricing: {
+        Row: {
+          badge_text: string | null
+          created_at: string | null
+          cta_text: string | null
+          highlight: boolean | null
+          id: string | null
+          max_imports: number | null
+          max_pads: number | null
+          name: string | null
+          period: string | null
+          price_brl: number | null
+          tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          badge_text?: string | null
+          created_at?: string | null
+          cta_text?: string | null
+          highlight?: boolean | null
+          id?: string | null
+          max_imports?: number | null
+          max_pads?: number | null
+          name?: string | null
+          period?: string | null
+          price_brl?: number | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          badge_text?: string | null
+          created_at?: string | null
+          cta_text?: string | null
+          highlight?: boolean | null
+          id?: string | null
+          max_imports?: number | null
+          max_pads?: number | null
+          name?: string | null
+          period?: string | null
+          price_brl?: number | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
