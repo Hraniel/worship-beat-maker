@@ -5,9 +5,9 @@ import { useBodyScroll } from "@/hooks/useBodyScroll";
 import { useLandingConfig, type LandingFeature } from "@/hooks/useLandingConfig";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
-import appPadGridDefault from "@/assets/app-pad-grid.png";
-import appSetlistDefault from "@/assets/app-setlist.png";
-import appMixerDefault from "@/assets/app-mixer.png";
+const appPadGridDefault = "/placeholder.svg";
+const appSetlistDefault = "/placeholder.svg";
+const appMixerDefault = "/placeholder.svg";
 import {
   Music,
   Headphones,
