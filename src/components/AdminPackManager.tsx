@@ -21,6 +21,7 @@ import AdminAppConfigEditor from '@/components/AdminAppConfigEditor';
 import AdminBanManager from '@/components/AdminBanManager';
 import AdminCancellationViewer from '@/components/AdminCancellationViewer';
 import AdminDashboardSummary from '@/components/AdminDashboardSummary';
+import AdminAIPromptManager from '@/components/AdminAIPromptManager';
 import { broadcastPushNotification } from '@/lib/push-notifications';
 
 
@@ -79,7 +80,7 @@ interface BatchProgress {
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache' | 'store' | 'app-config' | 'bans' | 'cancellations'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache' | 'store' | 'app-config' | 'bans' | 'cancellations' | 'ai-prompt'>('packs');
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -673,6 +674,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
           <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mr-1">App</span>
           {([
             { key: 'app-config', label: '⚙️ Configurações' },
+            { key: 'ai-prompt', label: '🤖 IA Assistente' },
           ] as const).map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors ${
@@ -710,6 +712,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       {activeTab === 'app-config' && <AdminAppConfigEditor />}
       {activeTab === 'bans' && <AdminBanManager />}
       {activeTab === 'cancellations' && <AdminCancellationViewer />}
+      {activeTab === 'ai-prompt' && <AdminAIPromptManager />}
 
       {activeTab === 'packs' && (
         <>

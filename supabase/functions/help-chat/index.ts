@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é o assistente de suporte do Glory Pads, um app de bateria eletrônica e pads musicais para worship e louvor.
+const FALLBACK_PROMPT = `Você é o assistente de suporte do Glory Pads, um app de bateria eletrônica e pads musicais para worship e louvor.
 
 Responda SEMPRE em português brasileiro, de forma amigável, clara e objetiva. Use emojis com moderação para deixar a conversa mais acolhedora.
 
@@ -89,6 +90,28 @@ O Glory Pads é um app PWA (Progressive Web App) que funciona em celulares, tabl
 - Nunca forneça dados de outros usuários ou informações confidenciais
 - Mantenha respostas concisas (máximo 3-4 parágrafos)`;
 
+async function getSystemPrompt(): Promise<string> {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) return FALLBACK_PROMPT;
+
+    const sb = createClient(supabaseUrl, serviceKey);
+    const { data } = await sb
+      .from("landing_config")
+      .select("config_value")
+      .eq("config_key", "app_ai_system_prompt")
+      .maybeSingle();
+
+    if (data?.config_value && data.config_value.trim().length > 50) {
+      return data.config_value;
+    }
+  } catch (e) {
+    console.error("Failed to load dynamic prompt, using fallback:", e);
+  }
+  return FALLBACK_PROMPT;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -98,6 +121,8 @@ serve(async (req) => {
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const systemPrompt = await getSystemPrompt();
 
     const response = await fetch(
       "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -110,7 +135,7 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: SYSTEM_PROMPT },
+            { role: "system", content: systemPrompt },
             ...messages,
           ],
           stream: true,
