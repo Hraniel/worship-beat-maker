@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
   Loader2, RefreshCw, Save, Eye, EyeOff, CheckCircle2, AlertTriangle,
-  Sparkles, Search, ShieldAlert, Info, Zap, Store, Globe, CreditCard, Bot, Settings,
+  Sparkles, Search, ShieldAlert, Info, Zap, Store, Globe, CreditCard, Bot, Settings, X,
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -59,6 +59,20 @@ const SEVERITY_META: Record<string, { icon: React.ReactNode; label: string; colo
   warning: { icon: <AlertTriangle className="h-3.5 w-3.5" />, label: 'Atenção', color: 'text-amber-700 bg-amber-50 border-amber-300' },
   info: { icon: <Info className="h-3.5 w-3.5" />, label: 'Info', color: 'text-sky-700 bg-sky-50 border-sky-300' },
 };
+
+const DISMISSED_AUDIT_KEY = 'glory_dismissed_audit_suggestions';
+
+const getDismissedSuggestions = (): string[] => {
+  try { return JSON.parse(localStorage.getItem(DISMISSED_AUDIT_KEY) || '[]'); } catch { return []; }
+};
+const addDismissedSuggestion = (title: string) => {
+  const dismissed = getDismissedSuggestions();
+  if (!dismissed.includes(title)) {
+    dismissed.push(title);
+    localStorage.setItem(DISMISSED_AUDIT_KEY, JSON.stringify(dismissed));
+  }
+};
+const clearDismissedSuggestions = () => localStorage.removeItem(DISMISSED_AUDIT_KEY);
 
 /* ─── Component ─── */
 export default function AdminAIPromptManager() {
@@ -237,7 +251,10 @@ export default function AdminAIPromptManager() {
       }
 
       const result = await resp.json();
-      const mapped: AuditSuggestion[] = (result.suggestions || []).map((s: any) => ({ ...s, accepted: false }));
+      const dismissed = getDismissedSuggestions();
+      const mapped: AuditSuggestion[] = (result.suggestions || [])
+        .filter((s: any) => !dismissed.includes(s.title))
+        .map((s: any) => ({ ...s, accepted: false }));
       setAuditResults(mapped);
 
       if (mapped.length === 0) toast.success('✅ Projeto 100% sincronizado!');
@@ -255,28 +272,44 @@ export default function AdminAIPromptManager() {
   };
 
   const applyAuditSuggestions = async () => {
-    const accepted = auditResults.filter(s => s.accepted && s.action_type === 'update' && s.config_key && s.config_table && s.suggested_value);
-    if (!accepted.length) { toast.info('Nenhuma sugestão selecionada para aplicar.'); return; }
-    setApplyingAudit(true);
-    let applied = 0;
-    try {
-      for (const s of accepted) {
-        const table = s.config_table === 'store_config' ? 'store_config' : 'landing_config';
-        await supabase.from(table).upsert(
-          { config_key: s.config_key!, config_value: s.suggested_value!, updated_at: new Date().toISOString() } as any,
-          { onConflict: 'config_key' }
-        );
-        applied++;
+      const accepted = auditResults.filter(s => s.accepted);
+      const applicable = accepted.filter(s => s.action_type === 'update' && s.config_key && s.config_table && s.suggested_value);
+      if (!accepted.length) { toast.info('Nenhuma sugestão selecionada.'); return; }
+      setApplyingAudit(true);
+      let applied = 0;
+      try {
+        // Apply config updates
+        for (const s of applicable) {
+          const table = s.config_table === 'store_config' ? 'store_config' : 'landing_config';
+          await supabase.from(table).upsert(
+            { config_key: s.config_key!, config_value: s.suggested_value!, updated_at: new Date().toISOString() } as any,
+            { onConflict: 'config_key' }
+          );
+          applied++;
+        }
+        // Dismiss all accepted (including review) so they don't reappear
+        for (const s of accepted) {
+          addDismissedSuggestion(s.title);
+        }
+        const reviewCount = accepted.length - applicable.length;
+        const msg = applied > 0 ? `${applied} alteração(ões) aplicada(s)` : '';
+        const msg2 = reviewCount > 0 ? `${reviewCount} descartada(s)` : '';
+        toast.success([msg, msg2].filter(Boolean).join(' e ') + '!');
+        setAuditResults(prev => prev.filter(s => !s.accepted));
+      } catch (e) {
+        console.error(e);
+        toast.error('Erro ao aplicar');
+      } finally {
+        setApplyingAudit(false);
       }
-      toast.success(`${applied} alteração(ões) aplicada(s)!`);
-      setAuditResults(prev => prev.filter(s => !s.accepted));
-    } catch (e) {
-      console.error(e);
-      toast.error('Erro ao aplicar');
-    } finally {
-      setApplyingAudit(false);
-    }
-  };
+    };
+
+    const dismissSuggestion = (index: number) => {
+      const s = auditResults[index];
+      addDismissedSuggestion(s.title);
+      setAuditResults(prev => prev.filter((_, i) => i !== index));
+      toast.info('Sugestão descartada');
+    };
 
   const combinedPrompt = SECTION_KEYS.map(sk => sections[sk.key] || '').join('\n\n');
 
@@ -345,11 +378,18 @@ export default function AdminAIPromptManager() {
 
           {auditResults.length > 0 && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-muted-foreground">{auditResults.length} sugestão(ões)</p>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-muted-foreground">{auditResults.length} sugestão(ões)</p>
+                  {getDismissedSuggestions().length > 0 && (
+                    <button onClick={() => { clearDismissedSuggestions(); toast.info('Sugestões descartadas foram restauradas. Rode a análise novamente.'); }} className="text-[9px] text-muted-foreground underline hover:text-foreground">
+                      Restaurar descartadas ({getDismissedSuggestions().length})
+                    </button>
+                  )}
+                </div>
                 <Button size="sm" onClick={applyAuditSuggestions} disabled={applyingAudit || !auditResults.some(s => s.accepted)} className="text-xs">
                   {applyingAudit ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckCircle2 className="h-3 w-3 mr-1" />}
-                  Aplicar Selecionadas
+                  Aplicar / Descartar Selecionadas
                 </Button>
               </div>
 
@@ -368,16 +408,20 @@ export default function AdminAIPromptManager() {
                           setAuditResults(up);
                         }}
                         className="mt-0.5 accent-amber-600"
-                        disabled={s.action_type === 'review'}
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                          <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${area.color}`}>
-                            {area.icon} {area.label}
-                          </span>
-                          <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${sev.color}`}>
-                            {sev.icon} {sev.label}
-                          </span>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${area.color}`}>
+                              {area.icon} {area.label}
+                            </span>
+                            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${sev.color}`}>
+                              {sev.icon} {sev.label}
+                            </span>
+                          </div>
+                          <button onClick={() => dismissSuggestion(i)} className="text-muted-foreground hover:text-foreground p-0.5 rounded" title="Descartar sugestão">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                         <p className="text-xs font-bold">{s.title}</p>
                         <p className="text-[10px] mt-0.5 opacity-80">{s.description}</p>
@@ -403,7 +447,7 @@ export default function AdminAIPromptManager() {
                         )}
 
                         {s.action_type === 'review' && (
-                          <p className="text-[9px] mt-1 italic opacity-60">⚙️ Ação manual necessária</p>
+                          <p className="text-[9px] mt-1 italic opacity-60">⚙️ Ação manual — selecione e clique "Aplicar" para descartar</p>
                         )}
                       </div>
                     </div>
