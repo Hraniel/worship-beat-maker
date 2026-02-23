@@ -214,6 +214,7 @@ const Index = () => {
   const [spotifySheetOpen, setSpotifySheetOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
+  const [storeLoading, setStoreLoading] = useState(false);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
   const reopenSetlistRef = useRef(false);
@@ -1558,7 +1559,8 @@ const Index = () => {
                       <button
                         onClick={() => {
                           setMobileMenuOpen(false);
-                          navigate("/dashboard");
+                          setStoreLoading(true);
+                          setTimeout(() => navigate("/dashboard"), 800);
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
@@ -2309,22 +2311,6 @@ const Index = () => {
                       </div>
                     </div>
 
-                    {/* === STORE LOADING PAGE === */}
-                    {footerPage === 4 && (
-                      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-white">
-                        <div className="flex flex-col items-center gap-4">
-                          <img
-                            src={logoDark}
-                            alt="Glory Pads"
-                            className="h-10 w-auto object-contain animate-pulse"
-                          />
-                          <div className="w-32 h-0.5 rounded-full bg-gray-200 overflow-hidden">
-                            <div className="h-full rounded-full bg-gray-900 animate-[store-load_1.2s_ease-in-out_infinite]" style={{ width: '60%' }} />
-                          </div>
-                          <span className="text-xs text-gray-500">Abrindo loja...</span>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </>
               )}
@@ -2391,6 +2377,7 @@ const Index = () => {
                 <button
                   onClick={() => {
                     setFooterPage(4);
+                    setStoreLoading(true);
                     setTimeout(() => navigate("/dashboard"), 800);
                   }}
                   className="flex flex-col items-center gap-0.5 px-3 py-1 text-muted-foreground hover:text-primary transition-colors"
@@ -2505,6 +2492,23 @@ const Index = () => {
           navigate("/pricing");
         }}
       />
+
+      {/* Store loading overlay — full screen, outside all containers */}
+      {storeLoading && (
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white">
+          <div className="flex flex-col items-center gap-4">
+            <img
+              src={logoDark}
+              alt="Glory Pads"
+              className="h-10 w-auto object-contain animate-pulse"
+            />
+            <div className="w-32 h-0.5 rounded-full bg-gray-200 overflow-hidden">
+              <div className="h-full rounded-full bg-gray-900 animate-[store-load_1.2s_ease-in-out_infinite]" style={{ width: '60%' }} />
+            </div>
+            <span className="text-xs text-gray-500">Abrindo loja...</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
