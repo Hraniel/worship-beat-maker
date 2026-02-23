@@ -40,8 +40,7 @@ export const defaultPads: PadSound[] = [
     loopSteps: [
       // Bar 1: 3 kicks (same as WSP)
       [0, 'kick'], [6, 'kick'], [12, 'kick'],
-      // Bar 2: kick no tempo 3 do compasso 2 (sem snare)
-      [24, 'kick'],
+      // Bar 2: silence (no snare, no kick)
     ],
   },
   // Pads extras (desbloqueáveis)
