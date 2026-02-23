@@ -40,6 +40,7 @@ interface SetlistManagerProps {
   selectedEventId?: string | null;
   onSelectEvent?: (eventId: string | null) => void;
   externalEvents?: ReturnType<typeof useSetlistEvents>;
+  onOpenSavedSongs?: () => void;
 }
 
 interface SortableItemProps {
@@ -128,10 +129,11 @@ interface EventCardProps {
   onOpenMusicAI?: () => void;
   onSelectEvent?: (eventId: string) => void;
   isSelected?: boolean;
+  onOpenSavedSongs?: () => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
-  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected,
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs,
 }) => {
   const [expanded, setExpanded] = useState(isSelected ?? false);
   const [editing, setEditing] = useState(false);
@@ -455,7 +457,7 @@ const EventCard: React.FC<EventCardProps> = ({
             ) : (
               <div className="flex gap-1.5">
                 <button
-                  onClick={() => setShowAddSong(true)}
+                  onClick={() => { onSelectEvent?.(event.id); onOpenSavedSongs?.(); }}
                   className="flex-1 flex items-center justify-center gap-1.5 h-7 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-dashed border-border/60">
                   <Plus className="h-3 w-3" /> Adicionar existente
                 </button>
@@ -508,7 +510,7 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({ onSubmit, onCancel })
 
 const SetlistManager: React.FC<SetlistManagerProps> = ({
   songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder, onOpenMusicAI,
-  forceOpen, onForceOpenChange, selectedEventId, onSelectEvent, externalEvents,
+  forceOpen, onForceOpenChange, selectedEventId, onSelectEvent, externalEvents, onOpenSavedSongs,
 }) => {
   const [open, setOpen] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
@@ -588,6 +590,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 onOpenMusicAI={onOpenMusicAI}
                 onSelectEvent={onSelectEvent}
                 isSelected={selectedEventId === event.id}
+                onOpenSavedSongs={onOpenSavedSongs}
               />
             ))}
           </div>
