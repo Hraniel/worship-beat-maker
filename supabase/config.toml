@@ -1,5 +1,8 @@
 project_id = "upafnptdutyxkxjbonye"
 
+[functions.help-chat]
+verify_jwt = false
+
 [functions.generate-pack-sounds]
 verify_jwt = false
 

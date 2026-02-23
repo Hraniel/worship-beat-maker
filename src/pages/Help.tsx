@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
 import logoDark from '@/assets/logo-dark.png';
+import HelpChatWidget from '@/components/HelpChatWidget';
 import { Button } from '@/components/ui/button';
 import {
   ArrowLeft, Search, Drum, Music, Waves, Sliders, Clock, Bluetooth,
@@ -514,6 +515,7 @@ const Help = () => {
           </>
         )}
       </main>
+      <HelpChatWidget />
     </div>
   );
 };
