@@ -90,11 +90,42 @@ O Glory Pads é um app PWA (Progressive Web App) que funciona em celulares, tabl
 - Nunca forneça dados de outros usuários ou informações confidenciais
 - Mantenha respostas concisas (máximo 3-4 parágrafos)`;
 
+const TICKET_INSTRUCTION = `
+
+## IMPORTANTE — Suporte Humanizado e Tickets
+
+Quando você NÃO conseguir resolver o problema do usuário ou ele pedir para falar com um humano, ofereça criar um **ticket de suporte humanizado**.
+
+Para isso, diga algo como:
+"Entendo! Vou te encaminhar para nosso suporte humanizado. Para criar o ticket, preciso de algumas informações:
+
+1. **Nome completo**
+2. **E-mail**
+3. **Telefone com DDD** (ex: 11999998888)
+
+Pode me enviar esses dados?"
+
+Após o usuário fornecer os 3 dados (nome, email, telefone), peça para ele **digitar a dúvida/problema detalhado**.
+
+Quando tiver TODOS os 4 campos (nome, email, telefone, dúvida), responda com EXATAMENTE este formato JSON no final da sua mensagem (em uma nova linha, sem texto adicional depois):
+
+\`\`\`json
+{"__ticket__":{"full_name":"NOME","email":"EMAIL","phone":"TELEFONE","question":"DÚVIDA COMPLETA"}}
+\`\`\`
+
+Depois de enviar o JSON, diga ao usuário que o ticket foi criado com sucesso e que ele pode acompanhar pelo menu "Meus Tickets" na Central de Ajuda.
+
+REGRAS:
+- Só crie o ticket quando tiver TODOS os 4 campos
+- Valide que o telefone tem pelo menos 10 dígitos
+- Valide que o email contém @
+- Se faltar algum dado, peça novamente de forma gentil`;
+
 async function getSystemPrompt(): Promise<string> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceKey) return FALLBACK_PROMPT;
+    if (!supabaseUrl || !serviceKey) return FALLBACK_PROMPT + TICKET_INSTRUCTION;
 
     const sb = createClient(supabaseUrl, serviceKey);
     const { data } = await sb
@@ -104,12 +135,38 @@ async function getSystemPrompt(): Promise<string> {
       .maybeSingle();
 
     if (data?.config_value && data.config_value.trim().length > 50) {
-      return data.config_value;
+      return data.config_value + TICKET_INSTRUCTION;
     }
   } catch (e) {
     console.error("Failed to load dynamic prompt, using fallback:", e);
   }
-  return FALLBACK_PROMPT;
+  return FALLBACK_PROMPT + TICKET_INSTRUCTION;
+}
+
+async function createTicket(ticketData: { full_name: string; email: string; phone: string; question: string }, userId: string | null): Promise<boolean> {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) return false;
+
+    const sb = createClient(supabaseUrl, serviceKey);
+    const { error } = await sb.from("support_tickets").insert({
+      full_name: ticketData.full_name.slice(0, 200),
+      email: ticketData.email.slice(0, 255),
+      phone: ticketData.phone.replace(/\D/g, '').slice(0, 15),
+      question: ticketData.question.slice(0, 2000),
+      user_id: userId,
+      status: 'received',
+    });
+    if (error) {
+      console.error("Error creating ticket:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("createTicket error:", e);
+    return false;
+  }
 }
 
 serve(async (req) => {
@@ -121,6 +178,22 @@ serve(async (req) => {
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Try to get user ID from auth header
+    let userId: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+        const sb = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const token = authHeader.replace("Bearer ", "");
+        const { data } = await sb.auth.getClaims(token);
+        userId = data?.claims?.sub as string || null;
+      } catch { /* ignore */ }
+    }
 
     const systemPrompt = await getSystemPrompt();
 
@@ -138,7 +211,7 @@ serve(async (req) => {
             { role: "system", content: systemPrompt },
             ...messages,
           ],
-          stream: true,
+          stream: false,
         }),
       }
     );
@@ -164,9 +237,34 @@ serve(async (req) => {
       );
     }
 
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
+    const aiData = await response.json();
+    let content = aiData.choices?.[0]?.message?.content || "";
+
+    // Check if AI response contains a ticket creation request
+    const ticketMatch = content.match(/```json\s*(\{"__ticket__":.+?\})\s*```/s);
+    if (ticketMatch) {
+      try {
+        const parsed = JSON.parse(ticketMatch[1]);
+        if (parsed.__ticket__) {
+          const ticket = parsed.__ticket__;
+          const success = await createTicket(ticket, userId);
+          // Remove the JSON block from the response
+          content = content.replace(/```json\s*\{"__ticket__":.+?\}\s*```/s, '').trim();
+          if (success) {
+            content += "\n\n✅ **Ticket criado com sucesso!** Você pode acompanhar o andamento acessando **Meus Tickets** na Central de Ajuda.";
+          } else {
+            content += "\n\n⚠️ Houve um problema ao criar o ticket. Por favor, tente novamente mais tarde.";
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing ticket JSON:", e);
+      }
+    }
+
+    return new Response(
+      JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e) {
     console.error("help-chat error:", e);
     return new Response(

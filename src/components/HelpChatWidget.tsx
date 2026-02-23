@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Ticket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ReactMarkdown from 'react-markdown';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 
 type Msg = { role: 'user' | 'assistant'; content: string };
 
@@ -11,7 +13,7 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/help-chat`;
 
 const WELCOME: Msg = {
   role: 'assistant',
-  content: 'Olá! 👋 Sou o assistente do **Glory Pads**. Posso te ajudar com dúvidas sobre o app, como usar os pads, repertório, MIDI, loja, planos e muito mais. Como posso te ajudar?',
+  content: 'Olá! 👋 Sou o assistente do **Glory Pads**. Posso te ajudar com dúvidas sobre o app, como usar os pads, repertório, MIDI, loja, planos e muito mais.\n\nSe eu não conseguir resolver sua dúvida, posso te encaminhar para nosso **suporte humanizado** criando um ticket! Como posso te ajudar?',
 };
 
 export default function HelpChatWidget() {
@@ -44,25 +46,16 @@ export default function HelpChatWidget() {
     setInput('');
     setLoading(true);
 
-    let assistantSoFar = '';
-
-    const upsert = (chunk: string) => {
-      assistantSoFar += chunk;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === 'assistant' && prev.length === history.length + 1) {
-          return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
-        }
-        return [...prev, { role: 'assistant', content: assistantSoFar }];
-      });
-    };
-
     try {
+      // Get auth token if available
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
       const resp = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
           messages: history.filter((m) => m !== WELCOME).map(({ role, content }) => ({ role, content })),
@@ -76,52 +69,9 @@ export default function HelpChatWidget() {
         return;
       }
 
-      const reader = resp.body!.getReader();
-      const decoder = new TextDecoder();
-      let buf = '';
-      let done = false;
-
-      while (!done) {
-        const { done: d, value } = await reader.read();
-        if (d) break;
-        buf += decoder.decode(value, { stream: true });
-
-        let idx: number;
-        while ((idx = buf.indexOf('\n')) !== -1) {
-          let line = buf.slice(0, idx);
-          buf = buf.slice(idx + 1);
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-          const json = line.slice(6).trim();
-          if (json === '[DONE]') { done = true; break; }
-          try {
-            const parsed = JSON.parse(json);
-            const c = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (c) upsert(c);
-          } catch {
-            buf = line + '\n' + buf;
-            break;
-          }
-        }
-      }
-
-      // flush remaining
-      if (buf.trim()) {
-        for (let raw of buf.split('\n')) {
-          if (!raw) continue;
-          if (raw.endsWith('\r')) raw = raw.slice(0, -1);
-          if (raw.startsWith(':') || raw.trim() === '') continue;
-          if (!raw.startsWith('data: ')) continue;
-          const json = raw.slice(6).trim();
-          if (json === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(json);
-            const c = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (c) upsert(c);
-          } catch { /* ignore */ }
-        }
-      }
+      const data = await resp.json();
+      const content = data.choices?.[0]?.message?.content || 'Desculpe, não consegui gerar uma resposta.';
+      setMessages(prev => [...prev, { role: 'assistant', content }]);
     } catch (e) {
       console.error('Chat error:', e);
       toast({ title: 'Erro de conexão', description: 'Verifique sua internet e tente novamente.', variant: 'destructive' });
@@ -150,9 +100,14 @@ export default function HelpChatWidget() {
           <MessageCircle className="h-5 w-5" />
           <span className="font-semibold text-sm">Assistente Glory Pads</span>
         </div>
-        <button onClick={() => setOpen(false)} className="hover:bg-white/20 rounded-full p-1 transition-colors">
-          <X className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <Link to="/my-tickets" onClick={() => setOpen(false)} className="hover:bg-white/20 rounded-full p-1.5 transition-colors" title="Meus Tickets">
+            <Ticket className="h-4 w-4" />
+          </Link>
+          <button onClick={() => setOpen(false)} className="hover:bg-white/20 rounded-full p-1 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
@@ -177,7 +132,7 @@ export default function HelpChatWidget() {
               </div>
             </div>
           ))}
-          {loading && messages[messages.length - 1]?.role === 'user' && (
+          {loading && (
             <div className="flex justify-start">
               <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
