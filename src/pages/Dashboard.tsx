@@ -235,11 +235,11 @@ const Dashboard = () => {
             )}
             <button
               onClick={() => navigate('/help')}
-              className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-600"
+              className="flex items-center gap-1.5 h-8 px-3 rounded-lg border-2 border-violet-400 bg-violet-50 hover:bg-violet-100 transition-colors text-xs font-semibold text-violet-700"
               title="Central de Ajuda"
             >
               <BookOpen className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Ajuda</span>
+              <span>Ajuda</span>
             </button>
             <Button size="sm" onClick={() => navigate('/app')}
               className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-3 text-xs font-medium gap-1.5">

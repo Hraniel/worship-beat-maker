@@ -8,7 +8,7 @@ import {
   ArrowLeft, Search, Drum, Music, Waves, Sliders, Clock, Bluetooth,
   Sparkles, Pencil, Eye, Store, ListMusic, Volume2, HelpCircle,
   ChevronDown, ChevronRight, Play, Headphones, BookOpen, Lightbulb,
-  MessageCircleQuestion, ExternalLink, Image
+  MessageCircleQuestion, ExternalLink, Image, Ticket
 } from 'lucide-react';
 
 /* ─── FAQ Data ─── */
@@ -304,11 +304,18 @@ const Help = () => {
               <span className="font-bold text-sm text-gray-900">Central de Ajuda</span>
             </div>
           </div>
-          <Button size="sm" onClick={() => navigate('/app')}
-            className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-3 text-xs font-medium gap-1.5">
-            <Play className="h-3 w-3" />
-            Abrir App
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => navigate('/my-tickets')}
+              className="rounded-lg h-8 px-3 text-xs font-medium gap-1.5 border-violet-200 text-violet-700 hover:bg-violet-50">
+              <Ticket className="h-3 w-3" />
+              Meus Tickets
+            </Button>
+            <Button size="sm" onClick={() => navigate('/app')}
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-3 text-xs font-medium gap-1.5">
+              <Play className="h-3 w-3" />
+              Abrir App
+            </Button>
+          </div>
         </div>
       </header>
 

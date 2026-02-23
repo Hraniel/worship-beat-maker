@@ -1875,8 +1875,8 @@ const Index = () => {
                       channels={[
                         {
                           id: "metronome",
-                          label: "Metrônomo",
-                          shortLabel: "Metrônomo",
+                          label: "🔊 Volume Geral",
+                          shortLabel: "Vol. Geral",
                           volume: metronomeVol,
                           onChange: handleMetronomeVolChange,
                         },
@@ -2069,8 +2069,8 @@ const Index = () => {
                       channels={[
                         {
                           id: "metronome",
-                          label: "Metrônomo",
-                          shortLabel: "Metrônomo",
+                          label: "🔊 Volume Geral",
+                          shortLabel: "Vol. Geral",
                           volume: metronomeVol,
                           onChange: handleMetronomeVolChange,
                         },
@@ -2205,8 +2205,8 @@ const Index = () => {
                               channels={[
                                 {
                                   id: "metronome",
-                                  label: "Metrônomo",
-                                  shortLabel: "Metrônomo",
+                                  label: "🔊 Volume Geral",
+                                  shortLabel: "Vol. Geral",
                                   volume: metronomeVol,
                                   onChange: handleMetronomeVolChange,
                                 },
