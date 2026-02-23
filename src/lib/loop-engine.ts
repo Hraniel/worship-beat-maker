@@ -23,6 +23,8 @@ interface ActiveLoop {
 
 // Loops queued to start on next beat 1 (when forceLoopBeat1 is enabled)
 let pendingLoops: Map<string, ActiveLoop> = new Map();
+// The earliest subdivision at which pending loops may activate (always the NEXT bar's beat 1)
+let pendingActivateAtSub = 0;
 
 let isRunning = false;
 let activeLoops: Map<string, ActiveLoop> = new Map();
@@ -173,7 +175,13 @@ export function addLoop(pad: PadSound, volume: number) {
     activeLoops.set(pad.id, { pad, volume });
     startEngine();
   } else if (forceLoopBeat1) {
-    // Queue — loop will be activated when subdivision hits beat 1
+    // Queue — loop will activate at the NEXT bar's beat 1
+    const SUBS = getSubdivisionsPerBar();
+    const nextBar = (Math.floor(currentSubdivision / SUBS) + 1) * SUBS;
+    // Only push the activation point forward if this is a new batch or further out
+    if (pendingLoops.size === 0 || nextBar > pendingActivateAtSub) {
+      pendingActivateAtSub = nextBar;
+    }
     pendingLoops.set(pad.id, { pad, volume });
   } else {
     activeLoops.set(pad.id, { pad, volume });
@@ -218,8 +226,8 @@ const activeLoopSources = new Map<string, AudioBufferSourceNode>();
 function scheduleSubdivision(subdivision: number, audioTime: number) {
   const SUBS = getSubdivisionsPerBar();
 
-  // Move pending loops to active on beat 1 (subdivision 0 of the bar)
-  if (pendingLoops.size > 0 && (subdivision % SUBS) === 0) {
+  // Move pending loops to active on the NEXT bar's beat 1
+  if (pendingLoops.size > 0 && subdivision >= pendingActivateAtSub && (subdivision % SUBS) === 0) {
     for (const [id, loop] of pendingLoops) {
       activeLoops.set(id, loop);
     }
