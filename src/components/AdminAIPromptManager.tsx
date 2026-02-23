@@ -419,7 +419,7 @@ ${featureLines}
               onChange={e => setSections(prev => ({ ...prev, [sk.key]: e.target.value }))}
               placeholder={sk.placeholder}
               rows={8}
-              className="w-full px-3 py-2 text-xs font-mono bg-background border-0 outline-none resize-y min-h-[100px]"
+              className="w-full px-3 py-2 text-xs font-mono bg-white text-black border-0 outline-none resize-y min-h-[100px]"
             />
           </div>
         ))}
@@ -431,7 +431,7 @@ ${featureLines}
           <div className="bg-muted/50 px-3 py-2">
             <label className="text-xs font-bold">📄 Preview do Prompt Completo ({combinedPrompt.length} caracteres)</label>
           </div>
-          <pre className="px-3 py-2 text-[10px] font-mono whitespace-pre-wrap max-h-96 overflow-y-auto bg-background">
+          <pre className="px-3 py-2 text-[10px] font-mono whitespace-pre-wrap max-h-96 overflow-y-auto bg-white text-black">
             {combinedPrompt}
           </pre>
         </div>
