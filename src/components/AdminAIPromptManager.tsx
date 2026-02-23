@@ -93,6 +93,16 @@ export default function AdminAIPromptManager() {
   const [auditResults, setAuditResults] = useState<AuditSuggestion[]>([]);
   const [applyingAudit, setApplyingAudit] = useState(false);
   const [lastAuditDate, setLastAuditDate] = useState<string | null>(null);
+  const [interpreting, setInterpreting] = useState<number | null>(null); // index being interpreted
+  const [pendingConfirmation, setPendingConfirmation] = useState<{
+    index: number;
+    message: string;
+    action: string;
+    config_key?: string;
+    config_table?: string;
+    new_value?: string;
+    details?: string;
+  } | null>(null);
 
   // Load prompt sections
   const loadSections = useCallback(async () => {
@@ -303,6 +313,64 @@ export default function AdminAIPromptManager() {
       }
     };
 
+    const interpretSuggestion = async (index: number) => {
+      const s = auditResults[index];
+      if (!s.user_note?.trim()) {
+        toast.info('Digite uma instrução antes de enviar para a IA.');
+        return;
+      }
+      setInterpreting(index);
+      try {
+        const { data, error } = await supabase.functions.invoke('audit-interpret', {
+          body: { suggestion: s, user_instruction: s.user_note },
+        });
+        if (error) throw error;
+        if (!data.understood) {
+          toast.warning(data.confirmation_message || 'A IA não entendeu a instrução. Tente reformular.');
+          return;
+        }
+        setPendingConfirmation({
+          index,
+          message: data.confirmation_message,
+          action: data.action,
+          config_key: data.config_key,
+          config_table: data.config_table,
+          new_value: data.new_value,
+          details: data.details,
+        });
+      } catch (e) {
+        console.error(e);
+        toast.error('Erro ao interpretar instrução');
+      } finally {
+        setInterpreting(null);
+      }
+    };
+
+    const confirmInterpretation = async () => {
+      if (!pendingConfirmation) return;
+      const { index, action, config_key, config_table, new_value } = pendingConfirmation;
+      if (action === 'update' && config_key && config_table && new_value) {
+        try {
+          const table = config_table === 'store_config' ? 'store_config' : 'landing_config';
+          await supabase.from(table).upsert(
+            { config_key, config_value: new_value, updated_at: new Date().toISOString() } as any,
+            { onConflict: 'config_key' }
+          );
+          addDismissedSuggestion(auditResults[index].title);
+          setAuditResults(prev => prev.filter((_, i) => i !== index));
+          toast.success('Alteração aplicada com sucesso!');
+        } catch (e) {
+          console.error(e);
+          toast.error('Erro ao aplicar alteração');
+        }
+      } else {
+        addDismissedSuggestion(auditResults[index].title);
+        setAuditResults(prev => prev.filter((_, i) => i !== index));
+        toast.success('Sugestão marcada como concluída');
+      }
+      setPendingConfirmation(null);
+    };
+
     const dismissSuggestion = (index: number) => {
       const s = auditResults[index];
       addDismissedSuggestion(s.title);
@@ -449,17 +517,30 @@ export default function AdminAIPromptManager() {
                           <p className="text-[9px] mt-1 italic opacity-60">⚙️ Ação manual — selecione para marcar como concluída</p>
                         )}
 
-                        <input
-                          type="text"
-                          placeholder="Escreva o que deseja que seja feito..."
-                          value={s.user_note || ''}
-                          onChange={(e) => {
-                            const up = [...auditResults];
-                            up[i] = { ...up[i], user_note: e.target.value };
-                            setAuditResults(up);
-                          }}
-                          className="mt-2 w-full text-[10px] px-2 py-1.5 rounded-md border border-current/20 bg-white/70 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
-                        />
+                        <div className="mt-2 flex gap-1.5 items-center">
+                          <input
+                            type="text"
+                            placeholder="Escreva o que deseja que seja feito..."
+                            value={s.user_note || ''}
+                            onChange={(e) => {
+                              const up = [...auditResults];
+                              up[i] = { ...up[i], user_note: e.target.value };
+                              setAuditResults(up);
+                            }}
+                            onKeyDown={(e) => { if (e.key === 'Enter' && s.user_note?.trim()) interpretSuggestion(i); }}
+                            className="flex-1 text-[10px] px-2 py-1.5 rounded-md border border-current/20 bg-white/70 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                          {s.user_note?.trim() && (
+                            <button
+                              onClick={() => interpretSuggestion(i)}
+                              disabled={interpreting === i}
+                              className="shrink-0 px-2 py-1.5 rounded-md bg-primary text-primary-foreground text-[9px] font-bold hover:opacity-90 disabled:opacity-50 flex items-center gap-1"
+                            >
+                              {interpreting === i ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                              Enviar
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -467,6 +548,37 @@ export default function AdminAIPromptManager() {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══════════ CONFIRMATION MODAL ═══════════ */}
+      {pendingConfirmation && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-background rounded-xl shadow-xl max-w-md w-full p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-primary" />
+              <h3 className="text-sm font-bold">Confirmação da IA</h3>
+            </div>
+            <p className="text-sm">{pendingConfirmation.message}</p>
+            {pendingConfirmation.details && (
+              <p className="text-xs text-muted-foreground">{pendingConfirmation.details}</p>
+            )}
+            {pendingConfirmation.new_value && (
+              <div className="bg-muted rounded-lg p-3">
+                <p className="text-[10px] font-bold text-muted-foreground mb-1">Novo valor:</p>
+                <p className="text-xs font-mono break-all">{pendingConfirmation.new_value}</p>
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              <Button size="sm" variant="outline" onClick={() => setPendingConfirmation(null)}>
+                Cancelar
+              </Button>
+              <Button size="sm" onClick={confirmInterpretation}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                Confirmar e Aplicar
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
