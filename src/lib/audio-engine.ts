@@ -607,9 +607,9 @@ export function hasCustomBuffer(padId: string): boolean {
   return customBuffers.has(padId);
 }
 
-function playCustomBuffer(padId: string, volume = 0.7, destination?: AudioNode, startTime?: number) {
+function playCustomBuffer(padId: string, volume = 0.7, destination?: AudioNode, startTime?: number): AudioBufferSourceNode | null {
   const buffer = customBuffers.get(padId);
-  if (!buffer) return;
+  if (!buffer) return null;
   const ctx = getAudioContext();
   const t = startTime ?? ctx.currentTime;
   const source = ctx.createBufferSource();
@@ -623,18 +623,19 @@ function playCustomBuffer(padId: string, volume = 0.7, destination?: AudioNode, 
     gain.connect(getPadPanner(padId));
   }
   source.start(t);
+  return source;
 }
 
 /**
  * Play a sound, optionally routing through a custom destination node (e.g. effects chain).
  */
-export function playSound(id: string, volume = 0.7, destination?: AudioNode, startTime?: number) {
+export function playSound(id: string, volume = 0.7, destination?: AudioNode, startTime?: number): AudioBufferSourceNode | null {
   if (customBuffers.has(id)) {
-    playCustomBuffer(id, volume, destination, startTime);
-    return;
+    return playCustomBuffer(id, volume, destination, startTime);
   }
   const fn = soundMap[id];
   if (fn) fn(volume, destination);
+  return null;
 }
 
 // --- AUDIO OUTPUT DEVICE SELECTION ---

@@ -1237,13 +1237,12 @@ const Index = () => {
         onMarkAllAsRead={markAllNotifsAsRead}
       />
       <UpdateBanner
-        show={needRefresh}
+        show={needRefresh && isOnline}
         onUpdate={async () => {
           await updateServiceWorker(true);
           window.location.reload();
         }}
       />
-      <OfflineBanner isOffline={!isOnline} />
       {showNotifPrompt && <NotificationPromptBanner onDismiss={dismissNotifPrompt} />}
       {/* Header */}
       {!focusMode ? (
@@ -1272,6 +1271,7 @@ const Index = () => {
                 selectedEventId={selectedEventId}
                 onSelectEvent={handleSelectEvent}
                 externalEvents={setlistEventsHook}
+                onOpenSavedSongs={() => setSavedSongsOpen(true)}
               />
               <div className="relative">
                 <button
@@ -1431,6 +1431,7 @@ const Index = () => {
                     selectedEventId={selectedEventId}
                     onSelectEvent={handleSelectEvent}
                     externalEvents={setlistEventsHook}
+                    onOpenSavedSongs={() => setSavedSongsOpen(true)}
                   />
                 </div>
               )}
@@ -1612,6 +1613,7 @@ const Index = () => {
                   selectedEventId={selectedEventId}
                   onSelectEvent={handleSelectEvent}
                   externalEvents={setlistEventsHook}
+                  onOpenSavedSongs={() => setSavedSongsOpen(true)}
                 />
               </div>
             )}
@@ -1681,11 +1683,17 @@ const Index = () => {
         </div>
       )}
 
-      {/* Info bar - hidden in focus mode */}
+      {/* Info bar - shows offline message when offline, otherwise pad hint on desktop */}
       {!focusMode && currentSongId && (
-        <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">
-          Segure um pad para ajustar volume e importar som.
-        </div>
+        !isOnline ? (
+          <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 flex items-center justify-center gap-1.5">
+            <span>⚠️ Modo offline — usando dados em cache</span>
+          </div>
+        ) : (
+          <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">
+            Segure um pad para ajustar volume e importar som.
+          </div>
+        )
       )}
       {/* Focus mode exit button - fixed above continuous pads */}
 
@@ -1855,15 +1863,39 @@ const Index = () => {
                   <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}
-                      title="Editar BPM no metrônomo abaixo"
-                    >
-                      {bpm}
-                    </button>
+                    {editingHeaderBpm ? (
+                      <input
+                        ref={(el) => el && setTimeout(() => el.select(), 30)}
+                        type="number"
+                        value={headerBpmValue}
+                        onChange={(e) => setHeaderBpmValue(e.target.value)}
+                        onBlur={() => {
+                          setEditingHeaderBpm(false);
+                          const v = parseInt(headerBpmValue);
+                          if (!isNaN(v) && v >= 40 && v <= 240) setBpm(v);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') { setEditingHeaderBpm(false); const v = parseInt(headerBpmValue); if (!isNaN(v) && v >= 40 && v <= 240) setBpm(v); }
+                          if (e.key === 'Escape') setEditingHeaderBpm(false);
+                        }}
+                        className="w-12 h-6 text-sm font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
+                        min={40}
+                        max={240}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <button
+                        className="text-sm font-bold text-foreground tabular-nums hover:bg-muted rounded px-1 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHeaderBpmValue(String(bpm));
+                          setEditingHeaderBpm(true);
+                        }}
+                        title="Clique para editar BPM"
+                      >
+                        {bpm}
+                      </button>
+                    )}
                     <span className="text-[10px] text-muted-foreground">BPM</span>
                     {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
                     <span className="text-[10px] text-muted-foreground">· {timeSignature}</span>

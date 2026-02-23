@@ -132,6 +132,9 @@ export function addLoop(pad: PadSound, volume: number) {
 
 export function removeLoop(padId: string) {
   activeLoops.delete(padId);
+  // Stop any playing custom buffer source
+  const src = activeLoopSources.get(padId);
+  if (src) { try { src.stop(); } catch { /* already stopped */ } activeLoopSources.delete(padId); }
   if (isRunning && activeLoops.size === 0 && !metronomeEnabled) {
     stopEngine();
   }
@@ -158,6 +161,9 @@ export function getActiveLoopIds(): string[] {
 
 // --- Schedule a single subdivision's audio at a precise audio time ---
 
+// Track active loop sources so we can stop them before restarting
+const activeLoopSources = new Map<string, AudioBufferSourceNode>();
+
 function scheduleSubdivision(subdivision: number, audioTime: number) {
   const SUBS = getSubdivisionsPerBar();
 
@@ -167,8 +173,14 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
       const totalSubs = SUBS * (loop.pad.loopBars || 1);
       const loopPos = subdivision % totalSubs;
       if (loopPos === 0) {
+        // Stop previous source to avoid overlap/cutting artifacts
+        const prevSource = activeLoopSources.get(loop.pad.id);
+        if (prevSource) {
+          try { prevSource.stop(audioTime); } catch { /* already stopped */ }
+        }
         const panner = getPadPanner(loop.pad.id);
-        playSound(loop.pad.id, loop.volume, panner, audioTime);
+        const source = playSound(loop.pad.id, loop.volume, panner, audioTime);
+        if (source) activeLoopSources.set(loop.pad.id, source);
         getEmitter()?.(loop.pad.id);
       }
       continue;

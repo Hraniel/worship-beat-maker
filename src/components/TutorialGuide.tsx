@@ -25,12 +25,17 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
         title: 'Pads de Bateria',
-        description: 'Toque nos pads para reproduzir sons. Cada pad toca um som diferente de bateria ou percussão.',
+        description: 'Toque nos pads para reproduzir sons. Cada pad toca um som diferente de bateria, percussão ou loop.',
       },
       {
         targetSelector: '[data-tutorial="pad-grid"]',
         title: 'Opções do Pad',
-        description: 'Segure um pad para acessar opções como volume individual, pan (panorâmica L/R), renomear, alterar cor e efeitos de áudio.',
+        description: 'Segure um pad para acessar opções: volume individual, pan (L/R), renomear, alterar cor, efeitos de áudio (EQ, Reverb, Delay) e importar sons da Glory Store.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Loops',
+        description: 'Os pads WSP e WFL são loops rítmicos. Toque para ativar/desativar. Eles sincronizam automaticamente com o BPM do metrônomo. Também funcionam via MIDI.',
       },
     ],
   },
@@ -40,13 +45,23 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
     steps: [
       {
         targetSelector: '[data-tutorial="setlist"]',
-        title: 'Repertório',
-        description: 'Salve configurações completas por música: BPM, volumes, pans, efeitos e sons customizados.',
+        title: 'Eventos Programados',
+        description: 'Crie eventos (ex: Culto Domingo) com data e adicione músicas ao repertório. Cada evento organiza suas músicas para a programação.',
       },
       {
         targetSelector: '[data-tutorial="setlist"]',
-        title: 'Reordenar Músicas',
-        description: 'Arraste as músicas para reordenar. Clique em uma música para carregar suas configurações.',
+        title: 'Músicas por Evento',
+        description: 'Cada música salva BPM, tom, volumes, pans, efeitos, sons customizados e mapeamentos MIDI. Tudo é restaurado ao carregar a música.',
+      },
+      {
+        targetSelector: '[data-tutorial="setlist"]',
+        title: 'Navegação entre Músicas',
+        description: 'Use os botões ◀ ▶ no cabeçalho para navegar entre músicas do evento ativo. Também funciona via MIDI CC.',
+      },
+      {
+        targetSelector: '[data-tutorial="setlist"]',
+        title: 'Evento Persistente',
+        description: 'O último evento selecionado permanece ativo mesmo ao sair e voltar ao app. Ao abrir o repertório, ele aparece expandido com suas músicas.',
       },
     ],
   },
@@ -74,13 +89,13 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
     steps: [
       {
         targetSelector: '[data-tutorial="volume-master"]',
-        title: 'Volume Master',
-        description: 'Controle o volume geral de todos os pads e sons do app com o slider principal.',
+        title: 'Mixer de Faders',
+        description: 'Controle volumes individuais de cada pad, metrônomo, continuous pads e master. Navegue entre as páginas 1, 2 e 3 do mixer.',
       },
       {
         targetSelector: '[data-tutorial="volume-master"]',
         title: 'Pan Master',
-        description: 'O knob laranja ao lado do volume master direciona todo o áudio para esquerda (L) ou direita (R). Gire para ajustar a panorâmica geral.',
+        description: 'O knob laranja direciona todo o áudio para esquerda (L) ou direita (R). Útil para separar instrumentos no retorno.',
       },
     ],
   },
@@ -91,47 +106,52 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       {
         targetSelector: '[data-tutorial="metronome"]',
         title: 'Metrônomo',
-        description: 'Ajuste o BPM com o slider ou botões +/–. Escolha a fórmula de compasso (4/4, 3/4, 6/8). Clique para expandir ou minimizar.',
+        description: 'Ajuste o BPM com slider, botões +/– ou clicando diretamente no número. Escolha compasso (4/4, 3/4, 6/8). O tom da música aparece ao lado.',
+        prepareEvent: 'tutorial:expand-metronome',
+      },
+      {
+        targetSelector: '[data-tutorial="metronome"]',
+        title: 'Sync & Tom',
+        description: 'O botão Sync sincroniza os pads com o grid rítmico. O campo Tom permite editar a tonalidade da música que é salva automaticamente.',
         prepareEvent: 'tutorial:expand-metronome',
       },
       {
         targetSelector: '[data-tutorial="pan-metronome"]',
         title: 'Pan do Metrônomo',
-        description: 'O knob laranja direciona o clique do metrônomo para esquerda (L) ou direita (R). Útil para ouvir o metrônomo separado da banda no retorno.',
+        description: 'O knob laranja direciona o clique do metrônomo para L ou R. Útil para ouvir separado da banda no retorno.',
         prepareEvent: 'tutorial:expand-metronome',
       },
     ],
   },
   {
-    id: 'pan',
-    label: 'Pan (Panorâmica)',
+    id: 'midi',
+    label: 'MIDI',
     steps: [
       {
-        targetSelector: '[data-tutorial="volume-master"]',
-        title: 'O que é Pan?',
-        description: 'Pan (panorâmica) controla a direção do som entre os lados esquerdo (L) e direito (R) do áudio. Útil para separar instrumentos no retorno.',
-      },
-      {
-        targetSelector: '[data-tutorial="volume-master"]',
-        title: 'Pan Master',
-        description: 'O knob laranja ao lado do volume master move TODO o áudio do app para L ou R. Dê um duplo clique ou segure para resetar ao centro.',
-      },
-      {
-        targetSelector: '[data-tutorial="pan-metronome"]',
-        title: 'Pan do Metrônomo',
-        description: 'Mova o clique do metrônomo para um lado só. Ex: metrônomo no ouvido esquerdo, música no direito.',
-        prepareEvent: 'tutorial:expand-metronome',
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Controlador MIDI',
+        description: 'Conecte um controlador MIDI USB ou Bluetooth. Mapeie notas para pads e CCs para funções como volume, BPM e navegação de músicas.',
       },
       {
         targetSelector: '[data-tutorial="pad-grid"]',
-        title: 'Pan Individual dos Pads',
-        description: 'Segure um pad para abrir o menu. O controle de pan individual direciona apenas aquele pad para L ou R. Recurso PRO.',
+        title: 'Mapeamento por Música',
+        description: 'Os mapeamentos MIDI (notas, CCs, canais) são salvos individualmente por música. Ao trocar de música, os mapeamentos são restaurados automaticamente.',
+      },
+    ],
+  },
+  {
+    id: 'effects',
+    label: 'Efeitos de Áudio',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'EQ, Reverb e Delay',
+        description: 'Segure um pad para abrir os efeitos: EQ de 3 bandas, Reverb e Delay com sync ao BPM. Recurso exclusivo do plano Master.',
       },
       {
-        targetSelector: '[data-tutorial="ambient-pads"]',
-        title: 'Pan do Continuous Pads',
-        description: 'O knob de pan nos Continuous Pads direciona as notas sustentadas para L ou R independentemente dos outros sons. Recurso MASTER.',
-        prepareEvent: 'tutorial:expand-ambient',
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Delay Sincronizado',
+        description: 'Ative "Sync BPM" no delay para sincronizar automaticamente o tempo do delay com o metrônomo. Escolha subdivisões musicais (1/4, 1/8, etc).',
       },
     ],
   },
@@ -142,12 +162,7 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       {
         targetSelector: '[data-tutorial="pad-grid"]',
         title: 'Modo Edição',
-        description: 'Ative o Modo Edição no menu (ícone de engrenagem) para acessar as configurações de cada pad com um único toque, sem precisar segurar.',
-      },
-      {
-        targetSelector: '[data-tutorial="pad-grid"]',
-        title: 'Tamanho dos Pads',
-        description: 'No modo edição, use os botões – e + no cabeçalho para ajustar o tamanho dos pads na tela.',
+        description: 'Ative no menu para acessar configurações de cada pad com um toque, sem precisar segurar. Ajuste tamanho dos pads com – e +.',
       },
     ],
   },
@@ -158,7 +173,18 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
       {
         targetSelector: '[data-tutorial="focus-mode"]',
         title: 'Modo Foco',
-        description: 'Oculta o cabeçalho para maximizar o espaço dos pads. Ideal para apresentações ao vivo! Os Continuous Pads continuam acessíveis.',
+        description: 'Oculta o cabeçalho para maximizar os pads. Ideal para apresentações ao vivo! Metrônomo e Continuous Pads continuam acessíveis.',
+      },
+    ],
+  },
+  {
+    id: 'store',
+    label: 'Glory Store',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Glory Store',
+        description: 'Acesse a loja pelo menu ou pela aba Loja. Adquira packs de sons profissionais e importe diretamente para seus pads. É necessário estar logado para comprar.',
       },
     ],
   },
