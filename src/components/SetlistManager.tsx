@@ -133,7 +133,7 @@ interface EventCardProps {
 const EventCard: React.FC<EventCardProps> = ({
   event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected,
 }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(isSelected ?? false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(event.name);
   const [editDate, setEditDate] = useState(event.event_date);
@@ -145,6 +145,11 @@ const EventCard: React.FC<EventCardProps> = ({
   const [newSongBpm, setNewSongBpm] = useState('120');
   const [newSongKey, setNewSongKey] = useState('');
   const [newSongTimeSignature, setNewSongTimeSignature] = useState('4/4');
+
+  // Keep expanded in sync when isSelected changes externally
+  useEffect(() => {
+    if (isSelected) setExpanded(true);
+  }, [isSelected]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
