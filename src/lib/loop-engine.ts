@@ -19,6 +19,8 @@ function getEmitter() {
 interface ActiveLoop {
   pad: PadSound;
   volume: number;
+  /** Absolute subdivision where this loop's phase starts (its step 0 / kick) */
+  startSubdivision: number;
 }
 
 // Loops queued to start on next beat 1 (when forceLoopBeat1 is enabled)
@@ -111,7 +113,7 @@ function getSubsPerBeat(): number {
 // Metronome state (driven by the same clock)
 let metronomeEnabled = false;
 let metronomeVolume = 0.3;
-let onMetronomeBeatCallback: ((beat: number) => void) | null = null;
+const metronomeBeatListeners = new Set<(beat: number) => void>();
 
 export function setLoopBpm(bpm: number) {
   currentBpm = bpm;
@@ -147,7 +149,7 @@ export function enableMetronome(volume: number = 0.3) {
 
 export function disableMetronome() {
   metronomeEnabled = false;
-  if (isRunning && activeLoops.size === 0) {
+  if (isRunning && activeLoops.size === 0 && pendingLoops.size === 0) {
     stopEngine();
   }
 }
@@ -161,7 +163,11 @@ export function getMetronomeVolume() {
 }
 
 export function onMetronomeBeat(cb: ((beat: number) => void) | null) {
-  onMetronomeBeatCallback = cb;
+  if (!cb) return () => {};
+  metronomeBeatListeners.add(cb);
+  return () => {
+    metronomeBeatListeners.delete(cb);
+  };
 }
 
 export function isMetronomeActive() {
@@ -172,19 +178,20 @@ export function isMetronomeActive() {
 
 export function addLoop(pad: PadSound, volume: number) {
   if (!isRunning) {
-    activeLoops.set(pad.id, { pad, volume });
+    activeLoops.set(pad.id, { pad, volume, startSubdivision: 0 });
     startEngine();
   } else if (forceLoopBeat1) {
-    // Queue — loop will activate at the NEXT bar's beat 1
+    // Queue — loop will activate at the NEXT bar's beat 1 and begin at step 0 (kick)
     const SUBS = getSubdivisionsPerBar();
     const nextBar = (Math.floor(currentSubdivision / SUBS) + 1) * SUBS;
     // Only push the activation point forward if this is a new batch or further out
     if (pendingLoops.size === 0 || nextBar > pendingActivateAtSub) {
       pendingActivateAtSub = nextBar;
     }
-    pendingLoops.set(pad.id, { pad, volume });
+    pendingLoops.set(pad.id, { pad, volume, startSubdivision: nextBar });
   } else {
-    activeLoops.set(pad.id, { pad, volume });
+    // Immediate start aligned to next scheduler subdivision
+    activeLoops.set(pad.id, { pad, volume, startSubdivision: currentSubdivision + 1 });
   }
 }
 
@@ -203,6 +210,10 @@ export function updateLoopVolume(padId: string, volume: number) {
   const loop = activeLoops.get(padId);
   if (loop) {
     loop.volume = volume;
+  }
+  const pending = pendingLoops.get(padId);
+  if (pending) {
+    pending.volume = volume;
   }
 }
 
@@ -238,7 +249,7 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
   for (const [, loop] of activeLoops) {
     if (hasCustomBuffer(loop.pad.id)) {
       const totalSubs = SUBS * (loop.pad.loopBars || 1);
-      const loopPos = subdivision % totalSubs;
+      const loopPos = ((subdivision - loop.startSubdivision) % totalSubs + totalSubs) % totalSubs;
       if (loopPos === 0) {
         // Stop previous source to avoid overlap/cutting artifacts
         const prevSource = activeLoopSources.get(loop.pad.id);
@@ -254,7 +265,7 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
     }
     if (!loop.pad.loopSteps) continue;
     const totalSubs = SUBS * (loop.pad.loopBars || 1);
-    const loopPos = subdivision % totalSubs;
+    const loopPos = ((subdivision - loop.startSubdivision) % totalSubs + totalSubs) % totalSubs;
     for (const [sub, soundId] of loop.pad.loopSteps) {
       if (sub === loopPos) {
         const panner = getPadPanner(loop.pad.id);
@@ -272,7 +283,7 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
       const beatIndex = barPos / subsPerBeat;
       playMetronomeClick(metronomeAccentEnabled && beatIndex === 0, metronomeVolume, audioTime);
       getEmitter()?.('metronome');
-      onMetronomeBeatCallback?.(beatIndex);
+      for (const listener of metronomeBeatListeners) listener(beatIndex);
     }
   }
 

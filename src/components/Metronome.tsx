@@ -103,8 +103,8 @@ const Metronome: React.FC<MetronomeProps> = ({
         onBpmChange(pending);
       }
     };
-    onMetronomeBeat(handler);
-    return () => onMetronomeBeat(null);
+    const unsubscribe = onMetronomeBeat(handler);
+    return () => unsubscribe?.();
   }, [onBeat, onBpmChange]);
 
   useEffect(() => {
