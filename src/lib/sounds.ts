@@ -36,12 +36,12 @@ export const defaultPads: PadSound[] = [
   {
     id: 'loop-worship-2', name: 'Worship Flow', shortName: 'WFL', category: 'loops', colorVar: '--pad-loops',
     isLoop: true,
+    loopBars: 2,
     loopSteps: [
-      [0, 'kick-reverb'], [6, 'kick-reverb'], [12, 'kick-reverb'],
-      [4, 'snare-reverb'], [12, 'snare-reverb'],
-      [0, 'shaker'], [2, 'shaker'], [4, 'shaker'], [6, 'shaker'],
-      [8, 'shaker'], [10, 'shaker'], [12, 'shaker'], [14, 'shaker'],
-      [0, 'finger-snap'], [8, 'finger-snap'],
+      // Bar 1: 3 kicks (same as WSP)
+      [0, 'kick'], [6, 'kick'], [12, 'kick'],
+      // Bar 2: kick no tempo 3 do compasso 2 (sem snare)
+      [24, 'kick'],
     ],
   },
   // Pads extras (desbloqueáveis)

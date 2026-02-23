@@ -44,6 +44,15 @@ let beatUnit = 4; // denominator of time signature
 // Sync (quantization) toggle
 let syncEnabled = true;
 
+// Force loops to start on beat 1
+let forceLoopBeat1 = false;
+
+// Disable metronome downbeat accent
+let metronomeAccentEnabled = true;
+
+// Metronome count-in (pre-count) beats before loops start
+let countInEnabled = false;
+
 export function setSyncEnabled(enabled: boolean) {
   syncEnabled = enabled;
 }
@@ -51,6 +60,43 @@ export function setSyncEnabled(enabled: boolean) {
 export function isSyncEnabled(): boolean {
   return syncEnabled;
 }
+
+export function setForceLoopBeat1(enabled: boolean) {
+  forceLoopBeat1 = enabled;
+  localStorage.setItem('glory-force-loop-beat1', String(enabled));
+}
+
+export function isForceLoopBeat1(): boolean {
+  return forceLoopBeat1;
+}
+
+export function setMetronomeAccent(enabled: boolean) {
+  metronomeAccentEnabled = enabled;
+  localStorage.setItem('glory-metronome-accent', String(enabled));
+}
+
+export function isMetronomeAccent(): boolean {
+  return metronomeAccentEnabled;
+}
+
+export function setCountIn(enabled: boolean) {
+  countInEnabled = enabled;
+  localStorage.setItem('glory-count-in', String(enabled));
+}
+
+export function isCountIn(): boolean {
+  return countInEnabled;
+}
+
+// Load persisted settings
+try {
+  const b1 = localStorage.getItem('glory-force-loop-beat1');
+  if (b1 !== null) forceLoopBeat1 = b1 === 'true';
+  const acc = localStorage.getItem('glory-metronome-accent');
+  if (acc !== null) metronomeAccentEnabled = acc === 'true';
+  const ci = localStorage.getItem('glory-count-in');
+  if (ci !== null) countInEnabled = ci === 'true';
+} catch {}
 
 function getSubdivisionsPerBar(): number {
   const subsPerBeat = beatUnit === 8 ? 2 : 4;
@@ -127,6 +173,11 @@ export function addLoop(pad: PadSound, volume: number) {
   activeLoops.set(pad.id, { pad, volume });
   if (!isRunning) {
     startEngine();
+  } else if (forceLoopBeat1) {
+    // Reset subdivision so the new loop starts from beat 1
+    currentSubdivision = 0;
+    const ctx = getAudioContext();
+    nextTickAudioTime = ctx.currentTime + 0.005;
   }
 }
 
@@ -203,7 +254,7 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
     const barPos = subdivision % SUBS;
     if (barPos % subsPerBeat === 0) {
       const beatIndex = barPos / subsPerBeat;
-      playMetronomeClick(beatIndex === 0, metronomeVolume, audioTime);
+      playMetronomeClick(metronomeAccentEnabled && beatIndex === 0, metronomeVolume, audioTime);
       getEmitter()?.('metronome');
       onMetronomeBeatCallback?.(beatIndex);
     }

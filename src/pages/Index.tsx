@@ -216,6 +216,7 @@ const Index = () => {
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
+  const reopenSetlistRef = useRef(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
     try { return localStorage.getItem('glory-selected-event-id') || null; } catch { return null; }
   });
@@ -1271,7 +1272,7 @@ const Index = () => {
                 selectedEventId={selectedEventId}
                 onSelectEvent={handleSelectEvent}
                 externalEvents={setlistEventsHook}
-                onOpenSavedSongs={() => setSavedSongsOpen(true)}
+                onOpenSavedSongs={() => { reopenSetlistRef.current = true; setSavedSongsOpen(true); }}
               />
               <div className="relative">
                 <button
@@ -1431,7 +1432,7 @@ const Index = () => {
                     selectedEventId={selectedEventId}
                     onSelectEvent={handleSelectEvent}
                     externalEvents={setlistEventsHook}
-                    onOpenSavedSongs={() => setSavedSongsOpen(true)}
+                    onOpenSavedSongs={() => { reopenSetlistRef.current = true; setSavedSongsOpen(true); }}
                   />
                 </div>
               )}
@@ -1613,7 +1614,7 @@ const Index = () => {
                   selectedEventId={selectedEventId}
                   onSelectEvent={handleSelectEvent}
                   externalEvents={setlistEventsHook}
-                  onOpenSavedSongs={() => setSavedSongsOpen(true)}
+                  onOpenSavedSongs={() => { reopenSetlistRef.current = true; setSavedSongsOpen(true); }}
                 />
               </div>
             )}
@@ -1624,7 +1625,10 @@ const Index = () => {
       {/* Hidden SetlistManager to open from banner when songs.length === 0 */}
       {/* Saved songs popup - opened from menu */}
       {savedSongsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4" onClick={() => setSavedSongsOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-sm p-4" onClick={() => {
+          setSavedSongsOpen(false);
+          if (reopenSetlistRef.current) { reopenSetlistRef.current = false; setOpenSetlistFromBanner(true); }
+        }}>
           <div
             className="bg-card border border-border rounded-lg shadow-xl w-full max-w-md max-h-[80vh] flex flex-col animate-fade-in-up"
             onClick={(e) => e.stopPropagation()}
@@ -1635,7 +1639,10 @@ const Index = () => {
                 <span className="text-sm font-semibold text-foreground">Músicas Salvas</span>
                 <span className="text-[10px] text-muted-foreground">({songs.length})</span>
               </div>
-              <button onClick={() => setSavedSongsOpen(false)} className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors">
+              <button onClick={() => {
+                setSavedSongsOpen(false);
+                if (reopenSetlistRef.current) { reopenSetlistRef.current = false; setOpenSetlistFromBanner(true); }
+              }} className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1648,7 +1655,11 @@ const Index = () => {
                     key={song.id}
                     className={`flex items-center gap-2 p-2 rounded-md transition-colors ${currentSongId === song.id ? 'bg-primary/20 border border-primary/30' : 'hover:bg-muted'}`}
                   >
-                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { handleLoadSong(song); setSavedSongsOpen(false); }}>
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
+                      handleLoadSong(song);
+                      setSavedSongsOpen(false);
+                      if (reopenSetlistRef.current) { reopenSetlistRef.current = false; setOpenSetlistFromBanner(true); }
+                    }}>
                       <p className="text-sm font-medium truncate text-foreground">{song.name}</p>
                       <p className="text-[10px] text-muted-foreground">{song.bpm} BPM · {song.timeSignature}{song.key ? ` · ${song.key}` : ''}</p>
                     </div>
@@ -1668,6 +1679,8 @@ const Index = () => {
                             key: song.key,
                           });
                           toast.success('Música adicionada ao repertório!');
+                          setSavedSongsOpen(false);
+                          if (reopenSetlistRef.current) { reopenSetlistRef.current = false; setOpenSetlistFromBanner(true); }
                         }}
                         className="shrink-0 px-2 py-1 text-[10px] font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors"
                         title="Adicionar ao repertório"
