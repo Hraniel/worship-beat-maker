@@ -143,7 +143,7 @@ export default function HelpChatWidget() {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background sm:inset-auto sm:bottom-20 sm:right-4 sm:w-[400px] sm:h-[560px] sm:rounded-2xl sm:shadow-2xl sm:border border-border overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col bg-white sm:inset-auto sm:bottom-20 sm:right-4 sm:w-[400px] sm:h-[560px] sm:rounded-2xl sm:shadow-2xl sm:border border-border overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-violet-600 text-white shrink-0">
         <div className="flex items-center gap-2">
@@ -164,7 +164,7 @@ export default function HelpChatWidget() {
                 className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                   m.role === 'user'
                     ? 'bg-violet-600 text-white rounded-br-md'
-                    : 'bg-white text-black rounded-bl-md'
+                    : 'bg-violet-100 text-violet-900 rounded-bl-md'
                 }`}
               >
                 {m.role === 'assistant' ? (
@@ -189,7 +189,7 @@ export default function HelpChatWidget() {
       </ScrollArea>
 
       {/* Input */}
-      <div className="px-3 py-2 border-t border-border shrink-0 bg-background">
+      <div className="px-3 py-2 border-t border-violet-200 shrink-0 bg-white">
         <form
           onSubmit={(e) => { e.preventDefault(); send(); }}
           className="flex items-center gap-2"
