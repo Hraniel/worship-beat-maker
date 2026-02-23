@@ -1169,6 +1169,42 @@ const Index = () => {
     }
   }, [setlistEventsHook.events, songs, handleLoadSong]);
 
+  // On mount / after events load: if we have a persisted selectedEventId but no
+  // currentSongId, auto-load the first song of the active event so the UI is
+  // fully functional (pads visible, menu complete).
+  const didAutoRestoreRef = useRef(false);
+  useEffect(() => {
+    if (didAutoRestoreRef.current) return;
+    if (!selectedEventId || currentSongId) return;
+    if (setlistEventsHook.loading) return; // wait for events to load
+    const ev = setlistEventsHook.events.find(e => e.id === selectedEventId);
+    if (!ev) {
+      // Event no longer exists — clear stale reference
+      setSelectedEventId(null);
+      try { localStorage.removeItem('glory-selected-event-id'); } catch {}
+      return;
+    }
+    if (ev.songs_data.length > 0) {
+      didAutoRestoreRef.current = true;
+      const firstSong = ev.songs_data[0];
+      const fullSong = songs.find(s => s.id === firstSong.id);
+      const songToLoad: SetlistSong = fullSong || {
+        id: firstSong.id,
+        name: firstSong.name,
+        bpm: firstSong.bpm,
+        timeSignature: firstSong.timeSignature,
+        key: firstSong.key || null,
+        pads: defaultPads,
+        padVolumes: {},
+        padNames: {},
+        padPans: {},
+        padEffects: {},
+        customSounds: {},
+      };
+      handleLoadSong(songToLoad);
+    }
+  }, [selectedEventId, currentSongId, setlistEventsHook.loading, setlistEventsHook.events, songs, handleLoadSong]);
+
   // Prev/Next song navigation (within selected event or all songs)
   const handlePrevSong = useCallback(() => {
     if (!currentSongId || navSongs.length < 2) return;
