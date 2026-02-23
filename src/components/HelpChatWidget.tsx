@@ -164,7 +164,7 @@ export default function HelpChatWidget() {
                 className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
                   m.role === 'user'
                     ? 'bg-violet-600 text-white rounded-br-md'
-                    : 'bg-muted text-foreground rounded-bl-md'
+                    : 'bg-white text-black rounded-bl-md'
                 }`}
               >
                 {m.role === 'assistant' ? (
