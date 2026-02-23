@@ -233,6 +233,14 @@ const Dashboard = () => {
                 <span className="hidden sm:inline">Admin</span>
               </button>
             )}
+            <button
+              onClick={() => navigate('/help')}
+              className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-600"
+              title="Central de Ajuda"
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Ajuda</span>
+            </button>
             <Button size="sm" onClick={() => navigate('/app')}
               className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-3 text-xs font-medium gap-1.5">
               <Play className="h-3 w-3" />
