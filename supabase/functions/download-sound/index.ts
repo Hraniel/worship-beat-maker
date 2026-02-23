@@ -54,23 +54,29 @@ serve(async (req) => {
 
     if (!purchase) throw new Error("Pack not purchased");
 
-    // Generate signed URL
+    // Stream the file through the edge function instead of returning a signed URL
     if (!sound.file_path) throw new Error("Sound file not available");
 
-    const { data: urlData, error: urlErr } = await serviceClient.storage
+    const { data: fileData, error: fileErr } = await serviceClient.storage
       .from("sound-packs")
-      .createSignedUrl(sound.file_path, 3600);
+      .download(sound.file_path);
 
-    if (urlErr || !urlData?.signedUrl) throw new Error("Failed to generate download URL");
+    if (fileErr || !fileData) throw new Error("Failed to download sound file");
 
-    return new Response(
-      JSON.stringify({
-        url: urlData.signedUrl,
-        name: sound.name,
-        short_name: sound.short_name,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Return the audio binary directly with headers that prevent saving
+    const arrayBuffer = await fileData.arrayBuffer();
+
+    return new Response(arrayBuffer, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "audio/mpeg",
+        "Content-Disposition": "inline",
+        "Cache-Control": "no-store, no-cache, must-revalidate, private",
+        "X-Sound-Name": encodeURIComponent(sound.name),
+        "X-Sound-Short-Name": encodeURIComponent(sound.short_name),
+        "Access-Control-Expose-Headers": "X-Sound-Name, X-Sound-Short-Name",
+      },
+    });
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ error: msg }), {
