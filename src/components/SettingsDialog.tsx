@@ -11,7 +11,6 @@ import {
 import {
   setForceLoopBeat1, isForceLoopBeat1,
   setMetronomeAccent, isMetronomeAccent,
-  setCountIn, isCountIn,
 } from '@/lib/loop-engine';
 import MidiSettings from '@/components/MidiSettings';
 import type { MidiChannel, MidiDevice, CCFunctionId } from '@/lib/midi-engine';
@@ -684,7 +683,7 @@ function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenam
 function MetronomeSettingsPanel() {
   const [forceB1, setForceB1] = useState(isForceLoopBeat1);
   const [accent, setAccent] = useState(isMetronomeAccent);
-  const [countIn, setCountInState] = useState(isCountIn);
+  
 
   return (
     <div className="flex flex-col gap-3 w-full">
@@ -729,23 +728,6 @@ function MetronomeSettingsPanel() {
         </button>
       </div>
 
-      {/* Count-in */}
-      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-foreground">Contagem prévia (Count-in)</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Toca um compasso de contagem antes de iniciar os loops. Útil para entrar no tempo certo.
-          </p>
-        </div>
-        <button
-          onClick={() => { const next = !countIn; setCountInState(next); setCountIn(next); }}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
-            countIn ? 'bg-primary' : 'bg-muted'
-          }`}
-        >
-          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${countIn ? 'translate-x-5' : 'translate-x-0'}`} />
-        </button>
-      </div>
 
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
         <p className="text-xs font-medium text-foreground">Dica</p>
