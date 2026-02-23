@@ -57,7 +57,7 @@ export function useLandingConfig() {
     try {
       const [configRes, pricingRes, featuresRes, gatesRes, landingFeaturesRes] = await Promise.all([
         supabase.from('landing_config').select('*').order('config_key'),
-        supabase.from('plan_pricing').select('*').order('price_brl'),
+        supabase.from('public_plan_pricing' as any).select('*').order('price_brl'),
         supabase.from('plan_features').select('*').order('sort_order'),
         supabase.from('feature_gates').select('*').order('gate_label'),
         supabase.from('landing_features').select('*').order('sort_order'),
@@ -68,7 +68,7 @@ export function useLandingConfig() {
         configRes.data.forEach((row: any) => { map[row.config_key] = row.config_value; });
         setConfig(map);
       }
-      if (pricingRes.data) setPricing(pricingRes.data as PlanPricing[]);
+      if (pricingRes.data) setPricing(pricingRes.data as unknown as PlanPricing[]);
       if (featuresRes.data) setFeatures(featuresRes.data as PlanFeature[]);
       if (gatesRes.data) setGates(gatesRes.data as FeatureGate[]);
       if (landingFeaturesRes.data) setLandingFeatures(landingFeaturesRes.data as LandingFeature[]);
