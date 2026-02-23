@@ -27,6 +27,7 @@ interface AuditSuggestion {
   config_table?: string;
   action_type: string;
   accepted: boolean;
+  user_note?: string;
 }
 
 /* ─── Constants ─── */
@@ -281,8 +282,9 @@ export default function AdminAIPromptManager() {
         // Apply config updates
         for (const s of applicable) {
           const table = s.config_table === 'store_config' ? 'store_config' : 'landing_config';
+          const valueToApply = s.user_note?.trim() || s.suggested_value!;
           await supabase.from(table).upsert(
-            { config_key: s.config_key!, config_value: s.suggested_value!, updated_at: new Date().toISOString() } as any,
+            { config_key: s.config_key!, config_value: valueToApply, updated_at: new Date().toISOString() } as any,
             { onConflict: 'config_key' }
           );
           applied++;
@@ -444,8 +446,20 @@ export default function AdminAIPromptManager() {
                         )}
 
                         {s.action_type === 'review' && (
-                          <p className="text-[9px] mt-1 italic opacity-60">⚙️ Ação manual — selecione e clique "Aplicar" para descartar</p>
+                          <p className="text-[9px] mt-1 italic opacity-60">⚙️ Ação manual — selecione para marcar como concluída</p>
                         )}
+
+                        <input
+                          type="text"
+                          placeholder="Escreva o que deseja que seja feito..."
+                          value={s.user_note || ''}
+                          onChange={(e) => {
+                            const up = [...auditResults];
+                            up[i] = { ...up[i], user_note: e.target.value };
+                            setAuditResults(up);
+                          }}
+                          className="mt-2 w-full text-[10px] px-2 py-1.5 rounded-md border border-current/20 bg-white/70 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
                       </div>
                     </div>
                   </div>
