@@ -145,7 +145,7 @@ export default function AdminAIPromptManager() {
     try {
       const [packsRes, pricingRes, featuresRes, gatesRes] = await Promise.all([
         supabase.from('store_packs').select('name, category, price_cents, is_available, tag').eq('is_available', true),
-        supabase.from('plan_pricing').select('*').order('price_brl'),
+        supabase.from('public_plan_pricing' as any).select('*').order('price_brl'),
         supabase.from('plan_features').select('*').order('sort_order'),
         supabase.from('feature_gates').select('*'),
       ]);
@@ -163,8 +163,8 @@ export default function AdminAIPromptManager() {
         }
       }
 
-      if (pricingRes.data && pricingRes.data.length > 0) {
-        const planLines = pricingRes.data.map(p => {
+      if (pricingRes.data && (pricingRes.data as any[]).length > 0) {
+        const planLines = (pricingRes.data as any[]).map((p: any) => {
           const price = Number(p.price_brl) > 0 ? `R$ ${Number(p.price_brl).toFixed(2).replace('.', ',')}${p.period}` : 'Grátis';
           return `- **${p.name}** (${price}): ${p.max_pads} pads, ${p.max_imports >= 999 ? 'importações ilimitadas' : `${p.max_imports} importações`}`;
         }).join('\n');
