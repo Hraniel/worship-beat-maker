@@ -81,17 +81,32 @@ const StoreImportPicker: React.FC<StoreImportPickerProps> = ({ onSelect, onClose
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
-      const resp = await supabase.functions.invoke('download-sound', {
-        body: { soundId: sound.id },
-      });
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const resp = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/download-sound`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({ soundId: sound.id }),
+        }
+      );
 
-      if (resp.error) throw resp.error;
-      const { url, name } = resp.data;
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData?.error || 'Failed to download sound');
+      }
 
-      // Download the actual audio file
-      const audioResp = await fetch(url);
-      if (!audioResp.ok) throw new Error('Failed to download audio');
-      const arrayBuffer = await audioResp.arrayBuffer();
+      const contentType = resp.headers.get('Content-Type') || '';
+      if (contentType.includes('application/json')) {
+        throw new Error('Unexpected response');
+      }
+
+      const arrayBuffer = await resp.arrayBuffer();
+      const name = decodeURIComponent(resp.headers.get('X-Sound-Name') || sound.name);
 
       onSelect(sound.id, name, arrayBuffer);
     } catch (e) {

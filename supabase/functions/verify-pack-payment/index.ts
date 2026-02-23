@@ -63,29 +63,8 @@ serve(async (req) => {
     }
     log("Purchase registered", { packId, userId });
 
-    // Fetch sounds and generate signed download URLs
-    const { data: sounds } = await supabase
-      .from("pack_sounds")
-      .select("name, short_name, file_path, duration_ms")
-      .eq("pack_id", packId)
-      .order("sort_order");
-
-    const downloadUrls: Record<string, string> = {};
-    if (sounds) {
-      for (const sound of sounds) {
-        if (sound.file_path) {
-          const { data: urlData } = await supabase.storage
-            .from("sound-packs")
-            .createSignedUrl(sound.file_path, 3600);
-          if (urlData?.signedUrl) {
-            downloadUrls[sound.short_name] = urlData.signedUrl;
-          }
-        }
-      }
-    }
-
     return new Response(
-      JSON.stringify({ success: true, sounds: sounds || [], download_urls: downloadUrls }),
+      JSON.stringify({ success: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
