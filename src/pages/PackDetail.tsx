@@ -100,6 +100,13 @@ const PackDetail: React.FC = () => {
 
   const handlePurchase = async () => {
     if (!pack) return;
+    // Ensure user is logged in
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData?.session) {
+      toast.error('Você precisa estar logado para comprar. Faça login primeiro.');
+      navigate('/auth');
+      return;
+    }
     setPurchasing(true);
     try {
       if (pack.price_cents === 0) {

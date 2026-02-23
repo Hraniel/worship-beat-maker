@@ -216,7 +216,9 @@ const Index = () => {
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
+    try { return localStorage.getItem('glory-selected-event-id') || null; } catch { return null; }
+  });
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
   const loopPadIds = useMemo(() => new Set(defaultPads.filter(p => p.isLoop).map(p => p.id)), []);
   const midiNoteCallbacksRef = useRef<import('@/hooks/useMidi').MidiNoteCallbacks>({
@@ -492,13 +494,16 @@ const Index = () => {
     navigator.mediaSession.playbackState = "playing";
   }, []);
 
-  // Visibility change: resume AudioContext if OS suspended it
+  // Visibility change: resume AudioContext + auto-save current song when leaving
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         getAudioContext()
           .resume()
           .catch(() => {});
+      } else if (document.visibilityState === "hidden") {
+        // Auto-save current song when user leaves the app
+        autoSaveCurrentSongRef.current?.();
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
@@ -1017,6 +1022,10 @@ const Index = () => {
         padPans: { ...padPans },
         padEffects: { ...padEffects },
         customSounds: { ...customSounds },
+        midiMappings: getMidiMappings(),
+        midiCCMappings: getMidiCCMappings() as any,
+        midiChannel: getMidiChannel(),
+        midiCCChannel: getMidiCCChannel(),
       };
       const result = await createSetlist(name, [song]);
       if (result) {
@@ -1135,6 +1144,7 @@ const Index = () => {
   // Handle event selection: auto-load first song
   const handleSelectEvent = useCallback((eventId: string | null) => {
     setSelectedEventId(eventId);
+    try { if (eventId) localStorage.setItem('glory-selected-event-id', eventId); else localStorage.removeItem('glory-selected-event-id'); } catch {}
     if (eventId) {
       const ev = setlistEventsHook.events.find(e => e.id === eventId);
       if (ev && ev.songs_data.length > 0) {

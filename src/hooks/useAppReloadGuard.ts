@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const LAST_ACTIVE_KEY = 'app_last_active_ts';
-const AWAY_THRESHOLD_MS = 2 * 60 * 1000; // 2 minutes
+const AWAY_THRESHOLD_MS = 120 * 60 * 1000; // 120 minutes
 
 /**
  * Returns `showLoading` = true whenever the user returns to the app
