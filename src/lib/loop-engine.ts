@@ -21,6 +21,9 @@ interface ActiveLoop {
   volume: number;
 }
 
+// Loops queued to start on next beat 1 (when forceLoopBeat1 is enabled)
+let pendingLoops: Map<string, ActiveLoop> = new Map();
+
 let isRunning = false;
 let activeLoops: Map<string, ActiveLoop> = new Map();
 let currentSubdivision = 0;
@@ -170,23 +173,24 @@ export function isMetronomeActive() {
 // --- Loop management ---
 
 export function addLoop(pad: PadSound, volume: number) {
-  activeLoops.set(pad.id, { pad, volume });
   if (!isRunning) {
+    activeLoops.set(pad.id, { pad, volume });
     startEngine();
   } else if (forceLoopBeat1) {
-    // Reset subdivision so the new loop starts from beat 1
-    currentSubdivision = 0;
-    const ctx = getAudioContext();
-    nextTickAudioTime = ctx.currentTime + 0.005;
+    // Queue — loop will be activated when subdivision hits beat 1
+    pendingLoops.set(pad.id, { pad, volume });
+  } else {
+    activeLoops.set(pad.id, { pad, volume });
   }
 }
 
 export function removeLoop(padId: string) {
   activeLoops.delete(padId);
+  pendingLoops.delete(padId);
   // Stop any playing custom buffer source
   const src = activeLoopSources.get(padId);
   if (src) { try { src.stop(); } catch { /* already stopped */ } activeLoopSources.delete(padId); }
-  if (isRunning && activeLoops.size === 0 && !metronomeEnabled) {
+  if (isRunning && activeLoops.size === 0 && pendingLoops.size === 0 && !metronomeEnabled) {
     stopEngine();
   }
 }
@@ -207,7 +211,7 @@ export function getCurrentBpm(): number {
 }
 
 export function getActiveLoopIds(): string[] {
-  return Array.from(activeLoops.keys());
+  return [...activeLoops.keys(), ...pendingLoops.keys()];
 }
 
 // --- Schedule a single subdivision's audio at a precise audio time ---
@@ -217,6 +221,14 @@ const activeLoopSources = new Map<string, AudioBufferSourceNode>();
 
 function scheduleSubdivision(subdivision: number, audioTime: number) {
   const SUBS = getSubdivisionsPerBar();
+
+  // Move pending loops to active on beat 1 (subdivision 0 of the bar)
+  if (pendingLoops.size > 0 && (subdivision % SUBS) === 0) {
+    for (const [id, loop] of pendingLoops) {
+      activeLoops.set(id, loop);
+    }
+    pendingLoops.clear();
+  }
 
   // Fire loop sounds for this subdivision
   for (const [, loop] of activeLoops) {
@@ -325,6 +337,7 @@ function stopEngine() {
 
 export function stopAllLoops() {
   activeLoops.clear();
+  pendingLoops.clear();
   if (!metronomeEnabled) {
     stopEngine();
   }
