@@ -59,46 +59,18 @@ const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: str
   master: { label: 'Master', icon: <Crown className="h-3 w-3" />, cls: 'bg-amber-100 text-amber-700' },
 };
 
-// Category groups for sidebar
-const CATEGORY_GROUPS = [
-  {
-    label: 'Todos',
-    key: 'Todos',
-    icon: <Music className="h-3.5 w-3.5" />,
-    children: [],
-  },
-  {
-    label: 'Bateria',
-    key: 'drums',
-    icon: <Drum className="h-3.5 w-3.5" />,
-    children: ['Kick', 'Snare', 'Toms', 'Hi-Hat & Pratos', 'Percussão'],
-  },
-  {
-    label: 'Loops',
-    key: 'loops',
-    icon: <AudioWaveform className="h-3.5 w-3.5" />,
-    children: ['Loops 4/4', 'Loops 3/4', 'Loops 6/8'],
-  },
-  {
-    label: 'Pads',
-    key: 'Continuous Pads',
-    icon: <Waves className="h-3.5 w-3.5" />,
-    children: [],
-  },
-  {
-    label: 'Efeitos',
-    key: 'efeitos',
-    icon: <Sparkles className="h-3.5 w-3.5" />,
-    children: ['Efeitos Super Low', 'Efeitos Crescente Seco', 'Efeitos Crescente Fade'],
-  },
-  {
-    label: 'Outros',
-    key: 'Outros',
-    icon: <Layers className="h-3.5 w-3.5" />,
-    children: [],
-  },
-];
-
+// Category groups for sidebar - labels use t() at render time
+function useCategoryGroups() {
+  const { t } = useTranslation();
+  return [
+    { label: t('dashboard.all'), key: 'Todos', icon: <Music className="h-3.5 w-3.5" />, children: [] },
+    { label: t('dashboard.drums'), key: 'drums', icon: <Drum className="h-3.5 w-3.5" />, children: ['Kick', 'Snare', 'Toms', 'Hi-Hat & Pratos', 'Percussão'] },
+    { label: t('dashboard.loops'), key: 'loops', icon: <AudioWaveform className="h-3.5 w-3.5" />, children: ['Loops 4/4', 'Loops 3/4', 'Loops 6/8'] },
+    { label: t('dashboard.continuousPads'), key: 'Continuous Pads', icon: <Waves className="h-3.5 w-3.5" />, children: [] },
+    { label: t('dashboard.effects'), key: 'efeitos', icon: <Sparkles className="h-3.5 w-3.5" />, children: ['Efeitos Super Low', 'Efeitos Crescente Seco', 'Efeitos Crescente Fade'] },
+    { label: t('dashboard.others'), key: 'Outros', icon: <Layers className="h-3.5 w-3.5" />, children: [] },
+  ];
+}
 // MOBILE_CATEGORIES removed — mobile now uses sidebar drawer with CATEGORY_GROUPS
 
 // Static fallback packs (shown when DB has no packs yet)
@@ -121,6 +93,7 @@ const STATIC_PACKS: StorePackData[] = [
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const CATEGORY_GROUPS = useCategoryGroups();
   useBodyScroll();
   const { user, signOut } = useAuth();
   const { tier, subscriptionEnd, loading } = useSubscription();
@@ -165,7 +138,7 @@ const Dashboard = () => {
   };
 
   const formattedEnd = subscriptionEnd
-    ? new Date(subscriptionEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    ? new Date(subscriptionEnd).toLocaleDateString(undefined, { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
 
   // Library derived data
@@ -281,7 +254,7 @@ const Dashboard = () => {
                 }`}
               >
                 <Package className="h-3.5 w-3.5" />
-                Packs
+                {t('dashboard.packs')}
               </button>
               <button
                 onClick={() => setAdminTab('translations')}
@@ -303,7 +276,7 @@ const Dashboard = () => {
                 }`}
               >
                 <Gift className="h-3.5 w-3.5" />
-                Premiações
+                {t('common.rewards')}
               </button>
             </div>
             <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 p-4">
@@ -484,7 +457,7 @@ const Dashboard = () => {
               )}
             </div>
             <p className="text-xs text-gray-500">
-              <span className="font-semibold text-gray-900">{activeCategory}</span> · {filteredPacks.length} packs
+              <span className="font-semibold text-gray-900">{activeCategory}</span> · {filteredPacks.length} {t('dashboard.pack', { count: filteredPacks.length })}
             </p>
           </div>
 
@@ -685,7 +658,7 @@ const Dashboard = () => {
                 <div className="flex items-center justify-between mb-4">
                   <p className="text-sm text-gray-500">
                     <span className="font-semibold text-gray-900">{activeCategory}</span>
-                    {' '}· {filteredPacks.length} {filteredPacks.length === 1 ? 'pack' : 'packs'}
+                    {' '}· {filteredPacks.length} {t('dashboard.pack', { count: filteredPacks.length })}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">

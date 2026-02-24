@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 // Format phone: (XX) XXXXX-XXXX
 function formatPhone(value: string) {
@@ -46,6 +47,7 @@ function validateCpf(cpf: string): boolean {
 }
 
 export default function ProfileCompletion() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { tier } = useSubscription();
   const [fullName, setFullName] = useState('');
@@ -96,10 +98,10 @@ export default function ProfileCompletion() {
 
   const handleSave = async () => {
     if (!user) return;
-    if (!fullName.trim()) return toast.error('Preencha seu nome completo');
-    if (!validateCpf(cpf)) return toast.error('CPF inválido');
-    if (phone.replace(/\D/g, '').length < 10) return toast.error('Telefone inválido');
-    if (!birthday) return toast.error('Selecione sua data de aniversário');
+    if (!fullName.trim()) return toast.error(t('dashboard.fillFullName'));
+    if (!validateCpf(cpf)) return toast.error(t('dashboard.invalidCpf'));
+    if (phone.replace(/\D/g, '').length < 10) return toast.error(t('dashboard.invalidPhone'));
+    if (!birthday) return toast.error(t('dashboard.selectBirthday'));
 
     setSaving(true);
     try {
@@ -141,10 +143,10 @@ export default function ProfileCompletion() {
 
       setCompleted(true);
       toast.success(isEligibleForReward
-        ? `Perfil completo! 🎉 Você ganhou +${rewardDays} dias grátis!`
-        : 'Perfil completo! ✅');
+        ? t('dashboard.profileCompletedReward', { days: rewardDays })
+        : t('dashboard.profileCompleted'));
     } catch (err: any) {
-      toast.error(err?.message || 'Erro ao salvar perfil');
+      toast.error(err?.message || t('dashboard.profileSaveError'));
     } finally {
       setSaving(false);
     }
@@ -154,25 +156,25 @@ export default function ProfileCompletion() {
     <div className="mb-6 rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <User className="h-5 w-5 text-violet-600" />
-        <h3 className="text-sm font-bold text-gray-900">Complete seu perfil</h3>
+        <h3 className="text-sm font-bold text-gray-900">{t('dashboard.completeProfile')}</h3>
         {isEligibleForReward && (
           <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-            <Gift className="h-3 w-3" /> +{rewardDays} dias grátis
+            <Gift className="h-3 w-3" /> {t('dashboard.freeDaysReward', { days: rewardDays })}
           </span>
         )}
       </div>
 
       {isEligibleForReward && (
         <p className="text-xs text-violet-600 mb-4">
-          Complete seu cadastro e ganhe <strong>+{rewardDays} dias</strong> de acesso {tier === 'master' ? 'Master' : 'Pro'} grátis!
+          {t('dashboard.completeProfileReward', { days: rewardDays, tier: tier === 'master' ? 'Master' : 'Pro' })}
         </p>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label className="text-xs text-gray-600">Nome completo</Label>
+          <Label className="text-xs text-gray-600">{t('dashboard.fullName')}</Label>
           <Input
-            placeholder="Seu nome completo"
+            placeholder={t('dashboard.fullNamePlaceholder')}
             value={fullName}
             onChange={e => setFullName(e.target.value)}
             maxLength={100}
@@ -195,7 +197,7 @@ export default function ProfileCompletion() {
 
         <div className="space-y-1.5">
           <Label className="text-xs text-gray-600 flex items-center gap-1">
-            <Phone className="h-3 w-3" /> Telefone
+            <Phone className="h-3 w-3" /> {t('dashboard.phone')}
           </Label>
           <Input
             placeholder="(00) 00000-0000"
@@ -209,7 +211,7 @@ export default function ProfileCompletion() {
 
         <div className="space-y-1.5">
           <Label className="text-xs text-gray-600 flex items-center gap-1">
-            <Calendar className="h-3 w-3" /> Data de aniversário
+            <Calendar className="h-3 w-3" /> {t('dashboard.birthday')}
           </Label>
           <Popover>
             <PopoverTrigger asChild>
@@ -220,7 +222,7 @@ export default function ProfileCompletion() {
                   !birthday && "text-muted-foreground"
                 )}
               >
-                {birthday ? format(birthday, "dd/MM/yyyy") : <span>Selecione a data</span>}
+                {birthday ? format(birthday, "dd/MM/yyyy") : <span>{t('dashboard.selectDate')}</span>}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -246,7 +248,7 @@ export default function ProfileCompletion() {
         className="mt-4 w-full sm:w-auto bg-violet-600 hover:bg-violet-700 text-white h-9 text-sm rounded-lg"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
-        Salvar perfil
+        {t('dashboard.saveProfile')}
       </Button>
     </div>
   );
