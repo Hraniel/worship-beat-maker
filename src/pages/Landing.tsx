@@ -119,6 +119,11 @@ const fadeUp = {
 };
 const stagger = { visible: { transition: { staggerChildren: 0.08 } } };
 
+/** Renders a config string that may contain inline HTML (e.g. <span style="color:red">word</span>) */
+const RichText = ({ html, className, style }: { html: string; className?: string; style?: React.CSSProperties }) => (
+  <span className={className} style={style} dangerouslySetInnerHTML={{ __html: html }} />
+);
+
 // Helper: map tailwind size key to class
 const titleSizeClass = (size: string) => {
   const map: Record<string, string> = {
@@ -421,12 +426,7 @@ const Hero = ({ navigate, config, L }: { navigate: ReturnType<typeof useNavigate
             className={`${titleSize} font-extrabold tracking-tight leading-[1.08] mb-6`}
             style={{ color: titleColor }}
           >
-            {(L('hero_title', "Seus pads de worship na palma da mão")).split("worship").map((part, i, arr) => (
-              <React.Fragment key={i}>
-                {part}
-                {i < arr.length - 1 && <span className="text-primary">worship</span>}
-              </React.Fragment>
-            ))}
+            <RichText html={L('hero_title', "Seus pads de worship na palma da mão")} />
           </motion.h1>
 
           <motion.p
@@ -435,7 +435,7 @@ const Hero = ({ navigate, config, L }: { navigate: ReturnType<typeof useNavigate
             className="text-lg sm:text-xl max-w-2xl mx-auto mb-10"
             style={{ color: subtitleColor }}
           >
-            {L('hero_subtitle', "Pads profissionais, metrônomo, loops, continuous pads e Glory Store — tudo que o músico de louvor precisa, em um único app.")}
+            <RichText html={L('hero_subtitle', "Pads profissionais, metrônomo, loops, continuous pads e Glory Store — tudo que o músico de louvor precisa, em um único app.")} />
           </motion.p>
 
           <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
