@@ -80,8 +80,8 @@ export default function TicketConversation({ ticketId, ticketQuestion, ticketSta
       } as any);
       if (error) throw error;
 
-      // Reopen ticket if it was done
-      if (ticketStatus === 'done' || ticketStatus === 'in_progress') {
+      // Reopen ticket if it was in_progress (done tickets are closed permanently)
+      if (ticketStatus === 'in_progress') {
         await supabase.from('support_tickets').update({ status: 'received' } as any).eq('id', ticketId);
       }
 
