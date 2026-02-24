@@ -104,10 +104,11 @@ export default function MyTickets() {
             {tickets.map((t, i) => {
               const sc = statusConfig[t.status];
               return (
-                <div
+                <button
                   key={t.id}
+                  type="button"
                   onClick={() => setSelectedTicket({ ticket: t, index: i })}
-                  className="border border-border rounded-xl p-4 bg-card space-y-2 cursor-pointer hover:border-primary/30 transition-colors active:scale-[0.99]"
+                  className="w-full text-left border border-border rounded-xl p-4 bg-card space-y-2 cursor-pointer hover:border-primary/30 transition-colors active:scale-[0.99]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-foreground">Ticket #{tickets.length - i}</span>
@@ -121,7 +122,7 @@ export default function MyTickets() {
                     {t.status !== 'received' && <span>Atualizado em {formatDate(t.updated_at)}</span>}
                   </div>
                   <p className="text-[10px] text-primary font-medium">Toque para ver conversa →</p>
-                </div>
+                </button>
               );
             })}
           </div>
