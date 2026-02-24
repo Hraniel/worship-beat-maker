@@ -108,7 +108,7 @@ const DEFAULT_CATS = [
 const ImageUploadField: React.FC<{
   keyPrefix: string; label: string; hint: string; value: string;
   onChange: (v: string) => void; onSave: () => void; saving: boolean;
-  aspectRatio?: '1:1' | '16:9' | 'free';
+  aspectRatio?: '1:1' | '16:9' | '9:16' | 'free';
 }> = ({ label, hint, value, onChange, onSave, saving, aspectRatio = 'free' }) => {
   const [uploading, setUploading] = useState(false);
   const [cropperOpen, setCropperOpen] = useState(false);
@@ -514,7 +514,7 @@ const AdminLandingEditor: React.FC = () => {
               {renderTextField(`screenshot_${n}_desc`, 'Descrição', true)}
               <ImageUploadField keyPrefix={`screenshot_${n}_image`} label="Imagem" hint="9:16 (400×711px)"
                 value={getVal(`screenshot_${n}_image`)} onChange={v => setVal(`screenshot_${n}_image`, v)}
-                onSave={() => saveKey(`screenshot_${n}_image`)} saving={saving === `screenshot_${n}_image`} aspectRatio="free" />
+                onSave={() => saveKey(`screenshot_${n}_image`)} saving={saving === `screenshot_${n}_image`} aspectRatio="9:16" />
             </div>
           ))}
 
