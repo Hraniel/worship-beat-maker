@@ -55,6 +55,27 @@ const AdminTicketManager = () => {
 
   useEffect(() => { fetchTickets(); }, [filter]);
 
+  const sendTicketEmail = async (ticketId: string, newStatus: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return;
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const url = `https://${projectId}.supabase.co/functions/v1/send-ticket-email`;
+      await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({ ticketId, newStatus }),
+      });
+    } catch {
+      // Fallback silencioso
+    }
+  };
+
   const updateStatus = async (id: string, newStatus: string) => {
     setActing(id);
     try {
@@ -64,6 +85,8 @@ const AdminTicketManager = () => {
         .eq('id', id);
       if (error) throw error;
       toast.success(`Ticket atualizado para "${statusConfig[newStatus]?.label}"`);
+      // Fire-and-forget email notification
+      sendTicketEmail(id, newStatus);
       fetchTickets();
     } catch {
       toast.error('Erro ao atualizar ticket.');
