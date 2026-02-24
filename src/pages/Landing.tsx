@@ -278,8 +278,8 @@ const Nav = ({
   const navBorder = config.nav_border_color || "hsl(0 0% 0% / 0.08)";
   const linkColor = config.nav_link_color || "hsl(220 15% 45%)";
   const linkHoverColor = config.nav_link_hover_color || "hsl(220 15% 10%)";
-  const loginLabel = L('nav_btn_login_label', t("landing.nav.login"));
-  const signupLabel = L('nav_btn_signup_label', t("landing.nav.signup"));
+  const loginLabel = L('nav_btn_login_label', t("landing.nav.login")) || t("landing.nav.login");
+  const signupLabel = L('nav_btn_signup_label', t("landing.nav.signup")) || t("landing.nav.signup");
   const loginBg = config.nav_btn_login_bg || "";
   const loginColor = config.nav_btn_login_color || "";
   const signupBg = config.nav_btn_signup_bg || "";
@@ -305,12 +305,14 @@ const Nav = ({
         <div className="flex items-center gap-3 shrink-0">
           <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
           <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
-          <LanguageSelector compact className="hidden sm:flex ml-2 shrink-0" />
+        </div>
+        <div className="flex items-center gap-1 sm:gap-3">
+          <LanguageSelector compact className="hidden sm:flex shrink-0" />
           {navLinks.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="text-sm transition hidden sm:inline"
+              className="text-xs sm:text-sm transition hidden sm:inline whitespace-nowrap"
               style={{ color: linkColor }}
               onMouseEnter={(e) => (e.currentTarget.style.color = linkHoverColor)}
               onMouseLeave={(e) => (e.currentTarget.style.color = linkColor)}
@@ -318,13 +320,11 @@ const Nav = ({
               {l.label}
             </a>
           ))}
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => navigate("/auth")}
-            className="text-foreground/70 hover:text-foreground shrink-0 whitespace-nowrap"
+            className="shrink-0 whitespace-nowrap text-xs sm:text-sm px-3 sm:px-4"
             style={{ ...(loginBg ? { background: loginBg } : {}), ...(loginColor ? { color: loginColor } : {}) }}
           >
             {loginLabel}
@@ -332,7 +332,7 @@ const Nav = ({
           <Button
             size="sm"
             onClick={() => navigate("/auth?mode=signup")}
-            className="font-semibold shrink-0 whitespace-nowrap"
+            className="font-semibold shrink-0 whitespace-nowrap text-xs sm:text-sm px-2 sm:px-4"
             style={{
               background: signupBg || "hsl(220 15% 10%)",
               color: signupColor || "hsl(0 0% 100%)",
