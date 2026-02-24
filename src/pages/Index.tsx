@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import { Slider } from "@/components/ui/slider";
@@ -153,6 +154,7 @@ function padSizeToTextSize(size: number): "sm" | "md" | "lg" {
 }
 
 const Index = () => {
+  const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { tier } = useSubscription();
   const { canAccess } = useFeatureGates();
@@ -419,10 +421,10 @@ const Index = () => {
           return next;
         });
 
-        toast.success(`Som "${soundName}" importado da Glory Store!`);
+        toast.success(t('index.importedFromStore', { name: soundName }));
       } catch (e) {
         console.error("Error importing store sound:", e);
-        toast.error("Erro ao importar som da loja.");
+        toast.error(t('index.importError'));
       }
     },
     [customSounds],
@@ -517,7 +519,7 @@ const Index = () => {
       await installPrompt.prompt();
       const { outcome } = await installPrompt.userChoice;
       if (outcome === "accepted") {
-        toast.success("App instalado com sucesso!");
+        toast.success(t('common.installed'));
       }
       setInstallPrompt(null);
     } else {
@@ -676,10 +678,10 @@ const Index = () => {
           return next;
         });
 
-        toast.success(`Som "${file.name}" importado! Configurações resetadas.`);
+        toast.success(t('index.importedSound', { name: file.name }));
       } catch (e) {
         console.error("Error importing sound:", e);
-        toast.error("Erro ao importar som. Verifique o formato do arquivo.");
+        toast.error(t('index.importSoundError'));
       }
     },
     [customSounds],
@@ -693,7 +695,7 @@ const Index = () => {
       delete updated[padId];
       setCustomSounds(updated);
       saveCustomNames(updated);
-      toast.success("Som customizado removido");
+      toast.success(t('index.customSoundRemoved'));
     },
     [customSounds],
   );
@@ -801,7 +803,7 @@ const Index = () => {
       saveCustomNames(next);
       return next;
     });
-    toast.success("Pad redefinido!");
+    toast.success(t('index.padReset'));
   }, []);
 
   const handleResetAllPads = useCallback(() => {
@@ -822,7 +824,7 @@ const Index = () => {
     localStorage.setItem("drum-pads-pad-colors", "{}");
     setCustomSounds({});
     saveCustomNames({});
-    toast.success("Todos os pads redefinidos!");
+    toast.success(t('index.allPadsReset'));
   }, []);
 
   // Set of native pad IDs (not custom sounds) - only apply AI config to these
@@ -1290,7 +1292,7 @@ const Index = () => {
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <Calendar className="h-4 w-4 text-primary shrink-0" />
               <span className="text-xs font-medium text-primary">
-                Crie um evento programado para começar
+                {t('index.createEventToStart')}
               </span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -1338,7 +1340,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
+                        <Download className="h-4 w-4 text-muted-foreground" /> {t('index.installApp')}
                       </button>
                       <button
                         onClick={() => {
@@ -1347,7 +1349,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> {t('index.savedSongs')} ({songs.length})
                       </button>
                       <button
                         onClick={() => {
@@ -1357,7 +1359,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <Sparkles className="h-4 w-4 text-muted-foreground" /> Music AI
+                        <Sparkles className="h-4 w-4 text-muted-foreground" /> {t('index.musicAI')}
                       </button>
                       <button
                         onClick={() => {
@@ -1366,7 +1368,7 @@ const Index = () => {
                         }}
                         className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? "text-primary font-medium bg-primary/10" : "text-foreground hover:bg-muted"}`}
                       >
-                        <Settings2 className="h-4 w-4" /> {editMode ? "Sair do modo edição" : "Modo Edição"}
+                        <Settings2 className="h-4 w-4" /> {editMode ? t('index.exitEditMode') : t('index.editMode')}
                       </button>
                       <button
                         onClick={() => {
@@ -1376,7 +1378,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
+                        <Sliders className="h-4 w-4 text-muted-foreground" /> {t('index.settings')}
                       </button>
                       <div className="border-t border-border my-1" />
                       <button
@@ -1386,7 +1388,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors"
                       >
-                        <LogOut className="h-4 w-4" /> Sair
+                        <LogOut className="h-4 w-4" /> {t('index.signOut')}
                       </button>
                     </div>
                   </>
@@ -1420,7 +1422,7 @@ const Index = () => {
                   ♪ {currentSongName}
                 </span>
               ) : selectedEvent && selectedEventSongs.length === 0 ? (
-                <span className="text-[10px] text-muted-foreground italic">Nenhuma música no repertório</span>
+                <span className="text-[10px] text-muted-foreground italic">{t('index.noSongsInSetlist')}</span>
               ) : null}
             </div>
 
@@ -1504,7 +1506,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <Download className="h-4 w-4 text-muted-foreground" /> Instalar App
+                        <Download className="h-4 w-4 text-muted-foreground" /> {t('index.installApp')}
                       </button>
                       <button
                         onClick={() => {
@@ -1513,7 +1515,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> Músicas Salvas ({songs.length})
+                        <FolderOpen className="h-4 w-4 text-muted-foreground" /> {t('index.savedSongs')} ({songs.length})
                       </button>
                       <button
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
@@ -1523,7 +1525,7 @@ const Index = () => {
                           setTimeout(() => setSpotifySheetOpen(true), 150);
                         }}
                       >
-                        <Sparkles className="h-4 w-4 text-muted-foreground" /> Music AI
+                        <Sparkles className="h-4 w-4 text-muted-foreground" /> {t('index.musicAI')}
                       </button>
                       {currentSongId && songs.length > 0 && (
                         <button
@@ -1534,7 +1536,7 @@ const Index = () => {
                           }}
                           className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                         >
-                          <MonitorPlay className="h-4 w-4 text-muted-foreground" /> Modo Performance
+                          <MonitorPlay className="h-4 w-4 text-muted-foreground" /> {t('index.performanceMode')}
                         </button>
                       )}
                       <button
@@ -1544,7 +1546,7 @@ const Index = () => {
                         }}
                         className={`flex items-center gap-2 w-full px-3 py-2.5 text-sm transition-colors ${editMode ? "text-primary font-medium bg-primary/10" : "text-foreground hover:bg-muted"}`}
                       >
-                        <Settings2 className="h-4 w-4" /> {editMode ? "Sair do modo edição" : "Modo Edição"}
+                        <Settings2 className="h-4 w-4" /> {editMode ? t('index.exitEditMode') : t('index.editMode')}
                       </button>
                       <button
                         onClick={() => {
@@ -1554,7 +1556,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <Sliders className="h-4 w-4 text-muted-foreground" /> Configurações
+                        <Sliders className="h-4 w-4 text-muted-foreground" /> {t('index.settings')}
                       </button>
                       <button
                         onClick={() => {
@@ -1564,7 +1566,7 @@ const Index = () => {
                         }}
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
                       >
-                        <Store className="h-4 w-4 text-muted-foreground" /> Glory Store
+                        <Store className="h-4 w-4 text-muted-foreground" /> {t('index.store')}
                       </button>
                       <button
                         onClick={async () => {
@@ -1683,7 +1685,7 @@ const Index = () => {
             <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Músicas Salvas</span>
+                <span className="text-sm font-semibold text-foreground">{t('index.savedSongs')}</span>
                 <span className="text-[10px] text-muted-foreground">({songs.length})</span>
               </div>
               <button onClick={closeSavedAndReopen} className="p-1 text-muted-foreground hover:text-foreground rounded-md hover:bg-muted transition-colors">
@@ -1692,7 +1694,7 @@ const Index = () => {
             </div>
             <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1" style={{ overscrollBehavior: 'contain' }}>
               {songs.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-6">Nenhuma música salva ainda. Crie músicas dentro dos eventos programados.</p>
+                <p className="text-xs text-muted-foreground text-center py-6">{t('index.noSavedSongs')} {t('index.noSavedSongsHint')}</p>
               ) : (
                 songs.map((song) => (
                   <div
@@ -1711,7 +1713,7 @@ const Index = () => {
                         onClick={() => {
                           const ev = setlistEventsHook.events.find(e => e.id === selectedEventId);
                           if (ev?.songs_data.some(es => es.id === song.id)) {
-                            toast.error('Música já está no evento');
+                            toast.error(t('index.songAlreadyInEvent'));
                             return;
                           }
                           setlistEventsHook.addSongToEvent(selectedEventId, {
@@ -1721,13 +1723,13 @@ const Index = () => {
                             timeSignature: song.timeSignature,
                             key: song.key,
                           });
-                          toast.success('Música adicionada ao repertório!');
+                          toast.success(t('index.songAddedToSetlist'));
                           closeSavedAndReopen();
                         }}
                         className="shrink-0 px-2 py-1 text-[10px] font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors"
                         title="Adicionar ao repertório"
                       >
-                        + Repertório
+                        {t('index.addToSetlist')}
                       </button>
                     )}
                   </div>
@@ -1743,11 +1745,11 @@ const Index = () => {
       {!focusMode && currentSongId && (
         !isOnline ? (
           <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 flex items-center justify-center gap-1.5">
-            <span>⚠️ Modo offline — usando dados em cache</span>
+            <span>⚠️ {t('index.offlineMode')}</span>
           </div>
         ) : (
           <div className="px-3 py-1 text-[10px] text-muted-foreground text-center border-b border-border/50 hidden sm:block">
-            Segure um pad para ajustar volume e importar som.
+            {t('index.padHintDesktop')}
           </div>
         )
       )}
@@ -1824,14 +1826,14 @@ const Index = () => {
               <div data-tutorial="ambient-pads" className="w-full flex flex-col items-center gap-1">
                 {/* Focus mode button — only on mobile portrait */}
                 {!isTablet && !isDesktop && !isLandscape && currentSongId && !editMode && (
-                  <button
-                    onClick={toggleFocusMode}
-                    className={`flex items-center gap-1 ${focusMode ? 'px-5 py-2 text-sm font-semibold' : 'px-3 py-1 text-xs'} text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors`}
-                    title={focusMode ? "Sair do modo foco" : "Modo foco"}
-                    data-tutorial="focus-mode"
-                  >
-                    {focusMode ? <Minimize className="h-4 w-4" /> : <Maximize className="h-3 w-3" />}
-                    {focusMode ? "Sair do Foco" : "Foco"}
+                   <button
+                     onClick={toggleFocusMode}
+                     className={`flex items-center gap-1 ${focusMode ? 'px-5 py-2 text-sm font-semibold' : 'px-3 py-1 text-xs'} text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur border border-border rounded-full transition-colors`}
+                     title={focusMode ? t('index.exitFocusMode') : t('index.focusMode')}
+                     data-tutorial="focus-mode"
+                   >
+                     {focusMode ? <Minimize className="h-4 w-4" /> : <Maximize className="h-3 w-3" />}
+                     {focusMode ? t('index.exitFocus') : t('index.focus')}
                   </button>
                 )}
                 <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} fullPage={isTablet} />
@@ -1866,17 +1868,17 @@ const Index = () => {
                       className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
                     >
                       <Lock className="h-4 w-4" />
-                      <span className="text-[10px]">Mixer — Plano Pro</span>
+                       <span className="text-[10px]">{t('index.mixerProPlan')}</span>
                     </button>
                   ) : (
                     <MixerStrip
                       controlledPage={faderPage}
                       onControlledPageChange={setFaderPage}
                       channels={[
-                        {
-                          id: "metronome",
-                          label: "🔊 Volume Geral",
-                          shortLabel: "Vol. Geral",
+                         {
+                           id: "metronome",
+                           label: `🔊 ${t('index.generalVolume')}`,
+                           shortLabel: t('index.generalVolume'),
                           volume: metronomeVol,
                           onChange: handleMetronomeVolChange,
                         },
@@ -2027,11 +2029,11 @@ const Index = () => {
                   <button
                     onClick={toggleFocusMode}
                     className="flex items-center gap-1 px-5 py-2 text-sm font-semibold text-muted-foreground hover:text-foreground bg-muted/60 backdrop-blur-sm rounded-full transition-colors"
-                    title="Sair do modo foco"
-                  >
-                    <Minimize className="h-4 w-4" />
-                    Sair do Foco
-                  </button>
+                     title={t('index.exitFocusMode')}
+                   >
+                     <Minimize className="h-4 w-4" />
+                     {t('index.exitFocus')}
+                   </button>
                 </div>
               )}
 
@@ -2060,17 +2062,17 @@ const Index = () => {
                       className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
                     >
                       <Lock className="h-4 w-4" />
-                      <span className="text-[10px]">Mixer — Plano Pro</span>
+                       <span className="text-[10px]">{t('index.mixerProPlan')}</span>
                     </button>
                   ) : (
                     <MixerStrip
                       controlledPage={faderPage}
                       onControlledPageChange={setFaderPage}
                       channels={[
-                        {
-                          id: "metronome",
-                          label: "🔊 Volume Geral",
-                          shortLabel: "Vol. Geral",
+                         {
+                           id: "metronome",
+                           label: `🔊 ${t('index.generalVolume')}`,
+                           shortLabel: t('index.generalVolume'),
                           volume: metronomeVol,
                           onChange: handleMetronomeVolChange,
                         },
@@ -2118,8 +2120,8 @@ const Index = () => {
                   onUpgradeGate={setUpgradeGate}
                 />
                 <div data-tutorial="pan-metronome">
-                  <PanControl
-                    label="Pan Metrônomo"
+                   <PanControl
+                     label={t('index.panMetronome')}
                     pan={metronomePan}
                     onPanChange={handleMetronomePanChange}
                     disabled={audioSettings.metronomeStereo === "mono"}
@@ -2196,17 +2198,17 @@ const Index = () => {
                               className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
                             >
                               <Lock className="h-4 w-4" />
-                              <span className="text-[10px]">Mixer — Plano Pro</span>
+                              <span className="text-[10px]">{t('index.mixerProPlan')}</span>
                             </button>
                           ) : (
                             <MixerStrip
                               controlledPage={faderPage}
                               onControlledPageChange={setFaderPage}
                               channels={[
-                                {
-                                  id: "metronome",
-                                  label: "🔊 Volume Geral",
-                                  shortLabel: "Vol. Geral",
+                                 {
+                                   id: "metronome",
+                                   label: `🔊 ${t('index.generalVolume')}`,
+                                   shortLabel: t('index.generalVolume'),
                                   volume: metronomeVol,
                                   onChange: handleMetronomeVolChange,
                                 },
@@ -2272,8 +2274,8 @@ const Index = () => {
                           onUpgradeGate={setUpgradeGate}
                         />
                         <div data-tutorial="pan-metronome">
-                          <PanControl
-                            label="Pan Metrônomo"
+                         <PanControl
+                             label={t('index.panMetronome')}
                             pan={metronomePan}
                             onPanChange={handleMetronomePanChange}
                             disabled={audioSettings.metronomeStereo === "mono"}
@@ -2336,7 +2338,7 @@ const Index = () => {
                   title="Mix"
                 >
                   <Sliders className="h-4 w-4" />
-                  <span className="text-[8px] font-medium">Mix</span>
+                  <span className="text-[8px] font-medium">{t('index.mix')}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -2346,7 +2348,7 @@ const Index = () => {
                   title="Metrônomo"
                 >
                   <Activity className="h-4 w-4" />
-                  <span className="text-[8px] font-medium">Metrônomo</span>
+                  <span className="text-[8px] font-medium">{t('index.metronome')}</span>
                   {metronomeIsPlaying && (
                     <span
                       className="absolute top-0.5 right-2 w-1.5 h-1.5 rounded-full animate-pulse"
@@ -2362,7 +2364,7 @@ const Index = () => {
                   title="Tap Tempo"
                 >
                   <Timer className="h-4 w-4" />
-                  <span className="text-[8px] font-medium">Tap</span>
+                  <span className="text-[8px] font-medium">{t('index.tap')}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -2372,7 +2374,7 @@ const Index = () => {
                   title="Continuous Pads"
                 >
                   <Music2 className="h-4 w-4" />
-                  <span className="text-[8px] font-medium">Pads</span>
+                  <span className="text-[8px] font-medium">{t('index.pads')}</span>
                 </button>
                 <button
                   onClick={() => {
@@ -2384,7 +2386,7 @@ const Index = () => {
                   title="Loja"
                 >
                   <Store className="h-4 w-4" />
-                  <span className="text-[8px] font-medium">Loja</span>
+                  <span className="text-[8px] font-medium">{t('index.store')}</span>
                 </button>
               </>
             )}
@@ -2401,7 +2403,7 @@ const Index = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ListMusic className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-foreground">Salvar no Repertório?</span>
+                <span className="text-sm font-semibold text-foreground">{t('index.saveToSetlist')}</span>
               </div>
               <button onClick={() => setShowSavePrompt(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-4 w-4" />
@@ -2412,7 +2414,7 @@ const Index = () => {
               value={spotifySongName}
               onChange={(e) => setSpotifySongName(e.target.value)}
               className="w-full px-3 py-2 text-sm rounded-md bg-background border border-input text-foreground"
-              placeholder="Nome da música..."
+              placeholder={t('index.songNamePlaceholder')}
             />
             <div className="flex gap-2">
               <Button
@@ -2422,16 +2424,16 @@ const Index = () => {
                   if (spotifySongName.trim()) {
                     handleSaveSong(spotifySongName.trim());
                     setShowSavePrompt(false);
-                    toast.success("Música salva no repertório!");
+                    toast.success(t('index.songSaved'));
                   }
                 }}
                 disabled={!spotifySongName.trim()}
               >
                 <Check className="h-3.5 w-3.5" />
-                Salvar
+                {t('index.save')}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setShowSavePrompt(false)}>
-                Depois
+                {t('index.later')}
               </Button>
             </div>
           </div>
@@ -2505,7 +2507,7 @@ const Index = () => {
             <div className="w-32 h-0.5 rounded-full bg-gray-200 overflow-hidden">
               <div className="h-full rounded-full bg-gray-900 animate-[store-load_1.2s_ease-in-out_infinite]" style={{ width: '60%' }} />
             </div>
-            <span className="text-xs text-gray-500">Abrindo loja...</span>
+            <span className="text-xs text-gray-500">{t('index.openingStore')}</span>
           </div>
         </div>
       )}
