@@ -645,7 +645,7 @@ const AppScreenshots = ({ config, L }: { config: Record<string, string>; L: (key
           whileInView="visible"
           viewport={{ once: true, margin: "-40px" }}
           variants={stagger}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+          className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto"
         >
           {shots.map((shot, i) => {
             const imgSrc = config[`${shot.key}_image`] || shot.defaultImg;
