@@ -752,7 +752,7 @@ const Features = ({
   const cardBg = config.features_card_bg || "hsl(0 0% 100%)";
   const cardBorder = config.features_card_border || "hsl(0 0% 0% / 0.07)";
   const titleColor = config.features_title_color || "hsl(220 15% 10%)";
-  const cardTitleColor = config.features_card_title_color || titleColor;
+  const cardTitleColor = config.features_card_title_color || "hsl(220 15% 10%)";
   const subtitleColor = config.features_subtitle_color || "hsl(220 15% 40%)";
 
   const visible = landingFeatures.filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order);
