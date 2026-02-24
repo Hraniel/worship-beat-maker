@@ -185,6 +185,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    const statusLabels: Record<string, string> = {
+      received: "Recebido",
+      in_progress: "Em Andamento",
+      done: "Finalizado",
+    };
+
     const replacePlaceholders = (text: string) =>
       text
         .replace(/\{\{nome\}\}/g, ticket.full_name)
