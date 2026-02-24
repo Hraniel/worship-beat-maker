@@ -23,6 +23,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AppLoadingScreen from "@/components/AppLoadingScreen";
 import { useAppReloadGuard } from "@/hooks/useAppReloadGuard";
+import { useLocaleSync } from "@/hooks/useLocaleSync";
 
 const CACHE_VERSION_KEY = 'app_cache_version';
 
@@ -117,6 +118,13 @@ const UserCacheVersionGuard = () => {
 };
 
 
+// Syncs i18n language with profile locale
+const LocaleSyncGuard = () => {
+  useLocaleSync();
+  return null;
+};
+
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -159,6 +167,7 @@ const App = () => (
             <Route path="*" element={
               <AuthProvider>
                 <SubscriptionProvider>
+                  <LocaleSyncGuard />
                   <UserCacheVersionGuard />
                   <Toaster />
                   <Sonner />

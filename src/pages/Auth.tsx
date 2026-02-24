@@ -8,8 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { lovable } from '@/integrations/lovable/index';
+import { useTranslation } from 'react-i18next';
+import LanguageSelector from '@/components/LanguageSelector';
 
 const Auth = () => {
+  const { t } = useTranslation();
   const { user, loading, signIn, signUp } = useAuth();
   const [searchParams] = useSearchParams();
   const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
@@ -47,7 +50,7 @@ const Auth = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
-      toast.error('Digite seu email');
+      toast.error(t('auth.enterEmail'));
       return;
     }
     setSubmitting(true);
@@ -58,7 +61,7 @@ const Auth = () => {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
+        toast.success(t('auth.resetSent'));
         setIsForgot(false);
       }
     } finally {
@@ -69,11 +72,11 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
-      toast.error('Preencha todos os campos');
+      toast.error(t('auth.fillAllFields'));
       return;
     }
     if (password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
+      toast.error(t('auth.passwordMinLength'));
       return;
     }
 
@@ -83,7 +86,7 @@ const Auth = () => {
         const { error } = await signIn(email, password);
         if (error) {
           toast.error(error.message === 'Invalid login credentials'
-            ? 'Email ou senha incorretos'
+            ? t('auth.invalidCredentials')
             : error.message);
         }
       } else {
@@ -91,7 +94,7 @@ const Auth = () => {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Conta criada com sucesso!');
+          toast.success(t('auth.accountCreated'));
         }
       }
     } finally {
@@ -104,28 +107,29 @@ const Auth = () => {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-12 w-12 mx-auto" />
-          <h1 className="text-xl font-bold text-foreground tracking-widest">GLORY PADS</h1>
+          <h1 className="text-xl font-bold text-foreground tracking-widest">{t('auth.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            {isForgot ? 'Recuperar senha' : isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
+            {isForgot ? t('auth.resetSubtitle') : isLogin ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
           </p>
+          <LanguageSelector compact className="justify-center mt-2" />
         </div>
 
         {isForgot ? (
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <Input
               type="email"
-              placeholder="Email"
+              placeholder={t('auth.email')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
               className="bg-card border-border"
             />
             <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? 'Aguarde...' : 'Enviar link de recuperação'}
+              {submitting ? t('auth.wait') : t('auth.sendResetLink')}
             </Button>
             <p className="text-center text-sm text-muted-foreground">
               <button type="button" onClick={() => setIsForgot(false)} className="text-primary hover:underline font-medium">
-                Voltar para login
+                {t('auth.backToLogin')}
               </button>
             </p>
           </form>
@@ -135,7 +139,7 @@ const Auth = () => {
               <div className="space-y-2">
                 <Input
                   type="email"
-                  placeholder="Email"
+                  placeholder={t('auth.email')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
@@ -143,7 +147,7 @@ const Auth = () => {
                 />
                 <Input
                   type="password"
-                  placeholder="Senha"
+                  placeholder={t('auth.password')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete={isLogin ? 'current-password' : 'new-password'}
@@ -158,13 +162,13 @@ const Auth = () => {
                     onClick={() => setIsForgot(true)}
                     className="text-xs text-muted-foreground hover:text-primary transition-colors"
                   >
-                    Esqueci minha senha
+                    {t('auth.forgotPassword')}
                   </button>
                 </div>
               )}
 
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? 'Aguarde...' : isLogin ? 'Entrar' : 'Criar conta'}
+                {submitting ? t('auth.wait') : isLogin ? t('auth.login') : t('auth.signup')}
               </Button>
             </form>
 
@@ -173,7 +177,7 @@ const Auth = () => {
                 <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">ou continue com</span>
+                <span className="bg-background px-2 text-muted-foreground">{t('auth.orContinueWith')}</span>
               </div>
             </div>
 
@@ -206,13 +210,13 @@ const Auth = () => {
             </div>
 
             <p className="text-center text-sm text-muted-foreground">
-              {isLogin ? 'Não tem conta?' : 'Já tem conta?'}{' '}
+              {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-primary hover:underline font-medium"
               >
-                {isLogin ? 'Cadastre-se' : 'Entrar'}
+                {isLogin ? t('auth.signupAction') : t('auth.loginAction')}
               </button>
             </p>
           </>
