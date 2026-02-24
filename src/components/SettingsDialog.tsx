@@ -28,6 +28,7 @@ import {
   unsubscribeFromPush,
   isSubscribed,
 } from '@/lib/push-notifications';
+import { useTranslation } from 'react-i18next';
 
 const SETTINGS_KEY = 'drum-pads-audio-settings';
 
@@ -67,14 +68,12 @@ interface SettingsDialogProps {
   onAudioSettingsChange?: (settings: AudioSettings) => void;
   onStartTutorial?: (sectionId?: string) => void;
   initialTab?: string;
-  // Pad config data
   pads?: PadSound[];
   padNames?: Record<string, string>;
   customSounds?: Record<string, string>;
   padsStereoMode?: 'stereo' | 'mono';
   padsSide?: 'left' | 'right' | null;
   onRenamePad?: (padId: string, name: string) => void;
-  // MIDI props
   midiSupported?: boolean;
   midiDevices?: MidiDevice[];
   midiChannel?: MidiChannel;
@@ -106,71 +105,75 @@ interface StereoOptionProps {
   onSideChange: (v: 'left' | 'right') => void;
 }
 
-const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onModeChange, onSideChange }) => (
-  <div className="rounded-lg border border-border bg-card p-4 space-y-3 w-full">
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-sm font-semibold text-foreground">{label}</span>
-      <div className="flex rounded-md overflow-hidden border border-border shrink-0">
-        <button
-          onClick={() => onModeChange('stereo')}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            mode === 'stereo'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          Stereo
-        </button>
-        <button
-          onClick={() => onModeChange('mono')}
-          className={`px-4 py-2 text-sm font-medium transition-colors border-l border-border ${
-            mode === 'mono'
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-          }`}
-        >
-          Mono
-        </button>
-      </div>
-    </div>
-
-    {mode === 'stereo' && (
-      <div className="flex items-center gap-3">
-        <span className="text-xs text-muted-foreground shrink-0">Direcionar para:</span>
-        <div className="flex rounded-md overflow-hidden border border-border">
+const StereoOption: React.FC<StereoOptionProps> = ({ id, label, mode, side, onModeChange, onSideChange }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 space-y-3 w-full">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <div className="flex rounded-md overflow-hidden border border-border shrink-0">
           <button
-            onClick={() => onSideChange('left')}
-            className={`px-4 py-1.5 text-xs font-bold transition-colors ${
-              side === 'left'
-                ? 'bg-accent text-accent-foreground'
-                : 'bg-muted/30 text-muted-foreground hover:bg-muted'
+            onClick={() => onModeChange('stereo')}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              mode === 'stereo'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
             }`}
           >
-            L
+            {t('settings.stereo')}
           </button>
           <button
-            onClick={() => onSideChange('right')}
-            className={`px-4 py-1.5 text-xs font-bold transition-colors border-l border-border ${
-              side === 'right'
-                ? 'bg-accent text-accent-foreground'
-                : 'bg-muted/30 text-muted-foreground hover:bg-muted'
+            onClick={() => onModeChange('mono')}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-l border-border ${
+              mode === 'mono'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/50 text-muted-foreground hover:bg-muted'
             }`}
           >
-            R
+            {t('settings.mono')}
           </button>
         </div>
       </div>
-    )}
 
-    {mode === 'mono' && (
-      <p className="text-xs text-muted-foreground/70 italic">Pan bloqueado no centro</p>
-    )}
-  </div>
-);
+      {mode === 'stereo' && (
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground shrink-0">{t('settings.directTo')}</span>
+          <div className="flex rounded-md overflow-hidden border border-border">
+            <button
+              onClick={() => onSideChange('left')}
+              className={`px-4 py-1.5 text-xs font-bold transition-colors ${
+                side === 'left'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'bg-muted/30 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              L
+            </button>
+            <button
+              onClick={() => onSideChange('right')}
+              className={`px-4 py-1.5 text-xs font-bold transition-colors border-l border-border ${
+                side === 'right'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'bg-muted/30 text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              R
+            </button>
+          </div>
+        </div>
+      )}
+
+      {mode === 'mono' && (
+        <p className="text-xs text-muted-foreground/70 italic">{t('settings.panLockedCenter')}</p>
+      )}
+    </div>
+  );
+};
 
 // ── Audio Output Device Selector ──────────────────────────────────────────
 
 function AudioOutputSelector() {
+  const { t } = useTranslation();
   const [supported, setSupported] = useState(false);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedId, setSelectedId] = useState<string>('default');
@@ -193,7 +196,6 @@ function AudioOutputSelector() {
       setLoading(false);
     });
 
-    // Listen for device changes
     const handleChange = () => {
       getAudioOutputDevices().then(setDevices);
     };
@@ -215,11 +217,10 @@ function AudioOutputSelector() {
       <div className="rounded-lg border border-border bg-card p-4 space-y-2 w-full">
         <div className="flex items-center gap-2">
           <AudioLines className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">Saída de Áudio</span>
+          <span className="text-sm font-semibold text-foreground">{t('settings.audioOutput')}</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Seleção de dispositivo de saída não é suportada neste navegador.
-          Use o Chrome 110+ para esta funcionalidade.
+          {t('settings.audioOutputNotSupported')}
         </p>
       </div>
     );
@@ -237,14 +238,14 @@ function AudioOutputSelector() {
     <div className="rounded-lg border border-border bg-card p-4 space-y-3 w-full">
       <div className="flex items-center gap-2">
         <AudioLines className="h-4 w-4 text-primary" />
-        <span className="text-sm font-semibold text-foreground">Saída de Áudio</span>
+        <span className="text-sm font-semibold text-foreground">{t('settings.audioOutput')}</span>
       </div>
       <p className="text-xs text-muted-foreground">
-        Escolha o dispositivo de saída (placa de áudio, interface USB, fone etc.)
+        {t('settings.audioOutputDescription')}
       </p>
       <div className="space-y-1">
         {devices.length === 0 ? (
-          <p className="text-xs text-muted-foreground italic py-2">Nenhum dispositivo encontrado</p>
+          <p className="text-xs text-muted-foreground italic py-2">{t('settings.noDevicesFound')}</p>
         ) : (
           devices.map((dev) => {
             const isActive = selectedId === dev.deviceId || (selectedId === 'default' && dev.deviceId === '');
@@ -261,7 +262,7 @@ function AudioOutputSelector() {
               >
                 <div className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-primary' : 'bg-muted'}`} />
                 <span className="text-xs font-medium truncate flex-1">
-                  {dev.label || `Dispositivo ${dev.deviceId.slice(0, 8)}`}
+                  {dev.label || `${t('settings.device')} ${dev.deviceId.slice(0, 8)}`}
                 </span>
                 {isActive && switching && <Loader2 className="h-3 w-3 animate-spin text-primary shrink-0" />}
               </button>
@@ -273,7 +274,7 @@ function AudioOutputSelector() {
         onClick={() => getAudioOutputDevices().then(setDevices)}
         className="text-xs text-primary hover:underline"
       >
-        Atualizar lista
+        {t('settings.refreshList')}
       </button>
     </div>
   );
@@ -282,6 +283,7 @@ function AudioOutputSelector() {
 // ── Push Notification Settings ──────────────────────────────────────────────
 
 function NotificationSettings() {
+  const { t } = useTranslation();
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [subscribed, setSubscribed] = useState(false);
@@ -341,8 +343,7 @@ function NotificationSettings() {
       <div className="flex flex-col items-center gap-3 py-6 text-center">
         <BellOff className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          Notificações push não são suportadas neste navegador.
-          {' '}Para receber notificações, instale o app como PWA no seu celular.
+          {t('notifications.notSupported')}
         </p>
       </div>
     );
@@ -358,12 +359,12 @@ function NotificationSettings() {
           }
           <div>
             <p className="text-sm font-semibold text-foreground">
-              {subscribed ? 'Notificações ativas' : 'Notificações desativadas'}
+              {subscribed ? t('notifications.active') : t('notifications.inactive')}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {subscribed
-                ? 'Você receberá avisos mesmo com o app fechado.'
-                : 'Ative para receber comunicados do Glory Pads.'}
+                ? t('notifications.activeDescription')
+                : t('notifications.inactiveDescription')}
             </p>
           </div>
         </div>
@@ -390,15 +391,15 @@ function NotificationSettings() {
       {permission === 'denied' && (
         <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
           <p className="text-xs text-destructive leading-relaxed">
-            ⚠️ Permissão bloqueada pelo sistema. Para ativar, acesse as configurações do seu navegador e permita notificações para este site.
+            ⚠️ {t('notifications.blocked')}
           </p>
         </div>
       )}
 
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
-        <p className="text-xs font-medium text-foreground">Como funciona?</p>
+        <p className="text-xs font-medium text-foreground">{t('notifications.howItWorks')}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Ao ativar, você receberá avisos importantes da equipe Glory Pads diretamente no seu celular ou computador, mesmo com o app fechado. Sem spam.
+          {t('notifications.howItWorksDescription')}
         </p>
       </div>
 
@@ -406,15 +407,15 @@ function NotificationSettings() {
         <button
           onClick={() => {
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('🎵 Glory Pads', {
-                body: 'Notificações funcionando! Você receberá avisos mesmo com o app fechado.',
+              new Notification(t('notifications.testTitle'), {
+                body: t('notifications.testBody'),
                 icon: '/pwa-icon-192.png',
               });
             }
           }}
           className="w-full py-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-lg transition-colors hover:bg-muted/30"
         >
-          🔔 Enviar notificação de teste
+          {t('notifications.sendTest')}
         </button>
       )}
     </div>
@@ -424,6 +425,7 @@ function NotificationSettings() {
 // ── Tap Tempo Settings ──────────────────────────────────────────────────────
 
 function TapTempoSettings() {
+  const { t } = useTranslation();
   const [enabled, setEnabled] = useState(isTapAutoApplyEnabled);
   const [timeout, setTimeoutVal] = useState(getTapAutoApplyTimeout);
   const [redirectTarget, setRedirectTargetState] = useState<TapRedirectTarget>(getTapRedirectTarget);
@@ -445,19 +447,27 @@ function TapTempoSettings() {
     setTapRedirectTarget(target);
   };
 
+  const targetLabel = (target: TapRedirectTarget) => {
+    switch (target) {
+      case 'mix': return t('tapTempo.mix');
+      case 'metronome': return t('tapTempo.metronomeDest');
+      case 'pads': return t('tapTempo.padsDest');
+    }
+  };
+
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex justify-center items-center gap-2">
         <Timer className="h-5 w-5 text-primary" />
-        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Tap Tempo</span>
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('tapTempo.title')}</span>
       </div>
 
       {/* Toggle auto-apply */}
       <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-foreground">Aplicação automática</p>
+          <p className="text-sm font-semibold text-foreground">{t('tapTempo.autoApply')}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Após parar de tocar, o BPM detectado é aplicado automaticamente e volta para o Mix.
+            {t('tapTempo.autoApplyDescription')}
           </p>
         </div>
         <button
@@ -478,11 +488,11 @@ function TapTempoSettings() {
       {enabled && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-semibold text-foreground">Tempo de espera</p>
+            <p className="text-sm font-semibold text-foreground">{t('tapTempo.timeout')}</p>
             <span className="text-sm font-bold text-primary tabular-nums">{timeout}s</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Segundos de inatividade antes de aplicar o BPM. Uma barra vermelha aparece nos últimos segundos.
+            {t('tapTempo.timeoutDetailDesc')}
           </p>
           <div className="flex items-center gap-3">
             <input
@@ -505,15 +515,15 @@ function TapTempoSettings() {
       {/* Redirect target */}
       {enabled && (
         <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <p className="text-sm font-semibold text-foreground">Redirecionar após aplicar</p>
+          <p className="text-sm font-semibold text-foreground">{t('tapTempo.redirectAfterApply')}</p>
           <p className="text-xs text-muted-foreground">
-            Escolha para qual tela ir automaticamente após o BPM ser aplicado.
+            {t('tapTempo.redirectAfterApplyDesc')}
           </p>
           <div className="flex rounded-md overflow-hidden border border-border">
             {([
-              { value: 'mix' as TapRedirectTarget, label: 'Mix' },
-              { value: 'metronome' as TapRedirectTarget, label: 'Metrônomo' },
-              { value: 'pads' as TapRedirectTarget, label: 'Pads' },
+              { value: 'mix' as TapRedirectTarget, label: t('tapTempo.mix') },
+              { value: 'metronome' as TapRedirectTarget, label: t('tapTempo.metronomeDest') },
+              { value: 'pads' as TapRedirectTarget, label: t('tapTempo.padsDest') },
             ]).map((opt) => (
               <button
                 key={opt.value}
@@ -532,9 +542,9 @@ function TapTempoSettings() {
       )}
 
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
-        <p className="text-xs font-medium text-foreground">Como funciona?</p>
+        <p className="text-xs font-medium text-foreground">{t('common.howItWorks')}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Toque no botão de Tap Tempo no ritmo da música. O app detecta o BPM automaticamente. Se a aplicação automática estiver ativa, após {timeout} segundos sem tocar, o BPM é aplicado e você é redirecionado para {redirectTarget === 'mix' ? 'o Mix' : redirectTarget === 'metronome' ? 'o Metrônomo' : 'os Pads'}.
+          {t('tapTempo.howItWorksDesc', { timeout, target: targetLabel(redirectTarget) })}
         </p>
       </div>
     </div>
@@ -553,23 +563,23 @@ interface PadConfigListProps {
 }
 
 function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenamePad }: PadConfigListProps) {
+  const { t } = useTranslation();
   const [expandedPad, setExpandedPad] = useState<string | null>(null);
   const [editingName, setEditingName] = useState<string | null>(null);
   const [nameValue, setNameValue] = useState('');
 
-  // Only show the first 8 main pads (exclude extras beyond grid)
   const gridPads = pads.slice(0, 8);
 
-  const stereoLabel = stereoMode === 'mono' ? 'Mono' : 'Stereo';
-  const sideLabel = stereoMode === 'stereo' && side ? (side === 'left' ? 'Esquerdo' : 'Direito') : stereoMode === 'stereo' ? 'Centro' : '—';
+  const stereoLabel = stereoMode === 'mono' ? t('settings.mono') : t('settings.stereo');
+  const sideLabel = stereoMode === 'stereo' && side ? (side === 'left' ? t('common.left') : t('common.right')) : stereoMode === 'stereo' ? t('common.center') : '—';
 
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2 pt-2">
         <FileAudio className="h-4 w-4 text-primary" />
-        <span className="text-sm font-semibold text-foreground">Configuração dos Pads</span>
+        <span className="text-sm font-semibold text-foreground">{t('settings.padConfig')}</span>
       </div>
-      <p className="text-xs text-muted-foreground">Gerencie nomes e veja configurações de cada pad individualmente.</p>
+      <p className="text-xs text-muted-foreground">{t('settings.padConfigDesc')}</p>
 
       <div className="rounded-lg border border-border overflow-hidden">
         {gridPads.map((pad, i) => {
@@ -606,7 +616,7 @@ function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenam
                 <div className="px-3 pb-3 pt-1 space-y-2 bg-muted/20">
                   {/* Name editing */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-16 shrink-0">Nome:</span>
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">{t('common.name')}:</span>
                     {isEditingThis ? (
                       <div className="flex items-center gap-1 flex-1">
                         <input
@@ -629,7 +639,7 @@ function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenam
                             onRenamePad?.(pad.id, nameValue.trim());
                             setEditingName(null);
                           }}
-                        >OK</button>
+                        >{t('common.ok')}</button>
                       </div>
                     ) : (
                       <button
@@ -644,28 +654,28 @@ function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenam
 
                   {/* Original name */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-16 shrink-0">Original:</span>
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">{t('common.original')}:</span>
                     <span className="text-xs text-muted-foreground">{pad.name}</span>
                   </div>
 
                   {/* Imported file */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-16 shrink-0">Arquivo:</span>
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">{t('common.file')}:</span>
                     <span className="text-xs text-foreground truncate">
-                      {customFile || <span className="text-muted-foreground italic">Padrão</span>}
+                      {customFile || <span className="text-muted-foreground italic">{t('common.default')}</span>}
                     </span>
                   </div>
 
                   {/* Stereo/Mono */}
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-16 shrink-0">Modo:</span>
+                    <span className="text-xs text-muted-foreground w-16 shrink-0">{t('common.mode')}:</span>
                     <span className="text-xs text-foreground">{stereoLabel}</span>
                   </div>
 
                   {/* Side */}
                   {stereoMode === 'stereo' && (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground w-16 shrink-0">Lado:</span>
+                      <span className="text-xs text-muted-foreground w-16 shrink-0">{t('common.side')}:</span>
                       <span className="text-xs text-foreground">{sideLabel}</span>
                     </div>
                   )}
@@ -682,23 +692,23 @@ function PadConfigList({ pads, padNames, customSounds, stereoMode, side, onRenam
 // ── Metronome Settings ──────────────────────────────────────────────────────
 
 function MetronomeSettingsPanel() {
+  const { t } = useTranslation();
   const [forceB1, setForceB1] = useState(isForceLoopBeat1);
   const [accent, setAccent] = useState(isMetronomeAccent);
-  
 
   return (
     <div className="flex flex-col gap-3 w-full">
       <div className="flex justify-center items-center gap-2">
         <Activity className="h-5 w-5 text-primary" />
-        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Metrônomo</span>
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('metronomeSettings.title')}</span>
       </div>
 
       {/* Force loop start on beat 1 */}
       <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-foreground">Loop sempre na batida 1</p>
+          <p className="text-sm font-semibold text-foreground">{t('metronomeSettings.forceLoopBeat1')}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Ao ativar um loop, ele sempre recomeça da batida 1, independente do momento em que foi disparado.
+            {t('metronomeSettings.forceLoopBeat1Desc')}
           </p>
         </div>
         <button
@@ -714,9 +724,9 @@ function MetronomeSettingsPanel() {
       {/* Metronome accent */}
       <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-foreground">Acentuação do tempo forte</p>
+          <p className="text-sm font-semibold text-foreground">{t('metronomeSettings.accent')}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Desative para remover a ênfase (tom agudo) no primeiro tempo de cada compasso.
+            {t('metronomeSettings.accentDesc')}
           </p>
         </div>
         <button
@@ -729,11 +739,10 @@ function MetronomeSettingsPanel() {
         </button>
       </div>
 
-
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
-        <p className="text-xs font-medium text-foreground">Dica</p>
+        <p className="text-xs font-medium text-foreground">{t('common.tip')}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          A opção "Loop sempre na batida 1" é ideal para worship, garantindo que o loop esteja sempre sincronizado com o compasso mesmo ao ser ativado fora do tempo forte.
+          {t('metronomeSettings.tip')}
         </p>
       </div>
     </div>
@@ -742,21 +751,22 @@ function MetronomeSettingsPanel() {
 
 // ── Tab definitions ─────────────────────────────────────────────────────────
 
-const TAB_ITEMS = [
-  { value: 'audio', label: 'Áudio', icon: Headphones },
-  { value: 'metronome', label: 'Metrônomo', icon: Activity },
-  { value: 'midi', label: 'MIDI', icon: Piano },
-  { value: 'tap', label: 'Tap Tempo', icon: Timer },
-  { value: 'notifications', label: 'Notificações', icon: Bell },
-  { value: 'language', label: 'Idioma', icon: Globe },
-  { value: 'plans', label: 'Planos', icon: Crown },
-  { value: 'guide', label: 'Guia', icon: HelpCircle },
-  { value: 'about', label: 'Sobre', icon: Info },
+const TAB_KEYS = [
+  { value: 'audio', labelKey: 'settings.audio', icon: Headphones },
+  { value: 'metronome', labelKey: 'settings.metronome', icon: Activity },
+  { value: 'midi', labelKey: 'settings.midi', icon: Piano },
+  { value: 'tap', labelKey: 'settings.tapTempo', icon: Timer },
+  { value: 'notifications', labelKey: 'settings.notifications', icon: Bell },
+  { value: 'language', labelKey: 'settings.language', icon: Globe },
+  { value: 'plans', labelKey: 'settings.plans', icon: Crown },
+  { value: 'guide', labelKey: 'settings.guide', icon: HelpCircle },
+  { value: 'about', labelKey: 'settings.about', icon: Info },
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiCCChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiSetCCChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings, onMidiRemoveNoteMapping, onMidiRemoveCCMapping }) => {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -766,8 +776,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
   const isMobilePortrait = isMobile && !isLandscape;
   const useSideLayout = isLandscape || !isMobile;
 
-  // Determine effective tab: on mobile portrait, null means show list
-  // On desktop/landscape, never allow null
   const effectiveTab = useSideLayout && activeTab === null ? 'audio' : activeTab;
 
   useEffect(() => {
@@ -784,7 +792,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
     onAudioSettingsChange?.(next);
   };
 
-  const activeTabItem = effectiveTab ? TAB_ITEMS.find(t => t.value === effectiveTab) : null;
+  const activeTabItem = effectiveTab ? TAB_KEYS.find(t => t.value === effectiveTab) : null;
 
   // ── Render tab content ──────────────────────────────────────────────────
 
@@ -795,25 +803,24 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           <div className="flex flex-col gap-3 w-full">
             <AudioOutputSelector />
             <StereoOption
-              id="pads" label="Pads"
+              id="pads" label={t('settings.pads')}
               mode={settings.padsStereo} side={settings.padsSide}
               onModeChange={(v) => update({ padsStereo: v, padsSide: v === 'mono' ? null : settings.padsSide })}
               onSideChange={(v) => update({ padsSide: v })}
             />
             <StereoOption
-              id="ambient" label="Continuous Pads"
+              id="ambient" label={t('index.continuousPads')}
               mode={settings.ambientStereo} side={settings.ambientSide}
               onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}
               onSideChange={(v) => update({ ambientSide: v })}
             />
             <StereoOption
-              id="metronome" label="Metrônomo"
+              id="metronome" label={t('settings.metronome')}
               mode={settings.metronomeStereo} side={settings.metronomeSide}
               onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
               onSideChange={(v) => update({ metronomeSide: v })}
             />
 
-            {/* Pad config list */}
             {pads && pads.length > 0 && (
               <PadConfigList
                 pads={pads}
@@ -824,7 +831,6 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
                 onRenamePad={onRenamePad}
               />
             )}
-          
           </div>
         );
 
@@ -838,17 +844,17 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               </div>
               <div className="space-y-1">
                 <p className="text-base font-semibold text-foreground">
-                  {midiAccess.gate?.gate_label ?? 'Controlador MIDI'}
+                  {midiAccess.gate?.gate_label ?? t('settings.midiController')}
                 </p>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  Recurso disponível a partir do plano <span className="font-semibold capitalize text-primary">{midiAccess.requiredTier ?? 'Pro'}</span>.
+                  {t('settings.featureAvailableFrom', { tier: midiAccess.requiredTier ?? 'Pro' })}
                 </p>
               </div>
               <button
                 className="mt-2 px-5 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
                 onClick={() => navigate('/pricing')}
               >
-                Ver planos
+                {t('settings.viewPlans')}
               </button>
             </div>
           );
@@ -890,7 +896,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           <div className="flex flex-col gap-3 w-full">
             <div className="flex justify-center items-center gap-2">
               <Bell className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notificações Push</span>
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.pushNotifications')}</span>
             </div>
             <NotificationSettings />
           </div>
@@ -901,7 +907,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           <div className="flex flex-col gap-3 w-full">
             <div className="flex justify-center items-center gap-2">
               <Globe className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Idioma</span>
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.language')}</span>
             </div>
             <LanguageSelector />
           </div>
@@ -917,13 +923,13 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           <div className="flex flex-col gap-3 w-full">
             <div className="flex justify-center items-center gap-2">
               <HelpCircle className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Guia Prático</span>
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.practicalGuide')}</span>
             </div>
             <button
               onClick={() => { onOpenChange(false); onStartTutorial?.(); }}
               className="flex items-center justify-center gap-2 w-full px-4 py-3 text-sm font-semibold text-primary hover:bg-muted rounded-lg transition-colors border border-primary/30"
             >
-              Tour Completo
+              {t('settings.fullTour')}
             </button>
             <div className="rounded-lg border border-border bg-muted/20 w-full overflow-hidden">
               {TUTORIAL_SECTIONS.map(section => (
@@ -944,13 +950,13 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
           <div className="flex flex-col items-center gap-4 text-center w-full py-4">
             <div className="flex items-center gap-2">
               <Info className="h-5 w-5 text-primary" />
-              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Sobre</span>
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.about')}</span>
             </div>
             <div className="rounded-lg border border-border bg-card p-5 space-y-2 w-full text-left">
               <h3 className="text-base font-bold text-foreground">Glory Pads</h3>
               <p className="text-sm text-muted-foreground">v1.0.0</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Pads de louvor profissionais para sua igreja. Configure sons, efeitos e metrônomo para elevar a experiência do seu worship.
+                {t('settings.aboutDescription')}
               </p>
             </div>
           </div>
@@ -965,7 +971,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
 
   const mobileListView = (
     <div className="flex flex-col">
-      {TAB_ITEMS.map(item => {
+      {TAB_KEYS.map(item => {
         const Icon = item.icon;
         return (
           <button
@@ -974,7 +980,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             className="flex items-center gap-3 w-full px-4 py-3.5 text-sm font-medium text-foreground hover:bg-muted transition-colors border-b border-border/50 last:border-0"
           >
             <Icon className="h-5 w-5 text-primary shrink-0" />
-            <span className="flex-1 text-left">{item.label}</span>
+            <span className="flex-1 text-left">{t(item.labelKey)}</span>
             <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
           </button>
         );
@@ -986,7 +992,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
 
   const desktopSidebar = (
     <div className="w-44 shrink-0 border-r border-border flex flex-col py-2 gap-0.5 overflow-y-auto">
-      {TAB_ITEMS.map(item => {
+      {TAB_KEYS.map(item => {
         const Icon = item.icon;
         const isActive = effectiveTab === item.value;
         return (
@@ -1000,7 +1006,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             }`}
           >
             <Icon className="h-4 w-4 shrink-0" />
-            <span>{item.label}</span>
+            <span>{t(item.labelKey)}</span>
           </button>
         );
       })}
@@ -1038,7 +1044,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               <activeTabItem.icon className="h-4 w-4 text-primary shrink-0" />
             )}
             <h2 className="text-base font-bold text-foreground truncate">
-              {isMobilePortrait && activeTabItem ? activeTabItem.label : 'Configurações'}
+              {isMobilePortrait && activeTabItem ? t(activeTabItem.labelKey) : t('settings.title')}
             </h2>
           </div>
         </div>
