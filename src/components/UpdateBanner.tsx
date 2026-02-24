@@ -1,6 +1,7 @@
 import { X, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface UpdateBannerProps {
   show: boolean;
@@ -8,6 +9,7 @@ interface UpdateBannerProps {
 }
 
 const UpdateBanner = ({ show, onUpdate }: UpdateBannerProps) => {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(false);
 
   if (!show || dismissed) return null;
@@ -17,16 +19,16 @@ const UpdateBanner = ({ show, onUpdate }: UpdateBannerProps) => {
       <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card border-b border-primary/30 shadow-lg">
         <div className="flex items-center gap-2 min-w-0">
           <RefreshCw className="h-4 w-4 text-primary shrink-0 animate-spin" style={{ animationDuration: '3s' }} />
-          <span className="text-sm font-medium text-foreground">Nova versão disponível!</span>
+          <span className="text-sm font-medium text-foreground">{t('banners.newVersion')}</span>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <Button size="sm" className="h-7 text-xs gap-1" onClick={onUpdate}>
-            Atualizar
+            {t('banners.update')}
           </Button>
           <button
             onClick={() => setDismissed(true)}
             className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            title="Dispensar"
+            title={t('banners.dismiss')}
           >
             <X className="h-4 w-4" />
           </button>

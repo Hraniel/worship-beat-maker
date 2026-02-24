@@ -757,5 +757,23 @@
     "shortSamples": "Short samples",
     "shortSamplesDesc": "Sounds of 1 to 4 measures work best. Very long files may cause delay on trigger.",
     "chooseFile": "Choose file"
+  },
+  "banners": {
+    "offline": "Offline mode — using cached data",
+    "silentTitle": "Silent Mode Active",
+    "silentDesc": "Turn off the iPhone side mute switch to hear sounds.",
+    "closeWarning": "Close warning",
+    "newVersion": "New version available!",
+    "update": "Update",
+    "dismiss": "Dismiss"
+  },
+  "notifications": {
+    "markAllRead": "Mark all as read"
+  },
+  "upgradeGate": {
+    "plan": "Plan",
+    "availableFrom": "This feature is available from the {{plan}} plan. Upgrade to unlock.",
+    "viewPlans": "View plans",
+    "notNow": "Not now"
   }
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bell, X, ChevronDown, ChevronUp, CheckCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 import type { AdminNotification } from '@/hooks/useUserNotifications';
 
 interface NotificationBannerProps {
@@ -10,6 +10,7 @@ interface NotificationBannerProps {
 }
 
 const NotificationBanner = ({ notifications, onMarkAsRead, onMarkAllAsRead }: NotificationBannerProps) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
 
   if (notifications.length === 0) return null;
@@ -20,7 +21,6 @@ const NotificationBanner = ({ notifications, onMarkAsRead, onMarkAllAsRead }: No
   return (
     <div className="fixed top-0 left-0 right-0 z-[59] animate-in slide-in-from-top duration-300" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="bg-card border-b border-primary/30 shadow-lg">
-        {/* Main row */}
         <div className="flex items-start gap-2 px-4 py-2.5">
           <Bell className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
@@ -41,7 +41,7 @@ const NotificationBanner = ({ notifications, onMarkAsRead, onMarkAllAsRead }: No
               <button
                 onClick={onMarkAllAsRead}
                 className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                title="Marcar todas como lidas"
+                title={t('notifications.markAllRead')}
               >
                 <CheckCheck className="h-4 w-4" />
               </button>
@@ -49,14 +49,13 @@ const NotificationBanner = ({ notifications, onMarkAsRead, onMarkAllAsRead }: No
             <button
               onClick={() => onMarkAsRead(first.id)}
               className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              title="Dispensar"
+              title={t('banners.dismiss')}
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* Expanded list of remaining notifications */}
         {expanded && hasMore && (
           <div className="border-t border-border divide-y divide-border">
             {notifications.slice(1).map((n) => (
@@ -68,7 +67,7 @@ const NotificationBanner = ({ notifications, onMarkAsRead, onMarkAllAsRead }: No
                 <button
                   onClick={() => onMarkAsRead(n.id)}
                   className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
-                  title="Dispensar"
+                  title={t('banners.dismiss')}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

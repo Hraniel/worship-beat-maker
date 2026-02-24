@@ -1,10 +1,12 @@
 import { WifiOff } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface OfflineBannerProps {
   isOffline: boolean;
 }
 
 const OfflineBanner = ({ isOffline }: OfflineBannerProps) => {
+  const { t } = useTranslation();
   if (!isOffline) return null;
 
   return (
@@ -15,7 +17,7 @@ const OfflineBanner = ({ isOffline }: OfflineBannerProps) => {
       <div className="flex items-center gap-2 px-4 py-2 bg-muted border-b border-border/60 shadow-sm">
         <WifiOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <span className="text-xs text-muted-foreground">
-          Modo offline — usando dados em cache
+          {t('banners.offline')}
         </span>
       </div>
     </div>

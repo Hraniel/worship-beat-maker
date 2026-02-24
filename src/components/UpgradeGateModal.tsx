@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Lock, Crown, Zap, ArrowRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -35,6 +36,7 @@ const TIER_META: Record<string, { label: string; icon: React.ReactNode; color: s
 
 const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPricing }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   if (!payload) return null;
 
@@ -42,21 +44,17 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
 
   return (
     <>
-      {/* Backdrop */}
       <div
         className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Modal */}
       <div className="fixed z-[201] inset-0 flex items-center justify-center p-4 pointer-events-none">
         <div className={`pointer-events-auto relative w-[90vw] max-w-sm rounded-2xl border ${meta.border} bg-card shadow-2xl overflow-hidden`}>
 
-          {/* Top accent bar */}
           <div className={`h-1 w-full ${payload.requiredTier === 'master' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' : 'bg-gradient-to-r from-violet-500 to-fuchsia-500'}`} />
 
           <div className="p-6 space-y-5">
-            {/* Close */}
             <button
               onClick={onClose}
               className="absolute top-3 right-3 p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
@@ -64,7 +62,6 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
               <X className="h-4 w-4" />
             </button>
 
-            {/* Icon + badge */}
             <div className="flex items-center gap-3">
               <div className={`p-3 rounded-xl ${meta.bg} ${meta.color}`}>
                 <Lock className="h-6 w-6" />
@@ -72,12 +69,11 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
               <div>
                 <span className={`inline-flex items-center gap-1.5 text-sm font-bold px-2.5 py-1 rounded-full ${meta.bg} ${meta.color} border ${meta.border}`}>
                   {meta.icon}
-                  Plano {meta.label}
+                  {t('upgradeGate.plan')} {meta.label}
                 </span>
               </div>
             </div>
 
-            {/* Title */}
             <div>
               <h2 className="text-base font-bold text-foreground">
                 {payload.gateLabel}
@@ -88,13 +84,10 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
                 </p>
               )}
               <p className="text-sm text-muted-foreground mt-2">
-                Este recurso está disponível a partir do plano{' '}
-                <span className={`font-semibold ${meta.color}`}>{meta.label}</span>.
-                Faça o upgrade para desbloquear.
+                {t('upgradeGate.availableFrom', { plan: meta.label })}
               </p>
             </div>
 
-            {/* CTA */}
             <div className="flex flex-col gap-2">
               <Button
                 className={`w-full gap-2 font-semibold ${
@@ -111,11 +104,11 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
                   }
                 }}
               >
-                Ver planos
+                {t('upgradeGate.viewPlans')}
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={onClose}>
-                Agora não
+                {t('upgradeGate.notNow')}
               </Button>
             </div>
           </div>
