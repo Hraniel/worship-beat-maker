@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Music, Download, ChevronRight, Loader2, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface SharedSong {
   id: string;
@@ -30,16 +31,16 @@ const KEY_COLORS: Record<string, string> = {
 
 const formatEventDate = (dateStr: string) => {
   try {
-    // date is YYYY-MM-DD — parse as local date
     const [year, month, day] = dateStr.split('-').map(Number);
     const date = new Date(year, month - 1, day);
-    return date.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    return date.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   } catch {
     return dateStr;
   }
 };
 
 const SharedSetlist: React.FC = () => {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [setlist, setSetlist] = useState<SharedSetlistData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -77,10 +78,10 @@ const SharedSetlist: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6">
         <Music className="h-12 w-12 text-muted-foreground" />
-        <h1 className="text-xl font-bold text-foreground">Setlist não encontrado</h1>
-        <p className="text-sm text-muted-foreground text-center">{error || 'Este link pode ter expirado ou não existe.'}</p>
+        <h1 className="text-xl font-bold text-foreground">{t('sharedSetlist.notFound')}</h1>
+        <p className="text-sm text-muted-foreground text-center">{error || t('sharedSetlist.notFoundDesc')}</p>
         <Link to="/">
-          <Button variant="outline">Ir para o App</Button>
+          <Button variant="outline">{t('sharedSetlist.goToApp')}</Button>
         </Link>
       </div>
     );
@@ -100,7 +101,7 @@ const SharedSetlist: React.FC = () => {
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-bold text-foreground truncate">{setlist.name}</h1>
           <p className="text-[10px] text-muted-foreground">
-            {setlist.songs.length} músicas · Somente leitura
+            {setlist.songs.length} {t('sharedSetlist.songs')} · {t('sharedSetlist.readOnly')}
           </p>
         </div>
       </div>
@@ -120,19 +121,14 @@ const SharedSetlist: React.FC = () => {
       {/* Songs */}
       <div className="max-w-lg mx-auto px-4 py-4 space-y-2">
         {setlist.songs.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">Nenhuma música neste setlist</p>
+          <p className="text-sm text-muted-foreground text-center py-12">{t('sharedSetlist.noSongs')}</p>
         ) : (
           setlist.songs.map((song, index) => {
             const keyBase = song.key?.split(' ')[0] || '';
             const keyColor = KEY_COLORS[keyBase] || 'bg-muted';
             return (
               <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
-                {/* Index */}
-                <span className="text-lg font-black text-muted-foreground/30 w-6 text-center shrink-0">
-                  {index + 1}
-                </span>
-
-                {/* Info */}
+                <span className="text-lg font-black text-muted-foreground/30 w-6 text-center shrink-0">{index + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground truncate">{song.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
@@ -141,12 +137,8 @@ const SharedSetlist: React.FC = () => {
                     <span className="text-xs text-muted-foreground">{song.timeSignature}</span>
                   </div>
                 </div>
-
-                {/* Key */}
                 {song.key && (
-                  <span className={`${keyColor} text-white text-xs font-bold px-2.5 py-1 rounded-lg shrink-0`}>
-                    {song.key}
-                  </span>
+                  <span className={`${keyColor} text-white text-xs font-bold px-2.5 py-1 rounded-lg shrink-0`}>{song.key}</span>
                 )}
                 <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0" />
               </div>
@@ -161,14 +153,12 @@ const SharedSetlist: React.FC = () => {
           <div className="h-12 w-12 rounded-2xl bg-primary mx-auto flex items-center justify-center">
             <Music className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h2 className="font-bold text-foreground">Glory Pads</h2>
-          <p className="text-sm text-muted-foreground">
-            O app de percussão para worship com metrônomo, pads e muito mais.
-          </p>
+          <h2 className="font-bold text-foreground">{t('sharedSetlist.ctaTitle')}</h2>
+          <p className="text-sm text-muted-foreground">{t('sharedSetlist.ctaDesc')}</p>
           <Link to="/auth">
             <Button className="w-full gap-2 mt-2">
               <Download className="h-4 w-4" />
-              Criar conta grátis
+              {t('sharedSetlist.ctaButton')}
             </Button>
           </Link>
         </div>

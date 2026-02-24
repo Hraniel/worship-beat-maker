@@ -653,5 +653,47 @@
     "tellUsMore": "Optional details...",
     "confirmCancel": "Confirm cancellation",
     "goBack": "Go back"
+  },
+  "install": {
+    "title": "Glory Pads",
+    "description": "Install the app on your phone for quick access, full screen and offline use.",
+    "alreadyInstalled": "App already installed!",
+    "openApp": "Open App",
+    "iosTitle": "To install on iPhone:",
+    "iosStep1": "1. Tap the <strong>Share</strong> button (square with arrow icon) in Safari",
+    "iosStep2": "2. Scroll down and tap <strong>\"Add to Home Screen\"</strong>",
+    "iosStep3": "3. Tap <strong>\"Add\"</strong>",
+    "installApp": "Install App",
+    "backToApp": "Back to App",
+    "manualTitle": "To install:",
+    "manualStep1": "1. Open the browser menu (⋮)",
+    "manualStep2": "2. Tap <strong>\"Install app\"</strong> or <strong>\"Add to Home Screen\"</strong>",
+    "manualChrome": "In <strong>Google Chrome</strong>, you can also tap <strong>\"Share\"</strong> and then <strong>\"Add to Home Screen\"</strong>."
+  },
+  "resetPassword": {
+    "invalidLink": "Invalid link",
+    "invalidLinkDesc": "This recovery link is invalid or has expired. Request a new link.",
+    "backToLogin": "Back to login",
+    "newPassword": "New password",
+    "newPasswordDesc": "Enter your new password below.",
+    "newPasswordPlaceholder": "New password",
+    "confirmPasswordPlaceholder": "Confirm new password",
+    "fillAll": "Fill in all fields",
+    "minLength": "Password must be at least 6 characters",
+    "mismatch": "Passwords do not match",
+    "success": "Password changed successfully!",
+    "submit": "Change password",
+    "submitting": "Please wait..."
+  },
+  "sharedSetlist": {
+    "notFound": "Setlist not found",
+    "notFoundDesc": "This link may have expired or does not exist.",
+    "goToApp": "Go to App",
+    "readOnly": "read-only",
+    "songs": "songs",
+    "noSongs": "No songs in this setlist",
+    "ctaTitle": "Glory Pads",
+    "ctaDesc": "The worship percussion app with metronome, pads and much more.",
+    "ctaButton": "Create free account"
   }
 }
