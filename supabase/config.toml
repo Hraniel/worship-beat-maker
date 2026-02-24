@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.send-ticket-email]
 verify_jwt = false
+
+[functions.auto-translate]
+verify_jwt = false
