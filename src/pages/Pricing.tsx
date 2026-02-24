@@ -9,16 +9,9 @@ import { Check, Crown, Zap, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
+import { useTranslation } from 'react-i18next';
 
 // ── Cancellation Reason Modal ──────────────────────────────────────────────────
-const CANCEL_REASONS = [
-  { key: 'price', label: '💸 Preço muito alto' },
-  { key: 'missing_features', label: '🔧 Falta de recursos' },
-  { key: 'not_using', label: '😴 Não estou usando' },
-  { key: 'found_alternative', label: '🔄 Encontrei outra solução' },
-  { key: 'other', label: '✏️ Outro motivo' },
-];
-
 interface CancelModalProps {
   tier: string;
   onConfirm: (reason: string, detail: string) => void;
@@ -26,12 +19,21 @@ interface CancelModalProps {
 }
 
 const CancelReasonModal: React.FC<CancelModalProps> = ({ tier, onConfirm, onDismiss }) => {
+  const { t } = useTranslation();
   const [selectedReason, setSelectedReason] = useState('');
   const [detail, setDetail] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const CANCEL_REASONS = [
+    { key: 'price', label: t('pricing.priceHigh') },
+    { key: 'missing_features', label: t('pricing.missingFeatures') },
+    { key: 'not_using', label: t('pricing.notUsing') },
+    { key: 'found_alternative', label: t('pricing.foundAlternative') },
+    { key: 'other', label: t('pricing.otherReason') },
+  ];
+
   const handleConfirm = async () => {
-    if (!selectedReason) { toast.error('Selecione um motivo'); return; }
+    if (!selectedReason) { toast.error(t('pricing.selectReason')); return; }
     setLoading(true);
     await onConfirm(selectedReason, detail.trim());
     setLoading(false);
@@ -41,8 +43,8 @@ const CancelReasonModal: React.FC<CancelModalProps> = ({ tier, onConfirm, onDism
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-foreground">Antes de cancelar...</p>
-          <p className="text-xs text-muted-foreground">Qual o principal motivo do cancelamento?</p>
+          <p className="text-sm font-semibold text-foreground">{t('pricing.beforeCancel')}</p>
+          <p className="text-xs text-muted-foreground">{t('pricing.cancelReason')}</p>
         </div>
 
         <div className="space-y-2">
@@ -65,7 +67,7 @@ const CancelReasonModal: React.FC<CancelModalProps> = ({ tier, onConfirm, onDism
           <textarea
             value={detail}
             onChange={e => setDetail(e.target.value)}
-            placeholder="Detalhes opcionais..."
+            placeholder={t('pricing.tellUsMore')}
             rows={2}
             className="w-full px-3 py-2 text-xs rounded-lg bg-background border border-input text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
           />
@@ -73,9 +75,9 @@ const CancelReasonModal: React.FC<CancelModalProps> = ({ tier, onConfirm, onDism
 
         <div className="flex gap-2 pt-1">
           <Button size="sm" variant="destructive" className="flex-1 h-8 text-xs" onClick={handleConfirm} disabled={loading || !selectedReason}>
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Confirmar cancelamento'}
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('pricing.confirmCancel')}
           </Button>
-          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onDismiss}>Voltar</Button>
+          <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={onDismiss}>{t('pricing.goBack')}</Button>
         </div>
       </div>
     </div>
@@ -86,6 +88,7 @@ const tierOrder: TierKey[] = ['free', 'pro', 'master'];
 
 const Pricing = () => {
   useBodyScroll();
+  const { t } = useTranslation();
   const { tier: currentTier, checkSubscription } = useSubscription();
   const { user } = useAuth();
   const [loadingTier, setLoadingTier] = useState<TierKey | null>(null);
@@ -95,10 +98,8 @@ const Pricing = () => {
 
   const handleCheckout = async (tierKey: TierKey) => {
     if (tierKey === 'free') return;
-
     setLoadingTier(tierKey);
     try {
-      // Send tier name — create-checkout will resolve the price_id from DB
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { tier: tierKey },
       });
@@ -108,19 +109,17 @@ const Pricing = () => {
       }
     } catch (e) {
       console.error(e);
-      toast.error('Erro ao iniciar checkout');
+      toast.error(t('pricing.checkoutError'));
     } finally {
       setLoadingTier(null);
     }
   };
 
   const handleManage = async () => {
-    // Show cancel reason modal first (only redirect after user submits reason)
     setShowCancelModal(true);
   };
 
   const handleCancelConfirm = async (reason: string, detail: string) => {
-    // Save cancellation reason
     try {
       if (user) {
         await supabase.from('cancellation_reasons' as any).insert({
@@ -133,10 +132,7 @@ const Pricing = () => {
     } catch (e) {
       console.error('Failed to save cancellation reason', e);
     }
-
     setShowCancelModal(false);
-
-    // Now redirect to customer portal
     try {
       const { data, error } = await supabase.functions.invoke('customer-portal');
       if (error) throw error;
@@ -145,7 +141,7 @@ const Pricing = () => {
       }
     } catch (e) {
       console.error(e);
-      toast.error('Erro ao abrir portal de gerenciamento');
+      toast.error(t('pricing.portalError'));
     }
   };
 
@@ -161,10 +157,10 @@ const Pricing = () => {
       <div className="max-w-3xl mx-auto space-y-6 p-4">
         <div className="text-center space-y-2">
           <button onClick={() => { sessionStorage.setItem('open-settings', '1'); navigate('/app'); }} className="text-muted-foreground text-sm hover:text-foreground">
-            ← Voltar
+            {t('pricing.backLabel')}
           </button>
-          <h1 className="text-2xl font-bold text-foreground">Planos</h1>
-          <p className="text-sm text-muted-foreground">Escolha o plano ideal para você</p>
+          <h1 className="text-2xl font-bold text-foreground">{t('pricing.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('pricing.subtitle')}</p>
         </div>
 
         {loading ? (
@@ -174,7 +170,7 @@ const Pricing = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {tierOrder.map((tierKey) => {
-              const t = TIERS[tierKey];
+              const ti = TIERS[tierKey];
               const plan = pricing.find(p => p.tier === tierKey);
               const isCurrent = tierKey === currentTier;
               const icon = tierKey === 'master'
@@ -187,10 +183,10 @@ const Pricing = () => {
                 .filter(f => f.tier === tierKey)
                 .sort((a, b) => a.sort_order - b.sort_order);
 
-              const displayPrice = plan ? plan.price_brl : t.price;
-              const displayName = plan ? plan.name : t.name;
-              const displayPeriod = plan ? plan.period : (t.price > 0 ? '/mês' : '');
-              const displayCta = plan ? plan.cta_text : (tierKey === 'free' ? 'Grátis' : `Assinar ${t.name}`);
+              const displayPrice = plan ? plan.price_brl : ti.price;
+              const displayName = plan ? plan.name : ti.name;
+              const displayPeriod = plan ? plan.period : (ti.price > 0 ? '/mês' : '');
+              const displayCta = plan ? plan.cta_text : (tierKey === 'free' ? t('pricing.free') : `Assinar ${ti.name}`);
 
               const isHighlighted = plan?.highlight && !isCurrent;
 
@@ -207,7 +203,7 @@ const Pricing = () => {
                 >
                   {isCurrent ? (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
-                      SEU PLANO
+                      {t('pricing.yourPlan')}
                     </span>
                   ) : plan?.badge_text ? (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
@@ -221,7 +217,7 @@ const Pricing = () => {
                       <h2 className="text-lg font-bold">{displayName}</h2>
                     </div>
                     <p className="text-2xl font-bold text-foreground">
-                      {displayPrice === 0 ? 'Grátis' : `R$${Number(displayPrice).toFixed(2)}`}
+                      {displayPrice === 0 ? t('pricing.free') : `R$${Number(displayPrice).toFixed(2)}`}
                       {displayPrice > 0 && displayPeriod && (
                         <span className="text-sm text-muted-foreground font-normal">{displayPeriod}</span>
                       )}
@@ -250,7 +246,7 @@ const Pricing = () => {
                   {tierKey === 'free' ? (
                     isCurrent ? (
                       <Button variant="outline" className="w-full" disabled>
-                        Plano atual
+                        {t('pricing.currentPlan')}
                       </Button>
                     ) : (
                       <Button variant="outline" className="w-full" disabled>
@@ -259,7 +255,7 @@ const Pricing = () => {
                     )
                   ) : isCurrent ? (
                     <Button variant="outline" className="w-full" onClick={handleManage}>
-                      Gerenciar assinatura
+                      {t('pricing.manageSubscription')}
                     </Button>
                   ) : (
                     <Button
@@ -267,7 +263,7 @@ const Pricing = () => {
                       onClick={() => handleCheckout(tierKey)}
                       disabled={loadingTier === tierKey}
                     >
-                      {loadingTier === tierKey ? 'Aguarde...' : displayCta}
+                      {loadingTier === tierKey ? t('pricing.wait') : displayCta}
                     </Button>
                   )}
                 </div>
@@ -278,9 +274,9 @@ const Pricing = () => {
 
         {currentTier !== 'free' && (
           <p className="text-center text-xs text-muted-foreground">
-            Após assinar, clique em "Atualizar assinatura" para verificar.{' '}
+            {t('pricing.updateHint')}{' '}
             <button onClick={checkSubscription} className="text-primary hover:underline">
-              Atualizar agora
+              {t('pricing.updateNow')}
             </button>
           </p>
         )}

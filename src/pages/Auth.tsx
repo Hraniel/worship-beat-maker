@@ -30,7 +30,7 @@ const Auth = () => {
       });
       if (error) toast.error(error.message);
     } catch (err: any) {
-      toast.error('Erro ao conectar com provedor');
+      toast.error(t('auth.oauthError'));
     } finally {
       setOauthLoading(false);
     }

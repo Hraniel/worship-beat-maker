@@ -1073,6 +1073,7 @@ const Pricing = ({
   features: any[];
   L: (key: string, fb?: string) => string;
 }) => {
+  const { t } = useTranslation();
   if (config.show_pricing === "false") return null;
 
   const bg = config.pricing_bg || "hsl(220 15% 7%)";
@@ -1196,7 +1197,7 @@ const Pricing = ({
                     className="text-4xl font-black"
                     style={{ color: plan.highlight ? "hsl(220 15% 10%)" : "hsl(0 0% 100%)" }}
                   >
-                    {plan.price_brl === 0 ? "Grátis" : `R$${Number(plan.price_brl).toFixed(2)}`}
+                    {plan.price_brl === 0 ? L('pricing_free', t('landing.free')) : `R$${Number(plan.price_brl).toFixed(2)}`}
                     {plan.period && (
                       <span
                         className="text-base font-normal ml-1"
@@ -1350,6 +1351,7 @@ const FinalCTA = ({
 
 // Footer — dynamic styles + texts + links
 const Footer = ({ navigate, config, L }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
+  const { t } = useTranslation();
   const bg = config.footer_bg || "hsl(220 15% 5%)";
   const textColor = config.footer_text_color || "hsl(0 0% 100% / 0.35)";
   const tagline = L('footer_tagline', "A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.");
@@ -1433,9 +1435,9 @@ const Footer = ({ navigate, config, L }: { navigate: ReturnType<typeof useNaviga
           style={{ borderColor: "hsl(0 0% 100% / 0.06)", color: textColor }}
         >
           <p>
-            © {new Date().getFullYear()} {copyright}. Todos os direitos reservados.
+            © {new Date().getFullYear()} {copyright}. {t('landing.footer.allRightsReserved')}
           </p>
-          <p>Feito com ❤️ para músicos de louvor</p>
+          <p>{t('landing.footer.madeWithLove')}</p>
         </div>
       </div>
     </footer>
