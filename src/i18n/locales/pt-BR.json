@@ -757,5 +757,23 @@
     "shortSamples": "Samples curtos",
     "shortSamplesDesc": "Sons de 1 a 4 compassos funcionam melhor. Arquivos muito longos podem causar atraso no disparo.",
     "chooseFile": "Escolher arquivo"
+  },
+  "banners": {
+    "offline": "Modo offline — usando dados em cache",
+    "silentTitle": "Modo Silencioso Ativo",
+    "silentDesc": "Desative o botão lateral de silêncio do iPhone para ouvir os sons.",
+    "closeWarning": "Fechar aviso",
+    "newVersion": "Nova versão disponível!",
+    "update": "Atualizar",
+    "dismiss": "Dispensar"
+  },
+  "notifications": {
+    "markAllRead": "Marcar todas como lidas"
+  },
+  "upgradeGate": {
+    "plan": "Plano",
+    "availableFrom": "Este recurso está disponível a partir do plano {{plan}}. Faça o upgrade para desbloquear.",
+    "viewPlans": "Ver planos",
+    "notNow": "Agora não"
   }
 }
