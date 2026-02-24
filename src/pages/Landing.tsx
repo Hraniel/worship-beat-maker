@@ -752,6 +752,7 @@ const Features = ({
   const cardBg = config.features_card_bg || "hsl(0 0% 100%)";
   const cardBorder = config.features_card_border || "hsl(0 0% 0% / 0.07)";
   const titleColor = config.features_title_color || "hsl(220 15% 10%)";
+  const cardTitleColor = config.features_card_title_color || titleColor;
   const subtitleColor = config.features_subtitle_color || "hsl(220 15% 40%)";
 
   const visible = landingFeatures.filter((f) => f.enabled).sort((a, b) => a.sort_order - b.sort_order);
@@ -833,7 +834,7 @@ const Features = ({
                   </div>
                 )}
                 <div className={f.image_url ? "px-6 pb-6 pt-4" : "px-6 pb-6"}>
-                  <h3 className="font-semibold mb-2 text-sm" style={{ color: titleColor }}>
+                  <h3 className="font-semibold mb-2 text-sm" style={{ color: cardTitleColor }}>
                     {f.title}
                   </h3>
                   <p className="text-xs leading-relaxed" style={{ color: subtitleColor }}>
