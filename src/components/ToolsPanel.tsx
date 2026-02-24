@@ -2,11 +2,11 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Timer, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useTranslation } from 'react-i18next';
 
 /* ─── Tap Tempo ─── */
 const MAX_TAP_INTERVAL = 2000; // ms
 const TAP_HISTORY_SIZE = 8;
-// These are now computed from getTapAutoApplyTimeout()
 
 const AUTO_APPLY_KEY = 'drum-pads-tap-auto-apply';
 const AUTO_APPLY_TIMEOUT_KEY = 'drum-pads-tap-auto-apply-timeout';
@@ -44,14 +44,15 @@ export function setTapRedirectTarget(target: TapRedirectTarget) {
 interface ToolsPanelProps {
   bpm: number;
   onBpmChange: (bpm: number) => void;
-  onAutoApplied?: () => void; // called after auto-apply so parent can switch page
+  onAutoApplied?: () => void;
 }
 
 const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied }) => {
+  const { t } = useTranslation();
   const [taps, setTaps] = useState<number[]>([]);
   const [detectedBpm, setDetectedBpm] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
-  const [countdownProgress, setCountdownProgress] = useState(0); // 0-100
+  const [countdownProgress, setCountdownProgress] = useState(0);
   const [showCountdown, setShowCountdown] = useState(false);
   const timeoutRef = useRef<number | null>(null);
   const idleRef = useRef<number | null>(null);
@@ -60,7 +61,6 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
   const autoApplyEnabled = useRef(isTapAutoApplyEnabled());
   const autoApplyTimeout = useRef(getTapAutoApplyTimeout());
 
-  // Re-read settings when component mounts
   useEffect(() => {
     autoApplyEnabled.current = isTapAutoApplyEnabled();
     autoApplyTimeout.current = getTapAutoApplyTimeout();
@@ -83,7 +83,7 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
   }, [onBpmChange, onAutoApplied, clearAllTimers]);
 
   const startCountdown = useCallback((bpmVal: number) => {
-    const countdownMs = (autoApplyTimeout.current - 5) * 1000; // remaining after 5s idle
+    const countdownMs = (autoApplyTimeout.current - 5) * 1000;
     setShowCountdown(true);
     countdownStartRef.current = performance.now();
 
@@ -107,7 +107,6 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
     setShowCountdown(false);
     setCountdownProgress(0);
 
-    // Always wait 5s before showing the bar, then countdown fills until timeout
     idleRef.current = window.setTimeout(() => {
       startCountdown(bpmVal);
     }, 5000);
@@ -118,7 +117,6 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
     setFlash(true);
     setTimeout(() => setFlash(false), 120);
 
-    // Cancel any running countdown/idle timer on new tap
     if (idleRef.current) clearTimeout(idleRef.current);
     if (countdownRef.current) cancelAnimationFrame(countdownRef.current);
     setShowCountdown(false);
@@ -154,7 +152,7 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
     <div className="flex flex-col items-center justify-center gap-4 p-4 h-full relative">
       <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
         <Timer className="h-3.5 w-3.5" />
-        Tap Tempo
+        {t('tapTempo.title')}
       </div>
 
       <button
@@ -174,7 +172,7 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
 
       <div className="flex items-center gap-2">
         <span className="text-xs text-muted-foreground">
-          {taps.length < 2 ? 'Toque para detectar' : `${taps.length - 1} taps`}
+          {taps.length < 2 ? t('toolsPanel.tapToDetect') : `${taps.length - 1} ${t('toolsPanel.taps')}`}
         </span>
         {taps.length > 0 && (
           <button onClick={reset} className="text-muted-foreground hover:text-foreground p-1 rounded transition-colors">
@@ -183,7 +181,6 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
         )}
       </div>
 
-      {/* Fixed apply button — always takes space to avoid layout shift */}
       <div className="h-8">
         {detectedBpm && detectedBpm !== bpm ? (
           <Button
@@ -192,12 +189,11 @@ const ToolsPanel: React.FC<ToolsPanelProps> = ({ bpm, onBpmChange, onAutoApplied
             className="text-xs h-8 px-4"
             onClick={() => applyAndReturn(detectedBpm)}
           >
-            Aplicar {detectedBpm} BPM
+            {t('toolsPanel.applyBpm', { bpm: detectedBpm })}
           </Button>
         ) : null}
       </div>
 
-      {/* Red countdown bar — fills left to right */}
       {showCountdown && (
         <div className="absolute bottom-0 left-0 right-0 h-1">
           <div
