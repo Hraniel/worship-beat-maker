@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetDescription } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface SpotifyTrack {
   id: string;
@@ -56,7 +57,6 @@ const PAD_LABELS: Record<string, string> = {
   'loop-worship-2': 'Worship Flow',
 };
 
-
 const USAGE_KEY = 'spotify-ai-usage';
 
 function getUsageStats() {
@@ -69,13 +69,8 @@ function getUsageStats() {
 
 function incrementUsage(fromCache: boolean) {
   const stats = getUsageStats();
-  // Reset daily
   const today = new Date().toISOString().slice(0, 10);
-  if (stats.lastReset !== today) {
-    stats.total = 0;
-    stats.cached = 0;
-    stats.lastReset = today;
-  }
+  if (stats.lastReset !== today) { stats.total = 0; stats.cached = 0; stats.lastReset = today; }
   stats.total++;
   if (fromCache) stats.cached++;
   localStorage.setItem(USAGE_KEY, JSON.stringify(stats));
@@ -84,6 +79,7 @@ function incrementUsage(fromCache: boolean) {
 
 
 const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, externalOpen, onExternalOpenChange }) => {
+  const { t } = useTranslation();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen ?? internalOpen;
   const setOpen = (v: boolean) => { onExternalOpenChange ? onExternalOpenChange(v) : setInternalOpen(v); };
@@ -101,63 +97,30 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Cleanup audio on unmount or sheet close
-  useEffect(() => {
-    if (!open) stopPreview();
-  }, [open]);
-
-  useEffect(() => {
-    return () => stopPreview();
-  }, []);
+  useEffect(() => { if (!open) stopPreview(); }, [open]);
+  useEffect(() => { return () => stopPreview(); }, []);
 
   const stopPreview = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-      audioRef.current = null;
-    }
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-      progressInterval.current = null;
-    }
-    setPreviewPlaying(false);
-    setPreviewTrackId(null);
-    setPreviewProgress(0);
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; audioRef.current = null; }
+    if (progressInterval.current) { clearInterval(progressInterval.current); progressInterval.current = null; }
+    setPreviewPlaying(false); setPreviewTrackId(null); setPreviewProgress(0);
   }, []);
 
   const togglePreview = useCallback((track: SpotifyTrack) => {
     if (!track.preview_url) return;
-
-    // If same track is playing, pause it
     if (previewTrackId === track.id && previewPlaying) {
-      audioRef.current?.pause();
-      setPreviewPlaying(false);
+      audioRef.current?.pause(); setPreviewPlaying(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
       return;
     }
-
-    // If same track is paused, resume
     if (previewTrackId === track.id && !previewPlaying && audioRef.current) {
-      audioRef.current.play();
-      setPreviewPlaying(true);
-      startProgressTracking();
-      return;
+      audioRef.current.play(); setPreviewPlaying(true); startProgressTracking(); return;
     }
-
-    // New track
     stopPreview();
     const audio = new Audio(track.preview_url);
-    audioRef.current = audio;
-    setPreviewTrackId(track.id);
-    setPreviewProgress(0);
-    audio.play();
-    setPreviewPlaying(true);
-    startProgressTracking();
-    audio.onended = () => {
-      setPreviewPlaying(false);
-      setPreviewProgress(0);
-      if (progressInterval.current) clearInterval(progressInterval.current);
-    };
+    audioRef.current = audio; setPreviewTrackId(track.id); setPreviewProgress(0);
+    audio.play(); setPreviewPlaying(true); startProgressTracking();
+    audio.onended = () => { setPreviewPlaying(false); setPreviewProgress(0); if (progressInterval.current) clearInterval(progressInterval.current); };
   }, [previewTrackId, previewPlaying, stopPreview]);
 
   const startProgressTracking = useCallback(() => {
@@ -176,74 +139,47 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
     }
   }, []);
 
-  // Refresh usage on open
-  useEffect(() => {
-    if (open) setUsage(getUsageStats());
-  }, [open]);
+  useEffect(() => { if (open) setUsage(getUsageStats()); }, [open]);
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
-    setSearching(true);
-    setTracks([]);
-    setSelectedTrack(null);
-    setSuggestion(null);
-
+    setSearching(true); setTracks([]); setSelectedTrack(null); setSuggestion(null);
     try {
-      const { data, error } = await supabase.functions.invoke('spotify-search', {
-        body: { query: query.trim() },
-      });
-
+      const { data, error } = await supabase.functions.invoke('spotify-search', { body: { query: query.trim() } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setTracks(data.tracks || []);
-      if (!data.tracks?.length) toast.info('Nenhuma música encontrada.');
+      if (!data.tracks?.length) toast.info(t('spotifySearch.noResults'));
     } catch (e) {
       console.error('Search error:', e);
-      toast.error('Erro ao buscar músicas. Verifique as credenciais do Spotify.');
-    } finally {
-      setSearching(false);
-    }
-  }, [query]);
+      toast.error(t('spotifySearch.searchError'));
+    } finally { setSearching(false); }
+  }, [query, t]);
 
   const handleSelectTrack = useCallback(async (track: SpotifyTrack) => {
-    setSelectedTrack(track);
-    setSuggestion(null);
-    setAnalyzing(true);
-
+    setSelectedTrack(track); setSuggestion(null); setAnalyzing(true);
     try {
-      setAnalysisStep('IA analisando música...');
+      setAnalysisStep(t('spotifySearch.analyzing'));
       const { data: aiData, error: aiError } = await supabase.functions.invoke('suggest-pad-config', {
-        body: {
-          trackName: track.name,
-          artist: track.artist,
-        },
+        body: { trackName: track.name, artist: track.artist },
       });
       if (aiError) throw aiError;
       if (aiData?.error) throw new Error(aiData.error);
-
-      setSuggestion(aiData.config);
-      setUsage(incrementUsage(false));
+      setSuggestion(aiData.config); setUsage(incrementUsage(false));
     } catch (e) {
       console.error('Analysis error:', e);
-      toast.error('Erro ao analisar música. Tente novamente.');
+      toast.error(t('musicAI.analysisError'));
       setSelectedTrack(null);
-    } finally {
-      setAnalyzing(false);
-      setAnalysisStep('');
-    }
-  }, []);
+    } finally { setAnalyzing(false); setAnalysisStep(''); }
+  }, [t]);
 
   const handleApply = useCallback(() => {
     if (!suggestion) return;
     const configWithTrack = { ...suggestion, trackName: selectedTrack ? `${selectedTrack.name} - ${selectedTrack.artist}` : undefined };
     onApplyConfig(configWithTrack);
-    toast.success('Configuração aplicada nos pads!');
-    setOpen(false);
-    setQuery('');
-    setTracks([]);
-    setSelectedTrack(null);
-    setSuggestion(null);
-  }, [suggestion, onApplyConfig]);
+    toast.success(t('spotifySearch.configApplied'));
+    setOpen(false); setQuery(''); setTracks([]); setSelectedTrack(null); setSuggestion(null);
+  }, [suggestion, onApplyConfig, t]);
 
   const formatDuration = (ms: number) => {
     const m = Math.floor(ms / 60000);
@@ -251,14 +187,12 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  
-
   return (
     <Sheet open={locked ? false : open} onOpenChange={(v) => { if (!locked) setOpen(v); }}>
       {!externalOpen && externalOpen === undefined && (
         <SheetTrigger asChild>
           {locked ? (
-            <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors" onClick={(e) => { e.preventDefault(); toast('🔒 Spotify disponível no plano Master'); }}>
+            <button className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors" onClick={(e) => { e.preventDefault(); toast(t('spotifySearch.lockedMaster')); }}>
               <Lock className="h-4 w-4" />
               Spotify AI
               <span className="ml-auto text-[10px] text-primary font-medium">MASTER</span>
@@ -275,32 +209,29 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Music className="h-5 w-5 text-green-500" />
-            Buscar no Spotify
+            {t('spotifySearch.title')}
           </SheetTitle>
           <SheetDescription>
-            Busque uma música e a IA analisa o áudio real para sugerir efeitos (EQ, reverb, delay) nos pads
+            {t('spotifySearch.description')}
           </SheetDescription>
         </SheetHeader>
 
-        {/* Usage counter */}
         <div className="flex items-center gap-2 mt-2 px-1 py-1.5 rounded-md bg-muted/50 text-[11px] text-muted-foreground">
           <Zap className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>
-            Hoje: <strong className="text-foreground">{usage.total}</strong> consulta{usage.total !== 1 ? 's' : ''}
+            {t('spotifySearch.todayQueries')} <strong className="text-foreground">{usage.total}</strong> {usage.total !== 1 ? t('spotifySearch.queries') : t('spotifySearch.query')}
             {usage.cached > 0 && (
               <span className="ml-1">
-                ({usage.cached} do cache — <span className="text-primary">sem custo</span>)
+                ({usage.cached} {t('spotifySearch.fromCache')} <span className="text-primary">{t('spotifySearch.noCost')}</span>)
               </span>
             )}
           </span>
         </div>
 
-        {/* Search */}
         <div className="flex gap-2 mt-4">
           <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Nome da música ou artista..."
+            value={query} onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('musicAI.searchPlaceholder')}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             className="flex-1"
           />
@@ -309,7 +240,6 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
           </Button>
         </div>
 
-        {/* Results */}
         <div className="flex-1 overflow-y-auto mt-4 space-y-1">
           {!selectedTrack && tracks.map((track) => {
             const isActive = previewTrackId === track.id;
@@ -323,48 +253,31 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                       <Music className="h-4 w-4 text-muted-foreground" />
                     </div>
                   )}
-                  <button
-                    onClick={() => { stopPreview(); handleSelectTrack(track); }}
-                    className="min-w-0 flex-1 text-left"
-                  >
+                  <button onClick={() => { stopPreview(); handleSelectTrack(track); }} className="min-w-0 flex-1 text-left">
                     <p className={`text-sm font-medium truncate ${isActive ? 'text-primary' : ''}`}>{track.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{track.artist}</p>
                   </button>
-                  <span className="text-[10px] text-muted-foreground shrink-0 mr-1">
-                    {formatDuration(track.duration_ms)}
-                  </span>
+                  <span className="text-[10px] text-muted-foreground shrink-0 mr-1">{formatDuration(track.duration_ms)}</span>
                   {track.preview_url ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); togglePreview(track); }}
                       className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isActive && previewPlaying ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/10 text-foreground hover:bg-primary hover:text-primary-foreground'}`}
                     >
-                      {isActive && previewPlaying ? (
-                        <Pause className="h-3.5 w-3.5" />
-                      ) : (
-                        <Play className="h-3.5 w-3.5 ml-0.5" />
-                      )}
+                      {isActive && previewPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
                     </button>
                   ) : (
                     <div className="shrink-0 w-8 h-8" />
                   )}
                 </div>
-                {/* Player bar estilo Spotify */}
                 {isActive && (
                   <div className="flex items-center gap-2 px-3 pb-2.5">
-                    <button onClick={() => seekPreview(-5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                      <SkipBack className="h-3.5 w-3.5" />
-                    </button>
+                    <button onClick={() => seekPreview(-5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors"><SkipBack className="h-3.5 w-3.5" /></button>
                     <button onClick={() => togglePreview(track)} className={`p-1.5 rounded-full transition-colors ${previewPlaying ? 'text-primary' : 'text-foreground'}`}>
                       {previewPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 ml-0.5" />}
                     </button>
-                    <button onClick={() => seekPreview(5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors">
-                      <SkipForward className="h-3.5 w-3.5" />
-                    </button>
+                    <button onClick={() => seekPreview(5)} className="p-1 text-muted-foreground hover:text-foreground transition-colors"><SkipForward className="h-3.5 w-3.5" /></button>
                     <div className="flex-1 h-1.5 bg-muted-foreground/20 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary rounded-full transition-all duration-200"
-                        style={{ width: `${previewProgress}%` }}
-                      />
+                      <div className="h-full bg-primary rounded-full transition-all duration-200" style={{ width: `${previewProgress}%` }} />
                     </div>
                   </div>
                 )}
@@ -372,26 +285,20 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
             );
           })}
 
-          {/* Selected track + analysis */}
           {selectedTrack && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border">
                 {selectedTrack.image ? (
                   <img src={selectedTrack.image} alt="" className="w-12 h-12 rounded object-cover" />
                 ) : (
-                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center">
-                    <Music className="h-5 w-5 text-muted-foreground" />
-                  </div>
+                  <div className="w-12 h-12 rounded bg-muted flex items-center justify-center"><Music className="h-5 w-5 text-muted-foreground" /></div>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate">{selectedTrack.name}</p>
                   <p className="text-xs text-muted-foreground truncate">{selectedTrack.artist}</p>
                   <p className="text-[10px] text-muted-foreground truncate">{selectedTrack.album}</p>
                 </div>
-                <Button
-                  variant="ghost" size="icon" className="h-7 w-7 shrink-0"
-                  onClick={() => { setSelectedTrack(null); setSuggestion(null); }}
-                >
+                <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => { setSelectedTrack(null); setSuggestion(null); }}>
                   <X className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -400,8 +307,8 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                 <div className="flex flex-col items-center gap-3 py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   <div className="text-center">
-                    <p className="text-sm font-medium">Analisando música...</p>
-                    <p className="text-xs text-muted-foreground">{analysisStep || 'Processando...'}</p>
+                    <p className="text-sm font-medium">{t('spotifySearch.analyzing')}</p>
+                    <p className="text-xs text-muted-foreground">{analysisStep || t('spotifySearch.processing')}</p>
                   </div>
                 </div>
               )}
@@ -410,16 +317,12 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold">Sugestão da IA</span>
+                    <span className="text-sm font-semibold">{t('spotifySearch.aiSuggestion')}</span>
                     {suggestion.patternName && (
-                      <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">
-                        {suggestion.patternName}
-                      </span>
+                      <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium">{suggestion.patternName}</span>
                     )}
                   </div>
-
                   <p className="text-xs text-muted-foreground">{suggestion.description}</p>
-
                   <div className="grid grid-cols-4 gap-2">
                     <div className="bg-muted/50 rounded-md p-2 text-center">
                       <span className="text-lg font-bold text-foreground">{suggestion.bpm}</span>
@@ -427,11 +330,11 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                     </div>
                     <div className="bg-muted/50 rounded-md p-2 text-center">
                       <span className="text-lg font-bold text-foreground">{suggestion.key || '—'}</span>
-                      <p className="text-[10px] text-muted-foreground">Tom</p>
+                      <p className="text-[10px] text-muted-foreground">{t('spotifySearch.key')}</p>
                     </div>
                     <div className="bg-muted/50 rounded-md p-2 text-center">
                       <span className="text-lg font-bold text-foreground">{suggestion.timeSignature}</span>
-                      <p className="text-[10px] text-muted-foreground">Compasso</p>
+                      <p className="text-[10px] text-muted-foreground">{t('musicAI.timeSignature')}</p>
                     </div>
                     <div className="bg-muted/50 rounded-md p-2 text-center">
                       <span className="text-sm font-bold text-foreground">
@@ -441,12 +344,8 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                     </div>
                   </div>
 
-
-
-
-                  {/* Pad configs preview */}
                   <div className="space-y-1">
-                    <span className="text-[10px] font-medium text-muted-foreground uppercase">Efeitos dos Pads</span>
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase">{t('spotifySearch.padEffects')}</span>
                     {suggestion.pads && Object.entries(suggestion.pads).map(([padId, cfg]) => (
                       <div key={padId} className="flex items-center justify-between text-xs bg-muted/30 rounded px-2 py-1">
                         <span className="font-medium">{PAD_LABELS[padId] || padId}</span>
@@ -454,7 +353,6 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
                           <span>Vol {Math.round(cfg.volume * 100)}%</span>
                           {cfg.reverb > 0 && <span>Rev {Math.round(cfg.reverb * 100)}%</span>}
                           {cfg.delay > 0 && <span>Del {Math.round(cfg.delay * 100)}%</span>}
-                          
                         </div>
                       </div>
                     ))}
@@ -462,7 +360,7 @@ const SpotifySearch: React.FC<SpotifySearchProps> = ({ onApplyConfig, locked, ex
 
                   <Button onClick={handleApply} className="w-full gap-2">
                     <Check className="h-4 w-4" />
-                    Aplicar configuração
+                    {t('spotifySearch.applyConfig')}
                   </Button>
                 </div>
               )}
