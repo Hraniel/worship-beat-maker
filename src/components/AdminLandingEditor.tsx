@@ -417,6 +417,7 @@ const AdminLandingEditor: React.FC = () => {
           {renderStyleCollapsible(<>
             {renderColorField('nav_bg', 'Fundo da Navbar', 'Suporta transparência')}
             {renderColorField('nav_border_color', 'Cor da Borda')}
+            {renderColorField('nav_brand_color', 'Cor do Nome "Glory Pads"')}
             {renderColorField('nav_link_color', 'Cor dos Links')}
             {renderColorField('nav_link_hover_color', 'Cor Hover dos Links')}
             {renderColorField('nav_btn_login_bg', 'Fundo Botão Entrar')}
