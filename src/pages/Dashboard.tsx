@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -10,6 +11,7 @@ import { toast } from 'sonner';
 import logoDark from '@/assets/logo-dark.png';
 import PackCard from '@/components/PackCard';
 import AdminPackManager from '@/components/AdminPackManager';
+import AdminTranslationManager from '@/components/AdminTranslationManager';
 import CommunitySuggestions from '@/components/CommunitySuggestions';
 import ProfileCompletion from '@/components/ProfileCompletion';
 import { useStorePacks, StorePackData } from '@/hooks/useStorePacks';
@@ -27,7 +29,7 @@ async function invokeWithToken(fnName: string, body: object) {
   const { supabase: supabaseClient } = await import('@/integrations/supabase/client');
   const { data: sessionData } = await supabaseClient.auth.getSession();
   const token = sessionData?.session?.access_token;
-  if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+  if (!token) throw new Error('Session expired');
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
   const res = await fetch(
     `https://${projectId}.supabase.co/functions/v1/${fnName}`,
@@ -42,7 +44,7 @@ async function invokeWithToken(fnName: string, body: object) {
     }
   );
   const json = await res.json();
-  if (!res.ok) throw new Error(json?.error || json?.message || 'Erro na função');
+  if (!res.ok) throw new Error(json?.error || json?.message || 'Function error');
   return json;
 }
 
@@ -113,6 +115,7 @@ const STATIC_PACKS: StorePackData[] = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   useBodyScroll();
   const { user, signOut } = useAuth();
   const { tier, subscriptionEnd, loading } = useSubscription();
@@ -145,7 +148,7 @@ const Dashboard = () => {
       if (error) throw error;
       if (data?.url) window.open(data.url, '_blank');
     } catch {
-      toast.error('Erro ao abrir portal de assinatura');
+      toast.error(t('dashboard.portalError'));
     } finally {
       setPortalLoading(false);
     }
@@ -168,10 +171,10 @@ const Dashboard = () => {
     setTogglingPackId(packId);
     try {
       await invokeWithToken('toggle-pack-library', { packId, removed: false });
-      toast.success('Pack restaurado na sua biblioteca!');
+      toast.success(t('dashboard.packRestored'));
       refetch();
     } catch (err: any) {
-      toast.error(err?.message || 'Erro ao restaurar pack');
+      toast.error(err?.message || t('dashboard.restoreError'));
     } finally {
       setTogglingPackId(null);
     }
@@ -231,21 +234,21 @@ const Dashboard = () => {
                 }`}
               >
                 <ShieldCheck className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Admin</span>
+              <span className="hidden sm:inline">{t('dashboard.admin')}</span>
               </button>
             )}
             <button
               onClick={() => navigate('/help')}
               className="flex items-center gap-1.5 h-8 px-3 rounded-lg border-2 border-violet-400 bg-violet-50 hover:bg-violet-100 transition-colors text-xs font-semibold text-violet-700"
-              title="Central de Ajuda"
+              title={t('dashboard.help')}
             >
               <BookOpen className="h-3.5 w-3.5" />
-              <span>Ajuda</span>
+              <span>{t('dashboard.help')}</span>
             </button>
             <Button size="sm" onClick={() => navigate('/app')}
               className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg h-8 px-3 text-xs font-medium gap-1.5">
               <Play className="h-3 w-3" />
-              Abrir App
+              {t('dashboard.openApp')}
             </Button>
 
             {/* Account dropdown trigger */}
@@ -274,40 +277,40 @@ const Dashboard = () => {
                       </div>
                       <div className="flex items-center gap-1.5 text-xs text-gray-500">
                         <Calendar className="h-3 w-3 shrink-0" />
-                        Membro desde {user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }) : '—'}
+                        {t('dashboard.memberSince')} {user?.created_at ? new Date(user.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : '—'}
                       </div>
                       {isAdmin && (
                         <div className="flex items-center gap-1.5 text-xs text-amber-600">
                           <ShieldCheck className="h-3 w-3 shrink-0" />
-                          <span>Administrador</span>
+                          <span>{t('dashboard.administrator')}</span>
                         </div>
                       )}
                     </div>
                     <div className="h-px bg-gray-100" />
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Assinatura</span>
+                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{t('dashboard.subscription')}</span>
                         <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
                           {badge.icon}{badge.label}
                         </span>
                       </div>
-                      {formattedEnd && <p className="text-[11px] text-gray-400">Renova em {formattedEnd}</p>}
+                      {formattedEnd && <p className="text-[11px] text-gray-400">{t('dashboard.renewsOn')} {formattedEnd}</p>}
                       {tier === 'free' ? (
                         <Button onClick={() => { setMenuOpen(false); navigate('/pricing'); }} size="sm" className="w-full h-8 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white">
-                          <Zap className="h-3 w-3 mr-1" /> Fazer upgrade
-                        </Button>
+                           <Zap className="h-3 w-3 mr-1" /> {t('dashboard.upgrade')}
+                         </Button>
                       ) : (
                         <Button onClick={handleManageSubscription} variant="outline" size="sm" className="w-full h-8 text-xs rounded-lg border-gray-200 text-gray-700" disabled={portalLoading}>
-                          {portalLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Gerenciar assinatura'}
+                          {portalLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('dashboard.manageSubscription')}
                         </Button>
                       )}
                     </div>
                     <div className="h-px bg-gray-100" />
                     <button onClick={handleSignOut}
                       className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
-                      <LogOut className="h-3.5 w-3.5" />
-                      Sair da conta
-                    </button>
+                       <LogOut className="h-3.5 w-3.5" />
+                       {t('dashboard.signOut')}
+                     </button>
                   </div>
                 </>
               )}
@@ -323,10 +326,13 @@ const Dashboard = () => {
           <div className="mb-8 rounded-2xl overflow-hidden border border-indigo-500/20 shadow-lg">
             <div className="bg-gradient-to-r from-indigo-950/80 to-violet-950/60 px-4 py-3 border-b border-indigo-500/20 flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-indigo-400" />
-              <span className="text-sm font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">Painel Administrativo</span>
+              <span className="text-sm font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">{t('dashboard.adminPanel')}</span>
             </div>
             <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 p-4">
               <AdminPackManager packs={adminPacks} onRefresh={refetch} />
+              <div className="mt-6 pt-6 border-t border-indigo-500/20">
+                <AdminTranslationManager />
+              </div>
             </div>
           </div>
         )}
@@ -341,9 +347,9 @@ const Dashboard = () => {
             <div className="flex items-center gap-2.5 mb-4">
               <Library className="h-5 w-5 text-violet-500" />
               <h2 className="text-lg font-bold text-gray-900">{sc('library_title')}</h2>
-              <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">
-                {activePacks.length} ativo{activePacks.length !== 1 ? 's' : ''}
-                {removedPacks.length > 0 && ` · ${removedPacks.length} removido${removedPacks.length !== 1 ? 's' : ''}`}
+               <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">
+                 {t('dashboard.activeCount', { count: activePacks.length })}
+                 {removedPacks.length > 0 && ` · ${t('dashboard.removedCount', { count: removedPacks.length })}`}
               </span>
             </div>
 
@@ -374,8 +380,8 @@ const Dashboard = () => {
                       </div>
                       <div className="p-2.5">
                         <p className="text-xs font-semibold text-gray-900 leading-snug truncate">{pack.name}</p>
-                        <p className="text-[10px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
-                          <CheckCircle className="h-2.5 w-2.5" /> Adquirido
+                         <p className="text-[10px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+                           <CheckCircle className="h-2.5 w-2.5" /> {t('dashboard.purchasedLabel')}
                         </p>
                       </div>
                     </div>
@@ -418,7 +424,7 @@ const Dashboard = () => {
                           {togglingPackId === pack.id ? (
                             <Loader2 className="h-2.5 w-2.5 animate-spin" />
                           ) : (
-                            <><RotateCcw className="h-2.5 w-2.5" /> Restaurar</>
+                            <><RotateCcw className="h-2.5 w-2.5" /> {t('dashboard.restore')}</>
                           )}
                         </button>
                       </div>
@@ -455,8 +461,8 @@ const Dashboard = () => {
                 className="shrink-0 flex items-center gap-1.5 h-9 px-4 rounded-xl text-xs font-bold border-2 transition-colors bg-violet-600 text-white border-violet-600 hover:bg-violet-700 shadow-sm"
               >
                 <Filter className="h-3.5 w-3.5" />
-                {activeCategory === 'Todos' ? 'Categorias' : activeCategory}
-              </button>
+                 {activeCategory === 'Todos' ? t('dashboard.categories') : activeCategory}
+               </button>
               {/* Library status filters */}
               {(() => {
                 const fl = getJSON<Record<string, string>>('filter_labels', { all: 'Todos', purchased: 'Adquiridos', available: 'Disponíveis', removed: 'Removidos' });
@@ -558,7 +564,7 @@ const Dashboard = () => {
             <div className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setShowMobileFilter(false)} />
             <div className="fixed left-0 top-0 bottom-0 z-50 w-64 bg-white shadow-2xl animate-slide-in-left flex flex-col lg:hidden">
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                <span className="text-sm font-bold text-gray-900">Categorias</span>
+                <span className="text-sm font-bold text-gray-900">{t('dashboard.categories')}</span>
                 <button onClick={() => setShowMobileFilter(false)} className="p-1 text-gray-400 hover:text-gray-600">
                   <X className="h-4 w-4" />
                 </button>
@@ -607,7 +613,7 @@ const Dashboard = () => {
           {/* Vertical sidebar */}
           <aside className="w-52 shrink-0">
             <div className="sticky top-20 bg-white rounded-2xl border border-gray-200 p-3 space-y-0.5">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-2">Categorias</p>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-2">{t('dashboard.categories')}</p>
               {CATEGORY_GROUPS.map(group => (
                 <div key={group.key}>
                   <button

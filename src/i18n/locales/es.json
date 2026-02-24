@@ -14,7 +14,8 @@
     "yes": "Sí",
     "no": "No",
     "or": "o",
-    "language": "Idioma"
+    "language": "Idioma",
+    "packs": "packs"
   },
   "auth": {
     "title": "GLORY PADS",
@@ -39,25 +40,25 @@
     "resetSent": "¡Correo de recuperación enviado! Revisa tu bandeja de entrada.",
     "fillAllFields": "Completa todos los campos",
     "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",
-    "enterEmail": "Ingresa tu correo",
+    "enterEmail": "Introduce tu correo",
     "invalidCredentials": "Correo o contraseña incorrectos",
     "oauthError": "Error al conectar con el proveedor",
     "wait": "Espera..."
   },
   "landing": {
     "nav": {
-      "features": "Funciones",
+      "features": "Recursos",
       "sounds": "Sonidos",
       "plans": "Planes",
       "login": "Iniciar sesión",
-      "signup": "Comenzar gratis"
+      "signup": "Empezar gratis"
     },
     "hero": {
       "badge": "Spotify AI integrado · PWA nativo",
       "title": "Tus pads de worship en la palma de tu mano",
-      "subtitle": "Pads profesionales, metrónomo, loops, continuous pads y Glory Store — todo lo que el músico de adoración necesita, en una sola app.",
-      "cta": "Comenzar gratis",
-      "secondary": "Ver funciones"
+      "subtitle": "Pads profesionales, metrónomo, loops, continuous pads y Glory Store — todo lo que el músico de alabanza necesita, en una sola app.",
+      "cta": "Empezar gratis",
+      "secondary": "Ver recursos"
     }
   },
   "settings": {
@@ -86,7 +87,7 @@
   },
   "store": {
     "title": "Glory Store",
-    "subtitle": "Descubre nuevos sonidos, packs y texturas para elevar tu adoración.",
+    "subtitle": "Descubre nuevos sonidos, packs y texturas para elevar tu alabanza.",
     "myLibrary": "Mi Biblioteca",
     "active": "Activos",
     "removed": "Eliminados",
@@ -96,12 +97,49 @@
     "available": "Disponibles",
     "community": {
       "title": "Comunidad — Próximas Actualizaciones",
-      "subtitle": "Vota por las ideas que quieres ver en Glory Pads. Tu voz da forma a la app.",
+      "subtitle": "Vota las ideas que quieres ver en Glory Pads. Tu voz da forma a la app.",
       "suggestIdea": "Sugerir idea",
       "empty": "Aún no hay sugerencias. ¡Sé el primero!",
-      "loginToLike": "Inicia sesión para dar me gusta a las sugerencias que quieres ver en la app."
+      "loginToLike": "Inicia sesión para dar like a las sugerencias que quieres ver en la app."
     },
     "footer": "Glory Pads — Hecho con amor para adoradores."
+  },
+  "dashboard": {
+    "openApp": "Abrir App",
+    "help": "Ayuda",
+    "admin": "Admin",
+    "adminPanel": "Panel Administrativo",
+    "memberSince": "Miembro desde",
+    "administrator": "Administrador",
+    "subscription": "Suscripción",
+    "renewsOn": "Se renueva el",
+    "upgrade": "Mejorar plan",
+    "manageSubscription": "Gestionar suscripción",
+    "signOut": "Cerrar sesión",
+    "categories": "Categorías",
+    "purchasedLabel": "Adquirido",
+    "restore": "Restaurar",
+    "packRestored": "¡Pack restaurado en tu biblioteca!",
+    "restoreError": "Error al restaurar pack",
+    "portalError": "Error al abrir portal de suscripción",
+    "sessionExpired": "Sesión expirada. Inicia sesión nuevamente.",
+    "functionError": "Error en la función",
+    "activeCount_one": "{{count}} activo",
+    "activeCount_other": "{{count}} activos",
+    "removedCount_one": "{{count}} eliminado",
+    "removedCount_other": "{{count}} eliminados"
+  },
+  "tickets": {
+    "title": "Mis Tickets",
+    "received": "Recibido",
+    "inProgress": "En Progreso",
+    "done": "Finalizado",
+    "empty": "No se encontraron tickets de soporte.",
+    "emptyHint": "Abre un ticket a través del asistente de IA en el Centro de Ayuda.",
+    "ticketNumber": "Ticket #{{number}}",
+    "openedAt": "Abierto el",
+    "updatedAt": "Actualizado el",
+    "viewConversation": "Toca para ver la conversación →"
   },
   "help": {
     "title": "Centro de Ayuda",
@@ -131,9 +169,9 @@
     "activeDescription": "Recibirás avisos incluso con la app cerrada.",
     "inactiveDescription": "Activa para recibir comunicados de Glory Pads.",
     "blocked": "Permiso bloqueado por el sistema. Para activar, ve a la configuración de tu navegador y permite notificaciones para este sitio.",
-    "notSupported": "Las notificaciones push no son compatibles con este navegador. Para recibir notificaciones, instala la app como PWA en tu teléfono.",
+    "notSupported": "Las notificaciones push no son compatibles con este navegador. Para recibirlas, instala la app como PWA en tu celular.",
     "howItWorks": "¿Cómo funciona?",
-    "howItWorksDescription": "Al activar, recibirás avisos importantes del equipo Glory Pads directamente en tu teléfono o computadora, incluso con la app cerrada. Sin spam.",
+    "howItWorksDescription": "Al activar, recibirás avisos importantes del equipo Glory Pads directamente en tu celular o computadora, incluso con la app cerrada. Sin spam.",
     "sendTest": "🔔 Enviar notificación de prueba",
     "testTitle": "🎵 Glory Pads",
     "testBody": "¡Notificaciones funcionando! Recibirás avisos incluso con la app cerrada."
@@ -148,5 +186,21 @@
     "mix": "Mix",
     "metronomeDest": "Metrónomo",
     "padsDest": "Pads"
+  },
+  "adminTranslations": {
+    "title": "Gestionar Traducciones",
+    "description": "Edita las traducciones de la app por idioma. Los cambios se guardan como overrides en la base de datos.",
+    "namespace": "Sección",
+    "key": "Clave",
+    "value": "Valor",
+    "save": "Guardar",
+    "saved": "¡Traducción guardada!",
+    "error": "Error al guardar traducción",
+    "reset": "Restaurar original",
+    "resetConfirm": "¡Override eliminado!",
+    "overridden": "Editado",
+    "filterNamespace": "Filtrar por sección",
+    "allNamespaces": "Todas las secciones",
+    "searchKeys": "Buscar claves..."
   }
 }

@@ -36,4 +36,18 @@ i18n
     },
   });
 
+// Load translation overrides from DB (non-blocking)
+async function loadOverrides() {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data } = await supabase.from('translation_overrides').select('locale, key_path, value');
+    if (data) {
+      for (const row of data) {
+        i18n.addResource(row.locale, 'translation', row.key_path, row.value);
+      }
+    }
+  } catch { /* silent */ }
+}
+loadOverrides();
+
 export default i18n;

@@ -14,7 +14,8 @@
     "yes": "Sim",
     "no": "Não",
     "or": "ou",
-    "language": "Idioma"
+    "language": "Idioma",
+    "packs": "packs"
   },
   "auth": {
     "title": "GLORY PADS",
@@ -103,6 +104,43 @@
     },
     "footer": "Glory Pads — Feito com amor para adoradores."
   },
+  "dashboard": {
+    "openApp": "Abrir App",
+    "help": "Ajuda",
+    "admin": "Admin",
+    "adminPanel": "Painel Administrativo",
+    "memberSince": "Membro desde",
+    "administrator": "Administrador",
+    "subscription": "Subscrição",
+    "renewsOn": "Renova em",
+    "upgrade": "Fazer upgrade",
+    "manageSubscription": "Gerir subscrição",
+    "signOut": "Sair da conta",
+    "categories": "Categorias",
+    "purchasedLabel": "Adquirido",
+    "restore": "Restaurar",
+    "packRestored": "Pack restaurado na sua biblioteca!",
+    "restoreError": "Erro ao restaurar pack",
+    "portalError": "Erro ao abrir portal de subscrição",
+    "sessionExpired": "Sessão expirada. Inicie sessão novamente.",
+    "functionError": "Erro na função",
+    "activeCount_one": "{{count}} ativo",
+    "activeCount_other": "{{count}} ativos",
+    "removedCount_one": "{{count}} removido",
+    "removedCount_other": "{{count}} removidos"
+  },
+  "tickets": {
+    "title": "Os Meus Tickets",
+    "received": "Recebido",
+    "inProgress": "Em Andamento",
+    "done": "Finalizado",
+    "empty": "Nenhum ticket de suporte encontrado.",
+    "emptyHint": "Abra um ticket pelo assistente de IA na Central de Ajuda.",
+    "ticketNumber": "Ticket #{{number}}",
+    "openedAt": "Aberto em",
+    "updatedAt": "Atualizado em",
+    "viewConversation": "Toque para ver conversa →"
+  },
   "help": {
     "title": "Central de Ajuda",
     "subtitle": "Como podemos ajudar?",
@@ -148,5 +186,21 @@
     "mix": "Mix",
     "metronomeDest": "Metrónomo",
     "padsDest": "Pads"
+  },
+  "adminTranslations": {
+    "title": "Gerir Traduções",
+    "description": "Edite as traduções da app por idioma. As alterações são guardadas como overrides na base de dados.",
+    "namespace": "Secção",
+    "key": "Chave",
+    "value": "Valor",
+    "save": "Guardar",
+    "saved": "Tradução guardada!",
+    "error": "Erro ao guardar tradução",
+    "reset": "Restaurar original",
+    "resetConfirm": "Override removido!",
+    "overridden": "Editado",
+    "filterNamespace": "Filtrar por secção",
+    "allNamespaces": "Todas as secções",
+    "searchKeys": "Pesquisar chaves..."
   }
 }

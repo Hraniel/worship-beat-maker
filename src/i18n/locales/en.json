@@ -14,7 +14,8 @@
     "yes": "Yes",
     "no": "No",
     "or": "or",
-    "language": "Language"
+    "language": "Language",
+    "packs": "packs"
   },
   "auth": {
     "title": "GLORY PADS",
@@ -103,6 +104,43 @@
     },
     "footer": "Glory Pads — Made with love for worshippers."
   },
+  "dashboard": {
+    "openApp": "Open App",
+    "help": "Help",
+    "admin": "Admin",
+    "adminPanel": "Admin Panel",
+    "memberSince": "Member since",
+    "administrator": "Administrator",
+    "subscription": "Subscription",
+    "renewsOn": "Renews on",
+    "upgrade": "Upgrade",
+    "manageSubscription": "Manage subscription",
+    "signOut": "Sign out",
+    "categories": "Categories",
+    "purchasedLabel": "Purchased",
+    "restore": "Restore",
+    "packRestored": "Pack restored to your library!",
+    "restoreError": "Error restoring pack",
+    "portalError": "Error opening subscription portal",
+    "sessionExpired": "Session expired. Please sign in again.",
+    "functionError": "Function error",
+    "activeCount_one": "{{count}} active",
+    "activeCount_other": "{{count}} active",
+    "removedCount_one": "{{count}} removed",
+    "removedCount_other": "{{count}} removed"
+  },
+  "tickets": {
+    "title": "My Tickets",
+    "received": "Received",
+    "inProgress": "In Progress",
+    "done": "Done",
+    "empty": "No support tickets found.",
+    "emptyHint": "Open a ticket through the AI assistant in the Help Center.",
+    "ticketNumber": "Ticket #{{number}}",
+    "openedAt": "Opened on",
+    "updatedAt": "Updated on",
+    "viewConversation": "Tap to view conversation →"
+  },
   "help": {
     "title": "Help Center",
     "subtitle": "How can we help?",
@@ -148,5 +186,21 @@
     "mix": "Mix",
     "metronomeDest": "Metronome",
     "padsDest": "Pads"
+  },
+  "adminTranslations": {
+    "title": "Manage Translations",
+    "description": "Edit app translations per language. Changes are saved as overrides in the database.",
+    "namespace": "Section",
+    "key": "Key",
+    "value": "Value",
+    "save": "Save",
+    "saved": "Translation saved!",
+    "error": "Error saving translation",
+    "reset": "Restore original",
+    "resetConfirm": "Override removed!",
+    "overridden": "Edited",
+    "filterNamespace": "Filter by section",
+    "allNamespaces": "All sections",
+    "searchKeys": "Search keys..."
   }
 }
