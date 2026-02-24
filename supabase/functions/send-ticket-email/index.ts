@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
     const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
     const { error: sendError } = await resend.emails.send({
-      from: "Glory Pads <noreply@glorypads.com>",
+      from: "Glory Pads <support@glorypads.com>",
       to: [ticket.email],
       subject,
       html,
