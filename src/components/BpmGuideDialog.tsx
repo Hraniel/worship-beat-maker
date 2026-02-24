@@ -4,6 +4,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface BpmGuideDialogProps {
   open: boolean;
@@ -12,16 +13,17 @@ interface BpmGuideDialogProps {
 }
 
 const BpmGuideDialog: React.FC<BpmGuideDialogProps> = ({ open, onClose, onConfirm }) => {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="bg-card border-border max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-foreground">
             <Info className="h-5 w-5 text-primary" />
-            Guia de importação
+            {t('bpmGuide.title')}
           </DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Para o melhor resultado, siga estas dicas ao importar sons:
+            {t('bpmGuide.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -31,10 +33,8 @@ const BpmGuideDialog: React.FC<BpmGuideDialogProps> = ({ open, onClose, onConfir
               <Clock className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Sincronize o BPM</p>
-              <p className="text-xs text-muted-foreground">
-                Certifique-se de que o arquivo de áudio está no mesmo BPM do metrônomo do app para manter a sincronização.
-              </p>
+              <p className="text-sm font-medium text-foreground">{t('bpmGuide.syncBpm')}</p>
+              <p className="text-xs text-muted-foreground">{t('bpmGuide.syncBpmDesc')}</p>
             </div>
           </div>
 
@@ -43,10 +43,8 @@ const BpmGuideDialog: React.FC<BpmGuideDialogProps> = ({ open, onClose, onConfir
               <Music className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Formatos aceitos</p>
-              <p className="text-xs text-muted-foreground">
-                MP3, WAV e OGG. Para melhor qualidade, use WAV sem compressão.
-              </p>
+              <p className="text-sm font-medium text-foreground">{t('bpmGuide.formats')}</p>
+              <p className="text-xs text-muted-foreground">{t('bpmGuide.formatsDesc')}</p>
             </div>
           </div>
 
@@ -55,20 +53,18 @@ const BpmGuideDialog: React.FC<BpmGuideDialogProps> = ({ open, onClose, onConfir
               <Zap className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <p className="text-sm font-medium text-foreground">Samples curtos</p>
-              <p className="text-xs text-muted-foreground">
-                Sons de 1 a 4 compassos funcionam melhor. Arquivos muito longos podem causar atraso no disparo.
-              </p>
+              <p className="text-sm font-medium text-foreground">{t('bpmGuide.shortSamples')}</p>
+              <p className="text-xs text-muted-foreground">{t('bpmGuide.shortSamplesDesc')}</p>
             </div>
           </div>
         </div>
 
         <DialogFooter className="flex gap-2 sm:gap-0">
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button size="sm" onClick={onConfirm}>
-            Escolher arquivo
+            {t('bpmGuide.chooseFile')}
           </Button>
         </DialogFooter>
       </DialogContent>

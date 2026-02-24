@@ -3,6 +3,7 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { type PadEffects, type DelaySubdivision, calcBpmDelayTime } from '@/lib/audio-effects';
 import { Disc3, Timer, AudioWaveform, Zap } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface PadEffectsPanelProps {
   effects: PadEffects;
@@ -20,6 +21,7 @@ const SUBDIVISIONS: { value: DelaySubdivision; label: string }[] = [
 ];
 
 const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, bpm = 120, onChange }) => {
+  const { t } = useTranslation();
   const update = (key: keyof PadEffects, value: number | boolean | string) => {
     onChange({ ...effects, [key]: value });
   };
@@ -42,19 +44,19 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, bpm = 120, o
     <div className="space-y-2 pt-1">
       <div className="flex items-center gap-1.5 mb-1">
         <AudioWaveform className="h-3 w-3 text-primary" />
-        <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">Efeitos Master</span>
+        <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">{t('padEffects.masterEffects')}</span>
       </div>
 
       {/* EQ */}
       <div className="space-y-1.5 bg-muted/30 rounded-md p-2">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase">EQ</span>
+        <span className="text-[10px] font-medium text-muted-foreground uppercase">{t('padEffects.eq')}</span>
         {([
-          { key: 'eqLow' as const, label: 'Graves' },
-          { key: 'eqMid' as const, label: 'Médios' },
-          { key: 'eqHigh' as const, label: 'Agudos' },
-        ]).map(({ key, label }) => (
+          { key: 'eqLow' as const, labelKey: 'padEffects.bass' },
+          { key: 'eqMid' as const, labelKey: 'padEffects.mid' },
+          { key: 'eqHigh' as const, labelKey: 'padEffects.treble' },
+        ]).map(({ key, labelKey }) => (
           <div key={key} className="flex items-center gap-2">
-            <span className="text-[10px] text-muted-foreground w-12">{label}</span>
+            <span className="text-[10px] text-muted-foreground w-12">{t(labelKey)}</span>
             <Slider
               value={[effects[key]]}
               onValueChange={([v]) => update(key, v)}
@@ -74,7 +76,7 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, bpm = 120, o
       {/* Reverb */}
       <div className="flex items-center gap-2 bg-muted/30 rounded-md p-2">
         <Disc3 className="h-3 w-3 text-muted-foreground shrink-0" />
-        <span className="text-[10px] text-muted-foreground w-12">Reverb</span>
+        <span className="text-[10px] text-muted-foreground w-12">{t('padEffects.reverb')}</span>
         <Slider
           value={[effects.reverb * 100]}
           onValueChange={([v]) => update('reverb', v / 100)}
@@ -93,7 +95,7 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, bpm = 120, o
       <div className="space-y-1.5 bg-muted/30 rounded-md p-2">
         <div className="flex items-center gap-2">
           <Timer className="h-3 w-3 text-muted-foreground shrink-0" />
-          <span className="text-[10px] text-muted-foreground w-12">Delay</span>
+          <span className="text-[10px] text-muted-foreground w-12">{t('padEffects.delay')}</span>
           <Slider
             value={[effects.delay * 100]}
             onValueChange={([v]) => update('delay', v / 100)}
@@ -113,7 +115,7 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, bpm = 120, o
             {/* Sync BPM toggle */}
             <div className="flex items-center gap-2 pl-5 pt-0.5">
               <Zap className="h-3 w-3 text-primary shrink-0" />
-              <span className="text-[10px] text-foreground font-medium flex-1">Sync BPM</span>
+              <span className="text-[10px] text-foreground font-medium flex-1">{t('padEffects.syncBpm')}</span>
               <Switch
                 checked={effects.delaySyncBpm}
                 onCheckedChange={handleSyncBpmToggle}
@@ -122,7 +124,6 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, bpm = 120, o
             </div>
 
             {effects.delaySyncBpm ? (
-              /* BPM sync mode: subdivision selector */
               <div className="pl-5 space-y-1.5">
                 <div className="flex flex-wrap gap-1">
                   {SUBDIVISIONS.map(({ value, label }) => (
@@ -149,9 +150,8 @@ const PadEffectsPanel: React.FC<PadEffectsPanelProps> = ({ effects, bpm = 120, o
                 </div>
               </div>
             ) : (
-              /* Manual mode: tempo slider */
               <div className="flex items-center gap-2 pl-5">
-                <span className="text-[10px] text-muted-foreground w-12">Tempo</span>
+                <span className="text-[10px] text-muted-foreground w-12">{t('padEffects.time')}</span>
                 <Slider
                   value={[effects.delayTime * 1000]}
                   onValueChange={([v]) => update('delayTime', v / 1000)}

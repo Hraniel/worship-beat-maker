@@ -15,6 +15,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useFeatureGates, type GateCheckResult } from '@/hooks/useFeatureGates';
 import { toast } from 'sonner';
 import StoreImportPicker from './StoreImportPicker';
+import { useTranslation } from 'react-i18next';
 
 interface DrumPadProps {
   pad: PadSound;
@@ -56,6 +57,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
   onResetPad, onResetAllPads, onGateBlocked, onPadPlayed
 }) => {
   const [isActive, setIsActive] = useState(false);
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -78,7 +80,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
     if (!result.allowed && result.gate && onGateBlocked) {
       onGateBlocked(gateKey);
     } else {
-      toast('🔒 Recurso disponível nos planos pagos', { description: `Desbloqueie ${feature} assinando um plano.` });
+      toast(t('drumPad.paidFeature'), { description: t('drumPad.paidFeatureDesc', { feature }) });
       navigate('/pricing');
     }
   }, [canAccess, onGateBlocked, navigate]);
@@ -320,7 +322,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 </ZoomPopup>
               </div>
             ) : (
-              <LockedRow label="Volume individual" gateKey="individual_volume" feature="volume individual" />
+              <LockedRow label={t('drumPad.individualVolume')} gateKey="individual_volume" feature={t('drumPad.individualVolume').toLowerCase()} />
             )}
 
             {/* Pan - Pro feature */}
@@ -333,7 +335,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 disabled={panDisabled}
               />
             ) : (
-              <LockedRow label="Pan (L/R)" gateKey="pan_control" feature="controle de panorâmica" />
+              <LockedRow label={t('drumPad.panLR')} gateKey="pan_control" feature={t('drumPad.panControl')} />
             )}
 
             <div className="h-px bg-border" />
@@ -374,7 +376,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 onClick={() => { setRenameValue(customName || pad.shortName); setIsRenaming(true); }}
               >
                 <Pencil className="h-3.5 w-3.5" />
-                Renomear
+                {t('drumPad.rename')}
               </button>
             )}
 
@@ -386,10 +388,10 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 return (
                   <button
                     className="flex items-center gap-2 w-full px-3 py-2 text-sm text-muted-foreground hover:bg-muted rounded-md transition-colors"
-                    onClick={() => toast.info(`Limite de ${maxImports} importações atingido`, { description: 'Remova um som customizado ou faça upgrade.' })}
+                    onClick={() => toast.info(t('drumPad.importLimitReached', { max: maxImports }), { description: t('drumPad.importLimitHint') })}
                   >
                     <Lock className="h-3.5 w-3.5" />
-                    Importar som {pad.isLoop ? '(loop)' : ''}
+                    {t('drumPad.importSound')} {pad.isLoop ? `(${t('drumPad.importSoundLoop').split('(')[1]}` : ''}
                     <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
                   </button>
                 );
@@ -400,7 +402,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                   onClick={() => { setShowMenu(false); setTimeout(() => fileInputRef.current?.click(), 50); }}
                 >
                   <Upload className="h-3.5 w-3.5" />
-                  Importar som {pad.isLoop ? '(loop)' : ''}
+                  {pad.isLoop ? t('drumPad.importSoundLoop') : t('drumPad.importSound')}
                   <span className="ml-auto text-[10px] text-muted-foreground">{customSoundsCount}/{maxImports}</span>
                 </button>
               );
@@ -415,7 +417,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 onClick={() => setShowStorePicker(prev => !prev)}
               >
                 <Store className="h-3.5 w-3.5" />
-                Importar da Glory Store
+                {t('drumPad.importFromStore')}
               </button>
               {showStorePicker && (
                 <StoreImportPicker
@@ -439,7 +441,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 }}
               >
                 <X className="h-3.5 w-3.5" />
-                Remover custom
+                {t('drumPad.removeCustom')}
               </button>
             )}
 
@@ -451,7 +453,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
               onClick={() => setShowColorPicker(prev => !prev)}
             >
               <Palette className="h-3.5 w-3.5" />
-              Alterar cor
+              {t('drumPad.changeColor')}
               {customColor && (
                 <span
                   className="ml-auto w-3 h-3 rounded-full border border-border"
@@ -470,7 +472,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                     className="flex items-center justify-center gap-1.5 w-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-border"
                     onClick={() => { onColorChange?.(pad.id, undefined as any); setShowColorPicker(false); }}
                   >
-                    Voltar ao padrão
+                    {t('drumPad.backToDefault')}
                   </button>
                 )}
               </div>
@@ -483,14 +485,14 @@ const DrumPad: React.FC<DrumPadProps> = ({
               onClick={() => { onResetPad?.(pad.id); setShowMenu(false); }}
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              Redefinir este pad
+              {t('drumPad.resetThisPad')}
             </button>
             <button
               className="flex items-center gap-2 w-full px-3 py-2 text-sm text-destructive hover:bg-muted rounded-md transition-colors"
               onClick={() => { onResetAllPads?.(); setShowMenu(false); }}
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              Redefinir todos os pads
+              {t('drumPad.resetAllPads')}
             </button>
 
             {/* Effects - Master tier */}
@@ -504,7 +506,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                   onClick={() => setShowEffects(prev => !prev)}
                 >
                   <AudioWaveform className="h-3.5 w-3.5" />
-                  Efeitos
+                  {t('drumPad.effects')}
                   {hasActiveEffects(effects) && (
                     <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
                   )}
@@ -518,7 +520,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
                 )}
               </>
             ) : (
-              <LockedMasterRow label="Efeitos de áudio" gateKey="pad_effects" feature="efeitos de áudio" />
+              <LockedMasterRow label={t('drumPad.audioEffects')} gateKey="pad_effects" feature={t('drumPad.audioEffects').toLowerCase()} />
             )}
           </div>
         </>

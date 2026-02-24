@@ -695,5 +695,67 @@
     "ctaTitle": "Glory Pads",
     "ctaDesc": "The worship percussion app with metronome, pads and much more.",
     "ctaButton": "Create free account"
+  },
+  "metronome": {
+    "editBpmTitle": "Click to edit BPM",
+    "stop": "Stop",
+    "play": "Play",
+    "key": "Key"
+  },
+  "drumPad": {
+    "paidFeature": "🔒 Feature available on paid plans",
+    "paidFeatureDesc": "Unlock {{feature}} by subscribing to a plan.",
+    "individualVolume": "Individual volume",
+    "panLR": "Pan (L/R)",
+    "panControl": "pan control",
+    "rename": "Rename",
+    "importSound": "Import sound",
+    "importSoundLoop": "Import sound (loop)",
+    "importLimitReached": "Limit of {{max}} imports reached",
+    "importLimitHint": "Remove a custom sound or upgrade.",
+    "importFromStore": "Import from Glory Store",
+    "removeCustom": "Remove custom",
+    "changeColor": "Change color",
+    "backToDefault": "Back to default",
+    "resetThisPad": "Reset this pad",
+    "resetAllPads": "Reset all pads",
+    "effects": "Effects",
+    "audioEffects": "Audio effects"
+  },
+  "ambient": {
+    "padError": "Pad error: {{msg}}",
+    "restoredToSynth": "Pad {{note}} restored to synthesized",
+    "resume": "Resume",
+    "pause": "Pause",
+    "loading": "Loading..."
+  },
+  "padColor": {
+    "title": "Pad Color",
+    "hue": "Hue",
+    "saturation": "Saturation",
+    "lightness": "Lightness",
+    "opacity": "Opacity"
+  },
+  "padEffects": {
+    "masterEffects": "Master Effects",
+    "eq": "EQ",
+    "bass": "Bass",
+    "mid": "Mids",
+    "treble": "Treble",
+    "reverb": "Reverb",
+    "delay": "Delay",
+    "syncBpm": "Sync BPM",
+    "time": "Time"
+  },
+  "bpmGuide": {
+    "title": "Import guide",
+    "description": "For best results, follow these tips when importing sounds:",
+    "syncBpm": "Sync the BPM",
+    "syncBpmDesc": "Make sure the audio file is at the same BPM as the app's metronome to keep sync.",
+    "formats": "Accepted formats",
+    "formatsDesc": "MP3, WAV and OGG. For best quality, use uncompressed WAV.",
+    "shortSamples": "Short samples",
+    "shortSamplesDesc": "Sounds of 1 to 4 measures work best. Very long files may cause delay on trigger.",
+    "chooseFile": "Choose file"
   }
 }

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import UpgradeGateModal, { type UpgradeGatePayload } from '@/components/UpgradeGateModal';
+import { useTranslation } from 'react-i18next';
 
 import {
   ALL_NOTES,
@@ -27,6 +28,7 @@ interface AmbientPadsProps {
 }
 
 const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
+  const { t } = useTranslation();
   const { tier } = useSubscription();
   const { canAccess } = useFeatureGates();
   const [upgradeGate, setUpgradeGate] = useState<UpgradeGatePayload | null>(null);
@@ -84,7 +86,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
       }
     } catch (e: any) {
       console.error('[AmbientPads] Toggle error:', e);
-      toast.error(`Erro no pad: ${e?.message || 'desconhecido'}`);
+      toast.error(t('ambient.padError', { msg: e?.message || 'unknown' }));
     }
     setLoading(false);
     togglingRef.current = false;
@@ -102,7 +104,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
       next.delete(note);
       return next;
     });
-    toast.success(`Pad ${note} restaurado para sintetizado`);
+    toast.success(t('ambient.restoredToSynth', { note }));
   }, []);
 
   const handlePlayPause = useCallback(() => {
@@ -207,7 +209,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
                 size="icon"
                 className={fullPage ? "h-8 w-8 text-foreground hover:text-foreground" : "h-5 w-5 text-foreground hover:text-foreground"}
                 onClick={handlePlayPause}
-                title={isPaused ? 'Retomar' : 'Pausar'}
+                title={isPaused ? t('ambient.resume') : t('ambient.pause')}
               >
                 {isPaused ? <Play className={fullPage ? "h-5 w-5" : "h-3 w-3"} /> : <Pause className={fullPage ? "h-5 w-5" : "h-3 w-3"} />}
               </Button>
@@ -217,7 +219,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
 
         {loading && (
           <p className="text-[9px] text-primary text-center animate-pulse mt-1">
-            Carregando...
+            {t('ambient.loading')}
           </p>
         )}
       </div>

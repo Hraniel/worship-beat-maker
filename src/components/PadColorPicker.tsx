@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Palette } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface PadColor {
   hue: number;
@@ -16,7 +17,6 @@ export const DEFAULT_PAD_COLOR: PadColor = {
   opacity: 1,
 };
 
-/** Convert a CSS variable like "--pad-kick" default value "0 75% 55%" into a PadColor */
 export function parsePadColorVar(hslString: string): PadColor {
   const parts = hslString.trim().split(/\s+/);
   return {
@@ -39,13 +39,14 @@ interface PadColorPickerProps {
 }
 
 const PadColorPicker: React.FC<PadColorPickerProps> = ({ color, onChange }) => {
+  const { t } = useTranslation();
   const update = (partial: Partial<PadColor>) => onChange({ ...color, ...partial });
 
   return (
     <div className="space-y-3 px-1">
       <div className="flex items-center gap-2 mb-1">
         <Palette className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-xs font-medium text-foreground">Cor do Pad</span>
+        <span className="text-xs font-medium text-foreground">{t('padColor.title')}</span>
       </div>
 
       {/* Preset colors */}
@@ -64,7 +65,7 @@ const PadColorPicker: React.FC<PadColorPickerProps> = ({ color, onChange }) => {
 
       {/* Hue slider */}
       <div className="space-y-1">
-        <span className="text-[10px] text-muted-foreground">Matiz</span>
+        <span className="text-[10px] text-muted-foreground">{t('padColor.hue')}</span>
         <div className="relative">
           <div
             className="absolute inset-0 rounded-full h-2 top-1/2 -translate-y-1/2 pointer-events-none"
@@ -92,7 +93,7 @@ const PadColorPicker: React.FC<PadColorPickerProps> = ({ color, onChange }) => {
 
       {/* Saturation */}
       <div className="space-y-1">
-        <span className="text-[10px] text-muted-foreground">Saturação</span>
+        <span className="text-[10px] text-muted-foreground">{t('padColor.saturation')}</span>
         <Slider
           value={[color.saturation]}
           onValueChange={([v]) => update({ saturation: v })}
@@ -104,7 +105,7 @@ const PadColorPicker: React.FC<PadColorPickerProps> = ({ color, onChange }) => {
 
       {/* Lightness */}
       <div className="space-y-1">
-        <span className="text-[10px] text-muted-foreground">Brilho</span>
+        <span className="text-[10px] text-muted-foreground">{t('padColor.lightness')}</span>
         <Slider
           value={[color.lightness]}
           onValueChange={([v]) => update({ lightness: v })}
@@ -116,7 +117,7 @@ const PadColorPicker: React.FC<PadColorPickerProps> = ({ color, onChange }) => {
 
       {/* Opacity */}
       <div className="space-y-1">
-        <span className="text-[10px] text-muted-foreground">Transparência</span>
+        <span className="text-[10px] text-muted-foreground">{t('padColor.opacity')}</span>
         <div className="flex items-center gap-2">
           <Slider
             value={[color.opacity * 100]}
