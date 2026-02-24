@@ -304,7 +304,7 @@ const Nav = ({
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3 shrink-0">
           <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
-          <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
+          <span className="font-bold text-lg hidden sm:inline" style={{ color: config.nav_brand_color || 'hsl(var(--foreground))' }}>Glory Pads</span>
         </div>
         <div className="flex items-center gap-1 sm:gap-3">
           <LanguageSelector compact className="hidden sm:flex shrink-0" />
