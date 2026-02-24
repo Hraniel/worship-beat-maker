@@ -229,19 +229,32 @@ Deno.serve(async (req) => {
     const grantMap = new Map<string, string>();
     grants?.forEach(g => grantMap.set(g.user_id, g.tier));
 
-    const result = authUsers.map(u => ({
-      id: u.id,
-      email: u.email,
-      created_at: u.created_at,
-      last_sign_in_at: u.last_sign_in_at,
-      purchase_count: purchaseMap.get(u.id) || 0,
-      is_admin: adminSet.has(u.id),
-      is_moderator: modSet.has(u.id),
-      is_banned: banMap.has(u.id),
-      ban_expires_at: banMap.get(u.id) ?? null,
-      granted_tier: grantMap.get(u.id) ?? null,
-      ip: (u as any).last_sign_in_ip ?? (u as any).confirmed_at ? null : null,
-    }));
+    // Fetch profiles
+    const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, cpf, phone, birthday, profile_completed');
+    const profileMap = new Map<string, any>();
+    profiles?.forEach(p => profileMap.set(p.user_id, p));
+
+    const result = authUsers.map(u => {
+      const prof = profileMap.get(u.id);
+      return {
+        id: u.id,
+        email: u.email,
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at,
+        purchase_count: purchaseMap.get(u.id) || 0,
+        is_admin: adminSet.has(u.id),
+        is_moderator: modSet.has(u.id),
+        is_banned: banMap.has(u.id),
+        ban_expires_at: banMap.get(u.id) ?? null,
+        granted_tier: grantMap.get(u.id) ?? null,
+        ip: (u as any).last_sign_in_ip ?? null,
+        full_name: prof?.full_name ?? null,
+        phone: prof?.phone ?? null,
+        cpf: prof?.cpf ?? null,
+        birthday: prof?.birthday ?? null,
+        profile_completed: prof?.profile_completed ?? false,
+      };
+    });
 
     return new Response(JSON.stringify({ users: result }), { headers: corsHeaders });
   } catch (err: any) {
