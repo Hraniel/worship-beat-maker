@@ -10,13 +10,14 @@ interface ConfigRow {
   config_value: string;
 }
 
-type SectionId = 'tema' | 'textos' | 'toggles' | 'onboarding';
+type SectionId = 'tema' | 'textos' | 'toggles' | 'onboarding' | 'rewards';
 
 const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode; emoji: string }[] = [
   { id: 'tema', label: 'Tema & Cores', icon: <Palette className="h-3.5 w-3.5" />, emoji: '🎨' },
   { id: 'textos', label: 'Textos do App', icon: <Type className="h-3.5 w-3.5" />, emoji: '📝' },
   { id: 'toggles', label: 'Feature Toggles', icon: <ToggleLeft className="h-3.5 w-3.5" />, emoji: '⚙️' },
   { id: 'onboarding', label: 'Onboarding', icon: <BookOpen className="h-3.5 w-3.5" />, emoji: '🎓' },
+  { id: 'rewards', label: 'Recompensas', icon: <ToggleLeft className="h-3.5 w-3.5" />, emoji: '🎁' },
 ];
 
 const THEME_FIELDS = [
@@ -63,6 +64,7 @@ const ONBOARDING_FIELDS = [
 
 const AdminAppConfigEditor: React.FC = () => {
   const [rows, setRows] = useState<ConfigRow[]>([]);
+  const [rewardRows, setRewardRows] = useState<ConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<SectionId>('tema');
@@ -70,8 +72,12 @@ const AdminAppConfigEditor: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const { data } = await supabase.from('landing_config').select('*').order('config_key');
-      if (data) setRows(data as ConfigRow[]);
+      const [landingRes, appRes] = await Promise.all([
+        supabase.from('landing_config').select('*').order('config_key'),
+        supabase.from('app_config' as any).select('*').order('config_key'),
+      ]);
+      if (landingRes.data) setRows(landingRes.data as any as ConfigRow[]);
+      if (appRes.data) setRewardRows(appRes.data as any as ConfigRow[]);
     } finally { setLoading(false); }
   };
 
@@ -94,6 +100,28 @@ const AdminAppConfigEditor: React.FC = () => {
       const { data: existing } = await supabase.from('landing_config').select('id').eq('config_key', key).maybeSingle();
       if (existing) await supabase.from('landing_config').update({ config_value: value }).eq('config_key', key);
       else await supabase.from('landing_config').insert({ config_key: key, config_value: value });
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(null); }
+  };
+
+  // Reward config helpers (app_config table)
+  const getRewardVal = (key: string, defaultVal = '') => rewardRows.find(r => r.config_key === key)?.config_value ?? defaultVal;
+  const setRewardVal = (key: string, value: string) => {
+    setRewardRows(prev => {
+      const exists = prev.some(r => r.config_key === key);
+      return exists
+        ? prev.map(r => r.config_key === key ? { ...r, config_value: value } : r)
+        : [...prev, { id: '', config_key: key, config_value: value }];
+    });
+  };
+  const saveRewardKey = async (key: string) => {
+    const value = rewardRows.find(r => r.config_key === key)?.config_value ?? '';
+    setSaving(key);
+    try {
+      const { data: existing } = await supabase.from('app_config' as any).select('id').eq('config_key', key).maybeSingle();
+      if (existing) await (supabase.from('app_config' as any) as any).update({ config_value: value }).eq('config_key', key);
+      else await (supabase.from('app_config' as any) as any).insert({ config_key: key, config_value: value });
+      toast.success('Salvo!');
     } catch (e: any) { toast.error(e.message); }
     finally { setSaving(null); }
   };
@@ -224,6 +252,37 @@ const AdminAppConfigEditor: React.FC = () => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+
+                {/* Rewards */}
+                {section.id === 'rewards' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid hsl(0 0% 100% / 0.06)' }}>
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: 'hsl(0 0% 100% / 0.8)' }}>Recompensa por Perfil Completo</p>
+                        <p className="text-[10px]" style={{ color: 'hsl(0 0% 100% / 0.4)' }}>Dar dias extras grátis para Pro/Master que completarem o perfil</p>
+                      </div>
+                      <Switch
+                        checked={getRewardVal('profile_completion_reward_enabled', 'true') === 'true'}
+                        onCheckedChange={v => {
+                          setRewardVal('profile_completion_reward_enabled', v ? 'true' : 'false');
+                          setTimeout(() => saveRewardKey('profile_completion_reward_enabled'), 0);
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-medium uppercase tracking-wider mb-1 block" style={labelStyle}>Dias de recompensa</label>
+                      <p className="text-[9px] mb-1.5" style={{ color: 'hsl(0 0% 100% / 0.3)' }}>Quantos dias extras o usuário Pro/Master ganha ao completar o perfil</p>
+                      <div className="flex gap-2">
+                        <input type="number" min="1" max="365"
+                          className="w-24 h-8 px-2.5 text-xs rounded-lg focus:outline-none" style={inputStyle}
+                          value={getRewardVal('profile_completion_reward_days', '7')}
+                          onChange={e => setRewardVal('profile_completion_reward_days', e.target.value)}
+                          onBlur={() => saveRewardKey('profile_completion_reward_days')} />
+                        <span className="text-xs self-center" style={{ color: 'hsl(0 0% 100% / 0.5)' }}>dias</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

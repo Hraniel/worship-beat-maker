@@ -47,6 +47,27 @@ export type Database = {
         }
         Relationships: []
       }
+      app_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cancellation_reasons: {
         Row: {
           created_at: string
@@ -387,21 +408,39 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birthday: string | null
+          cpf: string | null
           created_at: string
           display_name: string | null
+          full_name: string | null
           id: string
+          phone: string | null
+          profile_completed: boolean
+          profile_completed_at: string | null
           user_id: string
         }
         Insert: {
+          birthday?: string | null
+          cpf?: string | null
           created_at?: string
           display_name?: string | null
+          full_name?: string | null
           id?: string
+          phone?: string | null
+          profile_completed?: boolean
+          profile_completed_at?: string | null
           user_id: string
         }
         Update: {
+          birthday?: string | null
+          cpf?: string | null
           created_at?: string
           display_name?: string | null
+          full_name?: string | null
           id?: string
+          phone?: string | null
+          profile_completed?: boolean
+          profile_completed_at?: string | null
           user_id?: string
         }
         Relationships: []

@@ -11,6 +11,7 @@ import logoDark from '@/assets/logo-dark.png';
 import PackCard from '@/components/PackCard';
 import AdminPackManager from '@/components/AdminPackManager';
 import CommunitySuggestions from '@/components/CommunitySuggestions';
+import ProfileCompletion from '@/components/ProfileCompletion';
 import { useStorePacks, StorePackData } from '@/hooks/useStorePacks';
 import { useAdminRole } from '@/hooks/useAdminRole';
 import { useStoreConfig } from '@/hooks/useStoreConfig';
@@ -329,6 +330,9 @@ const Dashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Profile completion */}
+        <ProfileCompletion />
 
         {/* Store header */}
         {/* ── Minha Biblioteca ─────────────────────────────────────────── */}
