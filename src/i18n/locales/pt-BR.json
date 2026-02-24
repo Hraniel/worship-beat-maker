@@ -653,5 +653,47 @@
     "tellUsMore": "Detalhes opcionais...",
     "confirmCancel": "Confirmar cancelamento",
     "goBack": "Voltar"
+  },
+  "install": {
+    "title": "Glory Pads",
+    "description": "Instale o app no seu celular para acesso rápido, tela cheia e uso offline.",
+    "alreadyInstalled": "App já instalado!",
+    "openApp": "Abrir App",
+    "iosTitle": "Para instalar no iPhone:",
+    "iosStep1": "1. Toque no botão <strong>Compartilhar</strong> (ícone de quadrado com seta) no Safari",
+    "iosStep2": "2. Role para baixo e toque em <strong>\"Adicionar à Tela de Início\"</strong>",
+    "iosStep3": "3. Toque em <strong>\"Adicionar\"</strong>",
+    "installApp": "Instalar App",
+    "backToApp": "Voltar ao App",
+    "manualTitle": "Para instalar:",
+    "manualStep1": "1. Abra o menu do navegador (⋮)",
+    "manualStep2": "2. Toque em <strong>\"Instalar app\"</strong> ou <strong>\"Adicionar à tela inicial\"</strong>",
+    "manualChrome": "No <strong>Google Chrome</strong>, você também pode tocar em <strong>\"Compartilhar\"</strong> e depois em <strong>\"Adicionar à tela inicial\"</strong>."
+  },
+  "resetPassword": {
+    "invalidLink": "Link inválido",
+    "invalidLinkDesc": "Este link de recuperação é inválido ou expirou. Solicite um novo link.",
+    "backToLogin": "Voltar para login",
+    "newPassword": "Nova senha",
+    "newPasswordDesc": "Digite sua nova senha abaixo.",
+    "newPasswordPlaceholder": "Nova senha",
+    "confirmPasswordPlaceholder": "Confirmar nova senha",
+    "fillAll": "Preencha todos os campos",
+    "minLength": "A senha deve ter pelo menos 6 caracteres",
+    "mismatch": "As senhas não coincidem",
+    "success": "Senha alterada com sucesso!",
+    "submit": "Alterar senha",
+    "submitting": "Aguarde..."
+  },
+  "sharedSetlist": {
+    "notFound": "Setlist não encontrado",
+    "notFoundDesc": "Este link pode ter expirado ou não existe.",
+    "goToApp": "Ir para o App",
+    "readOnly": "Somente leitura",
+    "songs": "músicas",
+    "noSongs": "Nenhuma música neste setlist",
+    "ctaTitle": "Glory Pads",
+    "ctaDesc": "O app de percussão para worship com metrônomo, pads e muito mais.",
+    "ctaButton": "Criar conta grátis"
   }
 }
