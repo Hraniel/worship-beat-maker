@@ -22,7 +22,7 @@ import {
   User, Mail, Calendar, Loader2,
   ChevronDown, ChevronRight, Drum, Waves, Sparkles, Music, Headphones,
   Volume2, Layers, AudioWaveform, Lock, ShieldCheck, Filter, Search, X,
-  Library, RotateCcw, Package, CheckCircle, BookOpen
+  Library, RotateCcw, Package, CheckCircle, BookOpen, Globe, Settings
 } from 'lucide-react';
 
 async function invokeWithToken(fnName: string, body: object) {
@@ -126,6 +126,7 @@ const Dashboard = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [showAdmin, setShowAdmin] = useState(false);
+  const [adminTab, setAdminTab] = useState<'packs' | 'translations'>('packs');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ drums: true, loops: false, efeitos: false });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -328,11 +329,34 @@ const Dashboard = () => {
               <ShieldCheck className="h-4 w-4 text-indigo-400" />
               <span className="text-sm font-semibold bg-gradient-to-r from-indigo-300 to-violet-300 bg-clip-text text-transparent">{t('dashboard.adminPanel')}</span>
             </div>
+            {/* Admin Tabs */}
+            <div className="bg-slate-900 border-b border-indigo-500/20 flex">
+              <button
+                onClick={() => setAdminTab('packs')}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors border-b-2 ${
+                  adminTab === 'packs'
+                    ? 'border-indigo-400 text-indigo-300 bg-indigo-950/30'
+                    : 'border-transparent text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <Package className="h-3.5 w-3.5" />
+                Packs
+              </button>
+              <button
+                onClick={() => setAdminTab('translations')}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors border-b-2 ${
+                  adminTab === 'translations'
+                    ? 'border-indigo-400 text-indigo-300 bg-indigo-950/30'
+                    : 'border-transparent text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <Globe className="h-3.5 w-3.5" />
+                {t('adminTranslations.title')}
+              </button>
+            </div>
             <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 p-4">
-              <AdminPackManager packs={adminPacks} onRefresh={refetch} />
-              <div className="mt-6 pt-6 border-t border-indigo-500/20">
-                <AdminTranslationManager />
-              </div>
+              {adminTab === 'packs' && <AdminPackManager packs={adminPacks} onRefresh={refetch} />}
+              {adminTab === 'translations' && <AdminTranslationManager />}
             </div>
           </div>
         )}
@@ -611,44 +635,88 @@ const Dashboard = () => {
         {/* Desktop layout: sidebar + grid */}
         <div className="hidden lg:flex gap-8">
           {/* Vertical sidebar */}
-          <aside className="w-52 shrink-0">
-            <div className="sticky top-20 bg-white rounded-2xl border border-gray-200 p-3 space-y-0.5">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-2">{t('dashboard.categories')}</p>
-              {CATEGORY_GROUPS.map(group => (
-                <div key={group.key}>
-                  <button
-                    onClick={() => group.children.length > 0 ? toggleGroup(group.key) : handleSelectCategory(group.key)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      isGroupActive(group) ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      {group.icon}
-                      <span>{group.label}</span>
-                    </div>
-                    {group.children.length > 0 && (
-                      <ChevronRight className={`h-3.5 w-3.5 transition-transform opacity-60 ${expandedGroups[group.key] ? 'rotate-90' : ''}`} />
+          <aside className="w-52 shrink-0 space-y-4">
+            <div className="sticky top-20 space-y-4">
+              {/* Categories */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-3 space-y-0.5">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 pb-2">{t('dashboard.categories')}</p>
+                {CATEGORY_GROUPS.map(group => (
+                  <div key={group.key}>
+                    <button
+                      onClick={() => group.children.length > 0 ? toggleGroup(group.key) : handleSelectCategory(group.key)}
+                      className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        isGroupActive(group) ? 'bg-gray-900 text-white' : 'hover:bg-gray-50 text-gray-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        {group.icon}
+                        <span>{group.label}</span>
+                      </div>
+                      {group.children.length > 0 && (
+                        <ChevronRight className={`h-3.5 w-3.5 transition-transform opacity-60 ${expandedGroups[group.key] ? 'rotate-90' : ''}`} />
+                      )}
+                    </button>
+                    {group.children.length > 0 && expandedGroups[group.key] && (
+                      <div className="ml-3 mt-0.5 mb-1 space-y-0.5 border-l border-gray-100 pl-3">
+                        {group.children.map(child => (
+                          <button
+                            key={child}
+                            onClick={() => handleSelectCategory(child)}
+                            className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                              activeCategory === child
+                                ? 'text-gray-900 font-semibold bg-gray-100'
+                                : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
+                            }`}
+                          >
+                            {child}
+                          </button>
+                        ))}
+                      </div>
                     )}
-                  </button>
-                  {group.children.length > 0 && expandedGroups[group.key] && (
-                    <div className="ml-3 mt-0.5 mb-1 space-y-0.5 border-l border-gray-100 pl-3">
-                      {group.children.map(child => (
-                        <button
-                          key={child}
-                          onClick={() => handleSelectCategory(child)}
-                          className={`w-full text-left px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                            activeCategory === child
-                              ? 'text-gray-900 font-semibold bg-gray-100'
-                              : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50'
-                          }`}
-                        >
-                          {child}
-                        </button>
-                      ))}
-                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* User profile card */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center">
+                    <User className="h-4 w-4 text-violet-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-gray-900 truncate">
+                      {user?.user_metadata?.display_name || user?.email?.split('@')[0]}
+                    </p>
+                    <p className="text-[10px] text-gray-400 truncate">{user?.email}</p>
+                  </div>
+                </div>
+                <div className="h-px bg-gray-100" />
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-gray-500">{t('dashboard.subscription')}</span>
+                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badge.cls}`}>
+                      {badge.icon}{badge.label}
+                    </span>
+                  </div>
+                  {formattedEnd && (
+                    <p className="text-[10px] text-gray-400">{t('dashboard.renewsOn')} {formattedEnd}</p>
                   )}
                 </div>
-              ))}
+                <div className="flex flex-col gap-1.5">
+                  {tier === 'free' ? (
+                    <Button onClick={() => navigate('/pricing')} size="sm" className="w-full h-7 text-[10px] rounded-lg bg-gray-900 hover:bg-gray-800 text-white">
+                      <Zap className="h-3 w-3 mr-1" /> {t('dashboard.upgrade')}
+                    </Button>
+                  ) : (
+                    <Button onClick={handleManageSubscription} variant="outline" size="sm" className="w-full h-7 text-[10px] rounded-lg border-gray-200 text-gray-700" disabled={portalLoading}>
+                      {portalLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('dashboard.manageSubscription')}
+                    </Button>
+                  )}
+                  <Button onClick={handleSignOut} variant="ghost" size="sm" className="w-full h-7 text-[10px] text-gray-500 hover:text-gray-900 rounded-lg">
+                    <LogOut className="h-3 w-3 mr-1" /> {t('dashboard.signOut')}
+                  </Button>
+                </div>
+              </div>
             </div>
           </aside>
 
