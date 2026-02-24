@@ -62,8 +62,8 @@ export default function MyTickets() {
 
   if (selectedTicket) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
-        <div className="max-w-lg mx-auto px-4 py-6 h-screen flex flex-col">
+      <div className="min-h-screen bg-background text-foreground" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="max-w-lg mx-auto px-4 py-6 h-screen flex flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <TicketConversation
             ticketId={selectedTicket.ticket.id}
             ticketQuestion={selectedTicket.ticket.question}
@@ -77,7 +77,7 @@ export default function MyTickets() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
         <div className="flex items-center gap-3">
           <Link to="/help" className="p-2 rounded-lg hover:bg-muted transition-colors">
