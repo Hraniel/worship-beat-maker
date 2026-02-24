@@ -62,12 +62,12 @@ interface ProfileData {
 }
 
 const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
-const MONTHS = [
-  { value: 0, label: 'Janeiro' }, { value: 1, label: 'Fevereiro' }, { value: 2, label: 'Março' },
-  { value: 3, label: 'Abril' }, { value: 4, label: 'Maio' }, { value: 5, label: 'Junho' },
-  { value: 6, label: 'Julho' }, { value: 7, label: 'Agosto' }, { value: 8, label: 'Setembro' },
-  { value: 9, label: 'Outubro' }, { value: 10, label: 'Novembro' }, { value: 11, label: 'Dezembro' },
-];
+const MONTHS_KEYS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'] as const;
+
+function useMonthLabels() {
+  const { t } = useTranslation();
+  return MONTHS_KEYS.map((k, i) => ({ value: i, label: t(`dashboard.months.${k}`) }));
+}
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: currentYear - 1919 }, (_, i) => currentYear - i);
 
@@ -95,10 +95,11 @@ export default function ProfileDropdown() {
 
   const badge = tierBadge[tier];
   const formattedEnd = subscriptionEnd
-    ? new Date(subscriptionEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+    ? new Date(subscriptionEnd).toLocaleDateString(undefined, { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
 
-  const roleLabel = userRole === 'ceo' ? 'CEO' : userRole === 'admin' ? 'Administrador' : userRole === 'moderator' ? 'Moderador' : null;
+  const roleLabel = userRole === 'ceo' ? 'CEO' : userRole === 'admin' ? t('dashboard.administrator') : userRole === 'moderator' ? t('dashboard.moderator') : null;
+  const MONTHS = useMonthLabels();
 
   useEffect(() => {
     if (!user) return;
@@ -138,9 +139,9 @@ export default function ProfileDropdown() {
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    if (!fullName.trim()) return toast.error('Preencha seu nome completo');
-    if (cpf && !validateCpf(cpf)) return toast.error('CPF inválido');
-    if (phone && phone.replace(/\D/g, '').length < 10) return toast.error('Telefone inválido');
+    if (!fullName.trim()) return toast.error(t('dashboard.fillFullName'));
+    if (cpf && !validateCpf(cpf)) return toast.error(t('dashboard.invalidCpf'));
+    if (phone && phone.replace(/\D/g, '').length < 10) return toast.error(t('dashboard.invalidPhone'));
 
     const birthdayDate = (birthDay && birthMonth !== '' && birthYear)
       ? new Date(birthYear as number, birthMonth as number, birthDay as number)
@@ -168,9 +169,9 @@ export default function ProfileDropdown() {
 
       setProfile(prev => prev ? { ...prev, ...updates } : prev);
       setEditMode(false);
-      toast.success('Perfil atualizado! ✅');
+      toast.success(t('dashboard.profileUpdated'));
     } catch (err: any) {
-      toast.error(err?.message || 'Erro ao salvar perfil');
+      toast.error(err?.message || t('dashboard.profileSaveError'));
     } finally {
       setSaving(false);
     }
@@ -206,7 +207,7 @@ export default function ProfileDropdown() {
                 <button
                   onClick={() => setEditMode(v => !v)}
                   className={`p-1 rounded-md transition-colors ${editMode ? 'bg-violet-100 text-violet-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
-                  title="Editar perfil"
+                  title={t('dashboard.editProfile')}
                 >
                   <Edit3 className="h-3.5 w-3.5" />
                 </button>
@@ -224,13 +225,13 @@ export default function ProfileDropdown() {
               {profile?.birthday && !editMode && (
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">
                   <Calendar className="h-3 w-3 shrink-0" />
-                  <span>{new Date(profile.birthday + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                  <span>{new Date(profile.birthday + 'T12:00:00').toLocaleDateString(undefined)}</span>
                 </div>
               )}
               {profile?.profile_completed && !editMode && (
                 <div className="flex items-center gap-1 text-xs text-emerald-600">
                   <CheckCircle className="h-3 w-3" />
-                  <span>Perfil completo</span>
+                  <span>{t('dashboard.profileComplete')}</span>
                 </div>
               )}
               {roleLabel && (
@@ -247,8 +248,8 @@ export default function ProfileDropdown() {
                 <div className="h-px bg-gray-100" />
                 <div className="space-y-2.5">
                   <div className="space-y-1">
-                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Nome completo</Label>
-                    <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome completo" className={inputStyle} maxLength={100} />
+                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide">{t('dashboard.fullName')}</Label>
+                    <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('dashboard.fullNamePlaceholder')} className={inputStyle} maxLength={100} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase tracking-wide flex items-center gap-1">
@@ -257,33 +258,33 @@ export default function ProfileDropdown() {
                     <Input value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" className={inputStyle} maxLength={14} />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-[10px] text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                      <Phone className="h-2.5 w-2.5" /> Telefone
+                     <Label className="text-[10px] text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                      <Phone className="h-2.5 w-2.5" /> {t('dashboard.phone')}
                     </Label>
                     <Input value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" className={inputStyle} maxLength={15} type="tel" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase tracking-wide flex items-center gap-1">
-                      <Calendar className="h-2.5 w-2.5" /> Data de nascimento
+                      <Calendar className="h-2.5 w-2.5" /> {t('dashboard.birthday')}
                     </Label>
                     <div className="flex gap-1.5">
                       <select value={birthDay} onChange={e => setBirthDay(e.target.value ? Number(e.target.value) : '')} className={cn(selectStyle, "flex-[1]")}>
-                        <option value="">Dia</option>
+                        <option value="">{t('dashboard.day')}</option>
                         {DAYS.map(d => <option key={d} value={d}>{String(d).padStart(2, '0')}</option>)}
                       </select>
                       <select value={birthMonth} onChange={e => setBirthMonth(e.target.value !== '' ? Number(e.target.value) : '')} className={cn(selectStyle, "flex-[2]")}>
-                        <option value="">Mês</option>
+                        <option value="">{t('dashboard.month')}</option>
                         {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                       </select>
                       <select value={birthYear} onChange={e => setBirthYear(e.target.value ? Number(e.target.value) : '')} className={cn(selectStyle, "flex-[1.2]")}>
-                        <option value="">Ano</option>
+                        <option value="">{t('dashboard.year')}</option>
                         {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
                       </select>
                     </div>
                   </div>
                   <Button onClick={handleSaveProfile} disabled={saving} size="sm" className="w-full h-8 text-xs bg-white hover:bg-gray-50 text-black border border-gray-300 rounded-lg">
                     {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
-                    Salvar perfil
+                    {t('dashboard.saveProfile')}
                   </Button>
                 </div>
               </>

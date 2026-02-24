@@ -6,6 +6,7 @@ import { useStoreConfig } from '@/hooks/useStoreConfig';
 import { toast } from 'sonner';
 import { Heart, Lightbulb, Plus, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTranslation } from 'react-i18next';
 
 interface Suggestion {
   id: string;
@@ -17,6 +18,7 @@ interface Suggestion {
 }
 
 const CommunitySuggestions = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { get: sc, getJSON } = useStoreConfig();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -60,7 +62,7 @@ const CommunitySuggestions = () => {
   useEffect(() => { fetchSuggestions(); }, [fetchSuggestions]);
 
   const handleLike = async (suggestion: Suggestion) => {
-    if (!user) { toast.info('Faça login para curtir sugestões.'); return; }
+    if (!user) { toast.info(t('dashboard.loginToLike')); return; }
     if (liking) return;
     setLiking(suggestion.id);
 
@@ -77,7 +79,7 @@ const CommunitySuggestions = () => {
         ));
       }
     } catch {
-      toast.error('Erro ao curtir. Tente novamente.');
+      toast.error(t('dashboard.likeError'));
     } finally {
       setLiking(null);
     }
@@ -85,9 +87,9 @@ const CommunitySuggestions = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) { toast.info('Faça login para enviar sugestões.'); return; }
+    if (!user) { toast.info(t('dashboard.loginToLike')); return; }
     if (!form.title.trim() || !form.description.trim()) {
-      toast.error('Preencha o título e a descrição.');
+      toast.error(t('dashboard.fillTitleDesc'));
       return;
     }
 
@@ -99,11 +101,11 @@ const CommunitySuggestions = () => {
 
       if (error) throw error;
 
-      toast.success('Sugestão enviada! Será analisada pela equipe.');
+      toast.success(t('dashboard.suggestionSent'));
       setForm({ title: '', description: '' });
       setShowForm(false);
     } catch {
-      toast.error('Erro ao enviar sugestão. Tente novamente.');
+      toast.error(t('dashboard.suggestionError'));
     } finally {
       setSubmitting(false);
     }
@@ -137,7 +139,7 @@ const CommunitySuggestions = () => {
         )}
         {!user && (
           <p className="text-xs text-gray-400 shrink-0 text-right">
-            <a href="/auth" className="underline hover:text-gray-600">Entre</a> para sugerir
+            <a href="/auth" className="underline hover:text-gray-600">{t('dashboard.loginToSuggest')}</a>
           </p>
         )}
       </div>
@@ -154,23 +156,23 @@ const CommunitySuggestions = () => {
             <form onSubmit={handleSubmit}
               className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 text-sm">Nova sugestão</h3>
+                <h3 className="font-semibold text-gray-900 text-sm">{t('dashboard.newSuggestion')}</h3>
                 <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
                   <X className="h-4 w-4" />
                 </button>
               </div>
               <div className="space-y-3">
-                <input type="text" placeholder="Título da ideia (ex: Modo paisagem para tablets)"
+                <input type="text" placeholder={t('dashboard.suggestionTitle')}
                   value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} maxLength={80}
                   className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300" />
-                <textarea placeholder="Descreva sua ideia em detalhes..."
+                <textarea placeholder={t('dashboard.suggestionDescription')}
                   value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} maxLength={400} rows={3}
                   className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none" />
               </div>
               <div className="flex justify-end mt-3">
                 <Button type="submit" disabled={submitting} size="sm"
                   className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl gap-1.5 text-xs">
-                  {submitting ? 'Enviando…' : (<><Send className="h-3.5 w-3.5" />Enviar sugestão</>)}
+                  {submitting ? t('dashboard.sending') : (<><Send className="h-3.5 w-3.5" />{t('dashboard.sendSuggestion')}</>)}
                 </Button>
               </div>
             </form>
@@ -231,7 +233,7 @@ const CommunitySuggestions = () => {
 
       {!user && suggestions.length > 0 && (
         <p className="text-center text-xs text-gray-400 mt-6">
-          <a href="/auth" className="underline hover:text-gray-600">Faça login</a> {sc('community_login_text')}
+          <a href="/auth" className="underline hover:text-gray-600">{t('dashboard.loginToLikeSuggestions')}</a>
         </p>
       )}
     </div>
