@@ -41,9 +41,27 @@ async function loadOverrides() {
   try {
     const { supabase } = await import('@/integrations/supabase/client');
     const { data } = await supabase.from('translation_overrides').select('locale, key_path, value');
-    if (data) {
+    if (data && data.length > 0) {
+      // Group overrides by locale and build nested objects
+      const grouped: Record<string, Record<string, string>> = {};
       for (const row of data) {
-        i18n.addResource(row.locale, 'translation', row.key_path, row.value);
+        if (!grouped[row.locale]) grouped[row.locale] = {};
+        grouped[row.locale][row.key_path] = row.value;
+      }
+      // Apply overrides using addResourceBundle with deep + overwrite
+      for (const [locale, keys] of Object.entries(grouped)) {
+        // Convert flat keys to nested object
+        const nested: Record<string, any> = {};
+        for (const [flatKey, value] of Object.entries(keys)) {
+          const parts = flatKey.split('.');
+          let current = nested;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!current[parts[i]]) current[parts[i]] = {};
+            current = current[parts[i]];
+          }
+          current[parts[parts.length - 1]] = value;
+        }
+        i18n.addResourceBundle(locale, 'translation', nested, true, true);
       }
     }
   } catch { /* silent */ }
