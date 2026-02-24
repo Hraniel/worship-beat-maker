@@ -544,7 +544,8 @@ const AdminLandingEditor: React.FC = () => {
             {renderColorField('features_bg', 'Fundo da Seção')}
             {renderColorField('features_card_bg', 'Fundo dos Cards')}
             {renderColorField('features_card_border', 'Borda dos Cards', 'Suporta transparência')}
-            {renderColorField('features_title_color', 'Cor do Título')}
+            {renderColorField('features_title_color', 'Cor do Título da Seção')}
+            {renderColorField('features_card_title_color', 'Cor do Título dos Cards')}
             {renderColorField('features_subtitle_color', 'Cor do Subtítulo')}
             {renderPaddingFields('features')}
           </>)}
