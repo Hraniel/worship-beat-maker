@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { SUPPORTED_LOCALES } from '@/i18n/config';
 import { toast } from 'sonner';
-import { Search, Save, RotateCcw, Globe, ChevronDown, ChevronRight, Loader2, Badge } from 'lucide-react';
+import { Search, Save, RotateCcw, Globe, ChevronDown, ChevronRight, Loader2, Sparkles } from 'lucide-react';
 
 import ptBR from '@/i18n/locales/pt-BR.json';
 import ptPT from '@/i18n/locales/pt-PT.json';
@@ -39,7 +39,7 @@ interface Override {
   value: string;
 }
 
-const NAMESPACES = ['common', 'auth', 'landing', 'settings', 'store', 'dashboard', 'tickets', 'help', 'profile', 'notifications', 'tapTempo', 'adminTranslations'];
+const NAMESPACES = ['common', 'auth', 'landing', 'settings', 'metronomeSettings', 'store', 'dashboard', 'tickets', 'help', 'profile', 'notifications', 'tapTempo', 'adminTranslations', 'index', 'pricing'];
 
 export default function AdminTranslationManager() {
   const { t, i18n } = useTranslation();
@@ -52,6 +52,7 @@ export default function AdminTranslationManager() {
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [expandedNs, setExpandedNs] = useState<Record<string, boolean>>({});
+  const [autoTranslating, setAutoTranslating] = useState(false);
 
   useEffect(() => {
     fetchOverrides();
@@ -99,7 +100,6 @@ export default function AdminTranslationManager() {
         .upsert({ locale: selectedLocale, key_path: keyPath, value, updated_at: new Date().toISOString() }, { onConflict: 'locale,key_path' });
       if (error) throw error;
       toast.success(t('adminTranslations.saved'));
-      // Apply override to i18n in real-time
       i18n.addResource(selectedLocale, 'translation', keyPath, value);
       fetchOverrides();
       setEditingKey(null);
@@ -117,7 +117,6 @@ export default function AdminTranslationManager() {
         .delete()
         .eq('locale', selectedLocale)
         .eq('key_path', keyPath);
-      // Restore original
       const original = staticResources[selectedLocale]?.[keyPath];
       if (original) i18n.addResource(selectedLocale, 'translation', keyPath, original);
       toast.success(t('adminTranslations.resetConfirm'));
@@ -125,6 +124,88 @@ export default function AdminTranslationManager() {
       setEditingKey(null);
     } catch {
       toast.error(t('adminTranslations.error'));
+    }
+  };
+
+  // ── Auto-translate missing keys ──
+  const handleAutoTranslate = async () => {
+    if (selectedLocale === 'pt-BR') {
+      toast.info(t('adminTranslations.noMissing'));
+      return;
+    }
+
+    // Find keys that exist in pt-BR but have no override and no static value in target locale
+    const ptBRKeys = staticResources['pt-BR'];
+    const targetStatic = staticResources[selectedLocale] || {};
+    const targetOverrides = overrideMap[selectedLocale] || {};
+
+    const missingKeys: { key: string; value: string }[] = [];
+    for (const [key, value] of Object.entries(ptBRKeys)) {
+      // If the target locale has the same value as pt-BR (meaning it wasn't translated)
+      // OR if the target locale doesn't have this key at all
+      if (!targetOverrides[key] && (!targetStatic[key] || targetStatic[key] === value)) {
+        missingKeys.push({ key, value });
+      }
+    }
+
+    if (missingKeys.length === 0) {
+      toast.success(t('adminTranslations.noMissing'));
+      return;
+    }
+
+    setAutoTranslating(true);
+    try {
+      // Process in batches of 50 to avoid timeout
+      const batchSize = 50;
+      let totalTranslated = 0;
+
+      for (let i = 0; i < missingKeys.length; i += batchSize) {
+        const batch = missingKeys.slice(i, i + batchSize);
+        
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        if (!token) throw new Error('Session expired');
+
+        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+        const res = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/auto-translate`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: JSON.stringify({
+              keys: batch,
+              targetLocale: selectedLocale,
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Error ${res.status}`);
+        }
+
+        const result = await res.json();
+        totalTranslated += result.translated || 0;
+
+        // Apply to i18n in real-time
+        if (result.translations) {
+          for (const [key, value] of Object.entries(result.translations)) {
+            i18n.addResource(selectedLocale, 'translation', key, value as string);
+          }
+        }
+      }
+
+      toast.success(t('adminTranslations.translateSuccess', { count: totalTranslated }));
+      fetchOverrides();
+    } catch (e: any) {
+      console.error('Auto-translate error:', e);
+      toast.error(e?.message || t('adminTranslations.translateError'));
+    } finally {
+      setAutoTranslating(false);
     }
   };
 
@@ -143,6 +224,21 @@ export default function AdminTranslationManager() {
   const toggleNs = (ns: string) => {
     setExpandedNs(prev => ({ ...prev, [ns]: !prev[ns] }));
   };
+
+  // Count missing translations
+  const missingCount = useMemo(() => {
+    if (selectedLocale === 'pt-BR') return 0;
+    const ptBRKeys = staticResources['pt-BR'];
+    const targetStatic = staticResources[selectedLocale] || {};
+    const targetOverrides = overrideMap[selectedLocale] || {};
+    let count = 0;
+    for (const [key, value] of Object.entries(ptBRKeys)) {
+      if (!targetOverrides[key] && (!targetStatic[key] || targetStatic[key] === value)) {
+        count++;
+      }
+    }
+    return count;
+  }, [selectedLocale, overrideMap]);
 
   if (loading) {
     return (
@@ -198,17 +294,47 @@ export default function AdminTranslationManager() {
         </div>
       </div>
 
+      {/* Auto-translate button */}
+      {selectedLocale !== 'pt-BR' && (
+        <button
+          onClick={handleAutoTranslate}
+          disabled={autoTranslating || missingCount === 0}
+          className="w-full flex items-center justify-center gap-2 h-9 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {autoTranslating ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {t('adminTranslations.translating')}
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-3.5 w-3.5" />
+              {t('adminTranslations.autoTranslate')}
+              {missingCount > 0 && (
+                <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-[10px]">{missingCount}</span>
+              )}
+            </>
+          )}
+        </button>
+      )}
+
       {/* Stats */}
       <div className="flex items-center gap-3 text-[10px] text-gray-500">
-        <span>{currentKeys.length} chaves</span>
+        <span>{currentKeys.length} {t('adminTranslations.keys')}</span>
         <span>·</span>
-        <span>{overrides.filter(o => o.locale === selectedLocale).length} overrides</span>
+        <span>{overrides.filter(o => o.locale === selectedLocale).length} {t('adminTranslations.overrides')}</span>
+        {missingCount > 0 && selectedLocale !== 'pt-BR' && (
+          <>
+            <span>·</span>
+            <span className="text-amber-400">{missingCount} missing</span>
+          </>
+        )}
       </div>
 
       {/* Grouped keys */}
       <div className="space-y-1 max-h-[500px] overflow-y-auto">
         {Object.entries(groupedByNs).map(([ns, entries]) => {
-          const isExpanded = expandedNs[ns] !== false; // default expanded
+          const isExpanded = expandedNs[ns] !== false;
           const overrideCount = entries.filter(([key]) => overrideMap[selectedLocale]?.[key]).length;
           return (
             <div key={ns} className="rounded-lg border border-slate-700 overflow-hidden">
@@ -219,9 +345,9 @@ export default function AdminTranslationManager() {
                 <div className="flex items-center gap-2">
                   {isExpanded ? <ChevronDown className="h-3 w-3 text-gray-400" /> : <ChevronRight className="h-3 w-3 text-gray-400" />}
                   <span className="text-xs font-semibold text-white">{ns}</span>
-                  <span className="text-[10px] text-gray-500">{entries.length} chaves</span>
+                  <span className="text-[10px] text-gray-500">{entries.length} {t('adminTranslations.keys')}</span>
                   {overrideCount > 0 && (
-                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-full">{overrideCount} editados</span>
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded-full">{overrideCount} {t('adminTranslations.edited')}</span>
                   )}
                 </div>
               </button>
