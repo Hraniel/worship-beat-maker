@@ -301,8 +301,8 @@ const Nav = ({
           <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
           <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
         </div>
-        <div className="flex items-center gap-2 sm:gap-4">
-          <LanguageSelector compact className="hidden sm:flex mr-1" />
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <LanguageSelector compact className="hidden sm:flex mr-1 shrink-0" />
           {navLinks.map((l) => (
             <a
               key={l.href}
@@ -319,7 +319,7 @@ const Nav = ({
             variant="ghost"
             size="sm"
             onClick={() => navigate("/auth")}
-            className="text-foreground/70 hover:text-foreground"
+            className="text-foreground/70 hover:text-foreground shrink-0 whitespace-nowrap"
             style={{ ...(loginBg ? { background: loginBg } : {}), ...(loginColor ? { color: loginColor } : {}) }}
           >
             {loginLabel}
@@ -327,7 +327,7 @@ const Nav = ({
           <Button
             size="sm"
             onClick={() => navigate("/auth?mode=signup")}
-            className="font-semibold"
+            className="font-semibold shrink-0 whitespace-nowrap"
             style={{
               background: signupBg || "hsl(220 15% 10%)",
               color: signupColor || "hsl(0 0% 100%)",
