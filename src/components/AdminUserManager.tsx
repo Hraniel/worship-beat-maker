@@ -8,6 +8,8 @@ import {
   User, Phone, CreditCard, CheckCircle,
 } from 'lucide-react';
 
+import { useAdminRole, UserRole } from '@/hooks/useAdminRole';
+
 type AppRole = 'admin' | 'moderator';
 
 interface UserRow {
@@ -18,6 +20,7 @@ interface UserRow {
   purchase_count: number;
   is_admin: boolean;
   is_moderator: boolean;
+  is_ceo?: boolean;
   is_banned?: boolean;
   ban_expires_at?: string | null;
   granted_tier?: string | null;
@@ -29,16 +32,25 @@ interface UserRow {
   profile_completed?: boolean;
 }
 
+const CEO_EMAIL = 'hranielvictor@gmail.com';
+
+const ROLE_HIERARCHY: Record<string, { label: string; color: string; level: number; description: string }> = {
+  ceo: { label: 'CEO', color: 'bg-amber-500/20 text-amber-500', level: 3, description: 'Controle absoluto. Não pode ser removido ou rebaixado por nenhum outro cargo.' },
+  admin: { label: 'ADMIN', color: 'bg-primary/20 text-primary', level: 2, description: 'Acesso total ao painel admin: gerencia packs, traduções, premiações, tickets, usuários e configurações.' },
+  moderator: { label: 'MOD', color: 'bg-blue-500/20 text-blue-400', level: 1, description: 'Acesso à moderação: pode gerenciar tickets, sugestões da comunidade e visualizar usuários.' },
+};
+
 const ROLE_OPTIONS: { role: AppRole | null; label: string; description: string }[] = [
   { role: 'admin', label: 'Admin', description: 'Acesso total ao painel' },
   { role: 'moderator', label: 'Moderador', description: 'Acesso de moderação' },
   { role: null, label: 'Remover cargo', description: 'Volta a usuário padrão' },
 ];
 
-type RoleFilter = 'all' | 'admin' | 'moderator' | 'user';
+type RoleFilter = 'all' | 'ceo' | 'admin' | 'moderator' | 'user';
 
 const ROLE_CHIPS: { value: RoleFilter; label: string }[] = [
   { value: 'all', label: 'Todos' },
+  { value: 'ceo', label: 'CEO' },
   { value: 'admin', label: 'Admin' },
   { value: 'moderator', label: 'Moderador' },
   { value: 'user', label: 'Usuário' },
@@ -329,6 +341,7 @@ const ResetPurchaseModal: React.FC<ResetPurchaseModalProps> = ({ user, onClose, 
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 const AdminUserManager: React.FC = () => {
+  const { role: myRole } = useAdminRole();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -479,18 +492,23 @@ const AdminUserManager: React.FC = () => {
   };
 
   const getCurrentRoleLabel = (user: UserRow) => {
+    if (user.is_ceo) return 'CEO';
     if (user.is_admin) return 'Admin';
     if (user.is_moderator) return 'Mod';
     return null;
   };
 
+  const isCeoUser = (user: UserRow) => user.email === CEO_EMAIL || user.is_ceo;
+
   const filtered = users.filter(u => {
-    const matchesEmail = u.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesEmail = u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.full_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole =
       roleFilter === 'all' ||
+      (roleFilter === 'ceo' && u.is_ceo) ||
       (roleFilter === 'admin' && u.is_admin) ||
       (roleFilter === 'moderator' && u.is_moderator) ||
-      (roleFilter === 'user' && !u.is_admin && !u.is_moderator);
+      (roleFilter === 'user' && !u.is_admin && !u.is_moderator && !u.is_ceo);
     return matchesEmail && matchesRole;
   });
 
@@ -560,16 +578,15 @@ const AdminUserManager: React.FC = () => {
           ))}
         </div>
 
-        {/* Role legend */}
-        <div className="flex gap-3 text-[10px] text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <span className="bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold">ADMIN</span>
-            <span>Acesso total</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full font-semibold">MOD</span>
-            <span>Moderador</span>
-          </div>
+        {/* Role legend with descriptions */}
+        <div className="bg-muted/50 border border-border rounded-xl p-3 space-y-2">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Hierarquia de Cargos</p>
+          {Object.entries(ROLE_HIERARCHY).map(([key, { label, color, description }]) => (
+            <div key={key} className="flex items-start gap-2">
+              <span className={`${color} px-1.5 py-0.5 rounded-full font-semibold text-[9px] shrink-0 mt-0.5`}>{label}</span>
+              <span className="text-[10px] text-muted-foreground leading-tight">{description}</span>
+            </div>
+          ))}
         </div>
 
         <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
@@ -578,16 +595,21 @@ const AdminUserManager: React.FC = () => {
           )}
           {filtered.map((user) => {
             const roleLabel = getCurrentRoleLabel(user);
+            const isCeo = isCeoUser(user);
+            const canManageUser = !isCeo || myRole === 'ceo';
             return (
               <div key={user.id} className="px-3 py-2.5">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <p className="text-xs font-medium text-foreground truncate">{user.email}</p>
-                      {user.is_admin && (
+                      {user.is_ceo && (
+                        <span className="text-[9px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded-full font-semibold shrink-0">CEO</span>
+                      )}
+                      {user.is_admin && !user.is_ceo && (
                         <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-semibold shrink-0">ADMIN</span>
                       )}
-                      {user.is_moderator && (
+                      {user.is_moderator && !user.is_ceo && !user.is_admin && (
                         <span className="text-[9px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-full font-semibold shrink-0">MOD</span>
                       )}
                       {user.is_banned && (
@@ -642,61 +664,65 @@ const AdminUserManager: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Role dropdown — fixed position to avoid cutoff */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setOpenDropdown(prev => prev === user.id ? null : user.id)}
-                      disabled={togglingId === user.id}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors border ${
-                        user.is_admin
-                          ? 'border-primary/30 text-primary hover:bg-primary/10'
-                          : user.is_moderator
-                            ? 'border-blue-500/30 text-blue-400 hover:bg-blue-500/10'
-                            : 'border-border text-muted-foreground hover:bg-muted'
-                      }`}
-                    >
-                      {togglingId === user.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
+                  {/* Role dropdown — only show if user can manage this user */}
+                  {canManageUser && !isCeo ? (
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenDropdown(prev => prev === user.id ? null : user.id)}
+                        disabled={togglingId === user.id}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium transition-colors border ${
+                          user.is_admin
+                            ? 'border-primary/30 text-primary hover:bg-primary/10'
+                            : user.is_moderator
+                              ? 'border-blue-500/30 text-blue-400 hover:bg-blue-500/10'
+                              : 'border-border text-muted-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {togglingId === user.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <ShieldCheck className="h-3 w-3" />
+                            {roleLabel || 'Cargo'}
+                            <ChevronDown className="h-2.5 w-2.5" />
+                          </>
+                        )}
+                      </button>
+
+                      {openDropdown === user.id && (
                         <>
-                          <ShieldCheck className="h-3 w-3" />
-                          {roleLabel || 'Cargo'}
-                          <ChevronDown className="h-2.5 w-2.5" />
+                          <div className="fixed inset-0 z-10" onClick={() => setOpenDropdown(null)} />
+                          <div className="absolute right-0 z-20 w-44 bg-popover border border-border rounded-xl shadow-xl overflow-hidden"
+                            style={{ bottom: 'calc(100% + 4px)' }}>
+                            {ROLE_OPTIONS.map(({ role, label, description }) => (
+                              <button
+                                key={label}
+                                onClick={() => assignRole(user, role)}
+                                className={`w-full flex flex-col items-start px-3 py-2 text-left transition-colors hover:bg-muted ${
+                                  (role === 'admin' && user.is_admin) || (role === 'moderator' && user.is_moderator)
+                                    ? 'bg-muted'
+                                    : ''
+                                }`}
+                              >
+                                <span className={`text-[11px] font-medium ${
+                                  role === null ? 'text-destructive' :
+                                  role === 'admin' ? 'text-primary' :
+                                  'text-blue-400'
+                                }`}>{label}</span>
+                                <span className="text-[9px] text-muted-foreground">{description}</span>
+                              </button>
+                            ))}
+                          </div>
                         </>
                       )}
-                    </button>
-
-                    {openDropdown === user.id && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setOpenDropdown(null)} />
-                        {/* Use fixed positioning relative to viewport to avoid overflow clipping */}
-                        <div className="absolute right-0 z-20 w-44 bg-popover border border-border rounded-xl shadow-xl overflow-hidden"
-                          style={{ bottom: 'calc(100% + 4px)' }}>
-                          {ROLE_OPTIONS.map(({ role, label, description }) => (
-                            <button
-                              key={label}
-                              onClick={() => assignRole(user, role)}
-                              className={`w-full flex flex-col items-start px-3 py-2 text-left transition-colors hover:bg-muted ${
-                                (role === 'admin' && user.is_admin) || (role === 'moderator' && user.is_moderator)
-                                  ? 'bg-muted'
-                                  : ''
-                              }`}
-                            >
-                              <span className={`text-[11px] font-medium ${
-                                role === null ? 'text-destructive' :
-                                role === 'admin' ? 'text-primary' :
-                                'text-blue-400'
-                              }`}>{label}</span>
-                              <span className="text-[9px] text-muted-foreground">{description}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                    </div>
+                  ) : isCeo ? (
+                    <span className="text-[10px] bg-amber-500/20 text-amber-500 px-2 py-1 rounded-lg font-semibold">CEO</span>
+                  ) : null}
                 </div>
 
-                {/* Action buttons row */}
+                {/* Action buttons row — hidden for CEO users (unless you are CEO) */}
+                {canManageUser && (
                 <div className="flex gap-1.5 mt-2 flex-wrap">
                   <button
                     onClick={() => handleResendVerification(user)}
@@ -726,6 +752,8 @@ const AdminUserManager: React.FC = () => {
                       <RotateCcw className="h-2.5 w-2.5" /> Resetar compra
                     </button>
                   )}
+                  {!isCeo && (
+                  <>
                   <button
                     onClick={() => setBanModal(user)}
                     className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-orange-500/30 text-orange-400 hover:bg-orange-500/10 transition-colors"
@@ -740,7 +768,10 @@ const AdminUserManager: React.FC = () => {
                     {actionLoading === user.id + '-delete' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Trash2 className="h-2.5 w-2.5" />}
                     Remover
                   </button>
+                  </>
+                  )}
                 </div>
+                )}
               </div>
             );
           })}
