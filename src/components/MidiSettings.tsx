@@ -11,6 +11,7 @@ import {
   type MidiDevice,
   type CCFunctionId,
 } from '@/lib/midi-engine';
+import { useTranslation } from 'react-i18next';
 
 interface MidiSettingsProps {
   isMidiSupported: boolean;
@@ -66,13 +67,15 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
   onStopCCLearn,
   onResetCCMappings,
 }) => {
+  const { t } = useTranslation();
+
   // Browser not supported
   if (!isMidiSupported) {
     return (
       <div className="flex flex-col items-center gap-3 py-6 text-center">
         <AlertTriangle className="h-8 w-8 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
-          MIDI não é suportado neste navegador. Use Chrome, Edge ou Android para conectar controladores MIDI.
+          {t('midi.notSupported')}
         </p>
       </div>
     );
@@ -86,7 +89,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
       {/* Header */}
       <div className="flex justify-center items-center gap-2">
         <Piano className="h-5 w-5 text-primary" />
-        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">MIDI</span>
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('midi.title')}</span>
       </div>
 
       {/* Section 1: Device status */}
@@ -99,14 +102,14 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                 {connectedDevices.map(d => d.name).join(', ')}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {connectedDevices.length === 1 ? '1 dispositivo conectado' : `${connectedDevices.length} dispositivos conectados`}
+                {t('midi.deviceConnected', { count: connectedDevices.length })}
               </p>
             </>
           ) : (
             <>
-              <p className="text-sm font-semibold text-foreground">Nenhum dispositivo</p>
+              <p className="text-sm font-semibold text-foreground">{t('midi.noDevice')}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Conecte um controlador MIDI via USB ou Bluetooth
+                {t('midi.connectController')}
               </p>
             </>
           )}
@@ -117,8 +120,8 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
       {/* Section 2: Channel selectors */}
       <div className="rounded-lg border border-border bg-card p-4 space-y-3">
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-foreground">Canal das Notas (Pads)</p>
-          <p className="text-xs text-muted-foreground">Filtra notas MIDI para os pads.</p>
+          <p className="text-sm font-semibold text-foreground">{t('midi.noteChannel')}</p>
+          <p className="text-xs text-muted-foreground">{t('midi.noteChannelDesc')}</p>
           <Select
             value={String(channel)}
             onValueChange={(v) => onSetChannel(v === 'all' ? 'all' : Number(v))}
@@ -127,18 +130,18 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os canais</SelectItem>
+              <SelectItem value="all">{t('midi.allChannels')}</SelectItem>
               {Array.from({ length: 16 }, (_, i) => i + 1).map((ch) => (
                 <SelectItem key={ch} value={String(ch)}>
-                  Canal {ch}
+                  {t('midi.channel', { ch })}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="border-t border-border pt-3 space-y-2">
-          <p className="text-sm font-semibold text-foreground">Canal dos CCs (Faders/Knobs)</p>
-          <p className="text-xs text-muted-foreground">Filtra mensagens CC para volumes, BPM, etc.</p>
+          <p className="text-sm font-semibold text-foreground">{t('midi.ccChannel')}</p>
+          <p className="text-xs text-muted-foreground">{t('midi.ccChannelDesc')}</p>
           <Select
             value={String(ccChannel)}
             onValueChange={(v) => onSetCCChannel(v === 'all' ? 'all' : Number(v))}
@@ -147,10 +150,10 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos os canais</SelectItem>
+              <SelectItem value="all">{t('midi.allChannels')}</SelectItem>
               {Array.from({ length: 16 }, (_, i) => i + 1).map((ch) => (
                 <SelectItem key={ch} value={String(ch)}>
-                  Canal {ch}
+                  {t('midi.channel', { ch })}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -161,9 +164,9 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
       {/* Section 3: Pad mapping */}
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-border">
-          <p className="text-sm font-semibold text-foreground">Mapeamento dos Pads</p>
+          <p className="text-sm font-semibold text-foreground">{t('midi.padMapping')}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Associe notas MIDI aos pads. Use "Aprender" para mapear pelo controlador.
+            {t('midi.padMappingDesc')}
           </p>
         </div>
         {gridPads.map((pad, i) => {
@@ -185,7 +188,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
               </span>
               <span className="text-xs text-muted-foreground tabular-nums shrink-0 w-16 text-right">
                 {isThisLearning
-                  ? 'Toque...'
+                  ? t('midi.play')
                   : note !== null
                   ? `${midiNoteToName(note)} (${note})`
                   : '—'}
@@ -197,7 +200,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                   className="h-7 text-xs text-destructive"
                   onClick={onStopLearn}
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </Button>
               ) : (
                 <div className="flex items-center gap-0.5">
@@ -207,7 +210,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                       variant="ghost"
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                       onClick={() => onRemoveNoteMapping(note)}
-                      title="Remover mapeamento"
+                      title={t('midi.removeMapping')}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -220,7 +223,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                     disabled={anyLearning}
                   >
                     <Ear className="h-3 w-3 mr-1" />
-                    Aprender
+                    {t('midi.learn')}
                   </Button>
                 </div>
               )}
@@ -236,7 +239,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
         onClick={onResetMappings}
       >
         <RotateCcw className="h-4 w-4" />
-        Resetar mapeamento de pads
+        {t('midi.resetPadMappings')}
       </Button>
 
       {/* Section 4: CC Mapping (Learnable) */}
@@ -244,9 +247,9 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
         <div className="px-4 py-3 border-b border-border flex items-center gap-2">
           <SlidersHorizontal className="h-4 w-4 text-primary" />
           <div>
-            <p className="text-sm font-semibold text-foreground">Mapeamento de CCs</p>
+            <p className="text-sm font-semibold text-foreground">{t('midi.ccMapping')}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Associe controles CC (faders, knobs, botões) às funções. Use "Aprender" para mapear pelo controlador.
+              {t('midi.ccMappingDesc')}
             </p>
           </div>
         </div>
@@ -265,7 +268,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
               </span>
               <span className="text-xs font-mono text-muted-foreground tabular-nums shrink-0 w-16 text-right">
                 {isThisCCLearning
-                  ? 'Mova...'
+                  ? t('midi.move')
                   : cc !== null
                   ? `CC ${cc}`
                   : '—'}
@@ -277,7 +280,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                   className="h-7 text-xs text-destructive"
                   onClick={onStopCCLearn}
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </Button>
               ) : (
                 <div className="flex items-center gap-0.5">
@@ -287,7 +290,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                       variant="ghost"
                       className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                       onClick={() => onRemoveCCMapping(cc)}
-                      title="Remover mapeamento"
+                      title={t('midi.removeMapping')}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -300,7 +303,7 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
                     disabled={anyLearning}
                   >
                     <Ear className="h-3 w-3 mr-1" />
-                    Aprender
+                    {t('midi.learn')}
                   </Button>
                 </div>
               )}
@@ -316,14 +319,14 @@ const MidiSettings: React.FC<MidiSettingsProps> = ({
         onClick={onResetCCMappings}
       >
         <RotateCcw className="h-4 w-4" />
-        Resetar mapeamento de CCs
+        {t('midi.resetCCMappings')}
       </Button>
 
       {/* Section 5: Info */}
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
-        <p className="text-xs font-medium text-foreground">Como funciona?</p>
+        <p className="text-xs font-medium text-foreground">{t('midi.howItWorks')}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Conecte um controlador MIDI via USB ou Bluetooth. O app detecta automaticamente e permite tocar os pads com sensibilidade de velocity. Use o modo "Aprender" para personalizar o mapeamento de cada tecla, fader ou knob. Mova o controle desejado no seu controlador para associá-lo à função.
+          {t('midi.howItWorksDesc')}
         </p>
       </div>
     </div>
