@@ -961,7 +961,7 @@ const SoundSection = ({
                     className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity"
                   />
                 )}
-                <div className="relative text-3xl mb-3">{icon}</div>
+                
                 <h3 className="relative font-bold text-lg mb-1" style={{ color: titleColor }}>
                   {name}
                 </h3>
