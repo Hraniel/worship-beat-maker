@@ -306,7 +306,7 @@ const Nav = ({
           <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
           <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
         </div>
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <LanguageSelector compact className="hidden sm:flex mr-1 shrink-0" />
           {navLinks.map((l) => (
             <a
