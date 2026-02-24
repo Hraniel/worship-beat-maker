@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity, Globe } from 'lucide-react';
+import LanguageSelector from '@/components/LanguageSelector';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import {
   isOutputSelectionSupported,
@@ -747,6 +748,7 @@ const TAB_ITEMS = [
   { value: 'midi', label: 'MIDI', icon: Piano },
   { value: 'tap', label: 'Tap Tempo', icon: Timer },
   { value: 'notifications', label: 'Notificações', icon: Bell },
+  { value: 'language', label: 'Idioma', icon: Globe },
   { value: 'plans', label: 'Planos', icon: Crown },
   { value: 'guide', label: 'Guia', icon: HelpCircle },
   { value: 'about', label: 'Sobre', icon: Info },
@@ -891,6 +893,17 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
               <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Notificações Push</span>
             </div>
             <NotificationSettings />
+          </div>
+        );
+
+      case 'language':
+        return (
+          <div className="flex flex-col gap-3 w-full">
+            <div className="flex justify-center items-center gap-2">
+              <Globe className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Idioma</span>
+            </div>
+            <LanguageSelector />
           </div>
         );
 

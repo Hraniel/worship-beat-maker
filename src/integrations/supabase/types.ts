@@ -414,6 +414,7 @@ export type Database = {
           display_name: string | null
           full_name: string | null
           id: string
+          locale: string
           phone: string | null
           profile_completed: boolean
           profile_completed_at: string | null
@@ -426,6 +427,7 @@ export type Database = {
           display_name?: string | null
           full_name?: string | null
           id?: string
+          locale?: string
           phone?: string | null
           profile_completed?: boolean
           profile_completed_at?: string | null
@@ -438,6 +440,7 @@ export type Database = {
           display_name?: string | null
           full_name?: string | null
           id?: string
+          locale?: string
           phone?: string | null
           profile_completed?: boolean
           profile_completed_at?: string | null

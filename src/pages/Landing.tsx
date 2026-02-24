@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useBodyScroll } from "@/hooks/useBodyScroll";
+import LanguageSelector from "@/components/LanguageSelector";
 import { useLandingConfig, type LandingFeature } from "@/hooks/useLandingConfig";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
@@ -264,21 +266,22 @@ const Nav = ({
   config: Record<string, string>;
   hasAnnouncement: boolean;
 }) => {
+  const { t } = useTranslation();
   const navBg = config.nav_bg || "hsl(0 0% 100% / 0.96)";
   const navBorder = config.nav_border_color || "hsl(0 0% 0% / 0.08)";
   const linkColor = config.nav_link_color || "hsl(220 15% 45%)";
   const linkHoverColor = config.nav_link_hover_color || "hsl(220 15% 10%)";
-  const loginLabel = config.nav_btn_login_label || "Entrar";
-  const signupLabel = config.nav_btn_signup_label || "Começar grátis";
+  const loginLabel = config.nav_btn_login_label || t("landing.nav.login");
+  const signupLabel = config.nav_btn_signup_label || t("landing.nav.signup");
   const loginBg = config.nav_btn_login_bg || "";
   const loginColor = config.nav_btn_login_color || "";
   const signupBg = config.nav_btn_signup_bg || "";
   const signupColor = config.nav_btn_signup_color || "";
 
   const navLinks = [
-    { label: config.nav_link_0_label || "Recursos", href: config.nav_link_0_href || "#recursos" },
-    { label: config.nav_link_1_label || "Sons", href: config.nav_link_1_href || "#sons" },
-    { label: config.nav_link_2_label || "Planos", href: config.nav_link_2_href || "#planos" },
+    { label: config.nav_link_0_label || t("landing.nav.features"), href: config.nav_link_0_href || "#recursos" },
+    { label: config.nav_link_1_label || t("landing.nav.sounds"), href: config.nav_link_1_href || "#sons" },
+    { label: config.nav_link_2_label || t("landing.nav.plans"), href: config.nav_link_2_href || "#planos" },
   ];
 
   return (
@@ -297,6 +300,7 @@ const Nav = ({
           <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          <LanguageSelector compact className="hidden sm:flex mr-1" />
           {navLinks.map((l) => (
             <a
               key={l.href}
