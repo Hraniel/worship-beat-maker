@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveLocalizedKey } from '@/lib/locale-config';
 
 export interface LandingConfig {
   [key: string]: string;
@@ -94,5 +95,9 @@ export function useLandingConfig() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { config, pricing, features, gates, landingFeatures, loading, refetch: fetchAll };
+  const getLocalized = useCallback((key: string, fallback = ''): string => {
+    return resolveLocalizedKey(config, key, fallback);
+  }, [config]);
+
+  return { config, pricing, features, gates, landingFeatures, loading, refetch: fetchAll, getLocalized };
 }
