@@ -29,7 +29,8 @@ const ASPECT_VALUES: Record<AspectRatio, number | null> = {
   'free': null,
 };
 
-const CANVAS_DISPLAY_W = 480;
+const CANVAS_DISPLAY_W = 320;
+const CANVAS_MAX_H = 360;
 
 const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   open,
@@ -94,7 +95,13 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
       }
       return { w: CANVAS_DISPLAY_W, h: CANVAS_DISPLAY_W };
     }
-    return { w: CANVAS_DISPLAY_W, h: Math.round(CANVAS_DISPLAY_W / ratio) };
+    const w = CANVAS_DISPLAY_W;
+    const h = Math.round(w / ratio);
+    if (h > CANVAS_MAX_H) {
+      const cappedW = Math.round(CANVAS_MAX_H * ratio);
+      return { w: cappedW, h: CANVAS_MAX_H };
+    }
+    return { w, h };
   }, [aspect]);
 
   // ── Draw loop ────────────────────────────────────────────────────────────────
@@ -240,7 +247,7 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onCancel(); }}>
-      <DialogContent className="max-w-[520px] p-0 overflow-hidden gap-0">
+      <DialogContent className="max-w-[420px] max-h-[90vh] p-0 overflow-y-auto gap-0">
         <DialogHeader className="px-5 pt-5 pb-3 border-b border-border">
           <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
             <Scissors className="h-4 w-4 text-primary" />
