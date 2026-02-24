@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     if (authErr || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
 
     // Check admin role
-    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'admin').maybeSingle();
+    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', user.id).in('role', ['admin', 'ceo']).maybeSingle();
     if (!roleData) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
