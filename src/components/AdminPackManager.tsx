@@ -23,6 +23,7 @@ import AdminCancellationViewer from '@/components/AdminCancellationViewer';
 import AdminDashboardSummary from '@/components/AdminDashboardSummary';
 import AdminAIPromptManager from '@/components/AdminAIPromptManager';
 import AdminTicketManager from '@/components/AdminTicketManager';
+import AdminEmailTemplateManager from '@/components/AdminEmailTemplateManager';
 import { broadcastPushNotification } from '@/lib/push-notifications';
 
 
@@ -81,7 +82,7 @@ interface BatchProgress {
 }
 
 const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh }) => {
-  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache' | 'store' | 'app-config' | 'bans' | 'cancellations' | 'ai-prompt' | 'tickets'>('packs');
+  const [activeTab, setActiveTab] = useState<'packs' | 'analytics' | 'users' | 'notifications' | 'suggestions' | 'pricing' | 'landing' | 'cache' | 'store' | 'app-config' | 'bans' | 'cancellations' | 'ai-prompt' | 'tickets' | 'emails'>('packs');
   const [expandedPack, setExpandedPack] = useState<string | null>(null);
   const [uploading, setUploading] = useState<UploadingState | null>(null);
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null);
@@ -693,6 +694,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
             { key: 'notifications', label: '🔔 Notificações' },
             { key: 'suggestions', label: '💡 Sugestões' },
             { key: 'tickets', label: '🎫 Tickets' },
+            { key: 'emails', label: '📧 E-mails' },
             { key: 'cancellations', label: '📉 Cancelamentos' },
           ] as const).map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)}
@@ -716,6 +718,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
       {activeTab === 'cancellations' && <AdminCancellationViewer />}
       {activeTab === 'ai-prompt' && <AdminAIPromptManager />}
       {activeTab === 'tickets' && <AdminTicketManager />}
+      {activeTab === 'emails' && <AdminEmailTemplateManager />}
 
       {activeTab === 'packs' && (
         <>
