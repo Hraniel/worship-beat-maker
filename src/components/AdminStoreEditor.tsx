@@ -103,7 +103,8 @@ const AdminStoreEditor: React.FC = () => {
         } catch { /* keep defaults */ }
 
         try {
-          setCategories(JSON.parse(map['categories']?.value ?? '[]'));
+          const parsed = JSON.parse(map['categories']?.value ?? '[]');
+          setCategories(Array.isArray(parsed) ? parsed.map((c: any) => ({ ...c, subs: Array.isArray(c.subs) ? c.subs : [] })) : []);
         } catch { /* keep defaults */ }
 
         // Community
