@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import {
   Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar, ChevronDown,
   ShieldCheck, Search, Trash2, Mail, Key, Ban, Gift, Clock, Globe, RotateCcw,
+  User, Phone, CreditCard, CheckCircle,
 } from 'lucide-react';
 
 type AppRole = 'admin' | 'moderator';
@@ -21,6 +22,11 @@ interface UserRow {
   ban_expires_at?: string | null;
   granted_tier?: string | null;
   ip?: string | null;
+  full_name?: string | null;
+  phone?: string | null;
+  cpf?: string | null;
+  birthday?: string | null;
+  profile_completed?: boolean;
 }
 
 const ROLE_OPTIONS: { role: AppRole | null; label: string; description: string }[] = [
@@ -593,6 +599,29 @@ const AdminUserManager: React.FC = () => {
                         </span>
                       )}
                     </div>
+                    {/* Profile info */}
+                    {user.full_name && (
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                          <User className="h-2.5 w-2.5" /> {user.full_name}
+                        </span>
+                        {user.phone && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                            <Phone className="h-2.5 w-2.5" /> {user.phone}
+                          </span>
+                        )}
+                        {user.cpf && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground font-mono">
+                            <CreditCard className="h-2.5 w-2.5" /> ***.***.{user.cpf.slice(-5, -2)}-{user.cpf.slice(-2)}
+                          </span>
+                        )}
+                        {user.profile_completed && (
+                          <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded-full font-semibold">
+                            <CheckCircle className="h-2 w-2 inline mr-0.5" />COMPLETO
+                          </span>
+                        )}
+                      </div>
+                    )}
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                         <ShoppingBag className="h-2.5 w-2.5" /> {user.purchase_count} compras
