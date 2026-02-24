@@ -6,6 +6,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,6 +137,7 @@ interface EventCardProps {
 const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
   event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs, onCloseAndOpenSavedSongs, expandTrigger,
 }) => {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(isSelected ?? false);
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(event.name);
@@ -149,7 +151,6 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
   const [newSongKey, setNewSongKey] = useState('');
   const [newSongTimeSignature, setNewSongTimeSignature] = useState('4/4');
 
-  // Auto-expand active event whenever the sheet opens
   useEffect(() => {
     if (isSelected && expandTrigger) setExpanded(true);
   }, [expandTrigger]);
@@ -161,7 +162,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
 
   const copyLink = () => {
     const url = `${window.location.origin}/s/${event.share_token}`;
-    navigator.clipboard.writeText(url).then(() => toast.success('Link copiado!')).catch(() => toast.error('Erro ao copiar'));
+    navigator.clipboard.writeText(url).then(() => toast.success(t('setlist.linkCopied'))).catch(() => toast.error(t('setlist.copyError')));
   };
 
   const handleToggle = async () => {
@@ -176,7 +177,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
   };
 
   const formatDate = (d: string) => {
-    try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' }); }
+    try { return new Date(d + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' }); }
     catch { return d; }
   };
 
@@ -184,9 +185,8 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
     if (!selectedSongId) return;
     const song = allSongs.find(s => s.id === selectedSongId);
     if (!song) return;
-    // Prevent duplicates
     if (event.songs_data.some(es => es.id === song.id)) {
-      toast.error('Música já está no evento');
+      toast.error(t('setlist.songAlreadyInEvent'));
       return;
     }
     const eventSong: EventSong = {
@@ -209,7 +209,6 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
     onReorderSongs(event.id, arrayMove(event.songs_data, oldIndex, newIndex));
   };
 
-  // Songs not yet added to this event
   const availableSongs = allSongs.filter(s => !event.songs_data.some(es => es.id === s.id));
 
   return (
@@ -217,7 +216,6 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
       {/* Header */}
       <div className="px-3 py-2.5">
         {editing ? (
-          /* Edit mode: full-width layout, nothing clipped */
           <div className="flex flex-col gap-1.5" onClick={e => e.stopPropagation()}>
             <input value={editName} onChange={e => setEditName(e.target.value)}
               className="w-full h-7 px-2 text-xs rounded bg-background border border-input text-foreground focus:outline-none" />
@@ -226,7 +224,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                 <PopoverTrigger asChild>
                   <button className="flex-1 h-7 px-2 flex items-center gap-1.5 text-xs rounded bg-background border border-input text-foreground hover:bg-muted transition-colors">
                     <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-                    {editDate ? format(parseISO(editDate), 'dd/MM/yyyy') : 'Selecionar data'}
+                    {editDate ? format(parseISO(editDate), 'dd/MM/yyyy') : t('setlist.selectDate')}
                   </button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 z-[200]" align="start" side="bottom" sideOffset={4} collisionPadding={12} avoidCollisions={true}>
@@ -248,7 +246,6 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
             </div>
           </div>
         ) : (
-          /* View mode: row layout */
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { onSelectEvent?.(isSelected ? null : event.id); setExpanded(p => !p); }}>
             <button onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0">
               {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -256,10 +253,10 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
             <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{event.name}</p>
-              <p className="text-[10px] text-muted-foreground">{formatDate(event.event_date)} · {event.songs_data.length} músicas</p>
+              <p className="text-[10px] text-muted-foreground">{formatDate(event.event_date)} · {event.songs_data.length} {t('setlist.songs')}</p>
             </div>
             {isSelected && (
-              <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">✓ Ativo</span>
+              <span className="text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">{t('setlist.active')}</span>
             )}
             <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
               <button onClick={() => setEditing(true)} className="h-6 w-6 rounded flex items-center justify-center hover:bg-muted">
@@ -278,7 +275,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-1.5">
             <Share2 className="h-3 w-3 text-muted-foreground" />
-            <p className="text-[10px] font-medium text-foreground">Compartilhar</p>
+            <p className="text-[10px] font-medium text-foreground">{t('setlist.share')}</p>
           </div>
           {toggling ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
@@ -286,7 +283,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
             <button onClick={handleToggle}
               className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-medium transition-colors ${event.is_public ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
               {event.is_public ? <Eye className="h-2.5 w-2.5" /> : <EyeOff className="h-2.5 w-2.5" />}
-              {event.is_public ? 'Público' : 'Privado'}
+              {event.is_public ? t('setlist.public') : t('setlist.private')}
             </button>
           )}
         </div>
@@ -295,7 +292,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
             className="w-full flex items-center gap-2 text-xs bg-background border border-border rounded-md px-2 py-1.5 hover:bg-muted transition-colors text-left mt-1.5">
             <Link2 className="h-3 w-3 text-primary shrink-0" />
             <span className="truncate text-muted-foreground">{window.location.origin}/s/{event.share_token?.slice(0, 8)}…</span>
-            <span className="ml-auto text-primary font-medium shrink-0">Copiar</span>
+            <span className="ml-auto text-primary font-medium shrink-0">{t('setlist.copy')}</span>
           </button>
         )}
       </div>
@@ -304,7 +301,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
       {expanded && (
         <div className="border-t border-border/40">
           {event.songs_data.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground text-center py-3">Nenhuma música adicionada</p>
+            <p className="text-[11px] text-muted-foreground text-center py-3">{t('setlist.noSongsAdded')}</p>
           ) : (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={event.songs_data.map(s => s.id)} strategy={verticalListSortingStrategy}>
@@ -317,7 +314,6 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                       onRemove={() => onRemoveSong(event.id, song.id)}
                       onClick={() => {
                         onSelectEvent?.(event.id);
-                        // Convert EventSong to SetlistSong format for loading
                         const setlistSong: SetlistSong = {
                           id: song.id,
                           name: song.name,
@@ -331,7 +327,6 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                           padEffects: {},
                           customSounds: {},
                         };
-                        // Try to find the full song in allSongs
                         const fullSong = allSongs.find(s => s.id === song.id);
                         onLoadSong(fullSong || setlistSong);
                       }}
@@ -346,9 +341,9 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
           <div className="px-3 py-2 border-t border-border/40">
             {showNewSong ? (
               <div className="flex flex-col gap-2 mb-2">
-                <p className="text-[10px] font-semibold text-muted-foreground">Criar nova música</p>
+                <p className="text-[10px] font-semibold text-muted-foreground">{t('setlist.createNewSong')}</p>
                 <Input
-                  placeholder="Nome da música..."
+                  placeholder={t('setlist.songNamePlaceholder')}
                   value={newSongName}
                   onChange={e => setNewSongName(e.target.value)}
                   className="h-7 text-xs bg-background"
@@ -367,7 +362,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="text-[9px] text-muted-foreground mb-0.5 block">Tom</label>
+                    <label className="text-[9px] text-muted-foreground mb-0.5 block">{t('setlist.key')}</label>
                     <select
                       value={newSongKey}
                       onChange={e => setNewSongKey(e.target.value)}
@@ -381,7 +376,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                     </select>
                   </div>
                   <div className="flex-1">
-                    <label className="text-[9px] text-muted-foreground mb-0.5 block">Compasso</label>
+                    <label className="text-[9px] text-muted-foreground mb-0.5 block">{t('setlist.timeSignature')}</label>
                     <select
                       value={newSongTimeSignature}
                       onChange={e => setNewSongTimeSignature(e.target.value)}
@@ -408,7 +403,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                     }}
                     disabled={!newSongName.trim()}
                     className="flex-1 h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
-                    Salvar
+                    {t('common.save')}
                   </button>
                   {onOpenMusicAI && (
                     <button
@@ -433,9 +428,9 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                   value={selectedSongId}
                   onChange={e => setSelectedSongId(e.target.value)}
                   className="w-full h-7 px-2 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none">
-                  <option value="">— Selecionar música —</option>
+                  <option value="">{t('setlist.selectSong')}</option>
                   {availableSongs.length === 0
-                    ? <option disabled value="">Nenhuma música disponível</option>
+                    ? <option disabled value="">{t('setlist.noSongsAvailable')}</option>
                     : availableSongs.map(s => (
                       <option key={s.id} value={s.id}>{s.name} ({s.bpm} BPM{s.key ? ` · ${s.key}` : ''})</option>
                     ))
@@ -446,7 +441,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                     onClick={handleAddSong}
                     disabled={!selectedSongId}
                     className="flex-1 h-7 px-2.5 text-xs rounded-md bg-primary text-primary-foreground disabled:opacity-40 hover:bg-primary/90 transition-colors">
-                    Adicionar
+                    {t('setlist.add')}
                   </button>
                   <button
                     onClick={() => { setShowAddSong(false); setSelectedSongId(''); }}
@@ -462,12 +457,12 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                     onCloseAndOpenSavedSongs?.(event.id);
                   }}
                   className="flex-1 flex items-center justify-center gap-1.5 h-7 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors border border-dashed border-border/60">
-                  <Plus className="h-3 w-3" /> Adicionar existente
+                  <Plus className="h-3 w-3" /> {t('setlist.addExisting')}
                 </button>
                 <button
                   onClick={() => setShowNewSong(true)}
                   className="flex-1 flex items-center justify-center gap-1.5 h-7 text-[11px] text-primary hover:text-primary hover:bg-primary/10 rounded-md transition-colors border border-dashed border-primary/30">
-                  <Music className="h-3 w-3" /> Criar música
+                  <Music className="h-3 w-3" /> {t('setlist.createSong')}
                 </button>
               </div>
             )}
@@ -485,13 +480,14 @@ interface CreateEventFormProps {
 }
 
 const CreateEventForm: React.FC<CreateEventFormProps> = ({ onSubmit, onCancel }) => {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   return (
     <div className="bg-muted/30 border border-primary/20 rounded-lg p-3 space-y-2.5">
-      <p className="text-xs font-semibold text-foreground">Novo Evento</p>
+      <p className="text-xs font-semibold text-foreground">{t('setlist.newEvent')}</p>
       <Input
-        placeholder="Nome do evento (ex: Culto Domingo)"
+        placeholder={t('setlist.eventNamePlaceholder')}
         value={name}
         onChange={e => setName(e.target.value)}
         onKeyDown={e => e.key === 'Enter' && name.trim() && onSubmit(name.trim(), date)}
@@ -503,9 +499,9 @@ const CreateEventForm: React.FC<CreateEventFormProps> = ({ onSubmit, onCancel })
         className="w-full h-8 px-3 text-xs rounded-md bg-background border border-input text-foreground focus:outline-none" />
       <div className="flex gap-2">
         <Button size="sm" className="flex-1 h-7 text-xs" onClick={() => onSubmit(name.trim(), date)} disabled={!name.trim()}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Criar
+          <Plus className="h-3.5 w-3.5 mr-1" /> {t('setlist.create')}
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCancel}>Cancelar</Button>
+        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onCancel}>{t('common.cancel')}</Button>
       </div>
     </div>
   );
@@ -515,6 +511,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   songs, currentSongId, onSaveSong, onLoadSong, onDeleteSong, onReorder, onOpenMusicAI,
   forceOpen, onForceOpenChange, selectedEventId, onSelectEvent, externalEvents, onOpenSavedSongs,
 }) => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [expandCounter, setExpandCounter] = useState(0);
   const wasOpenBeforeSavedSongs = useRef(false);
@@ -522,7 +519,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   const internalEvents = useSetlistEvents();
   const { events, createEvent, updateEvent, deleteEvent, togglePublic, addSongToEvent, removeSongFromEvent, reorderEventSongs } = externalEvents || internalEvents;
 
-  // Open sheet when forceOpen prop becomes true
   useEffect(() => {
     if (forceOpen) {
       setOpen(true);
@@ -531,7 +527,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
     }
   }, [forceOpen]);
 
-  // Bump expand counter when user opens sheet manually
   const handleOpenChange = (v: boolean) => {
     setOpen(v);
     if (v) setExpandCounter(c => c + 1);
@@ -547,27 +542,26 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5">
           <ListMusic className="h-4 w-4" />
-          Repertório
+          {t('setlist.title')}
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden">
         <SheetHeader>
-          <SheetTitle className="text-foreground">Repertório</SheetTitle>
+          <SheetTitle className="text-foreground">{t('setlist.title')}</SheetTitle>
           <SheetDescription className="text-muted-foreground">
-            Organize seus eventos e músicas por data
+            {t('setlist.description')}
           </SheetDescription>
         </SheetHeader>
         <div className="mt-4 space-y-4 flex-1 overflow-y-auto pb-4" style={{ overscrollBehavior: 'contain' }}>
 
-          {/* Events section - main content */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5 text-primary" />
-                Eventos Programados
+                {t('setlist.scheduledEvents')}
               </p>
               <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 gap-1" onClick={() => setShowCreateEvent(p => !p)}>
-                <Plus className="h-3 w-3" /> Novo Evento
+                <Plus className="h-3 w-3" /> {t('setlist.newEvent')}
               </Button>
             </div>
 
@@ -578,10 +572,10 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
             {events.length === 0 && !showCreateEvent && (
               <div className="text-center py-6 space-y-2">
                 <Calendar className="h-8 w-8 text-muted-foreground/40 mx-auto" />
-                <p className="text-sm text-muted-foreground">Nenhum evento programado</p>
-                <p className="text-[11px] text-muted-foreground/60">Crie um evento para organizar seu repertório</p>
+                <p className="text-sm text-muted-foreground">{t('setlist.noEvents')}</p>
+                <p className="text-[11px] text-muted-foreground/60">{t('setlist.noEventsHint')}</p>
                 <Button size="sm" variant="outline" className="h-7 text-xs gap-1 mt-1" onClick={() => setShowCreateEvent(true)}>
-                  <Plus className="h-3 w-3" /> Criar primeiro evento
+                  <Plus className="h-3 w-3" /> {t('setlist.createFirstEvent')}
                 </Button>
               </div>
             )}
@@ -613,7 +607,6 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
               />
             ))}
           </div>
-
 
         </div>
       </SheetContent>
