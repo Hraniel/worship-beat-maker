@@ -695,5 +695,67 @@
     "ctaTitle": "Glory Pads",
     "ctaDesc": "O app de percussão para worship com metrônomo, pads e muito mais.",
     "ctaButton": "Criar conta grátis"
+  },
+  "metronome": {
+    "editBpmTitle": "Clique para editar BPM",
+    "stop": "Stop",
+    "play": "Play",
+    "key": "Tom"
+  },
+  "drumPad": {
+    "paidFeature": "🔒 Recurso disponível nos planos pagos",
+    "paidFeatureDesc": "Desbloqueie {{feature}} assinando um plano.",
+    "individualVolume": "Volume individual",
+    "panLR": "Pan (L/R)",
+    "panControl": "controle de panorâmica",
+    "rename": "Renomear",
+    "importSound": "Importar som",
+    "importSoundLoop": "Importar som (loop)",
+    "importLimitReached": "Limite de {{max}} importações atingido",
+    "importLimitHint": "Remova um som customizado ou faça upgrade.",
+    "importFromStore": "Importar da Glory Store",
+    "removeCustom": "Remover custom",
+    "changeColor": "Alterar cor",
+    "backToDefault": "Voltar ao padrão",
+    "resetThisPad": "Redefinir este pad",
+    "resetAllPads": "Redefinir todos os pads",
+    "effects": "Efeitos",
+    "audioEffects": "Efeitos de áudio"
+  },
+  "ambient": {
+    "padError": "Erro no pad: {{msg}}",
+    "restoredToSynth": "Pad {{note}} restaurado para sintetizado",
+    "resume": "Retomar",
+    "pause": "Pausar",
+    "loading": "Carregando..."
+  },
+  "padColor": {
+    "title": "Cor do Pad",
+    "hue": "Matiz",
+    "saturation": "Saturação",
+    "lightness": "Brilho",
+    "opacity": "Transparência"
+  },
+  "padEffects": {
+    "masterEffects": "Efeitos Master",
+    "eq": "EQ",
+    "bass": "Graves",
+    "mid": "Médios",
+    "treble": "Agudos",
+    "reverb": "Reverb",
+    "delay": "Delay",
+    "syncBpm": "Sync BPM",
+    "time": "Tempo"
+  },
+  "bpmGuide": {
+    "title": "Guia de importação",
+    "description": "Para o melhor resultado, siga estas dicas ao importar sons:",
+    "syncBpm": "Sincronize o BPM",
+    "syncBpmDesc": "Certifique-se de que o arquivo de áudio está no mesmo BPM do metrônomo do app para manter a sincronização.",
+    "formats": "Formatos aceitos",
+    "formatsDesc": "MP3, WAV e OGG. Para melhor qualidade, use WAV sem compressão.",
+    "shortSamples": "Samples curtos",
+    "shortSamplesDesc": "Sons de 1 a 4 compassos funcionam melhor. Arquivos muito longos podem causar atraso no disparo.",
+    "chooseFile": "Escolher arquivo"
   }
 }

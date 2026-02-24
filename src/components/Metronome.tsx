@@ -5,6 +5,7 @@ import { Slider } from '@/components/ui/slider';
 import { enableMetronome, disableMetronome, onMetronomeBeat, setSyncEnabled, isSyncEnabled } from '@/lib/loop-engine';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import UpgradeGateModal, { type UpgradeGatePayload } from '@/components/UpgradeGateModal';
+import { useTranslation } from 'react-i18next';
 
 interface MetronomeProps {
   bpm: number;
@@ -24,6 +25,7 @@ const TIME_SIGNATURES = ['4/4', '3/4', '6/8'];
 const Metronome: React.FC<MetronomeProps> = ({
   bpm, onBpmChange, timeSignature, onTimeSignatureChange, isPlaying, onTogglePlay, onBeat, songKey, onKeyChange, onUpgradeGate
 }) => {
+  const { t } = useTranslation();
   const { canAccess } = useFeatureGates();
   const [syncOn, setSyncOn] = useState(() => {
     const stored = localStorage.getItem('drum-pads-sync-enabled');
@@ -144,7 +146,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           <button
             className="text-2xl font-bold text-foreground tabular-nums hover:bg-muted rounded px-2 py-0.5 transition-colors"
             onClick={handleBpmClick}
-            title="Clique para editar BPM"
+            title={t('metronome.editBpmTitle')}
           >
             {localBpm}
           </button>
@@ -170,7 +172,7 @@ const Metronome: React.FC<MetronomeProps> = ({
         </Button>
       </div>
 
-      {/* Controls row: play + time sigs + key + beats */}
+      {/* Controls row */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <Button
           onClick={onTogglePlay}
@@ -179,7 +181,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           className={`h-7 px-3 text-xs gap-1 ${isPlaying ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' : 'border-green-500 bg-green-500 text-white hover:bg-green-600'}`}
         >
           {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-          {isPlaying ? 'Stop' : 'Play'}
+          {isPlaying ? t('metronome.stop') : t('metronome.play')}
         </Button>
 
         <div className="flex gap-0.5 ml-1">
@@ -216,10 +218,10 @@ const Metronome: React.FC<MetronomeProps> = ({
           Sync
         </Button>
 
-        {/* Tom (Key) editable field */}
+        {/* Key editable field */}
         {onKeyChange && (
           <div className="flex items-center gap-1 ml-1">
-            <span className="text-[10px] text-muted-foreground">Tom:</span>
+            <span className="text-[10px] text-muted-foreground">{t('metronome.key')}:</span>
             {editingKey ? (
               <input
                 ref={keyInputRef}
@@ -241,7 +243,7 @@ const Metronome: React.FC<MetronomeProps> = ({
               <button
                 onClick={() => { setEditKeyValue(songKey || ''); setEditingKey(true); setTimeout(() => keyInputRef.current?.select(), 30); }}
                 className={`h-7 px-2 rounded text-[11px] font-bold border transition-colors hover:border-primary ${songKey ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border'}`}
-                title="Clique para editar o tom"
+                title={t('metronome.editBpmTitle')}
               >
                 {songKey || '—'}
               </button>
