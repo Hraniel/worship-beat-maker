@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import {
   Loader2, RefreshCw, Save, Eye, EyeOff, CheckCircle2, AlertTriangle,
   Sparkles, Search, ShieldAlert, Info, Zap, Store, Globe, CreditCard, Bot, Settings, X,
+  HelpCircle,
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -93,7 +94,8 @@ export default function AdminAIPromptManager() {
   const [auditResults, setAuditResults] = useState<AuditSuggestion[]>([]);
   const [applyingAudit, setApplyingAudit] = useState(false);
   const [lastAuditDate, setLastAuditDate] = useState<string | null>(null);
-  const [interpreting, setInterpreting] = useState<number | null>(null); // index being interpreted
+  const [interpreting, setInterpreting] = useState<number | null>(null);
+  const [syncingAll, setSyncingAll] = useState(false);
   const [pendingConfirmation, setPendingConfirmation] = useState<{
     index: number;
     message: string;
@@ -378,6 +380,126 @@ export default function AdminAIPromptManager() {
       toast.info('Sugestão descartada');
     };
 
+  // ─── SYNC ALL: Help Center + AI Prompt ───
+  const syncAllContent = async () => {
+    setSyncingAll(true);
+    try {
+      // 1. Fetch all DB data
+      const [packsRes, pricingRes, featuresRes, gatesRes] = await Promise.all([
+        supabase.from('store_packs').select('name, category, price_cents, is_available, tag, description').eq('is_available', true),
+        supabase.from('public_plan_pricing' as any).select('*').order('price_brl'),
+        supabase.from('plan_features').select('*').order('sort_order'),
+        supabase.from('feature_gates').select('*'),
+      ]);
+
+      // 2. Build store section
+      let storeUpdated = false;
+      if (packsRes.data && packsRes.data.length > 0) {
+        const packLines = packsRes.data.map(p => {
+          const price = p.price_cents > 0 ? `R$ ${(p.price_cents / 100).toFixed(2).replace('.', ',')}` : 'Grátis';
+          return `- **${p.name}** (${p.category}) — ${price}${p.tag ? ` [${p.tag}]` : ''}`;
+        }).join('\n');
+        const categories = [...new Set(packsRes.data.map(p => p.category))].join(', ');
+        const newStore = `### Glory Store\n- Loja de packs de sons profissionais\n- Categorias: ${categories}\n- Preview antes de comprar\n- Importação direta para pads\n\n#### Packs Disponíveis\n${packLines}`;
+        setSections(prev => ({ ...prev, ai_prompt_store: newStore }));
+        storeUpdated = true;
+      }
+
+      // 3. Build plans section
+      let plansUpdated = false;
+      if (pricingRes.data && (pricingRes.data as any[]).length > 0) {
+        const planLines = (pricingRes.data as any[]).map((p: any) => {
+          const price = Number(p.price_brl) > 0 ? `R$ ${Number(p.price_brl).toFixed(2).replace('.', ',')}${p.period}` : 'Grátis';
+          return `- **${p.name}** (${price}): ${p.max_pads} pads, ${p.max_imports >= 999 ? 'importações ilimitadas' : `${p.max_imports} importações`}`;
+        }).join('\n');
+        const featuresByTier: Record<string, string[]> = {};
+        if (featuresRes.data) {
+          for (const f of featuresRes.data) {
+            if (f.enabled) {
+              if (!featuresByTier[f.tier]) featuresByTier[f.tier] = [];
+              featuresByTier[f.tier].push(f.feature_label);
+            }
+          }
+        }
+        const fLines = Object.entries(featuresByTier).map(([t, fs]) => `- ${t}: ${fs.join(', ')}`).join('\n');
+        const newPlans = `### Planos e Assinaturas\n${planLines}\n- Pagamento via Stripe\n- Cancelamento a qualquer momento\n\n#### Recursos por Plano\n${fLines}\n\n### Dados e Offline\n- IndexedDB offline\n- Nuvem para repertórios\n- PWA instalável`;
+        setSections(prev => ({ ...prev, ai_prompt_plans: newPlans }));
+        plansUpdated = true;
+      }
+
+      // 4. Build features section from feature_gates
+      let featuresUpdated = false;
+      if (gatesRes.data && gatesRes.data.length > 0) {
+        const gateLines = gatesRes.data.map(g => `- **${g.gate_label}** (${g.gate_key}): requer plano ${g.required_tier}${g.description ? ` — ${g.description}` : ''}`).join('\n');
+        const currentFeatures = sections.ai_prompt_features || '';
+        const gateSection = `\n\n#### Feature Gates (Requisitos de Plano)\n${gateLines}`;
+        // Only append if not already there
+        if (!currentFeatures.includes('#### Feature Gates')) {
+          setSections(prev => ({ ...prev, ai_prompt_features: currentFeatures + gateSection }));
+          featuresUpdated = true;
+        }
+      }
+
+      // 5. Save immediately
+      setTimeout(async () => {
+        // Get latest sections state
+        const updatedSections = { ...sections };
+        if (storeUpdated && packsRes.data) {
+          const packLines = packsRes.data.map(p => {
+            const price = p.price_cents > 0 ? `R$ ${(p.price_cents / 100).toFixed(2).replace('.', ',')}` : 'Grátis';
+            return `- **${p.name}** (${p.category}) — ${price}${p.tag ? ` [${p.tag}]` : ''}`;
+          }).join('\n');
+          const categories = [...new Set(packsRes.data.map(p => p.category))].join(', ');
+          updatedSections.ai_prompt_store = `### Glory Store\n- Loja de packs de sons profissionais\n- Categorias: ${categories}\n- Preview antes de comprar\n- Importação direta para pads\n\n#### Packs Disponíveis\n${packLines}`;
+        }
+        if (plansUpdated && pricingRes.data) {
+          const planLines = (pricingRes.data as any[]).map((p: any) => {
+            const price = Number(p.price_brl) > 0 ? `R$ ${Number(p.price_brl).toFixed(2).replace('.', ',')}${p.period}` : 'Grátis';
+            return `- **${p.name}** (${price}): ${p.max_pads} pads, ${p.max_imports >= 999 ? 'importações ilimitadas' : `${p.max_imports} importações`}`;
+          }).join('\n');
+          const featuresByTier: Record<string, string[]> = {};
+          if (featuresRes.data) {
+            for (const f of featuresRes.data) {
+              if (f.enabled) {
+                if (!featuresByTier[f.tier]) featuresByTier[f.tier] = [];
+                featuresByTier[f.tier].push(f.feature_label);
+              }
+            }
+          }
+          const fLines = Object.entries(featuresByTier).map(([t, fs]) => `- ${t}: ${fs.join(', ')}`).join('\n');
+          updatedSections.ai_prompt_plans = `### Planos e Assinaturas\n${planLines}\n- Pagamento via Stripe\n- Cancelamento a qualquer momento\n\n#### Recursos por Plano\n${fLines}\n\n### Dados e Offline\n- IndexedDB offline\n- Nuvem para repertórios\n- PWA instalável`;
+        }
+
+        const combined = SECTION_KEYS.map(sk => updatedSections[sk.key] || '').join('\n\n');
+        const allEntries = [
+          ...SECTION_KEYS.map(sk => ({ config_key: sk.key, config_value: updatedSections[sk.key] || '' })),
+          { config_key: 'app_ai_system_prompt', config_value: combined },
+        ];
+        for (const entry of allEntries) {
+          await supabase.from('landing_config').upsert(
+            { config_key: entry.config_key, config_value: entry.config_value, updated_at: new Date().toISOString() },
+            { onConflict: 'config_key' }
+          );
+        }
+
+        const now = new Date().toISOString();
+        await supabase.from('landing_config').upsert({ config_key: 'ai_prompt_last_sync', config_value: now, updated_at: now }, { onConflict: 'config_key' });
+        setLastSyncDate(now);
+
+        const parts = [];
+        if (storeUpdated) parts.push('Loja');
+        if (plansUpdated) parts.push('Planos');
+        if (featuresUpdated) parts.push('Features');
+        toast.success(`✅ Central de Ajuda e IA sincronizadas! (${parts.join(', ') || 'Tudo atualizado'})`);
+        setSyncingAll(false);
+      }, 100);
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao sincronizar');
+      setSyncingAll(false);
+    }
+  };
+
   const combinedPrompt = SECTION_KEYS.map(sk => sections[sk.key] || '').join('\n\n');
 
   if (loading) {
@@ -422,10 +544,16 @@ export default function AdminAIPromptManager() {
                 {lastAuditDate && <> • Última: {new Date(lastAuditDate).toLocaleString('pt-BR')}</>}
               </p>
             </div>
-            <Button size="sm" onClick={runAudit} disabled={auditing} className="text-xs bg-amber-600 hover:bg-amber-700 text-white">
-              {auditing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Search className="h-3 w-3 mr-1" />}
-              {auditing ? 'Analisando...' : 'Analisar Projeto'}
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button size="sm" onClick={syncAllContent} disabled={syncingAll} className="text-xs">
+                {syncingAll ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <HelpCircle className="h-3 w-3 mr-1" />}
+                {syncingAll ? 'Sincronizando...' : '🔄 Sync Central + IA'}
+              </Button>
+              <Button size="sm" onClick={runAudit} disabled={auditing} className="text-xs bg-amber-600 hover:bg-amber-700 text-white">
+                {auditing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Search className="h-3 w-3 mr-1" />}
+                {auditing ? 'Analisando...' : 'Analisar Projeto'}
+              </Button>
+            </div>
           </div>
 
           {auditing && (

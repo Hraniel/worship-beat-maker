@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ticket, Clock, Loader2, CheckCircle, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import TicketConversation from '@/components/TicketConversation';
 
 interface SupportTicket {
   id: string;
@@ -23,28 +24,61 @@ export default function MyTickets() {
   const { user } = useAuth();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTicket, setSelectedTicket] = useState<{ ticket: SupportTicket; index: number } | null>(null);
+
+  const fetchTickets = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from('support_tickets')
+      .select('id, full_name, question, status, created_at, updated_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    setTickets((data || []) as SupportTicket[]);
+    setLoading(false);
+  };
 
   useEffect(() => {
+    fetchTickets();
+  }, [user]);
+
+  // Listen for status changes
+  useEffect(() => {
     if (!user) return;
-    const fetch = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('support_tickets')
-        .select('id, full_name, question, status, created_at, updated_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      setTickets((data || []) as SupportTicket[]);
-      setLoading(false);
-    };
-    fetch();
+    const channel = supabase
+      .channel('my_tickets_realtime')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'support_tickets',
+      }, () => {
+        fetchTickets();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const formatDate = (d: string) => new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 
+  if (selectedTicket) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="max-w-lg mx-auto px-4 py-6 h-screen flex flex-col">
+          <TicketConversation
+            ticketId={selectedTicket.ticket.id}
+            ticketQuestion={selectedTicket.ticket.question}
+            ticketStatus={selectedTicket.ticket.status}
+            ticketNumber={tickets.length - selectedTicket.index}
+            onBack={() => { setSelectedTicket(null); fetchTickets(); }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
-        {/* Header */}
         <div className="flex items-center gap-3">
           <Link to="/help" className="p-2 rounded-lg hover:bg-muted transition-colors">
             <ArrowLeft className="h-5 w-5" />
@@ -70,7 +104,11 @@ export default function MyTickets() {
             {tickets.map((t, i) => {
               const sc = statusConfig[t.status];
               return (
-                <div key={t.id} className="border border-border rounded-xl p-4 bg-card space-y-2">
+                <div
+                  key={t.id}
+                  onClick={() => setSelectedTicket({ ticket: t, index: i })}
+                  className="border border-border rounded-xl p-4 bg-card space-y-2 cursor-pointer hover:border-primary/30 transition-colors active:scale-[0.99]"
+                >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-foreground">Ticket #{tickets.length - i}</span>
                     <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full ${sc?.cls}`}>
@@ -82,6 +120,7 @@ export default function MyTickets() {
                     <span>Aberto em {formatDate(t.created_at)}</span>
                     {t.status !== 'received' && <span>Atualizado em {formatDate(t.updated_at)}</span>}
                   </div>
+                  <p className="text-[10px] text-primary font-medium">Toque para ver conversa →</p>
                 </div>
               );
             })}
