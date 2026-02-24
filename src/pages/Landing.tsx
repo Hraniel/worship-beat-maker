@@ -302,12 +302,10 @@ const Nav = ({
       }}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <img src={logoDark} alt="Glory Pads" className="h-8 w-auto" />
           <span className="font-bold text-lg text-foreground hidden sm:inline">Glory Pads</span>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-          <LanguageSelector compact className="hidden sm:flex mr-1 shrink-0" />
+          <LanguageSelector compact className="hidden sm:flex ml-2 shrink-0" />
           {navLinks.map((l) => (
             <a
               key={l.href}
@@ -320,6 +318,8 @@ const Nav = ({
               {l.label}
             </a>
           ))}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             variant="ghost"
             size="sm"
