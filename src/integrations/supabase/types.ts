@@ -733,6 +733,30 @@ export type Database = {
           },
         ]
       }
+      translation_overrides: {
+        Row: {
+          id: string
+          key_path: string
+          locale: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key_path: string
+          locale: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          key_path?: string
+          locale?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       user_bans: {
         Row: {
           ban_type: string
