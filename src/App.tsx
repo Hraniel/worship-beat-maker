@@ -121,6 +121,7 @@ const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const location = window.location;
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
@@ -128,7 +129,10 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) {
+    const returnTo = location.pathname + location.search;
+    return <Navigate to={`/auth?redirect=${encodeURIComponent(returnTo)}`} replace />;
+  }
   return <>{children}</>;
 };
 
