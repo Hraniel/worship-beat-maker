@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
-type AspectRatio = '1:1' | '16:9' | 'free';
+type AspectRatio = '1:1' | '16:9' | '9:16' | 'free';
 
 interface ImageCropperModalProps {
   open: boolean;
@@ -18,12 +18,14 @@ interface ImageCropperModalProps {
 const OUTPUT_SIZES: Record<AspectRatio, { w: number; h: number }> = {
   '1:1':  { w: 512,  h: 512  },
   '16:9': { w: 1280, h: 720  },
+  '9:16': { w: 400,  h: 711  },
   'free': { w: 0,    h: 0    }, // dynamic
 };
 
 const ASPECT_VALUES: Record<AspectRatio, number | null> = {
   '1:1':  1,
   '16:9': 16 / 9,
+  '9:16': 9 / 16,
   'free': null,
 };
 
@@ -228,6 +230,7 @@ const ImageCropperModal: React.FC<ImageCropperModalProps> = ({
   const ASPECT_OPTS: { value: AspectRatio; label: string }[] = [
     { value: '1:1',  label: '1:1'   },
     { value: '16:9', label: '16:9'  },
+    { value: '9:16', label: '9:16'  },
     { value: 'free', label: 'Livre' },
   ];
 
