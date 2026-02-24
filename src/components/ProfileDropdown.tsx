@@ -10,8 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import {
   User, Mail, Calendar, Loader2, ChevronDown, LogOut,
@@ -63,28 +61,44 @@ interface ProfileData {
   profile_completed: boolean;
 }
 
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+const MONTHS = [
+  { value: 0, label: 'Janeiro' }, { value: 1, label: 'Fevereiro' }, { value: 2, label: 'Março' },
+  { value: 3, label: 'Abril' }, { value: 4, label: 'Maio' }, { value: 5, label: 'Junho' },
+  { value: 6, label: 'Julho' }, { value: 7, label: 'Agosto' }, { value: 8, label: 'Setembro' },
+  { value: 9, label: 'Outubro' }, { value: 10, label: 'Novembro' }, { value: 11, label: 'Dezembro' },
+];
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({ length: currentYear - 1919 }, (_, i) => currentYear - i);
+
+const inputStyle = "h-8 text-xs bg-white text-black border border-gray-300 focus:border-gray-500 focus:ring-gray-400 placeholder:text-gray-400";
+const selectStyle = "h-8 text-xs bg-white text-black border border-gray-300 rounded-lg px-2 focus:outline-none focus:ring-1 focus:ring-gray-400 appearance-none cursor-pointer";
+
 export default function ProfileDropdown() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { tier, subscriptionEnd } = useSubscription();
-  const { isAdmin } = useAdminRole();
+  const { isAdmin, role: userRole } = useAdminRole();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Profile fields
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [fullName, setFullName] = useState('');
   const [cpf, setCpf] = useState('');
   const [phone, setPhone] = useState('');
-  const [birthday, setBirthday] = useState<Date | undefined>();
+  const [birthDay, setBirthDay] = useState<number | ''>('');
+  const [birthMonth, setBirthMonth] = useState<number | ''>('');
+  const [birthYear, setBirthYear] = useState<number | ''>('');
 
   const badge = tierBadge[tier];
   const formattedEnd = subscriptionEnd
     ? new Date(subscriptionEnd).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
     : null;
+
+  const roleLabel = userRole === 'ceo' ? 'CEO' : userRole === 'admin' ? 'Administrador' : userRole === 'moderator' ? 'Moderador' : null;
 
   useEffect(() => {
     if (!user) return;
@@ -99,7 +113,12 @@ export default function ProfileDropdown() {
           setFullName(data.full_name || '');
           setCpf(data.cpf ? formatCpf(data.cpf) : '');
           setPhone(data.phone ? formatPhone(data.phone) : '');
-          setBirthday(data.birthday ? new Date(data.birthday + 'T12:00:00') : undefined);
+          if (data.birthday) {
+            const d = new Date(data.birthday + 'T12:00:00');
+            setBirthDay(d.getDate());
+            setBirthMonth(d.getMonth());
+            setBirthYear(d.getFullYear());
+          }
         }
       });
   }, [user]);
@@ -123,17 +142,20 @@ export default function ProfileDropdown() {
     if (cpf && !validateCpf(cpf)) return toast.error('CPF inválido');
     if (phone && phone.replace(/\D/g, '').length < 10) return toast.error('Telefone inválido');
 
+    const birthdayDate = (birthDay && birthMonth !== '' && birthYear)
+      ? new Date(birthYear as number, birthMonth as number, birthDay as number)
+      : null;
+
     setSaving(true);
     try {
       const updates: Record<string, any> = {
         full_name: fullName.trim(),
         cpf: cpf.replace(/\D/g, '') || null,
         phone: phone.replace(/\D/g, '') || null,
-        birthday: birthday ? format(birthday, 'yyyy-MM-dd') : null,
+        birthday: birthdayDate ? format(birthdayDate, 'yyyy-MM-dd') : null,
       };
 
-      // Mark completed if all fields filled
-      if (fullName.trim() && cpf && phone && birthday) {
+      if (fullName.trim() && cpf && phone && birthdayDate) {
         updates.profile_completed = true;
         updates.profile_completed_at = new Date().toISOString();
       }
@@ -211,10 +233,10 @@ export default function ProfileDropdown() {
                   <span>Perfil completo</span>
                 </div>
               )}
-              {isAdmin && (
+              {roleLabel && (
                 <div className="flex items-center gap-1.5 text-xs text-amber-600">
                   <ShieldCheck className="h-3 w-3 shrink-0" />
-                  <span>{t('dashboard.administrator')}</span>
+                  <span>{roleLabel}</span>
                 </div>
               )}
             </div>
@@ -226,46 +248,40 @@ export default function ProfileDropdown() {
                 <div className="space-y-2.5">
                   <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase tracking-wide">Nome completo</Label>
-                    <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome completo" className="h-8 text-xs" maxLength={100} />
+                    <Input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Seu nome completo" className={inputStyle} maxLength={100} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase tracking-wide flex items-center gap-1">
                       <CreditCard className="h-2.5 w-2.5" /> CPF
                     </Label>
-                    <Input value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" className="h-8 text-xs" maxLength={14} />
+                    <Input value={cpf} onChange={e => setCpf(formatCpf(e.target.value))} placeholder="000.000.000-00" className={inputStyle} maxLength={14} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase tracking-wide flex items-center gap-1">
                       <Phone className="h-2.5 w-2.5" /> Telefone
                     </Label>
-                    <Input value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" className="h-8 text-xs" maxLength={15} type="tel" />
+                    <Input value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(00) 00000-0000" className={inputStyle} maxLength={15} type="tel" />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[10px] text-gray-500 uppercase tracking-wide flex items-center gap-1">
                       <Calendar className="h-2.5 w-2.5" /> Data de nascimento
                     </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full h-8 justify-start text-left text-xs font-normal", !birthday && "text-muted-foreground")}>
-                          {birthday ? format(birthday, "dd/MM/yyyy") : <span>Selecione a data</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 z-[60]" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={birthday}
-                          onSelect={setBirthday}
-                          disabled={(date) => date > new Date() || date < new Date("1920-01-01")}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                          captionLayout="dropdown-buttons"
-                          fromYear={1920}
-                          toYear={new Date().getFullYear()}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="flex gap-1.5">
+                      <select value={birthDay} onChange={e => setBirthDay(e.target.value ? Number(e.target.value) : '')} className={cn(selectStyle, "flex-[1]")}>
+                        <option value="">Dia</option>
+                        {DAYS.map(d => <option key={d} value={d}>{String(d).padStart(2, '0')}</option>)}
+                      </select>
+                      <select value={birthMonth} onChange={e => setBirthMonth(e.target.value !== '' ? Number(e.target.value) : '')} className={cn(selectStyle, "flex-[2]")}>
+                        <option value="">Mês</option>
+                        {MONTHS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                      </select>
+                      <select value={birthYear} onChange={e => setBirthYear(e.target.value ? Number(e.target.value) : '')} className={cn(selectStyle, "flex-[1.2]")}>
+                        <option value="">Ano</option>
+                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
                   </div>
-                  <Button onClick={handleSaveProfile} disabled={saving} size="sm" className="w-full h-8 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg">
+                  <Button onClick={handleSaveProfile} disabled={saving} size="sm" className="w-full h-8 text-xs bg-white hover:bg-gray-50 text-black border border-gray-300 rounded-lg">
                     {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <CheckCircle className="h-3 w-3 mr-1" />}
                     Salvar perfil
                   </Button>
@@ -284,11 +300,11 @@ export default function ProfileDropdown() {
               </div>
               {formattedEnd && <p className="text-[11px] text-gray-400">{t('dashboard.renewsOn')} {formattedEnd}</p>}
               {tier === 'free' ? (
-                <Button onClick={() => { setMenuOpen(false); navigate('/pricing'); }} size="sm" className="w-full h-8 text-xs rounded-lg bg-gray-900 hover:bg-gray-800 text-white">
+                <Button onClick={() => { setMenuOpen(false); navigate('/pricing'); }} size="sm" className="w-full h-8 text-xs rounded-lg bg-white hover:bg-gray-50 text-black border border-gray-300">
                   <Zap className="h-3 w-3 mr-1" /> {t('dashboard.upgrade')}
                 </Button>
               ) : (
-                <Button onClick={handleManageSubscription} variant="outline" size="sm" className="w-full h-8 text-xs rounded-lg border-gray-200 text-gray-700" disabled={portalLoading}>
+                <Button onClick={handleManageSubscription} size="sm" className="w-full h-8 text-xs rounded-lg bg-white hover:bg-gray-50 text-black border border-gray-300" disabled={portalLoading}>
                   {portalLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('dashboard.manageSubscription')}
                 </Button>
               )}

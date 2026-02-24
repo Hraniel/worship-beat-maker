@@ -23,9 +23,10 @@ Deno.serve(async (req) => {
     if (claimsErr || !claimsData?.claims?.sub) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     const userId = claimsData.claims.sub as string;
 
-    // Check admin
-    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', userId).eq('role', 'admin').maybeSingle();
-    if (!roleData) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+    // Check admin or ceo
+    const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
+    if (!roleData || !['admin', 'ceo'].includes(roleData.role)) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+    const callerRole = roleData.role;
 
     const body = req.method === 'GET' ? null : await req.json().catch(() => null);
     const action = body?.action;
@@ -36,6 +37,11 @@ Deno.serve(async (req) => {
       if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
         return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
       }
+      // Protect CEO from role changes by non-CEO
+      const { data: targetRole } = await supabase.from('user_roles').select('role').eq('user_id', targetUserId).maybeSingle();
+      if (targetRole?.role === 'ceo' && callerRole !== 'ceo') {
+        return new Response(JSON.stringify({ error: 'Cannot modify CEO role' }), { status: 403, headers: corsHeaders });
+      }
       if (action === 'promote') {
         await supabase.from('user_roles').upsert({ user_id: targetUserId, role: 'admin' }, { onConflict: 'user_id,role' });
       } else if (action === 'demote') {
@@ -45,6 +51,10 @@ Deno.serve(async (req) => {
       } else if (action === 'demote-moderator') {
         await supabase.from('user_roles').delete().eq('user_id', targetUserId).eq('role', 'moderator');
       } else if (action === 'remove-roles') {
+        // Never remove CEO role
+        if (targetRole?.role === 'ceo') {
+          return new Response(JSON.stringify({ error: 'Cannot remove CEO role' }), { status: 403, headers: corsHeaders });
+        }
         await supabase.from('user_roles').delete().eq('user_id', targetUserId);
       }
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -218,6 +228,7 @@ Deno.serve(async (req) => {
     const { data: roles } = await supabase.from('user_roles').select('user_id, role');
     const adminSet = new Set(roles?.filter(r => r.role === 'admin').map(r => r.user_id) || []);
     const modSet = new Set(roles?.filter(r => r.role === 'moderator').map(r => r.user_id) || []);
+    const ceoSet = new Set(roles?.filter(r => r.role === 'ceo').map(r => r.user_id) || []);
 
     // Fetch bans
     const { data: bans } = await supabase.from('user_bans').select('user_id, expires_at');
@@ -242,8 +253,9 @@ Deno.serve(async (req) => {
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
         purchase_count: purchaseMap.get(u.id) || 0,
-        is_admin: adminSet.has(u.id),
+        is_admin: adminSet.has(u.id) || ceoSet.has(u.id),
         is_moderator: modSet.has(u.id),
+        is_ceo: ceoSet.has(u.id),
         is_banned: banMap.has(u.id),
         ban_expires_at: banMap.get(u.id) ?? null,
         granted_tier: grantMap.get(u.id) ?? null,
