@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Ticket, Clock, CheckCircle, Loader2, MessageSquare, Phone, Mail, User } from 'lucide-react';
+import { Ticket, Clock, CheckCircle, Loader2, MessageSquare, Phone, Mail, User, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import AdminTicketConversation from '@/components/AdminTicketConversation';
 
 interface SupportTicket {
   id: string;
@@ -30,6 +31,7 @@ const AdminTicketManager = () => {
   const [acting, setActing] = useState<string | null>(null);
   const [editingNotes, setEditingNotes] = useState<string | null>(null);
   const [notesValue, setNotesValue] = useState('');
+  const [expandedChat, setExpandedChat] = useState<string | null>(null);
 
   const fetchTickets = async () => {
     setLoading(true);
@@ -38,11 +40,7 @@ const AdminTicketManager = () => {
         .from('support_tickets')
         .select('*')
         .order('created_at', { ascending: true });
-
-      if (filter !== 'all') {
-        query = query.eq('status', filter);
-      }
-
+      if (filter !== 'all') query = query.eq('status', filter);
       const { data, error } = await query;
       if (error) throw error;
       setTickets((data || []) as SupportTicket[]);
@@ -55,14 +53,24 @@ const AdminTicketManager = () => {
 
   useEffect(() => { fetchTickets(); }, [filter]);
 
+  // Realtime: listen for new messages (to show pending indicator)
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin_tickets_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_tickets' }, () => {
+        fetchTickets();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [filter]);
+
   const sendTicketEmail = async (ticketId: string, newStatus: string) => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
       if (!token) return;
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const url = `https://${projectId}.supabase.co/functions/v1/send-ticket-email`;
-      await fetch(url, {
+      await fetch(`https://${projectId}.supabase.co/functions/v1/send-ticket-email`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -71,21 +79,15 @@ const AdminTicketManager = () => {
         },
         body: JSON.stringify({ ticketId, newStatus }),
       });
-    } catch {
-      // Fallback silencioso
-    }
+    } catch { /* silent */ }
   };
 
   const updateStatus = async (id: string, newStatus: string) => {
     setActing(id);
     try {
-      const { error } = await supabase
-        .from('support_tickets')
-        .update({ status: newStatus } as any)
-        .eq('id', id);
+      const { error } = await supabase.from('support_tickets').update({ status: newStatus } as any).eq('id', id);
       if (error) throw error;
       toast.success(`Ticket atualizado para "${statusConfig[newStatus]?.label}"`);
-      // Fire-and-forget email notification
       sendTicketEmail(id, newStatus);
       fetchTickets();
     } catch {
@@ -98,10 +100,7 @@ const AdminTicketManager = () => {
   const saveNotes = async (id: string) => {
     setActing(id);
     try {
-      const { error } = await supabase
-        .from('support_tickets')
-        .update({ admin_notes: notesValue } as any)
-        .eq('id', id);
+      const { error } = await supabase.from('support_tickets').update({ admin_notes: notesValue } as any).eq('id', id);
       if (error) throw error;
       toast.success('Notas salvas!');
       setEditingNotes(null);
@@ -124,7 +123,6 @@ const AdminTicketManager = () => {
         <span className="text-xs text-muted-foreground">{tickets.length} ticket(s)</span>
       </div>
 
-      {/* Filters */}
       <div className="flex gap-1 flex-wrap">
         {(['all', 'received', 'in_progress', 'done'] as const).map(f => (
           <button key={f} onClick={() => setFilter(f)}
@@ -181,13 +179,27 @@ const AdminTicketManager = () => {
                 <p className="text-xs text-foreground whitespace-pre-wrap">{t.question}</p>
               </div>
 
+              {/* Conversation toggle */}
+              <button
+                onClick={() => setExpandedChat(expandedChat === t.id ? null : t.id)}
+                className="flex items-center gap-1.5 text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                {expandedChat === t.id ? 'Ocultar Conversa' : 'Ver / Responder Conversa'}
+                {expandedChat === t.id ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </button>
+
+              {expandedChat === t.id && (
+                <AdminTicketConversation ticketId={t.id} ticketEmail={t.email} ticketName={t.full_name} />
+              )}
+
               {/* Admin notes */}
               {editingNotes === t.id ? (
                 <div className="space-y-2">
                   <textarea
                     value={notesValue}
                     onChange={e => setNotesValue(e.target.value)}
-                    className="w-full h-20 px-3 py-2 text-xs rounded-lg bg-white text-black border border-border focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                    className="w-full h-20 px-3 py-2 text-xs rounded-lg bg-background text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                     placeholder="Notas internas do admin..."
                   />
                   <div className="flex gap-2">
@@ -196,9 +208,9 @@ const AdminTicketManager = () => {
                   </div>
                 </div>
               ) : t.admin_notes ? (
-                <div className="bg-blue-50 rounded-lg p-3 cursor-pointer" onClick={() => { setEditingNotes(t.id); setNotesValue(t.admin_notes || ''); }}>
-                  <p className="text-[10px] text-blue-600 font-semibold mb-1">📝 Notas do Admin (clique para editar)</p>
-                  <p className="text-xs text-blue-800 whitespace-pre-wrap">{t.admin_notes}</p>
+                <div className="bg-primary/5 rounded-lg p-3 cursor-pointer" onClick={() => { setEditingNotes(t.id); setNotesValue(t.admin_notes || ''); }}>
+                  <p className="text-[10px] text-primary font-semibold mb-1">📝 Notas do Admin (clique para editar)</p>
+                  <p className="text-xs text-foreground whitespace-pre-wrap">{t.admin_notes}</p>
                 </div>
               ) : null}
 
