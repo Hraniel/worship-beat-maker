@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { resolveLocalizedKey } from '@/lib/locale-config';
 
 export interface StoreConfigMap {
   [key: string]: string;
@@ -58,5 +59,9 @@ export function useStoreConfig() {
     try { return JSON.parse(val); } catch { return (fallback ?? [] as any); }
   }, [config]);
 
-  return { config, get, getJSON, loading, refetch: fetchConfig };
+  const getLocalized = useCallback((key: string, fallback = ''): string => {
+    return resolveLocalizedKey({ ...Object.fromEntries(Object.entries(DEFAULTS)), ...config }, key, fallback);
+  }, [config]);
+
+  return { config, get, getJSON, loading, refetch: fetchConfig, getLocalized };
 }

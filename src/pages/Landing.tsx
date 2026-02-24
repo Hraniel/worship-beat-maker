@@ -225,14 +225,14 @@ const Divider = ({ fromLight, darkColor }: { fromLight: boolean; darkColor: stri
 );
 
 // Announcement Bar
-const AnnouncementBar = ({ config }: { config: Record<string, string> }) => {
+const AnnouncementBar = ({ config, L }: { config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
   const [dismissed, setDismissed] = React.useState(false);
   if (config.announcement_enabled !== "true" || dismissed) return null;
   const bg = config.announcement_bg || "hsl(262 75% 55%)";
   const color = config.announcement_color || "hsl(0 0% 100%)";
-  const text = config.announcement_text || "";
+  const text = L('announcement_text', '');
   const link = config.announcement_link || "";
-  const linkLabel = config.announcement_link_label || "";
+  const linkLabel = L('announcement_link_label', '');
   if (!text) return null;
 
   return (
@@ -261,27 +261,29 @@ const Nav = ({
   navigate,
   config,
   hasAnnouncement,
+  L,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
   hasAnnouncement: boolean;
+  L: (key: string, fb?: string) => string;
 }) => {
   const { t } = useTranslation();
   const navBg = config.nav_bg || "hsl(0 0% 100% / 0.96)";
   const navBorder = config.nav_border_color || "hsl(0 0% 0% / 0.08)";
   const linkColor = config.nav_link_color || "hsl(220 15% 45%)";
   const linkHoverColor = config.nav_link_hover_color || "hsl(220 15% 10%)";
-  const loginLabel = config.nav_btn_login_label || t("landing.nav.login");
-  const signupLabel = config.nav_btn_signup_label || t("landing.nav.signup");
+  const loginLabel = L('nav_btn_login_label', t("landing.nav.login"));
+  const signupLabel = L('nav_btn_signup_label', t("landing.nav.signup"));
   const loginBg = config.nav_btn_login_bg || "";
   const loginColor = config.nav_btn_login_color || "";
   const signupBg = config.nav_btn_signup_bg || "";
   const signupColor = config.nav_btn_signup_color || "";
 
   const navLinks = [
-    { label: config.nav_link_0_label || t("landing.nav.features"), href: config.nav_link_0_href || "#recursos" },
-    { label: config.nav_link_1_label || t("landing.nav.sounds"), href: config.nav_link_1_href || "#sons" },
-    { label: config.nav_link_2_label || t("landing.nav.plans"), href: config.nav_link_2_href || "#planos" },
+    { label: L('nav_link_0_label', t("landing.nav.features")), href: config.nav_link_0_href || "#recursos" },
+    { label: L('nav_link_1_label', t("landing.nav.sounds")), href: config.nav_link_1_href || "#sons" },
+    { label: L('nav_link_2_label', t("landing.nav.plans")), href: config.nav_link_2_href || "#planos" },
   ];
 
   return (
@@ -339,7 +341,7 @@ const Nav = ({
   );
 };
 
-const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
+const Hero = ({ navigate, config, L }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
   const bg = config.hero_bg || "hsl(0 0% 97%)";
   const titleColor = config.hero_title_color || "hsl(220 15% 10%)";
   const titleSize = titleSizeClass(config.hero_title_size || "7xl");
@@ -409,7 +411,7 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
           >
             <Sparkles className="h-3.5 w-3.5" style={{ color: badgeColor }} />
             <span className="text-xs font-medium" style={{ color: badgeColor }}>
-              {config.hero_badge || "Spotify AI integrado · PWA nativo"}
+              {L('hero_badge', "Spotify AI integrado · PWA nativo")}
             </span>
           </motion.div>
 
@@ -419,7 +421,7 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
             className={`${titleSize} font-extrabold tracking-tight leading-[1.08] mb-6`}
             style={{ color: titleColor }}
           >
-            {(config.hero_title || "Seus pads de worship na palma da mão").split("worship").map((part, i, arr) => (
+            {(L('hero_title', "Seus pads de worship na palma da mão")).split("worship").map((part, i, arr) => (
               <React.Fragment key={i}>
                 {part}
                 {i < arr.length - 1 && <span className="text-primary">worship</span>}
@@ -433,8 +435,7 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
             className="text-lg sm:text-xl max-w-2xl mx-auto mb-10"
             style={{ color: subtitleColor }}
           >
-            {config.hero_subtitle ||
-              "Pads profissionais, metrônomo, loops, continuous pads e Glory Store — tudo que o músico de louvor precisa, em um único app."}
+            {L('hero_subtitle', "Pads profissionais, metrônomo, loops, continuous pads e Glory Store — tudo que o músico de louvor precisa, em um único app.")}
           </motion.p>
 
           <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -444,7 +445,7 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
               className="bg-primary hover:bg-primary/90 text-primary-foreground text-lg px-8 py-6 rounded-xl"
               style={{ boxShadow: "0 0 40px hsl(var(--primary) / 0.25)" }}
             >
-              Começar gratuitamente
+              {L('hero_cta_primary', 'Começar gratuitamente')}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
@@ -455,7 +456,7 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
               }}
               className="text-lg px-8 py-6 rounded-xl"
             >
-              Ver recursos
+              {L('hero_cta_secondary', 'Ver recursos')}
               <ChevronDown className="ml-2 h-5 w-5" />
             </Button>
           </motion.div>
@@ -562,7 +563,7 @@ const Hero = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; 
 };
 
 // App Screenshots section — 3 feature mockup images
-const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
+const AppScreenshots = ({ config, L }: { config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
   const bg = config.screenshots_bg || "hsl(0 0% 97%)";
   const titleColor = config.screenshots_title_color || "hsl(220 15% 10%)";
   const subtitleColor = config.screenshots_subtitle_color || "hsl(220 15% 40%)";
@@ -571,21 +572,20 @@ const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
     {
       key: "screenshot_1",
       defaultImg: appPadGridDefault,
-      defaultTitle: config.screenshot_1_title || "Pad Grid",
-      defaultDesc:
-        config.screenshot_1_desc || "Pads totalmente personalizáveis com cores, efeitos e sons da sua biblioteca.",
+      defaultTitle: L('screenshot_1_title', "Pad Grid"),
+      defaultDesc: L('screenshot_1_desc', "Pads totalmente personalizáveis com cores, efeitos e sons da sua biblioteca."),
     },
     {
       key: "screenshot_2",
       defaultImg: appSetlistDefault,
-      defaultTitle: config.screenshot_2_title || "Repertório",
-      defaultDesc: config.screenshot_2_desc || "Organize suas músicas em setlists e acesse o tom e BPM de cada uma.",
+      defaultTitle: L('screenshot_2_title', "Repertório"),
+      defaultDesc: L('screenshot_2_desc', "Organize suas músicas em setlists e acesse o tom e BPM de cada uma."),
     },
     {
       key: "screenshot_3",
       defaultImg: appMixerDefault,
-      defaultTitle: config.screenshot_3_title || "Mixer",
-      defaultDesc: config.screenshot_3_desc || "Controle de volume e pan individual por pad, em tempo real.",
+      defaultTitle: L('screenshot_3_title', "Mixer"),
+      defaultDesc: L('screenshot_3_desc', "Controle de volume e pan individual por pad, em tempo real."),
     },
   ];
 
@@ -619,12 +619,8 @@ const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
           variants={stagger}
           className="text-center mb-12"
         >
-          <motion.p
-            variants={fadeUp}
-            custom={0}
-            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
-          >
-            App Glory Pads
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
+            {L('screenshots_section_label', 'App Glory Pads')}
           </motion.p>
           <motion.h2
             variants={fadeUp}
@@ -632,7 +628,7 @@ const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
             className="text-3xl sm:text-5xl font-extrabold mb-4"
             style={{ color: titleColor }}
           >
-            {config.screenshots_title || "Tudo que você precisa, em um só lugar"}
+            {L('screenshots_title', "Tudo que você precisa, em um só lugar")}
           </motion.h2>
           <motion.p
             variants={fadeUp}
@@ -640,7 +636,7 @@ const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
             className="max-w-lg mx-auto text-base"
             style={{ color: subtitleColor }}
           >
-            {config.screenshots_subtitle || "Interface intuitiva feita para músicos de louvor profissionais."}
+            {L('screenshots_subtitle', "Interface intuitiva feita para músicos de louvor profissionais.")}
           </motion.p>
         </motion.div>
 
@@ -690,32 +686,16 @@ const AppScreenshots = ({ config }: { config: Record<string, string> }) => {
 };
 
 // Stats — dynamic styles (with optional image per stat)
-const Stats = ({ config }: { config: Record<string, string> }) => {
+const Stats = ({ config, L }: { config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
   const bg = config.stats_bg || "hsl(220 15% 7%)";
   const valueColor = config.stats_value_color || "hsl(0 0% 100%)";
   const labelColor = config.stats_label_color || "hsl(0 0% 100% / 0.4)";
 
   const stats = [
-    {
-      value: config.stat_1_value || "12+",
-      label: config.stat_1_label || "Sons padrão inclusos",
-      image: config.stat_1_image,
-    },
-    {
-      value: config.stat_2_value || "∞",
-      label: config.stat_2_label || "Setlists por culto",
-      image: config.stat_2_image,
-    },
-    {
-      value: config.stat_3_value || "AI",
-      label: config.stat_3_label || "Spotify integrado",
-      image: config.stat_3_image,
-    },
-    {
-      value: config.stat_4_value || "PWA",
-      label: config.stat_4_label || "Instale no celular",
-      image: config.stat_4_image,
-    },
+    { value: L('stat_1_value', "12+"), label: L('stat_1_label', "Sons padrão inclusos"), image: config.stat_1_image },
+    { value: L('stat_2_value', "∞"), label: L('stat_2_label', "Setlists por culto"), image: config.stat_2_image },
+    { value: L('stat_3_value', "AI"), label: L('stat_3_label', "Spotify integrado"), image: config.stat_3_image },
+    { value: L('stat_4_value', "PWA"), label: L('stat_4_label', "Instale no celular"), image: config.stat_4_image },
   ];
   const pt = config.stats_pt ? `${config.stats_pt}px` : "64px";
   const pb = config.stats_pb ? `${config.stats_pb}px` : "64px";
@@ -761,10 +741,12 @@ const Features = ({
   navigate,
   config,
   landingFeatures,
+  L,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
   landingFeatures: LandingFeature[];
+  L: (key: string, fb?: string) => string;
 }) => {
   const bg = config.features_bg || "hsl(0 0% 97%)";
   const cardBg = config.features_card_bg || "hsl(0 0% 100%)";
@@ -799,12 +781,8 @@ const Features = ({
           variants={stagger}
           className="text-center mb-14"
         >
-          <motion.p
-            variants={fadeUp}
-            custom={0}
-            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
-          >
-            Recursos
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
+            {L('features_section_label', 'Recursos')}
           </motion.p>
           <motion.h2
             variants={fadeUp}
@@ -812,10 +790,10 @@ const Features = ({
             className="text-3xl sm:text-5xl font-extrabold mb-4"
             style={{ color: titleColor }}
           >
-            {config.features_title || "Tudo que você precisa para o louvor"}
+            {L('features_title', "Tudo que você precisa para o louvor")}
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: subtitleColor }}>
-            {config.features_subtitle || "Desenvolvido por músicos de louvor, para músicos de louvor."}
+            {L('features_subtitle', "Desenvolvido por músicos de louvor, para músicos de louvor.")}
           </motion.p>
         </motion.div>
 
@@ -879,7 +857,7 @@ const Features = ({
             onClick={() => navigate("/auth?mode=signup")}
             className="bg-foreground text-background hover:bg-foreground/85 text-base px-8 py-5 rounded-xl font-semibold"
           >
-            Experimente grátis
+            {L('features_cta', 'Experimente grátis')}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </motion.div>
@@ -892,9 +870,11 @@ const Features = ({
 const SoundSection = ({
   navigate,
   config,
+  L,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
+  L: (key: string, fb?: string) => string;
 }) => {
   const bg = config.store_bg || "hsl(220 15% 7%)";
   const titleColor = config.store_title_color || "hsl(0 0% 100%)";
@@ -934,7 +914,7 @@ const SoundSection = ({
             custom={0}
             className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
           >
-            Glory Store
+            {L('store_section_label', 'Glory Store')}
           </motion.p>
           <motion.h2
             variants={fadeUp}
@@ -942,11 +922,10 @@ const SoundSection = ({
             className="text-3xl sm:text-5xl font-extrabold mb-4"
             style={{ color: titleColor }}
           >
-            {config.store_title || "Uma biblioteca de sons para cada momento"}
+            {L('store_title', "Uma biblioteca de sons para cada momento")}
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: subtitleColor }}>
-            {config.store_subtitle ||
-              "Sons de bateria secos, com reverb, loops, continuous pads, efeitos crescentes e muito mais."}
+            {L('store_subtitle', "Sons de bateria secos, com reverb, loops, continuous pads, efeitos crescentes e muito mais.")}
           </motion.p>
         </motion.div>
 
@@ -958,7 +937,7 @@ const SoundSection = ({
           className="grid grid-cols-2 sm:grid-cols-3 gap-4"
         >
           {DEFAULT_CATEGORIES.map((def, i) => {
-            const name = config[`store_cat_${i}_name`] || def.name;
+            const name = L(`store_cat_${i}_name`, def.name);
             const icon = config[`store_cat_${i}_emoji`] || def.icon;
             const link = config[`store_cat_${i}_link`] || "/auth?mode=signup";
             const catImage = config[`store_cat_${i}_image`];
@@ -986,7 +965,7 @@ const SoundSection = ({
                   {name}
                 </h3>
                 <p className="relative text-xs" style={{ color: subtitleColor }}>
-                  Pack disponível na loja
+                  {L('store_cat_available_label', 'Pack disponível na loja')}
                 </p>
                 <div className="relative mt-2 h-1 w-8 rounded-full" style={{ background: `hsl(${def.color})` }} />
               </motion.div>
@@ -999,36 +978,18 @@ const SoundSection = ({
 };
 
 // How it works — dynamic styles + texts
-const HowItWorks = ({ config }: { config: Record<string, string> }) => {
+const HowItWorks = ({ config, L }: { config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
   const bg = config.howitworks_bg || "hsl(0 0% 97%)";
   const titleColor = config.howitworks_title_color || "hsl(220 15% 10%)";
   const stepColor = config.howitworks_step_color || "hsl(0 0% 0% / 0.06)";
   const itemTitleColor = config.howitworks_item_title_color || "hsl(220 15% 10%)";
   const itemDescColor = config.howitworks_item_desc_color || "hsl(220 15% 40%)";
-  const mainTitle = config.how_main_title || "Do ensaio ao culto em 3 passos";
+  const mainTitle = L('how_main_title', "Do ensaio ao culto em 3 passos");
 
   const steps = [
-    {
-      step: "01",
-      title: config.how_step_1_title || "Crie sua Setlist",
-      desc:
-        config.how_step_1_desc ||
-        "Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.",
-    },
-    {
-      step: "02",
-      title: config.how_step_2_title || "Configure os Sons",
-      desc:
-        config.how_step_2_desc ||
-        "Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.",
-    },
-    {
-      step: "03",
-      title: config.how_step_3_title || "Toque ao Vivo",
-      desc:
-        config.how_step_3_desc ||
-        "No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.",
-    },
+    { step: "01", title: L('how_step_1_title', "Crie sua Setlist"), desc: L('how_step_1_desc', "Adicione músicas, configure os pads de cada uma e salve. Tudo sincronizado na nuvem.") },
+    { step: "02", title: L('how_step_2_title', "Configure os Sons"), desc: L('how_step_2_desc', "Escolha sons da biblioteca, importe os seus ou use Spotify AI para configurar automaticamente.") },
+    { step: "03", title: L('how_step_3_title', "Toque ao Vivo"), desc: L('how_step_3_desc', "No culto, abra o setlist, selecione a música e toque. Metrônomo e loops sincronizados.") },
   ];
 
   return (
@@ -1059,12 +1020,8 @@ const HowItWorks = ({ config }: { config: Record<string, string> }) => {
           variants={stagger}
           className="text-center mb-14"
         >
-          <motion.p
-            variants={fadeUp}
-            custom={0}
-            className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
-          >
-            Como funciona
+          <motion.p variants={fadeUp} custom={0} className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">
+            {L('howitworks_section_label', 'Como funciona')}
           </motion.p>
           <motion.h2
             variants={fadeUp}
@@ -1108,11 +1065,13 @@ const Pricing = ({
   config,
   pricing,
   features,
+  L,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
   pricing: any[];
   features: any[];
+  L: (key: string, fb?: string) => string;
 }) => {
   if (config.show_pricing === "false") return null;
 
@@ -1155,7 +1114,7 @@ const Pricing = ({
             custom={0}
             className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
           >
-            Planos
+            {L('pricing_section_label', 'Planos')}
           </motion.p>
           <motion.h2
             variants={fadeUp}
@@ -1163,10 +1122,10 @@ const Pricing = ({
             className="text-3xl sm:text-5xl font-extrabold mb-4"
             style={{ color: titleColor }}
           >
-            {config.plans_title || "Comece grátis. Cresça quando quiser."}
+            {L('plans_title', "Comece grátis. Cresça quando quiser.")}
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: subtitleColor }}>
-            {config.plans_subtitle || "Sem contrato, cancele quando quiser."}
+            {L('plans_subtitle', "Sem contrato, cancele quando quiser.")}
           </motion.p>
         </motion.div>
 
@@ -1305,9 +1264,11 @@ const Pricing = ({
 const FinalCTA = ({
   navigate,
   config,
+  L,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
+  L: (key: string, fb?: string) => string;
 }) => {
   const bg = config.cta_bg || "hsl(0 0% 97%)";
   const cardBg = config.cta_card_bg || "hsl(0 0% 100%)";
@@ -1365,11 +1326,10 @@ const FinalCTA = ({
               className="text-3xl sm:text-5xl font-extrabold mb-5"
               style={{ color: titleColor }}
             >
-              {config.cta_title || "Pronto para transformar seu louvor?"}
+              {L('cta_title', "Pronto para transformar seu louvor?")}
             </motion.h2>
             <motion.p variants={fadeUp} custom={2} className="mb-8 max-w-md mx-auto" style={{ color: subtitleColor }}>
-              {config.cta_subtitle ||
-                "Junte-se a músicos que já usam o Glory Pads para criar momentos de adoração inesquecíveis."}
+              {L('cta_subtitle', "Junte-se a músicos que já usam o Glory Pads para criar momentos de adoração inesquecíveis.")}
             </motion.p>
             <motion.div variants={fadeUp} custom={3} className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button
@@ -1377,7 +1337,7 @@ const FinalCTA = ({
                 onClick={() => navigate("/auth?mode=signup")}
                 className="bg-foreground text-background hover:bg-foreground/85 text-lg px-10 py-6 rounded-xl font-bold"
               >
-                Começar agora — é grátis
+                {L('cta_button', 'Começar agora — é grátis')}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </motion.div>
@@ -1389,17 +1349,17 @@ const FinalCTA = ({
 };
 
 // Footer — dynamic styles + texts + links
-const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string> }) => {
+const Footer = ({ navigate, config, L }: { navigate: ReturnType<typeof useNavigate>; config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
   const bg = config.footer_bg || "hsl(220 15% 5%)";
   const textColor = config.footer_text_color || "hsl(0 0% 100% / 0.35)";
-  const tagline = config.footer_tagline || "A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.";
-  const copyright = config.footer_copyright || "Glory Pads";
+  const tagline = L('footer_tagline', "A ferramenta definitiva para músicos de louvor — pads, loops e muito mais.");
+  const copyright = L('footer_copyright', "Glory Pads");
   const logoUrl = config.footer_logo_url;
 
   const footerLinks = [
-    { label: config.footer_link_0_label || "Recursos", href: config.footer_link_0_href || "#recursos" },
-    { label: config.footer_link_1_label || "Planos", href: config.footer_link_1_href || "#planos" },
-    { label: config.footer_link_2_label || "Glory Store", href: config.footer_link_2_href || "#sons" },
+    { label: L('footer_link_0_label', "Recursos"), href: config.footer_link_0_href || "#recursos" },
+    { label: L('footer_link_1_label', "Planos"), href: config.footer_link_1_href || "#planos" },
+    { label: L('footer_link_2_label', "Glory Store"), href: config.footer_link_2_href || "#sons" },
   ];
 
   return (
@@ -1454,17 +1414,17 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
               </a>
             ))}
             <button onClick={() => navigate("/auth")} className="text-left transition" style={{ color: textColor }}>
-              Entrar
+              {L('footer_login_label', 'Entrar')}
             </button>
             <button
               onClick={() => navigate("/auth?mode=signup")}
               className="text-left transition"
               style={{ color: textColor }}
             >
-              Criar conta
+              {L('footer_signup_label', 'Criar conta')}
             </button>
             <a href="/install" className="transition" style={{ color: textColor }}>
-              Instalar app
+              {L('footer_install_label', 'Instalar app')}
             </a>
           </div>
         </div>
@@ -1486,7 +1446,7 @@ const Footer = ({ navigate, config }: { navigate: ReturnType<typeof useNavigate>
 const Landing = () => {
   const navigate = useNavigate();
   useBodyScroll();
-  const { config, pricing, features, landingFeatures, loading } = useLandingConfig();
+  const { config, pricing, features, landingFeatures, loading, getLocalized } = useLandingConfig();
 
   const darkColor = config.divider_dark_color || "hsl(220 15% 7%)";
   const hasAnnouncement = config.announcement_enabled === "true" && !!config.announcement_text;
@@ -1501,56 +1461,56 @@ const Landing = () => {
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      <AnnouncementBar config={config} />
-      <Nav navigate={navigate} config={config} hasAnnouncement={hasAnnouncement} />
+      <AnnouncementBar config={config} L={getLocalized} />
+      <Nav navigate={navigate} config={config} hasAnnouncement={hasAnnouncement} L={getLocalized} />
 
       {/* WHITE hero */}
-      <Hero navigate={navigate} config={config} />
+      <Hero navigate={navigate} config={config} L={getLocalized} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK stats */}
-      <Stats config={config} />
+      <Stats config={config} L={getLocalized} />
 
       {/* dark → white gradient */}
       <Divider fromLight={false} darkColor={darkColor} />
 
       {/* WHITE features */}
-      <Features navigate={navigate} config={config} landingFeatures={landingFeatures} />
+      <Features navigate={navigate} config={config} landingFeatures={landingFeatures} L={getLocalized} />
 
       {/* WHITE app screenshots */}
-      <AppScreenshots config={config} />
+      <AppScreenshots config={config} L={getLocalized} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK sound store */}
-      <SoundSection navigate={navigate} config={config} />
+      <SoundSection navigate={navigate} config={config} L={getLocalized} />
 
       {/* dark → white gradient */}
       <Divider fromLight={false} darkColor={darkColor} />
 
       {/* WHITE how it works */}
-      <HowItWorks config={config} />
+      <HowItWorks config={config} L={getLocalized} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK pricing (conditional) */}
-      {!loading && <Pricing navigate={navigate} config={config} pricing={pricing} features={features} />}
+      {!loading && <Pricing navigate={navigate} config={config} pricing={pricing} features={features} L={getLocalized} />}
 
       {/* dark → white gradient */}
       <Divider fromLight={false} darkColor={darkColor} />
 
       {/* WHITE CTA */}
-      <FinalCTA navigate={navigate} config={config} />
+      <FinalCTA navigate={navigate} config={config} L={getLocalized} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK footer */}
-      <Footer navigate={navigate} config={config} />
+      <Footer navigate={navigate} config={config} L={getLocalized} />
     </div>
   );
 };
