@@ -80,13 +80,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const statusLabels: Record<string, string> = {
-      received: "Recebido",
-      in_progress: "Em Andamento",
-      done: "Finalizado",
-    };
+    // Fetch app_url from landing_config (admin-configurable)
+    const { data: appUrlConfig } = await adminClient
+      .from("landing_config")
+      .select("config_value")
+      .eq("config_key", "app_url")
+      .maybeSingle();
 
-    const appUrl = "https://worship-beat-maker.lovable.app";
+    const appUrl = appUrlConfig?.config_value || "https://worship-beat-maker.lovable.app";
 
     // Handle admin reply notification
     if (newStatus === "admin_reply" && adminMessage) {
