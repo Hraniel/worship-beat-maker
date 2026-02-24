@@ -41,7 +41,8 @@ const Auth = () => {
     );
   }
 
-  if (user) return <Navigate to="/app" replace />;
+  const redirectTo = searchParams.get('redirect') || '/app';
+  if (user) return <Navigate to={redirectTo} replace />;
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
