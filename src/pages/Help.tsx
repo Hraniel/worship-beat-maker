@@ -242,13 +242,11 @@ const Help = () => {
   const FALLBACK_CATEGORIES = useHardcodedCategories();
   const { categories: dbCategories, faqs: dbFaqs, loading: dbLoading } = useHelpContent();
 
-  // Always merge: DB categories first, then hardcoded fallback
+  // Use DB content if available, otherwise fall back to hardcoded
   const dbViewCategories = dbToViewCategories(dbCategories);
-  const CATEGORIES: TutorialCategory[] = [...dbViewCategories, ...FALLBACK_CATEGORIES];
-  const FAQ_ITEMS = [
-    ...dbFaqs.map(f => ({ q: f.question, a: f.answer })),
-    ...FALLBACK_FAQ_ITEMS,
-  ];
+  const CATEGORIES: TutorialCategory[] = dbViewCategories.length > 0 ? dbViewCategories : FALLBACK_CATEGORIES;
+  const dbFaqItems = dbFaqs.map(f => ({ q: f.question, a: f.answer }));
+  const FAQ_ITEMS = dbFaqItems.length > 0 ? dbFaqItems : FALLBACK_FAQ_ITEMS;
 
   const q = searchQuery.toLowerCase().trim();
 
