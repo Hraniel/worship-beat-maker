@@ -579,7 +579,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-1.5">
+        <Button variant="default" size="sm" className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90">
           <ListMusic className="h-4 w-4" />
           {t('setlist.title')}
         </Button>

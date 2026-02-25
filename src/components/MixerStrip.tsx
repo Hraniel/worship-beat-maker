@@ -92,11 +92,11 @@ const VuTicks: React.FC<{ volume: number; flash: number; height?: number }> = ({
                 height: '2px',
                 borderRadius: '1px',
                 backgroundColor: isLit
-                  ? 'hsl(0 0% 100%)'
+                  ? 'hsl(var(--fader-vu-lit))'
                   : 'hsl(var(--muted))',
                 opacity: isLit ? (isTop ? 1 : isMid ? 0.8 : 0.6) : 0.3,
                 boxShadow: isLit && flash > 0.1
-                  ? `0 0 4px hsl(0 0% 100% / 0.5)`
+                  ? `0 0 4px hsl(var(--fader-vu-lit) / 0.5)`
                   : 'none',
               }}
             />
@@ -167,9 +167,9 @@ const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ chan
             className="absolute bottom-0 left-0 w-full rounded-full transition-opacity duration-75"
             style={{
               height: `${pct}%`,
-              backgroundColor: 'hsl(0 0% 100%)',
+              backgroundColor: 'hsl(var(--fader-fill))',
               opacity: fillOpacity,
-              boxShadow: flash > 0.05 ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${Math.min(flash, channel.volume) * 0.6})` : 'none',
+              boxShadow: flash > 0.05 ? `0 0 ${glowIntensity}px hsl(var(--fader-fill) / ${Math.min(flash, channel.volume) * 0.6})` : 'none',
             }}
           />
           {/* Thumb */}
@@ -177,9 +177,9 @@ const Fader: React.FC<{ channel: FaderChannel; faderHeight?: number }> = ({ chan
             className="absolute left-1/2 -translate-x-1/2 w-7 h-[12px] rounded-[3px]"
             style={{
               bottom: `calc(${pct}% - 6px)`,
-              backgroundColor: flash > 0.1 ? `hsl(0 0% 100%)` : 'hsl(0 0% 70%)',
+              backgroundColor: flash > 0.1 ? `hsl(var(--fader-thumb-active))` : 'hsl(var(--fader-thumb))',
               boxShadow: flash > 0.05
-                ? `0 0 ${glowIntensity}px hsl(0 0% 100% / ${Math.min(flash, channel.volume) * 0.5})`
+                ? `0 0 ${glowIntensity}px hsl(var(--fader-fill) / ${Math.min(flash, channel.volume) * 0.5})`
                 : '0 1px 3px hsl(0 0% 0% / 0.6)',
             }}
           />

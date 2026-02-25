@@ -1354,7 +1354,7 @@ const Index = () => {
               <div className="relative">
                 <button
                   onClick={() => setMobileMenuOpen((p) => !p)}
-                  className="p-2 rounded-md text-primary-foreground hover:bg-primary/20 transition-colors"
+                  className="p-2 rounded-md text-foreground hover:bg-muted/20 transition-colors"
                   title="Menu"
                 >
                   <Menu className="h-5 w-5" />
@@ -1538,7 +1538,7 @@ const Index = () => {
               <div className="relative">
                 <button
                   onClick={() => setMobileMenuOpen((p) => !p)}
-                  className="p-2 rounded-md text-primary-foreground hover:bg-primary/20 transition-colors relative"
+                  className="p-2 rounded-md text-foreground hover:bg-muted/20 transition-colors relative"
                   title="Menu"
                 >
                   <Menu className="h-5 w-5" />
