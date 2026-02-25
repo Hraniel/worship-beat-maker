@@ -674,7 +674,7 @@ const Dashboard = () => {
                     {' '}· {filteredPacks.length} {t('dashboard.pack', { count: filteredPacks.length })}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                   {filteredPacks.map(pack => (
                     <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
                   ))}
@@ -692,7 +692,7 @@ const Dashboard = () => {
             </div>
           )}
           {!packsLoading && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-2.5">
               {filteredPacks.map(pack => (
                 <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
               ))}

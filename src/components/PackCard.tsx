@@ -101,7 +101,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
   return (
     <div
-      className="group relative aspect-[4/5] rounded-2xl border border-gray-200/80 hover:border-gray-300 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
+      className="group relative aspect-square rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer max-w-[160px]"
       onClick={handleCardClick}
     >
       {/* Background: banner image or gradient color */}
@@ -128,42 +128,42 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
       {/* Tag badge */}
       {pack.tag && (
-        <div className="absolute top-2.5 left-2.5 z-10">
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/90 text-violet-700 backdrop-blur-sm">
+        <div className="absolute top-1.5 left-1.5 z-10">
+          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-white/90 text-violet-700 backdrop-blur-sm">
             {pack.tag}
           </span>
         </div>
       )}
 
       {/* Status badge */}
-      <div className="absolute top-2.5 right-2.5 z-10">
+      <div className="absolute top-1.5 right-1.5 z-10">
         {pack.purchased ? (
-          <div className="flex items-center gap-1 bg-emerald-500/90 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
-            <Check className="h-3 w-3" />
-            <span className="text-[10px] font-medium">{t('packCard.purchased')}</span>
+          <div className="flex items-center gap-0.5 bg-emerald-500/90 text-white px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+            <Check className="h-2.5 w-2.5" />
+            <span className="text-[8px] font-medium">{t('packCard.purchased')}</span>
           </div>
         ) : !pack.is_available ? (
-          <div className="flex items-center gap-1 bg-black/50 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
-            <Lock className="h-3 w-3" />
-            <span className="text-[10px] font-medium">{t('packCard.comingSoon')}</span>
+          <div className="flex items-center gap-0.5 bg-black/50 text-white px-1.5 py-0.5 rounded-full backdrop-blur-sm">
+            <Lock className="h-2.5 w-2.5" />
+            <span className="text-[8px] font-medium">{t('packCard.comingSoon')}</span>
           </div>
         ) : null}
       </div>
 
       {/* Bottom content */}
-      <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-        <h3 className="font-extrabold text-base text-white leading-snug truncate">{cardTitle}</h3>
+      <div className="absolute bottom-0 left-0 right-0 p-2 z-10">
+        <h3 className="font-extrabold text-sm text-white leading-tight truncate">{cardTitle}</h3>
         {cardSubtitle && (
-          <p className="text-[11px] text-white/70 mt-0.5 truncate">{cardSubtitle}</p>
+          <p className="text-[9px] text-white/70 mt-0.5 truncate">{cardSubtitle}</p>
         )}
 
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-1.5">
-            <Music className="h-3 w-3 text-white/60" />
-            <span className="text-[11px] text-white/60 font-medium">{pack.sounds.length} {t('packCard.sounds')}</span>
+        <div className="flex items-center justify-between mt-1">
+          <div className="flex items-center gap-1">
+            <Music className="h-2.5 w-2.5 text-white/60" />
+            <span className="text-[9px] text-white/60 font-medium">{pack.sounds.length} {t('packCard.sounds')}</span>
           </div>
           {!pack.purchased && pack.is_available && (
-            <span className="text-[11px] font-bold text-white">
+            <span className="text-[9px] font-bold text-white">
               {pack.price_cents === 0 ? t('packCard.free') : `R$ ${(pack.price_cents / 100).toFixed(2)}`}
             </span>
           )}
@@ -175,13 +175,13 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
             size="sm"
             onClick={handlePurchase}
             disabled={purchasing}
-            className="w-full h-8 text-xs rounded-lg bg-white/95 hover:bg-white text-gray-900 font-semibold mt-2 backdrop-blur-sm"
+            className="w-full h-6 text-[10px] rounded-md bg-white/95 hover:bg-white text-gray-900 font-semibold mt-1.5 backdrop-blur-sm"
           >
             {purchasing ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
+              <Loader2 className="h-2.5 w-2.5 animate-spin" />
             ) : (
               <>
-                <Download className="h-3 w-3 mr-1" />
+                <Download className="h-2.5 w-2.5 mr-0.5" />
                 {pack.price_cents === 0 ? t('packCard.getFree') : t('packCard.buy')}
               </>
             )}
@@ -202,9 +202,9 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
               }
             }}
             disabled={purchasing}
-            className="w-full h-8 text-xs rounded-lg bg-emerald-500/90 hover:bg-emerald-500 text-white font-semibold mt-2 backdrop-blur-sm"
+            className="w-full h-6 text-[10px] rounded-md bg-emerald-500/90 hover:bg-emerald-500 text-white font-semibold mt-1.5 backdrop-blur-sm"
           >
-            {purchasing ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Download className="h-3 w-3 mr-1" />{t('packCard.includeFree')}</>}
+            {purchasing ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <><Download className="h-2.5 w-2.5 mr-0.5" />{t('packCard.includeFree')}</>}
           </Button>
         ) : null}
       </div>
