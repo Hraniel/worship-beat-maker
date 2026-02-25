@@ -331,24 +331,30 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          image_url: string | null
           sort_order: number
           title: string
+          video_url: string | null
         }
         Insert: {
           article_id: string
           created_at?: string
           description?: string
           id?: string
+          image_url?: string | null
           sort_order?: number
           title: string
+          video_url?: string | null
         }
         Update: {
           article_id?: string
           created_at?: string
           description?: string
           id?: string
+          image_url?: string | null
           sort_order?: number
           title?: string
+          video_url?: string | null
         }
         Relationships: [
           {

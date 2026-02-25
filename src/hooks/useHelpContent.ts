@@ -6,6 +6,8 @@ export interface HelpStep {
   title: string;
   description: string;
   sort_order: number;
+  image_url: string | null;
+  video_url: string | null;
 }
 
 export interface HelpArticle {
