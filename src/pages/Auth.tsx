@@ -31,10 +31,15 @@ const Auth = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [appUrl, setAppUrl] = useState('');
 
   // Check if user has a valid access key to bypass prelaunch/maintenance
   useEffect(() => {
     if (restrictedLoading) return;
+
+    // Load app_url for OAuth redirect
+    supabase.from('landing_config').select('config_value').eq('config_key', 'app_url').maybeSingle()
+      .then(({ data }) => { if (data?.config_value) setAppUrl(data.config_value); });
 
     if (!restrictedMode) {
       setAccessGranted(true);
@@ -69,8 +74,9 @@ const Auth = () => {
   const handleOAuth = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);
     try {
+      const redirectBase = appUrl || window.location.origin;
       const { error } = await lovable.auth.signInWithOAuth(provider, {
-        redirect_uri: window.location.origin + '/app',
+        redirect_uri: redirectBase + '/app',
       });
       if (error) toast.error(error.message);
     } catch (err: any) {
