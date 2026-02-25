@@ -405,12 +405,23 @@ function NotificationSettings() {
 
       {subscribed && (
         <button
-          onClick={() => {
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification(t('notifications.testTitle'), {
+          onClick={async () => {
+            try {
+              const reg = await navigator.serviceWorker.ready;
+              await reg.showNotification(t('notifications.testTitle'), {
                 body: t('notifications.testBody'),
                 icon: '/pwa-icon-192.png',
-              });
+                badge: '/pwa-icon-192.png',
+                tag: 'glory-pads-test',
+              } as NotificationOptions);
+            } catch {
+              // Fallback for browsers that don't support SW showNotification
+              if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(t('notifications.testTitle'), {
+                  body: t('notifications.testBody'),
+                  icon: '/pwa-icon-192.png',
+                });
+              }
             }
           }}
           className="w-full py-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border rounded-lg transition-colors hover:bg-muted/30"
