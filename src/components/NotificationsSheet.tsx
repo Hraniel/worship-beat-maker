@@ -23,7 +23,7 @@ const NotificationsSheet: React.FC<NotificationsSheetProps> = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0">
+      <SheetContent side="right" className="w-[320px] sm:w-[380px] p-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <SheetHeader className="px-4 py-3 border-b border-border">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-sm font-semibold flex items-center gap-2">
