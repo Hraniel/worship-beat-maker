@@ -51,8 +51,8 @@ let beatUnit = 4; // denominator of time signature
 // Sync (quantization) toggle — persisted in localStorage
 let syncEnabled = true;
 
-// Force loops to start on beat 1 — defaults to true
-let forceLoopBeat1 = true;
+// Force loops to start on beat 1 — only when user enables in settings
+let forceLoopBeat1 = false;
 
 // Disable metronome downbeat accent
 let metronomeAccentEnabled = true;
