@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useBodyScroll } from "@/hooks/useBodyScroll";
 import LanguageSelector from "@/components/LanguageSelector";
 import { useLandingConfig, type LandingFeature } from "@/hooks/useLandingConfig";
+import { usePrelaunchMode } from "@/hooks/usePrelaunchMode";
+import PrelaunchCountdownModal from "@/components/PrelaunchCountdownModal";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 const appPadGridDefault = "/placeholder.svg";
@@ -1450,6 +1452,18 @@ const Landing = () => {
   const navigate = useNavigate();
   useBodyScroll();
   const { config, pricing, features, landingFeatures, loading, getLocalized } = useLandingConfig();
+  const prelaunch = usePrelaunchMode();
+  const [showPrelaunch, setShowPrelaunch] = useState(false);
+
+  // Intercept navigation when prelaunch is active
+  const prelaunchNavigate = useCallback((...args: any[]) => {
+    const path = typeof args[0] === 'string' ? args[0] : '';
+    if (prelaunch.enabled && (path.startsWith('/auth') || path.startsWith('/app') || path.startsWith('/dashboard'))) {
+      setShowPrelaunch(true);
+      return;
+    }
+    navigate(args[0] as any, args[1]);
+  }, [navigate, prelaunch.enabled]) as ReturnType<typeof useNavigate>;
 
   const darkColor = config.divider_dark_color || "hsl(220 15% 7%)";
   const hasAnnouncement = config.announcement_enabled === "true" && !!config.announcement_text;
@@ -1465,10 +1479,10 @@ const Landing = () => {
       }}
     >
       <AnnouncementBar config={config} L={getLocalized} />
-      <Nav navigate={navigate} config={config} hasAnnouncement={hasAnnouncement} L={getLocalized} />
+      <Nav navigate={prelaunchNavigate} config={config} hasAnnouncement={hasAnnouncement} L={getLocalized} />
 
       {/* WHITE hero */}
-      <Hero navigate={navigate} config={config} L={getLocalized} />
+      <Hero navigate={prelaunchNavigate} config={config} L={getLocalized} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
@@ -1480,7 +1494,7 @@ const Landing = () => {
       <Divider fromLight={false} darkColor={darkColor} />
 
       {/* WHITE features */}
-      <Features navigate={navigate} config={config} landingFeatures={landingFeatures} L={getLocalized} />
+      <Features navigate={prelaunchNavigate} config={config} landingFeatures={landingFeatures} L={getLocalized} />
 
       {/* WHITE app screenshots */}
       <AppScreenshots config={config} L={getLocalized} />
@@ -1489,7 +1503,7 @@ const Landing = () => {
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK sound store */}
-      <SoundSection navigate={navigate} config={config} L={getLocalized} />
+      <SoundSection navigate={prelaunchNavigate} config={config} L={getLocalized} />
 
       {/* dark → white gradient */}
       <Divider fromLight={false} darkColor={darkColor} />
@@ -1501,19 +1515,28 @@ const Landing = () => {
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK pricing (conditional) */}
-      {!loading && <Pricing navigate={navigate} config={config} pricing={pricing} features={features} L={getLocalized} />}
+      {!loading && <Pricing navigate={prelaunchNavigate} config={config} pricing={pricing} features={features} L={getLocalized} />}
 
       {/* dark → white gradient */}
       <Divider fromLight={false} darkColor={darkColor} />
 
       {/* WHITE CTA */}
-      <FinalCTA navigate={navigate} config={config} L={getLocalized} />
+      <FinalCTA navigate={prelaunchNavigate} config={config} L={getLocalized} />
 
       {/* white → dark gradient */}
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK footer */}
-      <Footer navigate={navigate} config={config} L={getLocalized} />
+      <Footer navigate={prelaunchNavigate} config={config} L={getLocalized} />
+
+      {/* Prelaunch modal */}
+      {prelaunch.enabled && prelaunch.launchDate && (
+        <PrelaunchCountdownModal
+          open={showPrelaunch}
+          onOpenChange={setShowPrelaunch}
+          launchDate={prelaunch.launchDate}
+        />
+      )}
     </div>
   );
 };

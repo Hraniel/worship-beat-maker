@@ -27,8 +27,9 @@ import {
   User, Mail, Calendar, Loader2,
   ChevronDown, ChevronRight, Drum, Waves, Sparkles, Music, Headphones,
   Volume2, Layers, AudioWaveform, Lock, ShieldCheck, Filter, Search, X,
-  Library, RotateCcw, Package, CheckCircle, BookOpen, Globe, Settings, Gift
+  Library, RotateCcw, Package, CheckCircle, BookOpen, Globe, Settings, Gift, Rocket
 } from 'lucide-react';
+import AdminPrelaunchManager from '@/components/AdminPrelaunchManager';
 
 async function invokeWithToken(fnName: string, body: object) {
   const { supabase: supabaseClient } = await import('@/integrations/supabase/client');
@@ -103,7 +104,7 @@ const Dashboard = () => {
   const [portalLoading, setPortalLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [showAdmin, setShowAdmin] = useState(false);
-  const [adminTab, setAdminTab] = useState<'packs' | 'translations' | 'rewards'>('packs');
+  const [adminTab, setAdminTab] = useState<'packs' | 'translations' | 'rewards' | 'prelaunch'>('packs');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({ drums: true, loops: false, efeitos: false });
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -278,11 +279,23 @@ const Dashboard = () => {
                 <Gift className="h-3.5 w-3.5" />
                 {t('common.rewards')}
               </button>
+              <button
+                onClick={() => setAdminTab('prelaunch')}
+                className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors border-b-2 ${
+                  adminTab === 'prelaunch'
+                    ? 'border-indigo-400 text-indigo-300 bg-indigo-950/30'
+                    : 'border-transparent text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                <Rocket className="h-3.5 w-3.5" />
+                Pré-lançamento
+              </button>
             </div>
             <div className="bg-gradient-to-b from-slate-900 to-indigo-950/40 p-4">
               {adminTab === 'packs' && <AdminPackManager packs={adminPacks} onRefresh={refetch} />}
               {adminTab === 'translations' && <AdminTranslationManager />}
               {adminTab === 'rewards' && <AdminRewardSettings />}
+              {adminTab === 'prelaunch' && <AdminPrelaunchManager />}
             </div>
           </div>
         )}
