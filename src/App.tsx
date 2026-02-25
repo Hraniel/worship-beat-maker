@@ -154,13 +154,14 @@ const AppGate = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Blocks non-admin users during prelaunch
+// Blocks non-admin, non-whitelisted users during prelaunch (signs them out)
 const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
   const prelaunch = usePrelaunchMode();
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [isWhitelisted, setIsWhitelisted] = useState(false);
   const [checking, setChecking] = useState(true);
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
     if (!user?.id) { setChecking(false); return; }
@@ -168,13 +169,23 @@ const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
     Promise.all([
       supabase.from('user_roles').select('role').eq('user_id', user.id),
       supabase.from('prelaunch_whitelist').select('id').eq('user_id', user.id).maybeSingle(),
-    ]).then(([rolesRes, whitelistRes]) => {
+    ]).then(async ([rolesRes, whitelistRes]) => {
       const roles = rolesRes.data?.map((r: any) => r.role) || [];
-      setIsAdmin(roles.includes('admin') || roles.includes('ceo'));
-      setIsWhitelisted(!!whitelistRes.data);
+      const admin = roles.includes('admin') || roles.includes('ceo');
+      const whitelisted = !!whitelistRes.data;
+      setIsAdmin(admin);
+      setIsWhitelisted(whitelisted);
       setChecking(false);
+
+      // If prelaunch active and user is not authorized, sign them out
+      if (prelaunch.enabled && !admin && !whitelisted) {
+        setBlocked(true);
+        const { toast } = await import('sonner');
+        toast.error('Acesso restrito. Você não está na lista de acesso antecipado.');
+        await supabase.auth.signOut();
+      }
     });
-  }, [user?.id]);
+  }, [user?.id, prelaunch.enabled]);
 
   if (prelaunch.loading || checking) {
     return (
@@ -184,7 +195,7 @@ const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (prelaunch.enabled && !isAdmin && !isWhitelisted) {
+  if (blocked || (prelaunch.enabled && !isAdmin && !isWhitelisted)) {
     return <Navigate to="/" replace />;
   }
 
