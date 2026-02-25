@@ -5,13 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Rocket, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { Rocket, CheckCircle2, Loader2 } from 'lucide-react';
 import logoDark from '@/assets/logo-dark.png';
 
 interface PrelaunchCountdownModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  launchDate: string; // ISO date string
+  launchDate: string;
 }
 
 const useCountdown = (targetDate: string) => {
@@ -48,57 +48,30 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
   const countdown = useCountdown(launchDate);
   const [step, setStep] = useState<'countdown' | 'form' | 'success'>('countdown');
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '', full_name: '', phone: '' });
+  const [form, setForm] = useState({ email: '', full_name: '', phone: '' });
 
-  // Reset state when modal opens
   useEffect(() => {
     if (open) {
       setStep('countdown');
-      setForm({ email: '', password: '', full_name: '', phone: '' });
+      setForm({ email: '', full_name: '', phone: '' });
     }
   }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.password || !form.full_name || !form.phone) {
+    if (!form.email || !form.full_name || !form.phone) {
       toast.error('Preencha todos os campos');
-      return;
-    }
-    if (form.password.length < 6) {
-      toast.error('A senha deve ter pelo menos 6 caracteres');
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Create the actual Supabase auth account
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: { display_name: form.full_name.split(' ')[0] },
-        },
-      });
-
-      if (signUpError) {
-        if (signUpError.message.includes('already registered')) {
-          toast.error('Este email já está cadastrado!');
-        } else {
-          toast.error(signUpError.message);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // 2. Save lead to prelaunch_leads table
-      await supabase.from('prelaunch_leads' as any).upsert({
+      await supabase.from('prelaunch_leads').upsert({
         email: form.email,
         full_name: form.full_name,
         phone: form.phone,
-        user_id: signUpData.user?.id || null,
-      } as any, { onConflict: 'email' });
+      }, { onConflict: 'email' });
 
-      // 3. Add to Resend audience via edge function
       try {
         await supabase.functions.invoke('prelaunch-add-lead', {
           body: {
@@ -111,11 +84,8 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
         // Silently fail — lead is saved in DB anyway
       }
 
-      // 4. Sign out immediately so they can't access the app
-      await supabase.auth.signOut();
-
       setStep('success');
-    } catch (err: any) {
+    } catch {
       toast.error('Erro ao realizar pré-cadastro');
     } finally {
       setLoading(false);
@@ -125,7 +95,6 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-none bg-background">
-        {/* Header gradient */}
         <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pt-8 pb-4 text-center">
           <img src={logoDark} alt="Glory Pads" className="h-10 mx-auto mb-4" />
           {step === 'success' ? (
@@ -165,7 +134,7 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="text-center mb-2">
                 <h2 className="text-lg font-bold text-foreground">Pré-cadastro</h2>
-                <p className="text-xs text-muted-foreground">Seu cadastro já será válido quando o app lançar!</p>
+                <p className="text-xs text-muted-foreground">Cadastre-se para ser avisado quando lançarmos!</p>
               </div>
 
               <div className="space-y-3">
@@ -200,17 +169,6 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
                     className="mt-1"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="pl-pass" className="text-xs">Senha (min 6 caracteres)</Label>
-                  <Input
-                    id="pl-pass"
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setForm(p => ({ ...p, password: e.target.value }))}
-                    placeholder="••••••••"
-                    className="mt-1"
-                  />
-                </div>
               </div>
 
               <Button type="submit" className="w-full py-5 rounded-xl font-bold" disabled={loading}>
@@ -228,8 +186,7 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
             <div className="text-center space-y-4">
               <h2 className="text-xl font-bold text-foreground">Você está na lista! 🎉</h2>
               <p className="text-sm text-muted-foreground">
-                Quando o Glory Pads for lançado, você receberá um email. 
-                Sua conta já estará pronta — é só entrar com o email e senha que cadastrou!
+                Quando o Glory Pads for lançado, você receberá um email avisando. Fique ligado!
               </p>
               <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>
                 Entendido!
