@@ -14,7 +14,6 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    // Validate JWT via getClaims (avoids session-not-found errors in PWA)
     const anonClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -23,7 +22,6 @@ Deno.serve(async (req) => {
     if (claimsErr || !claimsData?.claims?.sub) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     const userId = claimsData.claims.sub as string;
 
-    // Check admin or ceo
     const { data: roleData } = await supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
     if (!roleData || !['admin', 'ceo'].includes(roleData.role)) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
     const callerRole = roleData.role;
@@ -31,13 +29,31 @@ Deno.serve(async (req) => {
     const body = req.method === 'GET' ? null : await req.json().catch(() => null);
     const action = body?.action;
 
+    // ── Whitelist management ─────────────────────────────────────────────────────
+    if (action === 'whitelist-add') {
+      const targetUserId = body.userId;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      await supabase.from('prelaunch_whitelist').upsert({ user_id: targetUserId, added_by: userId }, { onConflict: 'user_id' });
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    if (action === 'whitelist-remove') {
+      const targetUserId = body.userId;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      await supabase.from('prelaunch_whitelist').delete().eq('user_id', targetUserId);
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
     // ── Role management ─────────────────────────────────────────────────────────
     if (['promote', 'demote', 'promote-moderator', 'demote-moderator', 'remove-roles'].includes(action)) {
       const targetUserId = body.userId;
       if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
         return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
       }
-      // Protect CEO from role changes by non-CEO
       const { data: targetRole } = await supabase.from('user_roles').select('role').eq('user_id', targetUserId).maybeSingle();
       if (targetRole?.role === 'ceo' && callerRole !== 'ceo') {
         return new Response(JSON.stringify({ error: 'Cannot modify CEO role' }), { status: 403, headers: corsHeaders });
@@ -51,7 +67,6 @@ Deno.serve(async (req) => {
       } else if (action === 'demote-moderator') {
         await supabase.from('user_roles').delete().eq('user_id', targetUserId).eq('role', 'moderator');
       } else if (action === 'remove-roles') {
-        // Never remove CEO role
         if (targetRole?.role === 'ceo') {
           return new Response(JSON.stringify({ error: 'Cannot remove CEO role' }), { status: 403, headers: corsHeaders });
         }
@@ -77,7 +92,6 @@ Deno.serve(async (req) => {
       if (!email || typeof email !== 'string' || email.length > 320) {
         return new Response(JSON.stringify({ error: 'Invalid email' }), { status: 400, headers: corsHeaders });
       }
-      // Use generateLink with type signup to trigger email resend
       const { error } = await supabase.auth.admin.generateLink({
         type: 'signup',
         email: email.trim().toLowerCase(),
@@ -86,7 +100,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
-    // ── Update credentials (email or password) ───────────────────────────────────
+    // ── Update credentials ───────────────────────────────────────────────────────
     if (action === 'update-credentials') {
       const targetUserId = body.userId;
       const newEmail = body.email;
@@ -100,7 +114,6 @@ Deno.serve(async (req) => {
       if (Object.keys(updates).length === 0) {
         return new Response(JSON.stringify({ error: 'No valid updates' }), { status: 400, headers: corsHeaders });
       }
-      // Must use service role client (already initialised as `supabase`) for admin operations
       const { error } = await supabase.auth.admin.updateUserById(targetUserId, updates);
       if (error) throw error;
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -129,7 +142,6 @@ Deno.serve(async (req) => {
         expires_at: expiresAt,
       });
 
-      // Also ban in Supabase Auth (disable user)
       await supabase.auth.admin.updateUserById(targetUserId, { ban_duration: banType === 'temporary' && days ? `${days * 24}h` : '876000h' });
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
@@ -194,7 +206,6 @@ Deno.serve(async (req) => {
         .order('purchased_at', { ascending: false });
       if (purchErr) throw purchErr;
 
-      // Fetch pack names
       const packIds = (purchases || []).map(p => p.pack_id);
       let packNames: Record<string, string> = {};
       if (packIds.length > 0) {
@@ -219,31 +230,30 @@ Deno.serve(async (req) => {
     const { data: { users: authUsers }, error: usersErr } = await supabase.auth.admin.listUsers({ perPage: 200 });
     if (usersErr) throw usersErr;
 
-    // Fetch all purchases grouped by user
     const { data: purchases } = await supabase.from('user_purchases').select('user_id, pack_id');
     const purchaseMap = new Map<string, number>();
     purchases?.forEach(p => purchaseMap.set(p.user_id, (purchaseMap.get(p.user_id) || 0) + 1));
 
-    // Fetch all roles (admin + moderator)
     const { data: roles } = await supabase.from('user_roles').select('user_id, role');
     const adminSet = new Set(roles?.filter(r => r.role === 'admin').map(r => r.user_id) || []);
     const modSet = new Set(roles?.filter(r => r.role === 'moderator').map(r => r.user_id) || []);
     const ceoSet = new Set(roles?.filter(r => r.role === 'ceo').map(r => r.user_id) || []);
 
-    // Fetch bans
     const { data: bans } = await supabase.from('user_bans').select('user_id, expires_at');
     const banMap = new Map<string, string | null>();
     bans?.forEach(b => banMap.set(b.user_id, b.expires_at));
 
-    // Fetch granted tiers
     const { data: grants } = await supabase.from('granted_tiers').select('user_id, tier');
     const grantMap = new Map<string, string>();
     grants?.forEach(g => grantMap.set(g.user_id, g.tier));
 
-    // Fetch profiles
     const { data: profiles } = await supabase.from('profiles').select('user_id, full_name, cpf, phone, birthday, profile_completed');
     const profileMap = new Map<string, any>();
     profiles?.forEach(p => profileMap.set(p.user_id, p));
+
+    // Fetch whitelist
+    const { data: whitelist } = await supabase.from('prelaunch_whitelist').select('user_id');
+    const whitelistSet = new Set(whitelist?.map(w => w.user_id) || []);
 
     const result = authUsers.map(u => {
       const prof = profileMap.get(u.id);
@@ -259,6 +269,7 @@ Deno.serve(async (req) => {
         is_banned: banMap.has(u.id),
         ban_expires_at: banMap.get(u.id) ?? null,
         granted_tier: grantMap.get(u.id) ?? null,
+        is_whitelisted: whitelistSet.has(u.id),
         ip: (u as any).last_sign_in_ip ?? null,
         full_name: prof?.full_name ?? null,
         phone: prof?.phone ?? null,

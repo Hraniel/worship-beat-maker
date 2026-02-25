@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User, MessageSquare } from 'lucide-react';
+import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User, MessageSquare, Wrench } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -18,6 +18,7 @@ interface Lead {
 
 const AdminPrelaunchManager: React.FC = () => {
   const [enabled, setEnabled] = useState(false);
+  const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [launchDate, setLaunchDate] = useState('');
   const [customMessage, setCustomMessage] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -33,12 +34,13 @@ const AdminPrelaunchManager: React.FC = () => {
     const { data } = await supabase
       .from('landing_config')
       .select('config_key, config_value')
-      .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message']);
+      .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message', 'maintenance_enabled']);
 
     const map: Record<string, string> = {};
     data?.forEach((r: any) => { map[r.config_key] = r.config_value; });
 
     setEnabled(map.prelaunch_enabled === 'true');
+    setMaintenanceEnabled(map.maintenance_enabled === 'true');
     setLaunchDate(map.prelaunch_date || '');
     setCustomMessage(map.prelaunch_custom_message || '');
     setLoading(false);
@@ -162,6 +164,26 @@ const AdminPrelaunchManager: React.FC = () => {
             )}
           </div>
         )}
+      </div>
+
+      {/* Maintenance Mode */}
+      <div className="rounded-xl border border-amber-500/20 bg-slate-900/50 p-4 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wrench className="h-4 w-4 text-amber-400" />
+            <span className="text-sm font-semibold text-amber-300">Modo Manutenção</span>
+          </div>
+          <Switch
+            checked={maintenanceEnabled}
+            onCheckedChange={async (val) => {
+              setMaintenanceEnabled(val);
+              await saveConfig('maintenance_enabled', val ? 'true' : 'false');
+            }}
+          />
+        </div>
+        <p className="text-[10px] text-gray-500">
+          Quando ativado: login bloqueado para todos (exceto admins), logout desabilitado, limpeza de cache desabilitada e atualizações não são recebidas.
+        </p>
       </div>
 
       {/* Leads */}

@@ -24,6 +24,7 @@ interface UserRow {
   is_banned?: boolean;
   ban_expires_at?: string | null;
   granted_tier?: string | null;
+  is_whitelisted?: boolean;
   ip?: string | null;
   full_name?: string | null;
   phone?: string | null;
@@ -620,6 +621,9 @@ const AdminUserManager: React.FC = () => {
                           GRÁTIS·{user.granted_tier}
                         </span>
                       )}
+                      {user.is_whitelisted && (
+                        <span className="text-[9px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.5 rounded-full font-semibold shrink-0">WHITELIST</span>
+                      )}
                     </div>
                     {/* Profile info */}
                     {user.full_name && (
@@ -744,7 +748,7 @@ const AdminUserManager: React.FC = () => {
                   >
                     <Gift className="h-2.5 w-2.5" /> Acesso grátis
                   </button>
-                  {user.purchase_count > 0 && (
+                    {user.purchase_count > 0 && (
                     <button
                       onClick={() => setResetPurchaseModal(user)}
                       className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-colors"
@@ -752,6 +756,29 @@ const AdminUserManager: React.FC = () => {
                       <RotateCcw className="h-2.5 w-2.5" /> Resetar compra
                     </button>
                   )}
+                  <button
+                    onClick={async () => {
+                      setActionLoading(user.id + '-whitelist');
+                      try {
+                        await callAdmin({ action: user.is_whitelisted ? 'whitelist-remove' : 'whitelist-add', userId: user.id });
+                        toast.success(user.is_whitelisted ? 'Removido da whitelist' : 'Adicionado à whitelist');
+                        fetchUsers();
+                      } catch (e: any) {
+                        toast.error(e.message || 'Erro');
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === user.id + '-whitelist'}
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border transition-colors ${
+                      user.is_whitelisted
+                        ? 'border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10'
+                        : 'border-border text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {actionLoading === user.id + '-whitelist' ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Shield className="h-2.5 w-2.5" />}
+                    {user.is_whitelisted ? 'Na whitelist' : 'Whitelist'}
+                  </button>
                   {!isCeo && (
                   <>
                   <button
