@@ -10,17 +10,35 @@ import { toast } from 'sonner';
 import { lovable } from '@/integrations/lovable/index';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/LanguageSelector';
+import { usePrelaunchMode } from '@/hooks/usePrelaunchMode';
+import PrelaunchCountdownModal from '@/components/PrelaunchCountdownModal';
 
 const Auth = () => {
   const { t } = useTranslation();
   const { user, loading, signIn, signUp } = useAuth();
   const [searchParams] = useSearchParams();
+  const prelaunch = usePrelaunchMode();
+  const [showPrelaunch, setShowPrelaunch] = useState(false);
   const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
   const [isForgot, setIsForgot] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+
+  // If prelaunch is active, show countdown instead of auth
+  if (!prelaunch.loading && prelaunch.enabled && prelaunch.launchDate) {
+    return (
+      <>
+        <Navigate to="/" replace />
+        <PrelaunchCountdownModal
+          open={true}
+          onOpenChange={() => {}}
+          launchDate={prelaunch.launchDate}
+        />
+      </>
+    );
+  }
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);

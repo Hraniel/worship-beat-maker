@@ -19,11 +19,13 @@ import SharedSetlist from "./pages/SharedSetlist";
 import VapidGenerator from "./pages/VapidGenerator";
 import Help from "./pages/Help";
 import MyTickets from "./pages/MyTickets";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AppLoadingScreen from "@/components/AppLoadingScreen";
 import { useAppReloadGuard } from "@/hooks/useAppReloadGuard";
 import { useLocaleSync } from "@/hooks/useLocaleSync";
+import { usePrelaunchMode } from "@/hooks/usePrelaunchMode";
+import PrelaunchCountdownModal from "@/components/PrelaunchCountdownModal";
 
 const CACHE_VERSION_KEY = 'app_cache_version';
 
@@ -151,6 +153,41 @@ const AppGate = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Blocks non-admin users during prelaunch
+const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
+  const prelaunch = usePrelaunchMode();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) { setChecking(false); return; }
+    supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        const roles = data?.map((r: any) => r.role) || [];
+        setIsAdmin(roles.includes('admin') || roles.includes('ceo'));
+        setChecking(false);
+      });
+  }, [user?.id]);
+
+  if (prelaunch.loading || checking) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (prelaunch.enabled && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -174,13 +211,13 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/auth" element={<Auth />} />
-                    <Route path="/app" element={<ProtectedRoute><AppGate><Index /></AppGate></ProtectedRoute>} />
+                    <Route path="/app" element={<ProtectedRoute><PrelaunchGate><AppGate><Index /></AppGate></PrelaunchGate></ProtectedRoute>} />
                     <Route path="/reset-password" element={<ResetPassword />} />
-                    <Route path="/pricing" element={<ProtectedRoute><Pricing /></ProtectedRoute>} />
+                    <Route path="/pricing" element={<ProtectedRoute><PrelaunchGate><Pricing /></PrelaunchGate></ProtectedRoute>} />
                     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                    <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
-                    <Route path="/my-tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
-                    <Route path="/store/:packId" element={<ProtectedRoute><PackDetail /></ProtectedRoute>} />
+                    <Route path="/help" element={<ProtectedRoute><PrelaunchGate><Help /></PrelaunchGate></ProtectedRoute>} />
+                    <Route path="/my-tickets" element={<ProtectedRoute><PrelaunchGate><MyTickets /></PrelaunchGate></ProtectedRoute>} />
+                    <Route path="/store/:packId" element={<ProtectedRoute><PrelaunchGate><PackDetail /></PrelaunchGate></ProtectedRoute>} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </SubscriptionProvider>
