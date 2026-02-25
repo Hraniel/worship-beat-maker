@@ -28,17 +28,9 @@ const AdminDashboardSummary: React.FC = () => {
         // MRR from subscription-stats edge function
         let mrr = 0;
         try {
-          const { data: session } = await supabase.auth.getSession();
-          const token = session?.session?.access_token;
-          if (token) {
-            const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-            const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/subscription-stats`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (resp.ok) {
-              const json = await resp.json();
-              mrr = json.total_mrr || 0;
-            }
+          const { data, error } = await supabase.functions.invoke('subscription-stats');
+          if (!error && data?.total_mrr) {
+            mrr = data.total_mrr;
           }
         } catch {}
 
