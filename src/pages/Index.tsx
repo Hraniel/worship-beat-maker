@@ -22,6 +22,7 @@ import {
   setMasterPan,
   setMetronomePan,
   setPadPan,
+  startBackgroundKeepAlive,
 } from "@/lib/audio-engine";
 import { defaultPads, type SetlistSong } from "@/lib/sounds";
 import {
@@ -491,7 +492,6 @@ const Index = () => {
       artist: "Beat ao vivo",
       album: "Metrônomo",
     });
-    // Prevent the OS from pausing us when the screen locks
     navigator.mediaSession.setActionHandler("play", () => {
       getAudioContext()
         .resume()
@@ -501,15 +501,25 @@ const Index = () => {
       // Do nothing – we keep playing
     });
     navigator.mediaSession.playbackState = "playing";
+
+    // Start the silent <audio> keep-alive so the OS doesn't suspend us
+    startBackgroundKeepAlive();
   }, []);
 
   // Visibility change: resume AudioContext + auto-save current song when leaving
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
+        // Resume AudioContext when coming back
         getAudioContext()
           .resume()
           .catch(() => {});
+        // Re-start keep-alive in case it was killed
+        startBackgroundKeepAlive();
+        // Update media session state
+        if ("mediaSession" in navigator) {
+          navigator.mediaSession.playbackState = "playing";
+        }
       } else if (document.visibilityState === "hidden") {
         // Auto-save current song when user leaves the app
         autoSaveCurrentSongRef.current?.();

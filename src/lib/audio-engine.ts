@@ -697,3 +697,70 @@ if (typeof window !== 'undefined') {
     window.addEventListener('pointerdown', tryRestore, { once: true });
   }
 }
+
+// ── Background audio keep-alive ─────────────────────────────────────────────
+// On mobile browsers (especially iOS Safari and some Android browsers),
+// the AudioContext gets suspended when the app goes to background.
+// A silent <audio> element with Media Session keeps the OS media session alive,
+// which in turn prevents the browser from suspending the AudioContext.
+
+let keepAliveAudio: HTMLAudioElement | null = null;
+
+function createSilentWav(): string {
+  // Minimal 1-second 16-bit mono WAV at 8000 Hz (extremely small)
+  const sampleRate = 8000;
+  const numSamples = sampleRate; // 1 second
+  const dataSize = numSamples * 2; // 16-bit = 2 bytes
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  // RIFF header
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true); // chunk size
+  view.setUint16(20, 1, true);  // PCM
+  view.setUint16(22, 1, true);  // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true); // byte rate
+  view.setUint16(32, 2, true);  // block align
+  view.setUint16(34, 16, true); // bits per sample
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+  // samples are all zero (silence)
+
+  const blob = new Blob([buffer], { type: 'audio/wav' });
+  return URL.createObjectURL(blob);
+}
+
+export function startBackgroundKeepAlive() {
+  if (keepAliveAudio) return;
+  try {
+    keepAliveAudio = new Audio();
+    keepAliveAudio.src = createSilentWav();
+    keepAliveAudio.loop = true;
+    keepAliveAudio.volume = 0.001; // near-silent but not zero (some browsers ignore 0)
+    // Play — this must be called from a user gesture context
+    keepAliveAudio.play().catch(() => {
+      console.warn('[AudioEngine] Keep-alive play failed — will retry on next interaction');
+      keepAliveAudio = null;
+    });
+    console.log('[AudioEngine] Background keep-alive started');
+  } catch (e) {
+    console.warn('[AudioEngine] Keep-alive setup failed:', e);
+    keepAliveAudio = null;
+  }
+}
+
+export function stopBackgroundKeepAlive() {
+  if (keepAliveAudio) {
+    keepAliveAudio.pause();
+    keepAliveAudio.src = '';
+    keepAliveAudio = null;
+    console.log('[AudioEngine] Background keep-alive stopped');
+  }
+}
