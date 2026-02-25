@@ -5,11 +5,14 @@ import logoDark from '@/assets/logo-dark.png';
 import HelpChatWidget from '@/components/HelpChatWidget';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { useHelpContent } from '@/hooks/useHelpContent';
+import type { HelpCategory as DBCategory, HelpFaq as DBFaq } from '@/hooks/useHelpContent';
 import {
   ArrowLeft, Search, Drum, Music, Waves, Sliders, Clock, Bluetooth,
   Sparkles, Pencil, Eye, Store, ListMusic, Volume2, HelpCircle,
   ChevronDown, ChevronRight, Play, Headphones, BookOpen, Lightbulb,
-  MessageCircleQuestion, ExternalLink, Image, Ticket
+  MessageCircleQuestion, ExternalLink, Image, Ticket, Loader2,
+  FileText, Settings, Zap, Mic, Radio, Activity, Speaker, Piano, Guitar,
 } from 'lucide-react';
 
 /* ─── Types ─── */
@@ -17,7 +20,63 @@ interface TutorialStep { title: string; description: string; }
 interface TutorialArticle { title: string; icon: React.ReactNode; purpose: string; steps: TutorialStep[]; }
 interface TutorialCategory { id: string; label: string; icon: React.ReactNode; description: string; screenshot?: string; articles: TutorialArticle[]; }
 
-/* ─── Hooks for translated content ─── */
+/* ─── Icon resolver ─── */
+const ICON_MAP: Record<string, React.ReactNode> = {
+  'drum': <Drum className="h-5 w-5" />,
+  'music': <Music className="h-5 w-5" />,
+  'waves': <Waves className="h-5 w-5" />,
+  'sliders': <Sliders className="h-5 w-5" />,
+  'clock': <Clock className="h-5 w-5" />,
+  'bluetooth': <Bluetooth className="h-5 w-5" />,
+  'sparkles': <Sparkles className="h-5 w-5" />,
+  'pencil': <Pencil className="h-5 w-5" />,
+  'eye': <Eye className="h-5 w-5" />,
+  'store': <Store className="h-5 w-5" />,
+  'list-music': <ListMusic className="h-5 w-5" />,
+  'volume-2': <Volume2 className="h-5 w-5" />,
+  'help-circle': <HelpCircle className="h-5 w-5" />,
+  'play': <Play className="h-5 w-5" />,
+  'headphones': <Headphones className="h-5 w-5" />,
+  'file-text': <FileText className="h-5 w-5" />,
+  'settings': <Settings className="h-5 w-5" />,
+  'zap': <Zap className="h-5 w-5" />,
+  'mic': <Mic className="h-5 w-5" />,
+  'radio': <Radio className="h-5 w-5" />,
+  'activity': <Activity className="h-5 w-5" />,
+  'external-link': <ExternalLink className="h-5 w-5" />,
+};
+
+const ICON_MAP_SM: Record<string, React.ReactNode> = {
+  'drum': <Drum className="h-4 w-4" />,
+  'music': <Music className="h-4 w-4" />,
+  'waves': <Waves className="h-4 w-4" />,
+  'sliders': <Sliders className="h-4 w-4" />,
+  'clock': <Clock className="h-4 w-4" />,
+  'bluetooth': <Bluetooth className="h-4 w-4" />,
+  'sparkles': <Sparkles className="h-4 w-4" />,
+  'pencil': <Pencil className="h-4 w-4" />,
+  'eye': <Eye className="h-4 w-4" />,
+  'store': <Store className="h-4 w-4" />,
+  'list-music': <ListMusic className="h-4 w-4" />,
+  'volume-2': <Volume2 className="h-4 w-4" />,
+  'help-circle': <HelpCircle className="h-4 w-4" />,
+  'play': <Play className="h-4 w-4" />,
+  'headphones': <Headphones className="h-4 w-4" />,
+  'file-text': <FileText className="h-4 w-4" />,
+  'settings': <Settings className="h-4 w-4" />,
+  'zap': <Zap className="h-4 w-4" />,
+  'mic': <Mic className="h-4 w-4" />,
+  'radio': <Radio className="h-4 w-4" />,
+  'activity': <Activity className="h-4 w-4" />,
+  'external-link': <ExternalLink className="h-4 w-4" />,
+};
+
+function getIcon(name: string, small = false) {
+  const map = small ? ICON_MAP_SM : ICON_MAP;
+  return map[name] || (small ? <FileText className="h-4 w-4" /> : <FileText className="h-5 w-5" />);
+}
+
+/* ─── Hooks for hardcoded fallback content ─── */
 function useFaqItems() {
   const { t } = useTranslation();
   return Array.from({ length: 8 }, (_, i) => ({
@@ -26,7 +85,7 @@ function useFaqItems() {
   }));
 }
 
-function useHelpCategories(): TutorialCategory[] {
+function useHardcodedCategories(): TutorialCategory[] {
   const { t } = useTranslation();
   return [
     {
@@ -149,12 +208,21 @@ function useHelpCategories(): TutorialCategory[] {
   ];
 }
 
-/* ─── Screenshot component ─── */
-const ScreenshotPreview = ({ src, alt }: { src: string; alt: string }) => (
-  <div className="my-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm bg-gray-900">
-    <img src={src} alt={alt} className="w-full max-w-[280px] mx-auto object-contain" loading="lazy" />
-  </div>
-);
+/* ─── Convert DB categories to view categories ─── */
+function dbToViewCategories(dbCats: DBCategory[]): TutorialCategory[] {
+  return dbCats.map(cat => ({
+    id: cat.id,
+    label: cat.label,
+    icon: getIcon(cat.icon_name),
+    description: cat.description,
+    articles: cat.articles.map(art => ({
+      title: art.title,
+      icon: getIcon(art.icon_name, true),
+      purpose: art.purpose,
+      steps: art.steps.map(s => ({ title: s.title, description: s.description })),
+    })),
+  }));
+}
 
 const Help = () => {
   const navigate = useNavigate();
@@ -165,8 +233,18 @@ const Help = () => {
   const [expandedArticle, setExpandedArticle] = useState<string | null>(null);
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
-  const FAQ_ITEMS = useFaqItems();
-  const CATEGORIES = useHelpCategories();
+  const FALLBACK_FAQ_ITEMS = useFaqItems();
+  const FALLBACK_CATEGORIES = useHardcodedCategories();
+  const { categories: dbCategories, faqs: dbFaqs, loading: dbLoading } = useHelpContent();
+
+  // Use DB content if available, fallback to hardcoded
+  const hasDbCategories = dbCategories.length > 0;
+  const hasDbFaqs = dbFaqs.length > 0;
+
+  const CATEGORIES: TutorialCategory[] = hasDbCategories ? dbToViewCategories(dbCategories) : FALLBACK_CATEGORIES;
+  const FAQ_ITEMS = hasDbFaqs
+    ? dbFaqs.map(f => ({ q: f.question, a: f.answer }))
+    : FALLBACK_FAQ_ITEMS;
 
   const q = searchQuery.toLowerCase().trim();
 
@@ -237,177 +315,176 @@ const Help = () => {
           </div>
         </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
-          {[
-            { icon: <BookOpen className="h-4 w-4 text-violet-500" />, label: t('help.tutorials'), value: CATEGORIES.reduce((a, c) => a + c.articles.length, 0).toString() },
-            { icon: <Lightbulb className="h-4 w-4 text-amber-500" />, label: t('help.categoriesLabel'), value: CATEGORIES.length.toString() },
-            { icon: <MessageCircleQuestion className="h-4 w-4 text-emerald-500" />, label: 'FAQs', value: FAQ_ITEMS.length.toString() },
-          ].map((s, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-              <div className="flex justify-center mb-1.5">{s.icon}</div>
-              <p className="text-lg font-bold text-gray-900">{s.value}</p>
-              <p className="text-[11px] text-gray-500">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Category detail view */}
-        {selectedCat ? (
-          <div>
-            <button
-              onClick={() => { setActiveCategory(null); setExpandedArticle(null); }}
-              className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700 font-medium mb-4 transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {t('help.backToCategories')}
-            </button>
-
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600">
-                {selectedCat.icon}
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">{selectedCat.label}</h2>
-                <p className="text-xs text-gray-500">{selectedCat.description}</p>
-              </div>
-            </div>
-
-            {selectedCat.screenshot && (
-              <ScreenshotPreview src={selectedCat.screenshot} alt={selectedCat.label} />
-            )}
-
-            <div className="space-y-3 mt-4">
-              {selectedCat.articles.map((article, ai) => {
-                const key = `${selectedCat.id}-${ai}`;
-                const isOpen = expandedArticle === key;
-                return (
-                  <div key={key} className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-shadow hover:shadow-sm">
-                    <button
-                      onClick={() => setExpandedArticle(isOpen ? null : key)}
-                      className="w-full flex items-center justify-between p-4 text-left"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
-                          {article.icon}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">{article.title}</p>
-                          <p className="text-[11px] text-gray-400">{t('help.stepCount', { count: article.steps.length })}</p>
-                        </div>
-                      </div>
-                      <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {isOpen && (
-                      <div className="px-4 pb-4 border-t border-gray-100">
-                        <div className="mt-3 mb-4 p-3 rounded-lg bg-violet-50 border border-violet-100">
-                          <div className="flex items-start gap-2">
-                            <Lightbulb className="h-3.5 w-3.5 text-violet-500 mt-0.5 shrink-0" />
-                            <div>
-                              <p className="text-[10px] font-bold text-violet-700 uppercase tracking-wide mb-0.5">{t('help.purposeLabel')}</p>
-                              <p className="text-xs text-violet-800 leading-relaxed">{article.purpose}</p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="relative pl-6 space-y-4">
-                          <div className="absolute left-[9px] top-0 bottom-0 w-px bg-violet-200" />
-                          {article.steps.map((step, si) => (
-                            <div key={si} className="relative">
-                              <div className="absolute -left-6 top-0.5 h-[18px] w-[18px] rounded-full bg-violet-100 border-2 border-violet-400 flex items-center justify-center">
-                                <span className="text-[9px] font-bold text-violet-600">{si + 1}</span>
-                              </div>
-                              <h4 className="text-sm font-semibold text-gray-800 mb-0.5">{step.title}</h4>
-                              <p className="text-xs text-gray-500 leading-relaxed">{step.description}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+        {/* Loading */}
+        {dbLoading && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
           </div>
-        ) : (
+        )}
+
+        {!dbLoading && (
           <>
-            {/* Categories grid */}
-            <h2 className="text-base font-bold text-gray-900 mb-4">{t('help.categoriesLabel')}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
-              {filteredCategories.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setActiveCategory(cat.id); setExpandedArticle(null); }}
-                  className="group bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md hover:border-violet-300 transition-all duration-200"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="h-10 w-10 rounded-xl bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center text-violet-500 transition-colors">
-                      {cat.icon}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      {cat.screenshot && <Image className="h-3 w-3 text-gray-300" />}
-                      <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-violet-400 transition-colors" />
-                    </div>
-                  </div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-1">{cat.label}</h3>
-                  <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{cat.description}</p>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[10px] text-violet-500 font-semibold">
-                      {t('help.tutorialCount', { count: cat.articles.length })}
-                    </span>
-                    {cat.screenshot && (
-                      <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
-                        <Image className="h-2.5 w-2.5" /> {t('help.withImage')}
-                      </span>
-                    )}
-                  </div>
-                </button>
+            {/* Quick stats */}
+            <div className="grid grid-cols-3 gap-3 mb-8">
+              {[
+                { icon: <BookOpen className="h-4 w-4 text-violet-500" />, label: t('help.tutorials'), value: CATEGORIES.reduce((a, c) => a + c.articles.length, 0).toString() },
+                { icon: <Lightbulb className="h-4 w-4 text-amber-500" />, label: t('help.categoriesLabel'), value: CATEGORIES.length.toString() },
+                { icon: <MessageCircleQuestion className="h-4 w-4 text-emerald-500" />, label: 'FAQs', value: FAQ_ITEMS.length.toString() },
+              ].map((s, i) => (
+                <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                  <div className="flex justify-center mb-1.5">{s.icon}</div>
+                  <p className="text-lg font-bold text-gray-900">{s.value}</p>
+                  <p className="text-[11px] text-gray-500">{s.label}</p>
+                </div>
               ))}
             </div>
 
-            {/* FAQ Section */}
-            <div className="mb-10">
-              <div className="flex items-center gap-2.5 mb-4">
-                <MessageCircleQuestion className="h-5 w-5 text-emerald-500" />
-                <h2 className="text-base font-bold text-gray-900">{t('help.faqTitle')}</h2>
-              </div>
-              <div className="space-y-2">
-                {FAQ_ITEMS.filter(f => !q || f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q)).map((faq, i) => {
-                  const isOpen = expandedFaq === i;
-                  return (
-                    <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                      <button
-                        onClick={() => setExpandedFaq(isOpen ? null : i)}
-                        className="w-full flex items-center justify-between p-4 text-left"
-                      >
-                        <p className="text-sm font-medium text-gray-900 pr-4">{faq.q}</p>
-                        <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                      </button>
-                      {isOpen && (
-                        <div className="px-4 pb-4 border-t border-gray-100 pt-3">
-                          <p className="text-xs text-gray-600 leading-relaxed">{faq.a}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            {/* Category detail view */}
+            {selectedCat ? (
+              <div>
+                <button
+                  onClick={() => { setActiveCategory(null); setExpandedArticle(null); }}
+                  className="flex items-center gap-1.5 text-sm text-violet-600 hover:text-violet-700 font-medium mb-4 transition-colors"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  {t('help.backToCategories')}
+                </button>
 
-            {/* Quick tip */}
-            <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-violet-200 p-5 sm:p-6 mb-6">
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                  <Lightbulb className="h-4 w-4 text-violet-600" />
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600">
+                    {selectedCat.icon}
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-900">{selectedCat.label}</h2>
+                    <p className="text-xs text-gray-500">{selectedCat.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-violet-900 mb-1">{t('help.quickTipTitle')}</h3>
-                  <p className="text-xs text-violet-700 leading-relaxed">
-                    {t('help.quickTipText', { icon: '?' })}
-                  </p>
+
+                <div className="space-y-3 mt-4">
+                  {selectedCat.articles.map((article, ai) => {
+                    const key = `${selectedCat.id}-${ai}`;
+                    const isOpen = expandedArticle === key;
+                    return (
+                      <div key={key} className="bg-white rounded-xl border border-gray-200 overflow-hidden transition-shadow hover:shadow-sm">
+                        <button
+                          onClick={() => setExpandedArticle(isOpen ? null : key)}
+                          className="w-full flex items-center justify-between p-4 text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                              {article.icon}
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">{article.title}</p>
+                              <p className="text-[11px] text-gray-400">{t('help.stepCount', { count: article.steps.length })}</p>
+                            </div>
+                          </div>
+                          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isOpen && (
+                          <div className="px-4 pb-4 border-t border-gray-100">
+                            <div className="mt-3 mb-4 p-3 rounded-lg bg-violet-50 border border-violet-100">
+                              <div className="flex items-start gap-2">
+                                <Lightbulb className="h-3.5 w-3.5 text-violet-500 mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-[10px] font-bold text-violet-700 uppercase tracking-wide mb-0.5">{t('help.purposeLabel')}</p>
+                                  <p className="text-xs text-violet-800 leading-relaxed">{article.purpose}</p>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="relative pl-6 space-y-4">
+                              <div className="absolute left-[9px] top-0 bottom-0 w-px bg-violet-200" />
+                              {article.steps.map((step, si) => (
+                                <div key={si} className="relative">
+                                  <div className="absolute -left-6 top-0.5 h-[18px] w-[18px] rounded-full bg-violet-100 border-2 border-violet-400 flex items-center justify-center">
+                                    <span className="text-[9px] font-bold text-violet-600">{si + 1}</span>
+                                  </div>
+                                  <h4 className="text-sm font-semibold text-gray-800 mb-0.5">{step.title}</h4>
+                                  <p className="text-xs text-gray-500 leading-relaxed">{step.description}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Categories grid */}
+                <h2 className="text-base font-bold text-gray-900 mb-4">{t('help.categoriesLabel')}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-10">
+                  {filteredCategories.map(cat => (
+                    <button
+                      key={cat.id}
+                      onClick={() => { setActiveCategory(cat.id); setExpandedArticle(null); }}
+                      className="group bg-white rounded-xl border border-gray-200 p-4 text-left hover:shadow-md hover:border-violet-300 transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="h-10 w-10 rounded-xl bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center text-violet-500 transition-colors">
+                          {cat.icon}
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-violet-400 transition-colors" />
+                      </div>
+                      <h3 className="text-sm font-bold text-gray-900 mb-1">{cat.label}</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed line-clamp-2">{cat.description}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[10px] text-violet-500 font-semibold">
+                          {t('help.tutorialCount', { count: cat.articles.length })}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* FAQ Section */}
+                <div className="mb-10">
+                  <div className="flex items-center gap-2.5 mb-4">
+                    <MessageCircleQuestion className="h-5 w-5 text-emerald-500" />
+                    <h2 className="text-base font-bold text-gray-900">{t('help.faqTitle')}</h2>
+                  </div>
+                  <div className="space-y-2">
+                    {FAQ_ITEMS.filter(f => !q || f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q)).map((faq, i) => {
+                      const isOpen = expandedFaq === i;
+                      return (
+                        <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                          <button
+                            onClick={() => setExpandedFaq(isOpen ? null : i)}
+                            className="w-full flex items-center justify-between p-4 text-left"
+                          >
+                            <p className="text-sm font-medium text-gray-900 pr-4">{faq.q}</p>
+                            <ChevronDown className={`h-4 w-4 text-gray-400 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                          </button>
+                          {isOpen && (
+                            <div className="px-4 pb-4 border-t border-gray-100 pt-3">
+                              <p className="text-xs text-gray-600 leading-relaxed">{faq.a}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Quick tip */}
+                <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-2xl border border-violet-200 p-5 sm:p-6 mb-6">
+                  <div className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                      <Lightbulb className="h-4 w-4 text-violet-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-violet-900 mb-1">{t('help.quickTipTitle')}</h3>
+                      <p className="text-xs text-violet-700 leading-relaxed">
+                        {t('help.quickTipText', { icon: '?' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </main>

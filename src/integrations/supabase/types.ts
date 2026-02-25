@@ -218,6 +218,148 @@ export type Database = {
         }
         Relationships: []
       }
+      help_articles: {
+        Row: {
+          category_id: string
+          created_at: string
+          enabled: boolean
+          icon_name: string
+          id: string
+          purpose: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          enabled?: boolean
+          icon_name?: string
+          id?: string
+          purpose?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          enabled?: boolean
+          icon_name?: string
+          id?: string
+          purpose?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_articles_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "help_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      help_categories: {
+        Row: {
+          created_at: string
+          description: string
+          enabled: boolean
+          icon_name: string
+          id: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          icon_name?: string
+          id?: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          enabled?: boolean
+          icon_name?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          enabled: boolean
+          id: string
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      help_steps: {
+        Row: {
+          article_id: string
+          created_at: string
+          description: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          description?: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_steps_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "help_articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_config: {
         Row: {
           config_key: string
