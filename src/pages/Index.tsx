@@ -120,6 +120,7 @@ import SilentModeBanner from "@/components/SilentModeBanner";
 import { useSilentModeDetector } from "@/hooks/useSilentModeDetector";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
+import LoopImportBpmDialog from "@/components/LoopImportBpmDialog";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
@@ -228,6 +229,7 @@ const Index = () => {
   });
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
   const loopPadIds = useMemo(() => new Set(defaultPads.filter(p => p.isLoop).map(p => p.id)), []);
+  const [pendingLoopImport, setPendingLoopImport] = useState<{ padId: string; file: File } | null>(null);
   const midiNoteCallbacksRef = useRef<import('@/hooks/useMidi').MidiNoteCallbacks>({
     isLoopPad: (padId: string) => loopPadIds.has(padId),
   });
@@ -652,6 +654,18 @@ const Index = () => {
   // Custom sound import
   const handleImportSound = useCallback(
     async (padId: string, file: File) => {
+      // If importing into a loop pad, show BPM dialog first
+      if (loopPadIds.has(padId)) {
+        setPendingLoopImport({ padId, file });
+        return;
+      }
+      await executeImportSound(padId, file);
+    },
+    [loopPadIds],
+  );
+
+  const executeImportSound = useCallback(
+    async (padId: string, file: File) => {
       try {
         const arrayBuffer = await file.arrayBuffer();
         await loadCustomBuffer(padId, arrayBuffer);
@@ -689,6 +703,15 @@ const Index = () => {
     },
     [customSounds],
   );
+
+  const handleLoopImportConfirm = useCallback((newBpm: number) => {
+    if (!pendingLoopImport) return;
+    // Set metronome BPM before importing
+    setBpm(newBpm);
+    setLoopBpm(newBpm);
+    executeImportSound(pendingLoopImport.padId, pendingLoopImport.file);
+    setPendingLoopImport(null);
+  }, [pendingLoopImport, executeImportSound]);
 
   const handleRemoveCustomSound = useCallback(
     async (padId: string) => {
@@ -2538,7 +2561,15 @@ const Index = () => {
         }}
       />
 
-      {/* Store loading overlay — full screen, outside all containers */}
+      {/* Loop import BPM dialog */}
+      <LoopImportBpmDialog
+        open={!!pendingLoopImport}
+        fileName={pendingLoopImport?.file.name || ''}
+        currentBpm={bpm}
+        onConfirm={handleLoopImportConfirm}
+        onCancel={() => setPendingLoopImport(null)}
+      />
+
       {storeLoading && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-white">
           <div className="flex flex-col items-center gap-4">
