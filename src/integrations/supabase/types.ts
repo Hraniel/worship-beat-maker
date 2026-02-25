@@ -630,6 +630,8 @@ export type Database = {
       store_packs: {
         Row: {
           banner_url: string | null
+          card_subtitle: string | null
+          card_title: string | null
           category: string
           color: string
           created_at: string
@@ -646,6 +648,8 @@ export type Database = {
         }
         Insert: {
           banner_url?: string | null
+          card_subtitle?: string | null
+          card_title?: string | null
           category: string
           color?: string
           created_at?: string
@@ -662,6 +666,8 @@ export type Database = {
         }
         Update: {
           banner_url?: string | null
+          card_subtitle?: string | null
+          card_title?: string | null
           category?: string
           color?: string
           created_at?: string

@@ -28,6 +28,8 @@ export interface StorePackData {
   /** true = já pagou mas removeu da biblioteca */
   removedFromLibrary: boolean;
   banner_url: string | null;
+  card_title: string | null;
+  card_subtitle: string | null;
 }
 
 export function useStorePacks() {
@@ -102,6 +104,8 @@ export function useStorePacks() {
         purchased: purchasedIds.has(p.id),
         removedFromLibrary: removedIds.has(p.id),
         banner_url: (p as any).banner_url ?? null,
+        card_title: (p as any).card_title ?? null,
+        card_subtitle: (p as any).card_subtitle ?? null,
       }));
 
       setPacks(result);

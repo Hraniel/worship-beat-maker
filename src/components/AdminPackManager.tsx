@@ -114,7 +114,7 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
 
   // Pack edit form
   const [packEdit, setPackEdit] = useState<Record<string, {
-    isAvailable: boolean; priceBrl: string; tag: string; name: string; description: string; publishAt: string;
+    isAvailable: boolean; priceBrl: string; tag: string; name: string; description: string; publishAt: string; cardTitle: string; cardSubtitle: string;
   }>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -509,6 +509,12 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         }
       }
 
+      // Save card_title / card_subtitle directly
+      await supabase.from('store_packs').update({
+        card_title: edit.cardTitle.trim() || null,
+        card_subtitle: edit.cardSubtitle.trim() || null,
+      } as any).eq('id', packId);
+
       toast.success('Pack atualizado!');
       onRefresh();
     } catch (e: any) {
@@ -577,6 +583,8 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
         name: pack.name,
         description: pack.description,
         publishAt: (pack as any).publish_at ? new Date((pack as any).publish_at).toISOString().slice(0, 16) : '',
+        cardTitle: pack.card_title || '',
+        cardSubtitle: pack.card_subtitle || '',
       }
     }));
     setEditingPack(pack.id);
@@ -999,6 +1007,21 @@ const AdminPackManager: React.FC<AdminPackManagerProps> = ({ packs, onRefresh })
                           placeholder="Descrição"
                           value={packEdit[pack.id].description}
                           onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], description: e.target.value } }))}
+                        />
+                      </div>
+                      {/* Card title/subtitle for store display */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                          placeholder="Título do card (ou nome)"
+                          value={packEdit[pack.id].cardTitle}
+                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], cardTitle: e.target.value } }))}
+                        />
+                        <input
+                          className="h-8 px-2.5 text-xs rounded-lg bg-muted border border-border focus:outline-none"
+                          placeholder="Subtítulo do card"
+                          value={packEdit[pack.id].cardSubtitle}
+                          onChange={e => setPackEdit(p => ({ ...p, [pack.id]: { ...p[pack.id], cardSubtitle: e.target.value } }))}
                         />
                       </div>
                       <div className="space-y-1.5">
