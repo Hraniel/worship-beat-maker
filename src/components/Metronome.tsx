@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Play, Pause, Minus, Plus, Lock } from 'lucide-react';
+import { Play, Pause, Minus, Plus, Lock, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { enableMetronome, disableMetronome, onMetronomeBeat, setSyncEnabled, isSyncEnabled } from '@/lib/loop-engine';
@@ -52,7 +52,6 @@ const Metronome: React.FC<MetronomeProps> = ({
   const applyBpm = useCallback((val: number) => {
     const clamped = Math.max(40, Math.min(240, val));
     if (isPlaying) {
-      // Queue to apply on beat 0
       pendingBpmRef.current = clamped;
       setLocalBpm(clamped);
     } else {
@@ -98,7 +97,6 @@ const Metronome: React.FC<MetronomeProps> = ({
       setCurrentBeat(beat);
       setBeatTick(t => t + 1);
       onBeat?.(beat);
-      // Apply pending BPM on beat 0
       if (beat === 0 && pendingBpmRef.current !== null) {
         const pending = pendingBpmRef.current;
         pendingBpmRef.current = null;
@@ -115,7 +113,6 @@ const Metronome: React.FC<MetronomeProps> = ({
     } else {
       disableMetronome();
       setCurrentBeat(0);
-      // Apply any pending BPM immediately when stopped
       if (pendingBpmRef.current !== null) {
         onBpmChange(pendingBpmRef.current);
         pendingBpmRef.current = null;
@@ -128,45 +125,43 @@ const Metronome: React.FC<MetronomeProps> = ({
 
   return (
     <div className="flex flex-col gap-2 px-3 py-2">
-      {/* BPM display */}
-      <div className="flex items-center justify-center gap-2">
-        {editingBpm ? (
-          <input
-            ref={inputRef}
-            type="number"
-            value={editBpmValue}
-            onChange={(e) => setEditBpmValue(e.target.value)}
-            onBlur={commitBpmEdit}
-            onKeyDown={handleBpmKeyDown}
-            className="w-16 h-8 text-lg font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
-            min={40}
-            max={240}
-          />
-        ) : (
-          <button
-            className="text-2xl font-bold text-foreground tabular-nums hover:bg-muted rounded px-2 py-0.5 transition-colors"
-            onClick={handleBpmClick}
-            title={t('metronome.editBpmTitle')}
-          >
-            {localBpm}
-          </button>
-        )}
-        <span className="text-xs text-muted-foreground font-medium">BPM</span>
-      </div>
-
-      {/* BPM + slider row */}
+      {/* BPM slider row — volume-style */}
       <div className="flex items-center gap-1.5">
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleBpmButton(Math.max(40, localBpm - 1))}>
           <Minus className="h-3 w-3" />
         </Button>
-        <Slider
-          value={[localBpm]}
-          onValueChange={([v]) => handleBpmSlider(v)}
-          min={40}
-          max={240}
-          step={1}
-          className="flex-1"
-        />
+        <div className="flex-1 flex items-center gap-2">
+          <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Slider
+            value={[localBpm]}
+            onValueChange={([v]) => handleBpmSlider(v)}
+            min={40}
+            max={240}
+            step={1}
+            className="flex-1"
+          />
+          {editingBpm ? (
+            <input
+              ref={inputRef}
+              type="number"
+              value={editBpmValue}
+              onChange={(e) => setEditBpmValue(e.target.value)}
+              onBlur={commitBpmEdit}
+              onKeyDown={handleBpmKeyDown}
+              className="w-12 h-6 text-xs font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
+              min={40}
+              max={240}
+            />
+          ) : (
+            <button
+              className="text-xs font-bold text-muted-foreground tabular-nums hover:bg-muted rounded px-1.5 py-0.5 transition-colors shrink-0 min-w-[36px] text-center"
+              onClick={handleBpmClick}
+              title={t('metronome.editBpmTitle')}
+            >
+              {localBpm}
+            </button>
+          )}
+        </div>
         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => handleBpmButton(Math.min(240, localBpm + 1))}>
           <Plus className="h-3 w-3" />
         </Button>
