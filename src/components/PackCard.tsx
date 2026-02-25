@@ -101,7 +101,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
   return (
     <div
-      className="group relative aspect-square rounded-2xl border border-gray-200/80 hover:border-gray-300 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
+      className="group relative aspect-[4/5] rounded-2xl border border-gray-200/80 hover:border-gray-300 hover:shadow-lg transition-all duration-200 overflow-hidden cursor-pointer"
       onClick={handleCardClick}
     >
       {/* Background: banner image or gradient color */}
@@ -152,7 +152,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
       {/* Bottom content */}
       <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-        <h3 className="font-bold text-sm text-white leading-snug truncate">{cardTitle}</h3>
+        <h3 className="font-extrabold text-base text-white leading-snug truncate">{cardTitle}</h3>
         {cardSubtitle && (
           <p className="text-[11px] text-white/70 mt-0.5 truncate">{cardSubtitle}</p>
         )}
