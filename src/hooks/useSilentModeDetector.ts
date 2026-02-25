@@ -35,6 +35,10 @@ export function useSilentModeDetector() {
 
     try {
       const ctx = getAudioContext();
+      // Resume context first — on iOS, first user interaction may leave it suspended
+      if (ctx.state === "suspended") {
+        await ctx.resume();
+      }
       if (ctx.state !== "running") {
         checkingRef.current = false;
         return;
@@ -68,8 +72,8 @@ export function useSilentModeDetector() {
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.2);
 
-      // Wait for the oscillator to be playing (50ms into 200ms tone)
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      // Wait for the oscillator to be playing (100ms into 200ms tone)
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Read frequency data as floats (more precise than byte data)
       analyser.getFloatFrequencyData(dataArray);
