@@ -713,7 +713,7 @@ const Dashboard = () => {
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
               </div>
-              <div className="grid grid-cols-3 gap-x-3 gap-y-5 justify-items-center">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-4 justify-items-center">
                 {filteredPacks.map((pack, i) => (
                   <PackCard key={pack.id} pack={pack} onPurchased={refetch} index={i} />
                 ))}
