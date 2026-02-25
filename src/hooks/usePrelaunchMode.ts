@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface PrelaunchState {
   enabled: boolean;
   launchDate: string;
+  customMessage: string;
   loading: boolean;
 }
 
@@ -11,7 +12,7 @@ let cachedState: PrelaunchState | null = null;
 
 export function usePrelaunchMode() {
   const [state, setState] = useState<PrelaunchState>(
-    cachedState ?? { enabled: false, launchDate: '', loading: true }
+    cachedState ?? { enabled: false, launchDate: '', customMessage: '', loading: true }
   );
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export function usePrelaunchMode() {
       const { data } = await supabase
         .from('landing_config')
         .select('config_key, config_value')
-        .in('config_key', ['prelaunch_enabled', 'prelaunch_date']);
+        .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message']);
 
       if (!mounted) return;
 
@@ -31,6 +32,7 @@ export function usePrelaunchMode() {
       const newState: PrelaunchState = {
         enabled: map.prelaunch_enabled === 'true',
         launchDate: map.prelaunch_date || '',
+        customMessage: map.prelaunch_custom_message || '',
         loading: false,
       };
 

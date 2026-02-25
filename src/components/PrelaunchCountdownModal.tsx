@@ -12,6 +12,7 @@ interface PrelaunchCountdownModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   launchDate: string;
+  customMessage?: string;
 }
 
 const useCountdown = (targetDate: string) => {
@@ -44,8 +45,9 @@ const CountdownUnit = ({ value, label }: { value: number; label: string }) => (
   </div>
 );
 
-const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open, onOpenChange, launchDate }) => {
-  const countdown = useCountdown(launchDate);
+const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open, onOpenChange, launchDate, customMessage }) => {
+  const hasDate = !!launchDate;
+  const countdown = useCountdown(launchDate || new Date().toISOString());
   const [step, setStep] = useState<'countdown' | 'form' | 'success'>('countdown');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', full_name: '', phone: '' });
@@ -109,15 +111,21 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
             <div className="text-center space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-foreground">Estamos quase lá!</h2>
-                <p className="text-sm text-muted-foreground mt-1">O Glory Pads está em fase de pré-lançamento. Cadastre-se para ser avisado!</p>
+                {customMessage ? (
+                  <p className="text-sm text-muted-foreground mt-1">{customMessage}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">O Glory Pads está em fase de pré-lançamento. Cadastre-se para ser avisado!</p>
+                )}
               </div>
 
-              <div className="flex justify-center gap-3">
-                <CountdownUnit value={countdown.days} label="Dias" />
-                <CountdownUnit value={countdown.hours} label="Horas" />
-                <CountdownUnit value={countdown.minutes} label="Min" />
-                <CountdownUnit value={countdown.seconds} label="Seg" />
-              </div>
+              {hasDate && (
+                <div className="flex justify-center gap-3">
+                  <CountdownUnit value={countdown.days} label="Dias" />
+                  <CountdownUnit value={countdown.hours} label="Horas" />
+                  <CountdownUnit value={countdown.minutes} label="Min" />
+                  <CountdownUnit value={countdown.seconds} label="Seg" />
+                </div>
+              )}
 
               <Button
                 size="lg"
@@ -184,9 +192,9 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
 
           {step === 'success' && (
             <div className="text-center space-y-4">
-              <h2 className="text-xl font-bold text-foreground">Você está na lista! 🎉</h2>
+              <h2 className="text-xl font-bold text-foreground">Você está na lista!</h2>
               <p className="text-sm text-muted-foreground">
-                Quando o Glory Pads for lançado, você receberá um email avisando. Fique ligado!
+                Enviamos um e-mail de confirmação para você. Quando o Glory Pads for lançado, você será notificado. Fique ligado!
               </p>
               <Button variant="outline" className="rounded-xl" onClick={() => onOpenChange(false)}>
                 Entendido!
