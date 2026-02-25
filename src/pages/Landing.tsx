@@ -1298,7 +1298,7 @@ const FinalCTA = ({
             <video
               src={config.cta_card_video_url}
               autoPlay muted loop playsInline
-              className="absolute inset-0 w-full h-full pointer-events-none rounded-3xl"
+              className="absolute inset-0 w-full h-full pointer-events-none rounded-3xl z-[1]"
               style={{
                 objectFit: (config.cta_card_video_fit as any) || "cover",
                 opacity: parseFloat(config.cta_card_video_opacity || "0.15"),
