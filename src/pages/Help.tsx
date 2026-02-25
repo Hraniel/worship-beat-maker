@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 
 /* ─── Types ─── */
-interface TutorialStep { title: string; description: string; }
+interface TutorialStep { title: string; description: string; image_url?: string | null; video_url?: string | null; }
 interface TutorialArticle { title: string; icon: React.ReactNode; purpose: string; steps: TutorialStep[]; }
 interface TutorialCategory { id: string; label: string; icon: React.ReactNode; description: string; screenshot?: string; articles: TutorialArticle[]; }
 
@@ -219,7 +219,12 @@ function dbToViewCategories(dbCats: DBCategory[]): TutorialCategory[] {
       title: art.title,
       icon: getIcon(art.icon_name, true),
       purpose: art.purpose,
-      steps: art.steps.map(s => ({ title: s.title, description: s.description })),
+      steps: art.steps.map(s => ({
+        title: s.title,
+        description: s.description,
+        image_url: (s as any).image_url || null,
+        video_url: (s as any).video_url || null,
+      })),
     })),
   }));
 }
@@ -395,15 +400,35 @@ const Help = () => {
 
                             <div className="relative pl-6 space-y-4">
                               <div className="absolute left-[9px] top-0 bottom-0 w-px bg-violet-200" />
-                              {article.steps.map((step, si) => (
+                              {article.steps.map((step, si) => {
+                                const ytId = step.video_url ? (() => {
+                                  const m = step.video_url!.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+                                  return m ? m[1] : null;
+                                })() : null;
+                                return (
                                 <div key={si} className="relative">
                                   <div className="absolute -left-6 top-0.5 h-[18px] w-[18px] rounded-full bg-violet-100 border-2 border-violet-400 flex items-center justify-center">
                                     <span className="text-[9px] font-bold text-violet-600">{si + 1}</span>
                                   </div>
                                   <h4 className="text-sm font-semibold text-gray-800 mb-0.5">{step.title}</h4>
                                   <p className="text-xs text-gray-500 leading-relaxed">{step.description}</p>
+                                  {step.image_url && (
+                                    <img src={step.image_url} alt={step.title} className="mt-2 rounded-lg border border-gray-200 max-w-full" loading="lazy" />
+                                  )}
+                                  {ytId && (
+                                    <div className="mt-2 aspect-video w-full max-w-md rounded-lg overflow-hidden border border-gray-200">
+                                      <iframe
+                                        src={`https://www.youtube.com/embed/${ytId}`}
+                                        title={step.title}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        className="w-full h-full"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         )}
