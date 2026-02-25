@@ -211,21 +211,6 @@ const PackDetail: React.FC = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6 sm:py-10">
-        {/* Banner */}
-        {bannerUrl ? (
-          <div className="rounded-2xl overflow-hidden mb-6 aspect-video w-full shadow-md">
-            <img src={bannerUrl} alt={`${pack.name} banner`} className="w-full h-full object-cover" />
-          </div>
-        ) : (
-          <div className={`rounded-2xl mb-6 h-40 sm:h-56 w-full ${pack.color} flex items-center justify-center shadow-md`}>
-            <div className="text-white/80">
-              {imageIconUrl
-                ? <img src={imageIconUrl} alt={pack.name} className="h-16 w-16 rounded-xl object-cover" />
-                : <div className="h-16 w-16 flex items-center justify-center text-white">{lucideIcon}</div>
-              }
-            </div>
-          </div>
-        )}
 
         {/* Pack info */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
@@ -317,41 +302,36 @@ const PackDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Sounds list */}
+        {/* Sounds grid */}
         {pack.sounds.length > 0 && (
           <div>
             <h2 className="text-base font-semibold text-gray-900 mb-3">Sons incluídos</h2>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
               {pack.sounds.map((sound, idx) => (
                 <div
                   key={sound.id}
-                  className={`flex items-center gap-3 px-4 py-3 ${idx < pack.sounds.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50 transition-colors`}
+                  className="aspect-square bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-1.5 p-2 hover:bg-gray-50 hover:border-gray-300 transition-colors relative group"
                 >
-                  <span className="text-xs text-gray-300 w-5 shrink-0 text-right font-mono">{idx + 1}</span>
-
-                  {/* Play button */}
+                  {/* Play button overlay */}
                   <button
                     onClick={() => handlePreview(sound)}
                     disabled={!sound.preview_path}
-                    className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center transition-colors ${
+                    className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
                       sound.preview_path
-                        ? 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
+                        ? 'hover:bg-gray-100 text-gray-400 hover:text-gray-900'
                         : 'text-gray-200 cursor-not-allowed'
                     }`}
                     title={sound.preview_path ? 'Ouvir preview' : 'Sem preview'}
                   >
                     {playingId === sound.id
-                      ? <Square className="h-3.5 w-3.5 text-violet-600" />
-                      : <Play className="h-3.5 w-3.5" />}
+                      ? <Square className="h-4 w-4 text-violet-600" />
+                      : <Play className="h-4 w-4" />}
                   </button>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-800 truncate">{sound.name}</p>
-                    <p className="text-[11px] text-gray-400">{sound.short_name}</p>
-                  </div>
+                  <p className="text-[11px] text-gray-700 font-medium text-center leading-tight truncate w-full px-1">{sound.short_name}</p>
 
                   {sound.duration_ms > 0 && (
-                    <span className="text-[11px] text-gray-400 font-mono shrink-0">
+                    <span className="text-[9px] text-gray-400 font-mono">
                       {(sound.duration_ms / 1000).toFixed(1)}s
                     </span>
                   )}
