@@ -680,8 +680,8 @@ const Dashboard = () => {
               <>
                 <div className="rounded-2xl bg-gradient-to-br from-gray-50/80 via-white to-violet-50/40 border border-gray-100 p-5">
                   <div className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-5 gap-y-6 justify-items-center" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 150px))' }}>
-                    {filteredPacks.map(pack => (
-                      <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
+                    {filteredPacks.map((pack, i) => (
+                      <PackCard key={pack.id} pack={pack} onPurchased={refetch} index={i} />
                     ))}
                   </div>
                 </div>
@@ -714,8 +714,8 @@ const Dashboard = () => {
                 <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
               </div>
               <div className="grid grid-cols-3 gap-x-3 gap-y-5 justify-items-center">
-                {filteredPacks.map(pack => (
-                  <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
+                {filteredPacks.map((pack, i) => (
+                  <PackCard key={pack.id} pack={pack} onPurchased={refetch} index={i} />
                 ))}
               </div>
             </>

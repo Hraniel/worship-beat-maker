@@ -47,9 +47,10 @@ const LUCIDE_ICON_MAP: Record<string, React.ReactNode> = {
 interface PackCardProps {
   pack: StorePackData;
   onPurchased: () => void;
+  index?: number;
 }
 
-const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
+const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased, index = 0 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [purchasing, setPurchasing] = useState(false);
@@ -101,7 +102,8 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
   return (
     <div
-      className="group relative aspect-square w-full rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer animate-fade-in"
+      className="group relative aspect-square w-full rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer animate-fade-in opacity-0"
+      style={{ animationDelay: `${index * 80}ms`, animationFillMode: 'forwards' }}
       onClick={handleCardClick}
     >
       {/* Background: banner image or gradient color */}
