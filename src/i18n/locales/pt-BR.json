@@ -836,5 +836,12 @@
     "testTitle": "Glory Pads 🎵",
     "testBody": "Notificações funcionando perfeitamente!",
     "sendTest": "🔔 Enviar notificação de teste"
+  },
+  "loopImport": {
+    "title": "Importar Loop",
+    "description": "Você está importando \"{{name}}\" em um pad de loop. Informe o BPM do loop para que o metrônomo seja configurado automaticamente.",
+    "bpmLabel": "BPM do loop",
+    "warning": "Para uma sincronização perfeita, o loop importado deve ter exatamente o mesmo BPM configurado no metrônomo. Loops com BPM diferente podem soar fora de tempo.",
+    "confirm": "Configurar e importar"
   }
 }

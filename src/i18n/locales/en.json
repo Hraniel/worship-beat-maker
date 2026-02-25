@@ -823,5 +823,12 @@
     "configApplied": "Configuration applied to pads!",
     "applyConfig": "Apply configuration",
     "lockedMaster": "🔒 Spotify available on Master plan"
+  },
+  "loopImport": {
+    "title": "Import Loop",
+    "description": "You are importing \"{{name}}\" into a loop pad. Enter the loop's BPM so the metronome is configured automatically.",
+    "bpmLabel": "Loop BPM",
+    "warning": "For perfect sync, the imported loop must have exactly the same BPM as the metronome. Loops with a different BPM may sound out of time.",
+    "confirm": "Set BPM & import"
   }
 }
