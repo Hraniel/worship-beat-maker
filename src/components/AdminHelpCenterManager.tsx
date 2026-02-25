@@ -28,6 +28,7 @@ interface HelpArticle {
   purpose: string;
   sort_order: number;
   enabled: boolean;
+  video_url: string | null;
 }
 
 interface HelpCategory {
@@ -411,7 +412,8 @@ const AdminHelpCenterManager: React.FC = () => {
     setSaving(true);
     const { error } = await supabase.from('help_articles').update({
       title: art.title, icon_name: art.icon_name, purpose: art.purpose,
-      sort_order: art.sort_order, enabled: art.enabled, updated_at: new Date().toISOString(),
+      sort_order: art.sort_order, enabled: art.enabled, video_url: art.video_url,
+      updated_at: new Date().toISOString(),
     } as any).eq('id', art.id);
     setSaving(false);
     if (error) { toast.error('Erro ao salvar'); return; }
@@ -615,6 +617,21 @@ const AdminHelpCenterManager: React.FC = () => {
                       <textarea value={art.purpose} onChange={e => setArtField(art.id, 'purpose', e.target.value)}
                         rows={2} className="w-full text-xs bg-transparent border border-border rounded-md p-2 text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-ring"
                         placeholder="Propósito / Para que serve" />
+                      {/* YouTube video for article */}
+                      <div className="flex items-center gap-1.5">
+                        <Youtube className="h-3.5 w-3.5 text-red-500 shrink-0" />
+                        <input value={art.video_url || ''} onChange={e => setArtField(art.id, 'video_url', e.target.value || null)}
+                          placeholder="https://youtube.com/watch?v=... (vídeo do tópico)"
+                          className="flex-1 h-7 px-2 text-[11px] bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-1 focus:ring-ring" />
+                      </div>
+                      {art.video_url && extractYouTubeId(art.video_url) && (
+                        <div className="relative w-40 aspect-video rounded-md overflow-hidden border border-border">
+                          <img src={`https://img.youtube.com/vi/${extractYouTubeId(art.video_url)}/mqdefault.jpg`} alt="YouTube" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <Youtube className="h-5 w-5 text-red-500" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => setArtField(art.id, 'enabled', !art.enabled)}
