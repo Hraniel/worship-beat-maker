@@ -26,20 +26,8 @@ const Auth = () => {
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
 
-  // If prelaunch is active, show countdown instead of auth
-  if (!prelaunch.loading && prelaunch.enabled && (prelaunch.launchDate || prelaunch.customMessage)) {
-    return (
-      <>
-        <Navigate to="/" replace />
-        <PrelaunchCountdownModal
-          open={true}
-          onOpenChange={() => {}}
-          launchDate={prelaunch.launchDate}
-          customMessage={prelaunch.customMessage}
-        />
-      </>
-    );
-  }
+  // During prelaunch, force login-only (no signup) but allow access to login
+  const isPrelaunchActive = !prelaunch.loading && prelaunch.enabled;
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);
@@ -101,7 +89,7 @@ const Auth = () => {
 
     setSubmitting(true);
     try {
-      if (isLogin) {
+      if (isLogin || isPrelaunchActive) {
         const { error } = await signIn(email, password);
         if (error) {
           toast.error(error.message === 'Invalid login credentials'
@@ -134,6 +122,9 @@ const Auth = () => {
           <p className="text-sm text-muted-foreground">
             {isForgot ? t('auth.resetSubtitle') : isLogin ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
           </p>
+          {isPrelaunchActive && (
+            <p className="text-xs text-amber-500 mt-1">Acesso restrito — apenas usuários autorizados podem entrar.</p>
+          )}
           <LanguageSelector compact className="justify-center mt-2" />
         </div>
 
@@ -232,16 +223,18 @@ const Auth = () => {
               </Button>
             </div>
 
-            <p className="text-center text-sm text-muted-foreground">
-              {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-primary hover:underline font-medium"
-              >
-                {isLogin ? t('auth.signupAction') : t('auth.loginAction')}
-              </button>
-            </p>
+            {!isPrelaunchActive && (
+              <p className="text-center text-sm text-muted-foreground">
+                {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-primary hover:underline font-medium"
+                >
+                  {isLogin ? t('auth.signupAction') : t('auth.loginAction')}
+                </button>
+              </p>
+            )}
           </>
         )}
       </div>
