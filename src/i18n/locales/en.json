@@ -597,7 +597,10 @@
     "add": "Add",
     "addExisting": "Add existing",
     "createSong": "Create song",
-    "songAlreadyInEvent": "Song is already in the event"
+    "songAlreadyInEvent": "Song is already in the event",
+    "activateEvent": "Open event",
+    "activateEventConfirm": "Open the event \"{{name}}\" and load its songs?",
+    "openEvent": "Open"
   },
   "packCard": {
     "sounds": "sounds",

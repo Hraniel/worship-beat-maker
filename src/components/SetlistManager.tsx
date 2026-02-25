@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ListMusic, Plus, Trash2, GripVertical, Share2, Link2, Eye, EyeOff,
-  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, ChevronRight,
+  Loader2, Calendar, ChevronDown, ChevronUp, Edit2, Check, X, Music, Sparkles, ChevronRight, PlayCircle,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -143,6 +147,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
   const [editName, setEditName] = useState(event.name);
   const [editDate, setEditDate] = useState(event.event_date);
   const [toggling, setToggling] = useState(false);
+  const [showActivateConfirm, setShowActivateConfirm] = useState(false);
   const [showAddSong, setShowAddSong] = useState(false);
   const [selectedSongId, setSelectedSongId] = useState('');
   const [showNewSong, setShowNewSong] = useState(false);
@@ -246,7 +251,16 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => { onSelectEvent?.(isSelected ? null : event.id); setExpanded(p => !p); }}>
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => {
+            if (isSelected) {
+              // Deselecting — no confirmation needed
+              onSelectEvent?.(null);
+              setExpanded(p => !p);
+            } else {
+              // Activating — show confirmation popup
+              setShowActivateConfirm(true);
+            }
+          }}>
             <button onClick={(e) => { e.stopPropagation(); setExpanded(p => !p); }} className="p-0.5 text-muted-foreground hover:text-foreground shrink-0">
               {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             </button>
@@ -469,6 +483,29 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
           </div>
         </div>
       )}
+      {/* Activate event confirmation dialog */}
+      <AlertDialog open={showActivateConfirm} onOpenChange={setShowActivateConfirm}>
+        <AlertDialogContent className="max-w-xs rounded-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-base">
+              <PlayCircle className="h-5 w-5 text-primary" />
+              {t('setlist.activateEvent')}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {t('setlist.activateEventConfirm', { name: event.name })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs">{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction className="text-xs" onClick={() => {
+              onSelectEvent?.(event.id);
+              setExpanded(true);
+            }}>
+              {t('setlist.openEvent')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
