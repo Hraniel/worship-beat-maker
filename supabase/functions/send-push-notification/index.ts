@@ -21,20 +21,55 @@ function uint8ArrayToBase64Url(arr: Uint8Array): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// ── Import VAPID keys ──────────────────────────────────────────────────
-async function importVapidKeys(publicKeyB64: string, privateKeyPkcs8B64: string) {
-  const pubBytes = base64UrlToUint8Array(publicKeyB64);
-  const privBytes = base64UrlToUint8Array(privateKeyPkcs8B64);
+// ── Wrap a raw 32-byte EC private key into PKCS8 DER ───────────────────
+function wrapRawKeyInPkcs8(rawKey: Uint8Array): Uint8Array {
+  // PKCS8 header for P-256 EC key (RFC 5958 / RFC 5480)
+  const pkcs8Header = new Uint8Array([
+    0x30, 0x41, // SEQUENCE (65 bytes)
+    0x02, 0x01, 0x00, // INTEGER 0 (version)
+    0x30, 0x13, // SEQUENCE (19 bytes) - AlgorithmIdentifier
+    0x06, 0x07, // OID (7 bytes) - id-ecPublicKey
+    0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
+    0x06, 0x08, // OID (8 bytes) - prime256v1
+    0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07,
+    0x04, 0x27, // OCTET STRING (39 bytes)
+    0x30, 0x25, // SEQUENCE (37 bytes)
+    0x02, 0x01, 0x01, // INTEGER 1 (version)
+    0x04, 0x20, // OCTET STRING (32 bytes) - private key value follows
+  ]);
+  
+  const result = new Uint8Array(pkcs8Header.length + rawKey.length);
+  result.set(pkcs8Header, 0);
+  result.set(rawKey, pkcs8Header.length);
+  return result;
+}
 
-  const privateKey = await crypto.subtle.importKey(
+// ── Import VAPID private key (handles both raw 32-byte and PKCS8) ──────
+async function importVapidPrivateKey(privateKeyB64: string): Promise<CryptoKey> {
+  const keyBytes = base64UrlToUint8Array(privateKeyB64);
+  
+  // Raw EC private keys from web-push are 32 bytes
+  if (keyBytes.length === 32) {
+    console.log('[PUSH] Detected raw 32-byte VAPID private key, wrapping in PKCS8...');
+    const pkcs8 = wrapRawKeyInPkcs8(keyBytes);
+    return crypto.subtle.importKey(
+      'pkcs8',
+      pkcs8,
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      false,
+      ['sign']
+    );
+  }
+  
+  // Try PKCS8 directly (already in proper format)
+  console.log(`[PUSH] VAPID private key is ${keyBytes.length} bytes, importing as PKCS8...`);
+  return crypto.subtle.importKey(
     'pkcs8',
-    privBytes,
+    keyBytes,
     { name: 'ECDSA', namedCurve: 'P-256' },
     false,
     ['sign']
   );
-
-  return { publicKey: pubBytes, privateKey };
 }
 
 // ── Create JWT for VAPID ───────────────────────────────────────────────
@@ -125,7 +160,7 @@ async function encryptPayload(
   // Salt
   const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // HKDF for auth_info -> PRK
+  // HKDF for auth_info -> IKM (RFC 8291 Section 3.3)
   const authInfoStr = 'WebPush: info\0';
   const authInfo = new Uint8Array(authInfoStr.length + userPublicKeyBytes.length + localPublicKeyRaw.length);
   const te = new TextEncoder();
@@ -142,7 +177,7 @@ async function encryptPayload(
     )
   );
 
-  // Derive CEK and nonce
+  // Derive CEK and nonce (RFC 8188)
   const cekInfo = te.encode('Content-Encoding: aes128gcm\0');
   const nonceInfo = te.encode('Content-Encoding: nonce\0');
 
@@ -164,10 +199,10 @@ async function encryptPayload(
     )
   );
 
-  // Pad payload (add delimiter byte 0x02 + no padding)
+  // Pad payload: content + delimiter 0x02 (last record)
   const padded = new Uint8Array(payload.length + 1);
   padded.set(payload);
-  padded[payload.length] = 2; // delimiter
+  padded[payload.length] = 2; // delimiter for last record
 
   // Encrypt with AES-128-GCM
   const contentKey = await crypto.subtle.importKey('raw', cekBits, { name: 'AES-GCM' }, false, ['encrypt']);
@@ -220,7 +255,7 @@ async function sendPushNotification(
       'Content-Length': String(ciphertext.length),
       Authorization: `vapid t=${jwt}, k=${vapidPubB64}`,
       TTL: '86400',
-      Urgency: 'normal',
+      Urgency: 'high',
     },
     body: ciphertext,
   });
@@ -280,15 +315,16 @@ Deno.serve(async (req) => {
     if (action === 'broadcast') {
       if (!roleData) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
 
-      const vapidPrivateKeyPkcs8 = Deno.env.get('VAPID_PRIVATE_KEY');
-      if (!vapidPrivateKeyPkcs8) {
+      const vapidPrivateKeyB64 = Deno.env.get('VAPID_PRIVATE_KEY');
+      if (!vapidPrivateKeyB64) {
         return new Response(JSON.stringify({ error: 'VAPID_PRIVATE_KEY not configured' }), { status: 500, headers: corsHeaders });
       }
 
       const { title, message, target_user_id, url } = body;
       if (!title) return new Response(JSON.stringify({ error: 'Missing title' }), { status: 400, headers: corsHeaders });
 
-      const { publicKey: vapidPubKey, privateKey: vapidPrivKey } = await importVapidKeys(VAPID_PUBLIC_KEY, vapidPrivateKeyPkcs8);
+      const vapidPublicKeyBytes = base64UrlToUint8Array(VAPID_PUBLIC_KEY);
+      const vapidPrivKey = await importVapidPrivateKey(vapidPrivateKeyB64);
 
       // Fetch subscriptions
       let query = supabaseAdmin.from('push_subscriptions').select('*');
@@ -320,10 +356,10 @@ Deno.serve(async (req) => {
             const result = await sendPushNotification(
               { endpoint: sub.endpoint, p256dh: sub.p256dh, auth_key: sub.auth_key },
               payload,
-              vapidPubKey,
+              vapidPublicKeyBytes,
               vapidPrivKey
             );
-            return result;
+            return { ...result, endpoint: sub.endpoint };
           } catch (e: any) {
             return { ok: false, statusCode: 0, error: e?.message, endpoint: sub.endpoint };
           }
@@ -336,7 +372,7 @@ Deno.serve(async (req) => {
           const r = result.value;
           if (r.ok) {
             sent++;
-            console.log(`[PUSH] ✓ Sent to ${endpoint.slice(0, 60)}...`);
+            console.log(`[PUSH] ✓ Sent to ${endpoint.slice(0, 60)}... status=${r.statusCode}`);
           } else {
             failed++;
             console.error(`[PUSH] ✗ Failed ${endpoint.slice(0, 60)}... status=${r.statusCode} error=${r.error || ''}`);
