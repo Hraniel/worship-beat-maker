@@ -32,10 +32,14 @@ export function useMaintenanceMode() {
         event: '*',
         schema: 'public',
         table: 'landing_config',
-        filter: 'config_key=eq.maintenance_enabled',
-      }, () => {
-        cachedMaintenance = null;
-        load();
+      }, (payload: any) => {
+        const row = payload.new;
+        if (row?.config_key === 'maintenance_enabled') {
+          const val = row.config_value === 'true';
+          cachedMaintenance = val;
+          setEnabled(val);
+          setLoading(false);
+        }
       })
       .subscribe();
 
