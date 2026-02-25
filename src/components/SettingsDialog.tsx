@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity, Globe } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity, Globe, Sun, Moon, Palette } from 'lucide-react';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import {
@@ -760,9 +760,86 @@ function MetronomeSettingsPanel() {
   );
 }
 
+// ── Theme Settings ──────────────────────────────────────────────────────────
+
+const THEME_KEY = 'glory-pads-theme';
+
+type AppTheme = 'dark' | 'light';
+
+export function getStoredTheme(): AppTheme {
+  return (localStorage.getItem(THEME_KEY) as AppTheme) || 'dark';
+}
+
+export function applyTheme(theme: AppTheme) {
+  localStorage.setItem(THEME_KEY, theme);
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
+
+function ThemeSettings() {
+  const { t } = useTranslation();
+  const [theme, setTheme] = useState<AppTheme>(getStoredTheme);
+
+  const handleSelect = (t: AppTheme) => {
+    setTheme(t);
+    applyTheme(t);
+  };
+
+  const options: { value: AppTheme; label: string; icon: typeof Sun; desc: string }[] = [
+    { value: 'dark', label: t('settings.themeDark'), icon: Moon, desc: t('settings.themeDarkDesc') },
+    { value: 'light', label: t('settings.themeLight'), icon: Sun, desc: t('settings.themeLightDesc') },
+  ];
+
+  return (
+    <div className="flex flex-col gap-3 w-full">
+      <div className="flex justify-center items-center gap-2">
+        <Palette className="h-5 w-5 text-primary" />
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.theme')}</span>
+      </div>
+
+      <div className="space-y-2">
+        {options.map(opt => {
+          const Icon = opt.icon;
+          const isActive = theme === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => handleSelect(opt.value)}
+              className={`flex items-center gap-4 w-full px-4 py-4 rounded-lg border transition-colors text-left ${
+                isActive
+                  ? 'border-primary/50 bg-primary/10'
+                  : 'border-border bg-card hover:bg-muted/50'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                isActive ? 'bg-primary/20' : 'bg-muted'
+              }`}>
+                <Icon className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-semibold ${isActive ? 'text-foreground' : 'text-foreground'}`}>{opt.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                isActive ? 'border-primary' : 'border-muted-foreground/30'
+              }`}>
+                {isActive && <div className="w-2.5 h-2.5 rounded-full bg-primary" />}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Tab definitions ─────────────────────────────────────────────────────────
 
 const TAB_KEYS = [
+  { value: 'theme', labelKey: 'settings.theme', icon: Palette },
   { value: 'audio', labelKey: 'settings.audio', icon: Headphones },
   { value: 'metronome', labelKey: 'settings.metronome', icon: Activity },
   { value: 'midi', labelKey: 'settings.midi', icon: Piano },
@@ -809,6 +886,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
 
   const renderContent = () => {
     switch (effectiveTab) {
+      case 'theme':
+        return <ThemeSettings />;
       case 'audio':
         return (
           <div className="flex flex-col gap-3 w-full">
