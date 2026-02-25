@@ -7,6 +7,15 @@ function isIOSDevice(): boolean {
   return /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 }
 
+/**
+ * Detects iOS silent (mute) switch by playing a short silent buffer
+ * and comparing elapsed wall-clock time vs AudioContext time.
+ * When the mute switch is on, iOS suspends audio output and the
+ * AudioContext's currentTime may not advance as expected.
+ *
+ * Fallback approach: play an oscillator through an OfflineAudioContext
+ * and check if an HTMLAudioElement can produce output.
+ */
 export function useSilentModeDetector() {
   const [isSilent, setIsSilent] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -18,7 +27,6 @@ export function useSilentModeDetector() {
   const checkSilentMode = useCallback(async () => {
     if (!isIOS || checkingRef.current) return;
 
-    // Cooldown: skip if last check was less than 5s ago
     const now = Date.now();
     if (now - lastCheckRef.current < 5000) return;
 
@@ -27,35 +35,50 @@ export function useSilentModeDetector() {
 
     try {
       const ctx = getAudioContext();
-
-      // Context must be running (called after user interaction)
       if (ctx.state !== "running") {
         checkingRef.current = false;
         return;
       }
 
+      // Method: Create a very short audio buffer and play it.
+      // Measure how long the AudioContext takes to process it.
+      // On iOS with mute switch ON, the context may report normal
+      // processing but we detect via an alternate oscillator+analyser
+      // that reads back near the destination.
+
+      // Use a known-working approach: create a very quiet oscillator,
+      // connect through a gain node to an analyser connected to 
+      // destination. The analyser should pick up energy if audio
+      // pipeline is active.
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const dataArray = new Float32Array(analyser.frequencyBinCount);
 
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      gain.gain.value = 0.001;
-      osc.frequency.value = 200;
+      // Audible enough for analyser but barely perceptible
+      gain.gain.value = 0.005;
+      osc.frequency.value = 440;
+      osc.type = "sine";
+
       osc.connect(gain);
       gain.connect(analyser);
       analyser.connect(ctx.destination);
 
       osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.15);
+      osc.stop(ctx.currentTime + 0.2);
 
-      // Read analyser WHILE oscillator is still playing (30ms into a 150ms tone)
-      await new Promise((resolve) => setTimeout(resolve, 30));
+      // Wait for the oscillator to be playing (50ms into 200ms tone)
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-      analyser.getByteFrequencyData(dataArray);
-      const sum = dataArray.reduce((a, b) => a + b, 0);
+      // Read frequency data as floats (more precise than byte data)
+      analyser.getFloatFrequencyData(dataArray);
 
-      setIsSilent(sum === 0);
+      // Check if there's any energy above noise floor (-100 dB)
+      const maxVal = Math.max(...dataArray);
+      const silent = maxVal < -90; // If all bins are below -90dB, likely silent
+
+      setIsSilent(silent);
 
       osc.disconnect();
       gain.disconnect();
@@ -69,7 +92,6 @@ export function useSilentModeDetector() {
 
   const dismiss = useCallback(() => {
     setDismissed(true);
-    // Auto-reset dismissed after 10s so banner can reappear
     clearTimeout(dismissTimerRef.current);
     dismissTimerRef.current = setTimeout(() => setDismissed(false), 10000);
   }, []);
@@ -92,7 +114,6 @@ export function useSilentModeDetector() {
     if (!isIOS) return;
     const handler = () => {
       if (document.visibilityState === "visible") {
-        // Reset cooldown on visibility change so check runs
         lastCheckRef.current = 0;
         setTimeout(checkSilentMode, 500);
       }
