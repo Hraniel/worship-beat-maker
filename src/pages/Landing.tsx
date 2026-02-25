@@ -1450,6 +1450,12 @@ const Landing = () => {
   // Intercept navigation when prelaunch is active
   const prelaunchNavigate = useCallback((...args: any[]) => {
     const path = typeof args[0] === 'string' ? args[0] : '';
+    // Allow /auth navigation if current URL has a valid access key
+    const currentAccess = new URLSearchParams(window.location.search).get('access');
+    if (prelaunch.enabled && path.startsWith('/auth') && currentAccess) {
+      navigate(`/auth?access=${currentAccess}` as any);
+      return;
+    }
     if (prelaunch.enabled && (path.startsWith('/auth') || path.startsWith('/app') || path.startsWith('/dashboard'))) {
       setShowPrelaunch(true);
       return;
