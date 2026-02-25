@@ -11,6 +11,7 @@ import { lovable } from '@/integrations/lovable/index';
 import { useTranslation } from 'react-i18next';
 import LanguageSelector from '@/components/LanguageSelector';
 import { usePrelaunchMode } from '@/hooks/usePrelaunchMode';
+import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
 import PrelaunchCountdownModal from '@/components/PrelaunchCountdownModal';
 
 const Auth = () => {
@@ -18,6 +19,9 @@ const Auth = () => {
   const { user, loading, signIn, signUp } = useAuth();
   const [searchParams] = useSearchParams();
   const prelaunch = usePrelaunchMode();
+  const maintenance = useMaintenanceMode();
+  const restrictedMode = prelaunch.enabled || maintenance.enabled;
+  const restrictedLoading = prelaunch.loading || maintenance.loading;
   const [showPrelaunch, setShowPrelaunch] = useState(false);
   const [isLogin, setIsLogin] = useState(searchParams.get('mode') !== 'signup');
   const [isForgot, setIsForgot] = useState(false);
@@ -28,11 +32,11 @@ const Auth = () => {
   const [accessGranted, setAccessGranted] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
 
-  // Check if user has a valid access key to bypass prelaunch
+  // Check if user has a valid access key to bypass prelaunch/maintenance
   useEffect(() => {
-    if (prelaunch.loading) return;
+    if (restrictedLoading) return;
 
-    if (!prelaunch.enabled) {
+    if (!restrictedMode) {
       setAccessGranted(true);
       setCheckingAccess(false);
       return;
@@ -55,21 +59,11 @@ const Auth = () => {
         }
         setCheckingAccess(false);
       });
-  }, [searchParams, prelaunch.enabled, prelaunch.loading]);
+  }, [searchParams, restrictedMode, restrictedLoading]);
 
-  // If prelaunch is active and no valid access key, show popup
-  if (!prelaunch.loading && !checkingAccess && prelaunch.enabled && !accessGranted && (prelaunch.launchDate || prelaunch.customMessage)) {
-    return (
-      <>
-        <Navigate to="/" replace />
-        <PrelaunchCountdownModal
-          open={true}
-          onOpenChange={() => {}}
-          launchDate={prelaunch.launchDate}
-          customMessage={prelaunch.customMessage}
-        />
-      </>
-    );
+  // If restricted mode is active and no valid access key, redirect to landing
+  if (!restrictedLoading && !checkingAccess && restrictedMode && !accessGranted) {
+    return <Navigate to="/" replace />;
   }
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
@@ -86,7 +80,7 @@ const Auth = () => {
     }
   };
 
-  if (loading || checkingAccess || prelaunch.loading) {
+  if (loading || checkingAccess || restrictedLoading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -164,7 +158,7 @@ const Auth = () => {
           <p className="text-sm text-muted-foreground">
             {isForgot ? t('auth.resetSubtitle') : isLogin ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
           </p>
-          {prelaunch.enabled && accessGranted && (
+          {restrictedMode && accessGranted && (
             <p className="text-xs text-amber-500 mt-1">Acesso antecipado — apenas usuários autorizados.</p>
           )}
           <LanguageSelector compact className="justify-center mt-2" />

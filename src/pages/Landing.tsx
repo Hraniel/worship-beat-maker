@@ -6,6 +6,7 @@ import { useBodyScroll } from "@/hooks/useBodyScroll";
 import LanguageSelector from "@/components/LanguageSelector";
 import { useLandingConfig, type LandingFeature } from "@/hooks/useLandingConfig";
 import { usePrelaunchMode } from "@/hooks/usePrelaunchMode";
+import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 import PrelaunchCountdownModal from "@/components/PrelaunchCountdownModal";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
@@ -1445,23 +1446,25 @@ const Landing = () => {
   useBodyScroll();
   const { config, pricing, features, landingFeatures, loading, getLocalized } = useLandingConfig();
   const prelaunch = usePrelaunchMode();
+  const maintenance = useMaintenanceMode();
+  const restrictedMode = prelaunch.enabled || maintenance.enabled;
   const [showPrelaunch, setShowPrelaunch] = useState(false);
 
-  // Intercept navigation when prelaunch is active
+  // Intercept navigation when prelaunch or maintenance is active
   const prelaunchNavigate = useCallback((...args: any[]) => {
     const path = typeof args[0] === 'string' ? args[0] : '';
     // Allow /auth navigation if current URL has a valid access key
     const currentAccess = new URLSearchParams(window.location.search).get('access');
-    if (prelaunch.enabled && path.startsWith('/auth') && currentAccess) {
+    if (restrictedMode && path.startsWith('/auth') && currentAccess) {
       navigate(`/auth?access=${currentAccess}` as any);
       return;
     }
-    if (prelaunch.enabled && (path.startsWith('/auth') || path.startsWith('/app') || path.startsWith('/dashboard'))) {
+    if (restrictedMode && (path.startsWith('/auth') || path.startsWith('/app') || path.startsWith('/dashboard'))) {
       setShowPrelaunch(true);
       return;
     }
     navigate(args[0] as any, args[1]);
-  }, [navigate, prelaunch.enabled]) as ReturnType<typeof useNavigate>;
+  }, [navigate, restrictedMode]) as ReturnType<typeof useNavigate>;
 
   const darkColor = config.divider_dark_color || "hsl(220 15% 7%)";
   const hasAnnouncement = config.announcement_enabled === "true" && !!config.announcement_text;
@@ -1527,13 +1530,13 @@ const Landing = () => {
       {/* DARK footer */}
       <Footer navigate={prelaunchNavigate} config={config} L={getLocalized} />
 
-      {/* Prelaunch modal */}
-      {prelaunch.enabled && (prelaunch.launchDate || prelaunch.customMessage) && (
+      {/* Prelaunch / Maintenance modal */}
+      {restrictedMode && (
         <PrelaunchCountdownModal
           open={showPrelaunch}
           onOpenChange={setShowPrelaunch}
-          launchDate={prelaunch.launchDate}
-          customMessage={prelaunch.customMessage}
+          launchDate={prelaunch.enabled ? prelaunch.launchDate : ''}
+          customMessage={maintenance.enabled && !prelaunch.enabled ? 'Estamos em manutenção, voltamos em breve!' : prelaunch.customMessage}
         />
       )}
     </div>

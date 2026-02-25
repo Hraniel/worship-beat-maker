@@ -32,6 +32,7 @@ const AdminPrelaunchManager: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [accessKey, setAccessKey] = useState('');
+  const [appUrl, setAppUrl] = useState('');
 
   useEffect(() => {
     loadConfig();
@@ -42,7 +43,7 @@ const AdminPrelaunchManager: React.FC = () => {
     const { data } = await supabase
       .from('landing_config')
       .select('config_key, config_value')
-      .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message', 'maintenance_enabled', 'prelaunch_access_key']);
+      .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message', 'maintenance_enabled', 'prelaunch_access_key', 'app_url']);
 
     const map: Record<string, string> = {};
     data?.forEach((r: any) => { map[r.config_key] = r.config_value; });
@@ -51,6 +52,7 @@ const AdminPrelaunchManager: React.FC = () => {
     setMaintenanceEnabled(map.maintenance_enabled === 'true');
     setCustomMessage(map.prelaunch_custom_message || '');
     setAccessKey(map.prelaunch_access_key || '');
+    setAppUrl(map.app_url || '');
 
     if (map.prelaunch_date) {
       const d = new Date(map.prelaunch_date);
@@ -118,7 +120,8 @@ const AdminPrelaunchManager: React.FC = () => {
   };
 
   const copyAccessLink = () => {
-    const link = `${window.location.origin}/auth?access=${accessKey}`;
+    const baseUrl = appUrl || window.location.origin;
+    const link = `${baseUrl}/auth?access=${accessKey}`;
     navigator.clipboard.writeText(link);
     toast.success('Link copiado!');
   };
@@ -228,41 +231,43 @@ const AdminPrelaunchManager: React.FC = () => {
               </div>
             )}
 
-            {/* Access Link */}
-            <div className="border-t border-indigo-500/10 pt-3">
-              <Label className="text-xs text-gray-400 flex items-center gap-1">
-                <Link className="h-3 w-3" />
-                Link de acesso antecipado
-              </Label>
-              <p className="text-[10px] text-gray-500 mt-0.5 mb-2">
-                Envie este link para usuários da whitelist. Só quem acessar por ele poderá fazer login durante o pré-lançamento.
-              </p>
-              {accessKey ? (
-                <div className="flex gap-2 items-center">
-                  <Input
-                    readOnly
-                    value={`${window.location.origin}/auth?access=${accessKey}`}
-                    className="flex-1 bg-slate-800 border-indigo-500/20 text-white text-xs font-mono"
-                    onClick={(e) => (e.target as HTMLInputElement).select()}
-                  />
-                  <Button size="sm" variant="outline" onClick={copyAccessLink} className="border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/50 shrink-0">
-                    <Copy className="h-3 w-3" />
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={generateAccessKey} className="border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/50 shrink-0" title="Gerar nova chave">
-                    <RefreshCw className="h-3 w-3" />
-                  </Button>
-                </div>
-              ) : (
-                <Button size="sm" onClick={generateAccessKey} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
-                  <Link className="h-3 w-3 mr-1" />
-                  Gerar link de acesso
-                </Button>
-              )}
-            </div>
           </div>
         )}
       </div>
 
+      {/* Access Link — shared for prelaunch & maintenance */}
+      {(enabled || maintenanceEnabled) && (
+        <div className="rounded-xl border border-emerald-500/20 bg-slate-900/50 p-4 space-y-3">
+          <Label className="text-xs text-gray-400 flex items-center gap-1">
+            <Link className="h-3 w-3" />
+            Link de acesso restrito
+          </Label>
+          <p className="text-[10px] text-gray-500 mt-0.5 mb-2">
+            Envie este link para usuários autorizados. Só quem acessar por ele poderá fazer login durante o pré-lançamento ou manutenção.
+          </p>
+          {accessKey ? (
+            <div className="flex gap-2 items-center">
+              <Input
+                readOnly
+                value={`${appUrl || window.location.origin}/auth?access=${accessKey}`}
+                className="flex-1 bg-slate-800 border-emerald-500/20 text-white text-xs font-mono"
+                onClick={(e) => (e.target as HTMLInputElement).select()}
+              />
+              <Button size="sm" variant="outline" onClick={copyAccessLink} className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/50 shrink-0">
+                <Copy className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="outline" onClick={generateAccessKey} className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-950/50 shrink-0" title="Gerar nova chave">
+                <RefreshCw className="h-3 w-3" />
+              </Button>
+            </div>
+          ) : (
+            <Button size="sm" onClick={generateAccessKey} disabled={saving} className="bg-emerald-600 hover:bg-emerald-700">
+              <Link className="h-3 w-3 mr-1" />
+              Gerar link de acesso
+            </Button>
+          )}
+        </div>
+      )}
       {/* Maintenance Mode */}
       <div className="rounded-xl border border-amber-500/20 bg-slate-900/50 p-4 space-y-2">
         <div className="flex items-center justify-between">
