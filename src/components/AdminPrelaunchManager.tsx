@@ -5,8 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User, MessageSquare, Wrench } from 'lucide-react';
+import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User, MessageSquare, Wrench, CalendarIcon, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface Lead {
   id: string;
@@ -20,10 +25,12 @@ const AdminPrelaunchManager: React.FC = () => {
   const [enabled, setEnabled] = useState(false);
   const [maintenanceEnabled, setMaintenanceEnabled] = useState(false);
   const [launchDate, setLaunchDate] = useState('');
+  const [launchTime, setLaunchTime] = useState('12:00');
   const [customMessage, setCustomMessage] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadConfig();
@@ -41,8 +48,14 @@ const AdminPrelaunchManager: React.FC = () => {
 
     setEnabled(map.prelaunch_enabled === 'true');
     setMaintenanceEnabled(map.maintenance_enabled === 'true');
-    setLaunchDate(map.prelaunch_date || '');
     setCustomMessage(map.prelaunch_custom_message || '');
+
+    if (map.prelaunch_date) {
+      const d = new Date(map.prelaunch_date);
+      setLaunchDate(map.prelaunch_date);
+      setLaunchTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
+    }
+
     setLoading(false);
   };
 
@@ -76,12 +89,32 @@ const AdminPrelaunchManager: React.FC = () => {
     await saveConfig('prelaunch_enabled', val ? 'true' : 'false');
   };
 
-  const handleDateSave = async () => {
-    if (!launchDate) {
-      toast.error('Defina a data de lançamento');
-      return;
-    }
-    await saveConfig('prelaunch_date', launchDate);
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    const [hours, minutes] = launchTime.split(':').map(Number);
+    date.setHours(hours, minutes, 0, 0);
+    const iso = date.toISOString();
+    setLaunchDate(iso);
+    saveConfig('prelaunch_date', iso);
+  };
+
+  const handleTimeChange = (time: string) => {
+    setLaunchTime(time);
+    if (!launchDate) return;
+    const d = new Date(launchDate);
+    const [hours, minutes] = time.split(':').map(Number);
+    d.setHours(hours, minutes, 0, 0);
+    const iso = d.toISOString();
+    setLaunchDate(iso);
+    saveConfig('prelaunch_date', iso);
+  };
+
+  const handleDeleteLead = async (id: string) => {
+    setDeletingId(id);
+    await supabase.from('prelaunch_leads' as any).delete().eq('id', id);
+    setLeads(prev => prev.filter(l => l.id !== id));
+    setDeletingId(null);
+    toast.success('Lead removido!');
   };
 
   const exportCSV = () => {
@@ -97,6 +130,8 @@ const AdminPrelaunchManager: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  const selectedCalendarDate = launchDate ? new Date(launchDate) : undefined;
 
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-indigo-400" /></div>;
 
@@ -118,7 +153,7 @@ const AdminPrelaunchManager: React.FC = () => {
             <div>
               <Label className="text-xs text-gray-400 flex items-center gap-1">
                 <MessageSquare className="h-3 w-3" />
-                Mensagem personalizada (substitui ou complementa o countdown)
+                Mensagem personalizada
               </Label>
               <div className="flex gap-2 mt-1">
                 <Textarea
@@ -131,28 +166,44 @@ const AdminPrelaunchManager: React.FC = () => {
                   {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Salvar'}
                 </Button>
               </div>
-              <p className="text-[10px] text-gray-500 mt-1">Se preenchida, aparece no popup. Se a data também estiver configurada, ambos aparecem.</p>
             </div>
 
-            {/* Date */}
+            {/* Date + Time picker */}
             <div>
               <Label className="text-xs text-gray-400">Data e Hora de Lançamento (opcional)</Label>
-              <div className="flex gap-2 mt-1">
+              <div className="flex gap-2 mt-1 items-center">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "flex-1 justify-start text-left font-normal bg-slate-800 border-indigo-500/20 text-white text-sm hover:bg-slate-700",
+                        !launchDate && "text-gray-500"
+                      )}
+                    >
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {selectedCalendarDate
+                        ? format(selectedCalendarDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                        : 'Selecione a data'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={selectedCalendarDate}
+                      onSelect={handleDateSelect}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
                 <Input
-                  type="datetime-local"
-                  value={launchDate ? launchDate.slice(0, 16) : ''}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setLaunchDate(new Date(e.target.value).toISOString());
-                    } else {
-                      setLaunchDate('');
-                    }
-                  }}
-                  className="flex-1 bg-slate-800 border-indigo-500/20 text-white text-sm"
+                  type="time"
+                  value={launchTime}
+                  onChange={(e) => handleTimeChange(e.target.value)}
+                  className="w-24 bg-slate-800 border-indigo-500/20 text-white text-sm"
                 />
-                <Button size="sm" onClick={handleDateSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
-                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Salvar'}
-                </Button>
               </div>
             </div>
 
@@ -182,7 +233,7 @@ const AdminPrelaunchManager: React.FC = () => {
           />
         </div>
         <p className="text-[10px] text-gray-500">
-          Quando ativado: login bloqueado para todos (exceto admins), logout desabilitado, limpeza de cache desabilitada e atualizações não são recebidas.
+          Quando ativado: login bloqueado para todos (exceto admins), logout desabilitado, limpeza de cache desabilitada e atualizações não são recebidas. As alterações são aplicadas em tempo real.
         </p>
       </div>
 
@@ -218,6 +269,14 @@ const AdminPrelaunchManager: React.FC = () => {
                   </div>
                 </div>
                 <span className="text-gray-500 shrink-0">{new Date(lead.created_at).toLocaleDateString('pt-BR')}</span>
+                <button
+                  onClick={() => handleDeleteLead(lead.id)}
+                  disabled={deletingId === lead.id}
+                  className="p-1 rounded hover:bg-red-500/20 text-gray-500 hover:text-red-400 transition-colors shrink-0"
+                  title="Remover lead"
+                >
+                  {deletingId === lead.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                </button>
               </div>
             ))}
           </div>

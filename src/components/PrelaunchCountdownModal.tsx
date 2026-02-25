@@ -65,6 +65,11 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
       toast.error('Preencha todos os campos');
       return;
     }
+    const digitsOnly = form.phone.replace(/\D/g, '');
+    if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+      toast.error('Número de telefone inválido');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -172,10 +177,18 @@ const PrelaunchCountdownModal: React.FC<PrelaunchCountdownModalProps> = ({ open,
                   <Input
                     id="pl-phone"
                     value={form.phone}
-                    onChange={(e) => setForm(p => ({ ...p, phone: e.target.value }))}
+                    onChange={(e) => {
+                      // Allow only digits, +, spaces, hyphens, parens
+                      const val = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                      setForm(p => ({ ...p, phone: val }));
+                    }}
                     placeholder="+55 11 99999-9999"
                     className="mt-1"
+                    maxLength={20}
                   />
+                  {form.phone && form.phone.replace(/\D/g, '').length < 10 && form.phone.length > 0 && (
+                    <p className="text-[10px] text-destructive mt-0.5">Número inválido. Mínimo 10 dígitos.</p>
+                  )}
                 </div>
               </div>
 
