@@ -564,6 +564,38 @@ const Hero = ({ navigate, config, L }: { navigate: ReturnType<typeof useNavigate
   );
 };
 
+// Stats — dynamic styles (with optional image per stat)
+const Stats = ({ config, L }: { config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
+  const bg = config.stats_bg || "hsl(220 15% 7%)";
+  const valueColor = config.stats_value_color || "hsl(0 0% 100%)";
+  const labelColor = config.stats_label_color || "hsl(0 0% 100% / 0.4)";
+  const stats = [
+    { value: L('stat_1_value', "12+"), label: L('stat_1_label', "Sons padrão inclusos"), image: config.stat_1_image },
+    { value: L('stat_2_value', "∞"), label: L('stat_2_label', "Setlists por culto"), image: config.stat_2_image },
+    { value: L('stat_3_value', "AI"), label: L('stat_3_label', "Spotify integrado"), image: config.stat_3_image },
+    { value: L('stat_4_value', "PWA"), label: L('stat_4_label', "Instale no celular"), image: config.stat_4_image },
+  ];
+  const pt = config.stats_pt ? `${config.stats_pt}px` : "64px";
+  const pb = config.stats_pb ? `${config.stats_pb}px` : "64px";
+  return (
+    <section className="relative overflow-hidden" style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: "1rem", paddingRight: "1rem" }}>
+      <SectionVideo url={config.stats_video_url} opacity={config.stats_video_opacity} fit={config.stats_video_fit}
+        borderPos={config.stats_video_border_pos} borderWidth={config.stats_video_border_width}
+        borderRadius={config.stats_video_border_radius} borderColor={config.stats_video_border_color} />
+      <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={stagger}
+        className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
+        {stats.map((stat, i) => (
+          <motion.div key={stat.label} variants={fadeUp} custom={i} className="flex flex-col items-center">
+            {stat.image && <img src={stat.image} alt={stat.label} className="w-10 h-10 object-contain mb-3" />}
+            <div className="text-4xl sm:text-5xl font-black mb-2" style={{ color: valueColor }}>{stat.value}</div>
+            <div className="text-sm font-medium" style={{ color: labelColor }}>{stat.label}</div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </section>
+  );
+};
+
 // App Screenshots section — 3 feature mockup images
 const AppScreenshots = ({ config, L }: { config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
   const bg = config.screenshots_bg || "hsl(0 0% 97%)";
@@ -647,14 +679,14 @@ const AppScreenshots = ({ config, L }: { config: Record<string, string>; L: (key
           whileInView="visible"
           viewport={{ once: true, margin: "-40px" }}
           variants={stagger}
-          className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-w-2xl mx-auto"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto"
         >
           {shots.map((shot, i) => {
             const imgSrc = config[`${shot.key}_image`] || shot.defaultImg;
             const title = config[`${shot.key}_title`] || shot.defaultTitle;
             const desc = config[`${shot.key}_desc`] || shot.defaultDesc;
             return (
-              <motion.div key={shot.key} variants={fadeUp} custom={i} className="group">
+              <motion.div key={shot.key} variants={fadeUp} custom={i} className="group flex flex-col">
                 <div
                   className="relative rounded-2xl overflow-hidden mb-4 shadow-lg"
                   style={{ border: "1px solid hsl(0 0% 0% / 0.07)" }}
@@ -666,7 +698,6 @@ const AppScreenshots = ({ config, L }: { config: Record<string, string>; L: (key
                     style={{ aspectRatio: "9/16", objectFit: "cover", objectPosition: "top" }}
                     loading="lazy"
                   />
-                  {/* subtle overlay */}
                   <div
                     className="absolute inset-0 pointer-events-none rounded-2xl"
                     style={{ background: "linear-gradient(to bottom, transparent 60%, hsl(0 0% 0% / 0.12) 100%)" }}
@@ -675,7 +706,7 @@ const AppScreenshots = ({ config, L }: { config: Record<string, string>; L: (key
                 <h3 className="text-base font-bold mb-1.5" style={{ color: titleColor }}>
                   {title}
                 </h3>
-                <p className="text-sm leading-relaxed" style={{ color: subtitleColor }}>
+                <p className="text-sm leading-relaxed flex-1" style={{ color: subtitleColor }}>
                   {desc}
                 </p>
               </motion.div>
@@ -683,57 +714,6 @@ const AppScreenshots = ({ config, L }: { config: Record<string, string>; L: (key
           })}
         </motion.div>
       </div>
-    </section>
-  );
-};
-
-// Stats — dynamic styles (with optional image per stat)
-const Stats = ({ config, L }: { config: Record<string, string>; L: (key: string, fb?: string) => string }) => {
-  const bg = config.stats_bg || "hsl(220 15% 7%)";
-  const valueColor = config.stats_value_color || "hsl(0 0% 100%)";
-  const labelColor = config.stats_label_color || "hsl(0 0% 100% / 0.4)";
-
-  const stats = [
-    { value: L('stat_1_value', "12+"), label: L('stat_1_label', "Sons padrão inclusos"), image: config.stat_1_image },
-    { value: L('stat_2_value', "∞"), label: L('stat_2_label', "Setlists por culto"), image: config.stat_2_image },
-    { value: L('stat_3_value', "AI"), label: L('stat_3_label', "Spotify integrado"), image: config.stat_3_image },
-    { value: L('stat_4_value', "PWA"), label: L('stat_4_label', "Instale no celular"), image: config.stat_4_image },
-  ];
-  const pt = config.stats_pt ? `${config.stats_pt}px` : "64px";
-  const pb = config.stats_pb ? `${config.stats_pb}px` : "64px";
-  return (
-    <section
-      className="relative overflow-hidden"
-      style={{ background: bg, paddingTop: pt, paddingBottom: pb, paddingLeft: "1rem", paddingRight: "1rem" }}
-    >
-      <SectionVideo
-        url={config.stats_video_url}
-        opacity={config.stats_video_opacity}
-        fit={config.stats_video_fit}
-        borderPos={config.stats_video_border_pos}
-        borderWidth={config.stats_video_border_width}
-        borderRadius={config.stats_video_border_radius}
-        borderColor={config.stats_video_border_color}
-      />
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true }}
-        variants={stagger}
-        className="relative max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-center"
-      >
-        {stats.map((stat, i) => (
-          <motion.div key={stat.label} variants={fadeUp} custom={i} className="flex flex-col items-center">
-            {stat.image && <img src={stat.image} alt={stat.label} className="w-10 h-10 object-contain mb-3" />}
-            <div className="text-4xl sm:text-5xl font-black mb-2" style={{ color: valueColor }}>
-              {stat.value}
-            </div>
-            <div className="text-sm font-medium" style={{ color: labelColor }}>
-              {stat.label}
-            </div>
-          </motion.div>
-        ))}
-      </motion.div>
     </section>
   );
 };
@@ -1312,6 +1292,18 @@ const FinalCTA = ({
           className="relative rounded-3xl p-10 sm:p-16 overflow-hidden"
           style={{ border: "1px solid hsl(0 0% 0% / 0.07)", background: cardBg }}
         >
+          {/* Card background video */}
+          {config.cta_card_video_url && config.cta_card_video_url.trim() !== "" && (
+            <video
+              src={config.cta_card_video_url}
+              autoPlay muted loop playsInline
+              className="absolute inset-0 w-full h-full pointer-events-none rounded-3xl"
+              style={{
+                objectFit: (config.cta_card_video_fit as any) || "cover",
+                opacity: parseFloat(config.cta_card_video_opacity || "0.15"),
+              }}
+            />
+          )}
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] rounded-full pointer-events-none"
             style={{ background: "hsl(var(--primary) / 0.06)", filter: "blur(100px)" }}
