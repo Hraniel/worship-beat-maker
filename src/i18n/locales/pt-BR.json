@@ -820,5 +820,23 @@
     "configApplied": "Configuração aplicada nos pads!",
     "applyConfig": "Aplicar configuração",
     "lockedMaster": "🔒 Spotify disponível no plano Master"
+  },
+  "notifications": {
+    "notSupported": "Notificações push não são suportadas neste navegador ou dispositivo.",
+    "active": "Notificações ativadas",
+    "inactive": "Notificações desativadas",
+    "activeDescription": "Você receberá avisos sobre novidades, packs e atualizações.",
+    "inactiveDescription": "Ative para receber avisos importantes do Glory Pads.",
+    "blocked": "As notificações foram bloqueadas nas configurações do navegador. Para reativar, acesse as permissões do site no seu navegador/sistema.",
+    "howItWorks": "Como funciona?",
+    "howItWorksDescription": "Ao ativar, o app registra seu dispositivo para receber notificações push mesmo quando o app não estiver aberto. Você pode desativar a qualquer momento.",
+    "testTitle": "Glory Pads 🎵",
+    "testBody": "Notificações funcionando perfeitamente!",
+    "sendTest": "🔔 Enviar notificação de teste"
+  },
+  "banners": {
+    "silentTitle": "Modo silencioso ativado",
+    "silentDesc": "Desative o modo silencioso do dispositivo para ouvir os sons.",
+    "closeWarning": "Fechar aviso"
   }
 }
