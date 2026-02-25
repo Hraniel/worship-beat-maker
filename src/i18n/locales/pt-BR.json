@@ -834,9 +834,4 @@
     "testBody": "Notificações funcionando perfeitamente!",
     "sendTest": "🔔 Enviar notificação de teste"
   },
-  "banners": {
-    "silentTitle": "Modo silencioso ativado",
-    "silentDesc": "Desative o modo silencioso do dispositivo para ouvir os sons.",
-    "closeWarning": "Fechar aviso"
-  }
 }
