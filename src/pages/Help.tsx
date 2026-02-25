@@ -17,7 +17,7 @@ import {
 
 /* ─── Types ─── */
 interface TutorialStep { title: string; description: string; image_url?: string | null; video_url?: string | null; }
-interface TutorialArticle { title: string; icon: React.ReactNode; purpose: string; steps: TutorialStep[]; }
+interface TutorialArticle { title: string; icon: React.ReactNode; purpose: string; video_url?: string | null; steps: TutorialStep[]; }
 interface TutorialCategory { id: string; label: string; icon: React.ReactNode; description: string; screenshot?: string; articles: TutorialArticle[]; }
 
 /* ─── Icon resolver ─── */
@@ -219,6 +219,7 @@ function dbToViewCategories(dbCats: DBCategory[]): TutorialCategory[] {
       title: art.title,
       icon: getIcon(art.icon_name, true),
       purpose: art.purpose,
+      video_url: art.video_url || null,
       steps: art.steps.map(s => ({
         title: s.title,
         description: s.description,
@@ -395,6 +396,24 @@ const Help = () => {
                               </div>
                             </div>
 
+                            {/* Article-level YouTube video */}
+                            {(() => {
+                              const artYtId = article.video_url ? (() => {
+                                const m = article.video_url!.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([a-zA-Z0-9_-]{11})/);
+                                return m ? m[1] : null;
+                              })() : null;
+                              return artYtId ? (
+                                <div className="mb-4 aspect-video w-full max-w-lg rounded-lg overflow-hidden border border-gray-200">
+                                  <iframe
+                                    src={`https://www.youtube.com/embed/${artYtId}`}
+                                    title={article.title}
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    className="w-full h-full"
+                                  />
+                                </div>
+                              ) : null;
+                            })()}
                             <div className="relative pl-6 space-y-4">
                               <div className="absolute left-[9px] top-0 bottom-0 w-px bg-violet-200" />
                               {article.steps.map((step, si) => {

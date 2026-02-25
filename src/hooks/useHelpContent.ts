@@ -18,6 +18,7 @@ export interface HelpArticle {
   purpose: string;
   sort_order: number;
   enabled: boolean;
+  video_url: string | null;
   steps: HelpStep[];
 }
 
