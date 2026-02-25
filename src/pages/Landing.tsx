@@ -1447,10 +1447,10 @@ const Landing = () => {
   const prelaunch = usePrelaunchMode();
   const [showPrelaunch, setShowPrelaunch] = useState(false);
 
-  // Intercept navigation when prelaunch is active (allow /auth so whitelisted users can log in)
+  // Intercept navigation when prelaunch is active
   const prelaunchNavigate = useCallback((...args: any[]) => {
     const path = typeof args[0] === 'string' ? args[0] : '';
-    if (prelaunch.enabled && (path.startsWith('/app') || path.startsWith('/dashboard'))) {
+    if (prelaunch.enabled && (path.startsWith('/auth') || path.startsWith('/app') || path.startsWith('/dashboard'))) {
       setShowPrelaunch(true);
       return;
     }

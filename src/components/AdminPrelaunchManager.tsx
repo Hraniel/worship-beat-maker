@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User, MessageSquare, Wrench, CalendarIcon, Trash2 } from 'lucide-react';
+import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User, MessageSquare, Wrench, CalendarIcon, Trash2, Link, Copy, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,7 @@ const AdminPrelaunchManager: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [accessKey, setAccessKey] = useState('');
 
   useEffect(() => {
     loadConfig();
@@ -41,7 +42,7 @@ const AdminPrelaunchManager: React.FC = () => {
     const { data } = await supabase
       .from('landing_config')
       .select('config_key, config_value')
-      .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message', 'maintenance_enabled']);
+      .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message', 'maintenance_enabled', 'prelaunch_access_key']);
 
     const map: Record<string, string> = {};
     data?.forEach((r: any) => { map[r.config_key] = r.config_value; });
@@ -49,6 +50,7 @@ const AdminPrelaunchManager: React.FC = () => {
     setEnabled(map.prelaunch_enabled === 'true');
     setMaintenanceEnabled(map.maintenance_enabled === 'true');
     setCustomMessage(map.prelaunch_custom_message || '');
+    setAccessKey(map.prelaunch_access_key || '');
 
     if (map.prelaunch_date) {
       const d = new Date(map.prelaunch_date);
@@ -107,6 +109,18 @@ const AdminPrelaunchManager: React.FC = () => {
     const iso = d.toISOString();
     setLaunchDate(iso);
     saveConfig('prelaunch_date', iso);
+  };
+
+  const generateAccessKey = async () => {
+    const key = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+    setAccessKey(key);
+    await saveConfig('prelaunch_access_key', key);
+  };
+
+  const copyAccessLink = () => {
+    const link = `${window.location.origin}/auth?access=${accessKey}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Link copiado!');
   };
 
   const handleDeleteLead = async (id: string) => {
@@ -213,6 +227,38 @@ const AdminPrelaunchManager: React.FC = () => {
                 <span>Lançamento: {new Date(launchDate).toLocaleString('pt-BR')}</span>
               </div>
             )}
+
+            {/* Access Link */}
+            <div className="border-t border-indigo-500/10 pt-3">
+              <Label className="text-xs text-gray-400 flex items-center gap-1">
+                <Link className="h-3 w-3" />
+                Link de acesso antecipado
+              </Label>
+              <p className="text-[10px] text-gray-500 mt-0.5 mb-2">
+                Envie este link para usuários da whitelist. Só quem acessar por ele poderá fazer login durante o pré-lançamento.
+              </p>
+              {accessKey ? (
+                <div className="flex gap-2 items-center">
+                  <Input
+                    readOnly
+                    value={`${window.location.origin}/auth?access=${accessKey}`}
+                    className="flex-1 bg-slate-800 border-indigo-500/20 text-white text-xs font-mono"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button size="sm" variant="outline" onClick={copyAccessLink} className="border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/50 shrink-0">
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={generateAccessKey} className="border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/50 shrink-0" title="Gerar nova chave">
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" onClick={generateAccessKey} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">
+                  <Link className="h-3 w-3 mr-1" />
+                  Gerar link de acesso
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </div>
