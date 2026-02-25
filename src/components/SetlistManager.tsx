@@ -136,10 +136,11 @@ interface EventCardProps {
   isSelected?: boolean;
   onOpenSavedSongs?: () => void;
   onCloseAndOpenSavedSongs?: (eventId: string) => void;
+  onCloseSheet?: () => void;
 }
 
 const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
-  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs, onCloseAndOpenSavedSongs, expandTrigger,
+  event, allSongs, onTogglePublic, onDelete, onEdit, onAddSong, onRemoveSong, onReorderSongs, onSaveSong, onLoadSong, onOpenMusicAI, onSelectEvent, isSelected, onOpenSavedSongs, onCloseAndOpenSavedSongs, expandTrigger, onCloseSheet,
 }) => {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(isSelected ?? false);
@@ -343,6 +344,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
                         };
                         const fullSong = allSongs.find(s => s.id === song.id);
                         onLoadSong(fullSong || setlistSong);
+                        onCloseSheet?.();
                       }}
                     />
                   ))}
@@ -635,6 +637,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
                 isSelected={selectedEventId === event.id}
                 expandTrigger={expandCounter}
                 onOpenSavedSongs={onOpenSavedSongs}
+                onCloseSheet={() => setOpen(false)}
                 onCloseAndOpenSavedSongs={(eventId) => {
                   onSelectEvent?.(eventId);
                   wasOpenBeforeSavedSongs.current = true;
