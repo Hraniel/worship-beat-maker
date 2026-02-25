@@ -60,6 +60,111 @@ function extractYouTubeId(url: string): string | null {
   return m ? m[1] : null;
 }
 
+/* ─── Default content seed data ─── */
+const DEFAULT_CATEGORIES = [
+  { label: 'Pads de Bateria', description: 'A tela principal do app. Os pads são botões interativos que reproduzem sons de bateria, percussão e loops ao toque.', icon_name: 'drum', articles: [
+    { title: 'Tocando os Pads', icon_name: 'play', purpose: 'Os pads servem como uma bateria eletrônica portátil. Cada pad reproduz um som diferente — kicks, snares, hi-hats, claps, crashes e mais.', steps: [
+      { title: 'Toque para reproduzir', description: 'Basta tocar em qualquer pad para ouvir o som correspondente. A cor do pad indica a categoria do som.' },
+      { title: 'Opções avançadas do pad', description: 'Segure (pressão longa) em qualquer pad para abrir o menu de opções: ajustar volume individual, pan, renomear, alterar cor, aplicar efeitos e importar sons.' },
+      { title: 'Tamanho dos pads', description: 'No menu (≡), use os botões – e + para diminuir ou aumentar o tamanho dos pads.' },
+      { title: 'Grid 3x3', description: 'Os pads são organizados em uma grade 3x3 por página. Navegue entre as páginas (1, 2, 3) para acessar todos os pads.' },
+    ]},
+    { title: 'Loops Rítmicos', icon_name: 'music', purpose: 'Os loops são padrões rítmicos pré-gravados que tocam em repetição contínua, sincronizados com o BPM do metrônomo.', steps: [
+      { title: 'Ativar/desativar', description: 'Os pads de loop funcionam como toggle: toque uma vez para iniciar o loop e toque novamente para parar.' },
+      { title: 'Sincronização automática com BPM', description: 'Os loops se ajustam automaticamente ao BPM definido no metrônomo.' },
+      { title: 'Entrada no tempo certo', description: 'Os loops sempre começam alinhados ao kick (batida 1) do compasso para manter a sincronia musical perfeita.' },
+    ]},
+  ]},
+  { label: 'Repertório & Eventos', description: 'O sistema de repertório permite organizar músicas por evento, salvando todas as configurações automaticamente.', icon_name: 'list-music', articles: [
+    { title: 'Criando e Gerenciando Eventos', icon_name: 'list-music', purpose: 'Eventos organizam suas músicas para cada ocasião. Crie eventos como "Culto Domingo", "Ensaio Quarta" e adicione músicas.', steps: [
+      { title: 'Criar evento', description: 'Toque em "Repertório" no cabeçalho e depois em "+ Novo Evento". Defina um nome e a data do evento.' },
+      { title: 'Adicionar músicas', description: 'Dentro do evento, toque em "+ Música" para adicionar. Cada música salva automaticamente: BPM, tom, volumes, panorâmicas, efeitos e mapeamentos MIDI.' },
+      { title: 'Carregar uma música', description: 'Toque no nome da música dentro do evento para carregá-la. Todos os pads, volumes, efeitos e configurações serão restaurados.' },
+      { title: 'Navegação rápida entre músicas', description: 'Use os botões ◀ ▶ no cabeçalho quando um evento está ativo para navegar entre as músicas. Também funciona via MIDI CC.' },
+    ]},
+    { title: 'Compartilhamento de Repertório', icon_name: 'external-link', purpose: 'Compartilhe o repertório do evento com outros músicos via link público.', steps: [
+      { title: 'Gerar link público', description: 'No evento, toque no ícone de compartilhamento. Um link será gerado e pode ser enviado por WhatsApp, email ou mensageiro.' },
+      { title: 'O que aparece no link', description: 'Os músicos verão: nome do evento, data, lista de músicas com BPM e tonalidade. Não é necessário ter conta no app.' },
+    ]},
+  ]},
+  { label: 'Continuous Pads', description: 'Pads de notas sustentadas que criam atmosferas sonoras contínuas. Ideais para louvor, oração e transições.', icon_name: 'waves', articles: [
+    { title: 'Usando Continuous Pads', icon_name: 'waves', purpose: 'Geram notas musicais sustentadas que tocam continuamente. Servem para criar atmosferas de louvor e transições suaves.', steps: [
+      { title: 'Ativar notas', description: 'Na aba "Pads" do rodapé, expanda "Continuous Pads". Toque em qualquer nota (C, D, E, F...) para ativá-la. Múltiplas notas podem soar simultaneamente.' },
+      { title: 'Volume individual', description: 'Use o slider vertical à esquerda para ajustar o volume dos continuous pads independentemente.' },
+      { title: 'Pan (panorâmica)', description: 'O knob laranja controla a direção do som: L (esquerda) ou R (direita). Útil para separar o ambiente da bateria.' },
+    ]},
+  ]},
+  { label: 'Volume & Mixer', description: 'O mixer de faders oferece controle granular de volume para cada pad, metrônomo, continuous pads e saída master.', icon_name: 'volume-2', articles: [
+    { title: 'Mixer de Faders', icon_name: 'sliders', purpose: 'O mixer funciona como uma mesa de som digital para equilibrar os sons ao vivo.', steps: [
+      { title: 'Navegação entre páginas', description: 'O mixer é dividido em 3 páginas para acomodar todos os faders. Navegue tocando nos números.' },
+      { title: 'Faders individuais', description: 'Arraste cada fader para ajustar o volume (0-100). O fader "Master" controla o volume geral.' },
+      { title: 'Pan Master', description: 'O knob laranja direciona toda a saída de áudio para esquerda (L) ou direita (R).' },
+    ]},
+  ]},
+  { label: 'Metrônomo', description: 'Metrônomo integrado com controle de BPM, compasso, sync de loops e indicador visual de batidas.', icon_name: 'clock', articles: [
+    { title: 'Configurando o Metrônomo', icon_name: 'clock', purpose: 'O metrônomo serve como referência rítmica. Sincroniza loops, fornece clique audível e indicadores visuais.', steps: [
+      { title: 'Ajuste de BPM', description: 'Use o slider, os botões – / + para ajuste fino, ou toque no número do BPM para digitar um valor exato.' },
+      { title: 'Compasso', description: 'Escolha entre 4/4, 3/4 ou 6/8. O compasso afeta a contagem e a sincronização dos loops.' },
+      { title: 'Play / Stop', description: 'Toque em Play (verde) para iniciar. Os indicadores visuais piscam a cada batida.' },
+      { title: 'Sync', description: 'O botão "Sync" sincroniza os pads de loop com o grid rítmico do metrônomo.' },
+      { title: 'Tom da música', description: 'O campo "Tom" define a tonalidade (C, D, Em, etc). Salva automaticamente no repertório.' },
+      { title: 'Pan do metrônomo', description: 'O knob "Pan Metrônomo" direciona o clique para L ou R. Útil para ouvir separado da banda.' },
+    ]},
+  ]},
+  { label: 'MIDI', description: 'Conecte controladores MIDI (USB ou Bluetooth) e mapeie pads, volumes, BPM e navegação.', icon_name: 'bluetooth', articles: [
+    { title: 'Controlador MIDI', icon_name: 'bluetooth', purpose: 'A integração MIDI permite usar controladores físicos para tocar pads, ajustar volumes e navegar entre músicas.', steps: [
+      { title: 'Conexão', description: 'Conecte um controlador MIDI via USB ou Bluetooth. O app detecta automaticamente via Web MIDI API.' },
+      { title: 'Mapeamento de notas', description: 'Nas configurações MIDI, associe cada nota a um pad. Toque a nota no controlador e selecione o pad.' },
+      { title: 'Mapeamento de CCs', description: 'Controles contínuos podem ser mapeados para: volume master, BPM, navegação de músicas e volume individual.' },
+      { title: 'Salvo por música', description: 'Todos os mapeamentos MIDI são salvos individualmente por música no repertório.' },
+    ]},
+  ]},
+  { label: 'Efeitos de Áudio', description: 'Aplique EQ, Reverb e Delay com sync ao BPM em cada pad individualmente. Recurso do plano Master.', icon_name: 'sparkles', articles: [
+    { title: 'EQ, Reverb e Delay', icon_name: 'sparkles', purpose: 'Os efeitos permitem moldar o som de cada pad: EQ para frequências, Reverb para profundidade e Delay para repetições.', steps: [
+      { title: 'Acesso aos efeitos', description: 'Segure qualquer pad e selecione "Efeitos". O painel abre com EQ, Reverb e Delay.' },
+      { title: 'EQ de 3 bandas', description: 'Ajuste Low, Mid e High. Valores positivos amplificam, negativos atenuam.' },
+      { title: 'Reverb', description: 'Adiciona reverberação simulando ambientes como salas, igrejas ou halls. Ajuste Mix e Decay.' },
+      { title: 'Delay sincronizado ao BPM', description: 'Ative "Sync BPM" para sincronizar o delay com o metrônomo. Escolha subdivisões (1/4, 1/8, 1/16).' },
+    ]},
+  ]},
+  { label: 'Modos Especiais', description: 'Modo Edição para configurar pads rapidamente e Modo Foco para maximizar a área de toque.', icon_name: 'eye', articles: [
+    { title: 'Modo Edição', icon_name: 'pencil', purpose: 'Transforma o toque simples em atalho para configurações. Toque em qualquer pad para abrir opções.', steps: [
+      { title: 'Ativar', description: 'Abra o menu (≡) e ative "Modo Edição". Os pads ficam com indicador visual diferenciado.' },
+      { title: 'Editar pads', description: 'Com o modo ativo, toque em qualquer pad para abrir opções (volume, pan, cor, efeitos, importação).' },
+      { title: 'Desativar', description: 'Volte ao menu (≡) e desative "Modo Edição" para voltar ao comportamento normal.' },
+    ]},
+    { title: 'Modo Foco', icon_name: 'eye', purpose: 'Remove o cabeçalho para maximizar a área dos pads. Perfeito para apresentações ao vivo.', steps: [
+      { title: 'Ativar', description: 'No menu (≡), ative "Modo Foco". O cabeçalho será ocultado, dando mais espaço para os pads.' },
+      { title: 'Acessos rápidos', description: 'Mesmo no modo foco, metrônomo e Continuous Pads continuam acessíveis via footer.' },
+      { title: 'Sair do modo foco', description: 'Toque na área do cabeçalho (reduzida) ou deslize para baixo para restaurar.' },
+    ]},
+  ]},
+  { label: 'Glory Store', description: 'Loja de packs de sons profissionais. Adquira, baixe e importe diretamente para seus pads.', icon_name: 'store', articles: [
+    { title: 'Navegando e Comprando', icon_name: 'store', purpose: 'A Glory Store é onde você encontra packs de sons profissionais para expandir sua biblioteca.', steps: [
+      { title: 'Acesso à loja', description: 'Toque em "Loja" no rodapé do app ou acesse pelo menu (≡) > "Glory Store".' },
+      { title: 'Filtros e categorias', description: 'Use o botão "Categorias" para filtrar por tipo de som: Bateria, Loops, Continuous Pads, Efeitos.' },
+      { title: 'Ouvir preview', description: 'Cada pack possui previews de áudio. Toque no botão de play para ouvir antes de comprar.' },
+      { title: 'Comprar pack', description: 'Toque em "Comprar" no card do pack. Pagamento seguro. É necessário estar logado.' },
+    ]},
+    { title: 'Importando para os Pads', icon_name: 'headphones', purpose: 'Após adquirir um pack, importe os sons em qualquer pad.', steps: [
+      { title: 'Importar som', description: 'Segure qualquer pad > "Importar da Glory Store". Filtre por pack adquirido e selecione o som.' },
+      { title: 'Download automático', description: 'O som é baixado e armazenado localmente. Após o download, funciona offline.' },
+      { title: 'Biblioteca pessoal', description: 'Seus packs aparecem na seção "Minha Biblioteca". Packs removidos podem ser restaurados.' },
+    ]},
+  ]},
+];
+
+const DEFAULT_FAQS = [
+  { question: 'Os sons funcionam offline?', answer: 'Sim! Após carregar os sons pela primeira vez, eles ficam armazenados localmente no seu dispositivo via IndexedDB. Você pode tocar mesmo sem internet.' },
+  { question: 'Como importar sons da Glory Store?', answer: 'Segure um pad, selecione "Importar da Glory Store" e escolha o som desejado entre os packs adquiridos. O som será baixado e salvo localmente.' },
+  { question: 'Posso usar controlador MIDI?', answer: 'Sim! Conecte um controlador MIDI via USB ou Bluetooth. O app detecta automaticamente. Acesse as configurações MIDI no menu para mapear notas e CCs.' },
+  { question: 'Como compartilhar meu repertório?', answer: 'No repertório, toque no ícone de compartilhar do evento. Um link público será gerado para que outros músicos vejam as músicas, BPMs e tonalidades.' },
+  { question: 'Meu metrônomo está sem som, o que fazer?', answer: 'Verifique se o modo silencioso do dispositivo está desativado e se o volume do metrônomo no mixer (página 1 do fader) está acima de zero.' },
+  { question: 'Os efeitos de áudio consomem mais bateria?', answer: 'Minimamente. Os efeitos (EQ, Reverb, Delay) usam a Web Audio API nativa do navegador, otimizada para performance em tempo real.' },
+  { question: 'Como salvo as configurações de uma música?', answer: 'Ao adicionar uma música ao repertório, todas as configurações (BPM, volumes, pans, efeitos, sons, MIDI) são salvas automaticamente.' },
+  { question: 'Qual a diferença entre os planos?', answer: 'O plano Free oferece funcionalidades básicas. O Pro libera mais pads e importações. O Master dá acesso a efeitos de áudio (EQ, Reverb, Delay) e recursos avançados.' },
+];
+
 /* ─── Step Media Editor ─── */
 const StepMediaEditor: React.FC<{
   step: HelpStep;
@@ -198,6 +303,56 @@ const AdminHelpCenterManager: React.FC = () => {
   }, []);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // ── Import default content ──
+  const [importing, setImporting] = useState(false);
+  const importDefaultContent = async () => {
+    if (!confirm('Importar todo o conteúdo padrão (9 categorias, 8 FAQs)? O conteúdo existente NÃO será apagado.')) return;
+    setImporting(true);
+    try {
+      const baseOrder = categories.length > 0 ? Math.max(...categories.map(c => c.sort_order)) + 1 : 0;
+      
+      for (let ci = 0; ci < DEFAULT_CATEGORIES.length; ci++) {
+        const dc = DEFAULT_CATEGORIES[ci];
+        const { data: catData, error: catErr } = await supabase.from('help_categories').insert({
+          label: dc.label, description: dc.description, icon_name: dc.icon_name, sort_order: baseOrder + ci,
+        } as any).select().single();
+        if (catErr || !catData) continue;
+
+        for (let ai = 0; ai < dc.articles.length; ai++) {
+          const da = dc.articles[ai];
+          const { data: artData, error: artErr } = await supabase.from('help_articles').insert({
+            category_id: (catData as any).id, title: da.title, icon_name: da.icon_name,
+            purpose: da.purpose, sort_order: ai,
+          } as any).select().single();
+          if (artErr || !artData) continue;
+
+          for (let si = 0; si < da.steps.length; si++) {
+            const ds = da.steps[si];
+            await supabase.from('help_steps').insert({
+              article_id: (artData as any).id, title: ds.title, description: ds.description, sort_order: si,
+            } as any);
+          }
+        }
+      }
+
+      // FAQs
+      const baseFaqOrder = faqs.length > 0 ? Math.max(...faqs.map(f => f.sort_order)) + 1 : 0;
+      for (let fi = 0; fi < DEFAULT_FAQS.length; fi++) {
+        const df = DEFAULT_FAQS[fi];
+        await supabase.from('help_faqs').insert({
+          question: df.question, answer: df.answer, sort_order: baseFaqOrder + fi,
+        } as any);
+      }
+
+      toast.success('Conteúdo padrão importado com sucesso!');
+      await fetchAll();
+    } catch {
+      toast.error('Erro ao importar conteúdo');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   // ── Category CRUD ──
   const addCategory = async () => {
@@ -365,11 +520,17 @@ const AdminHelpCenterManager: React.FC = () => {
       {/* ── Categories list ── */}
       {view === 'categories' && !selectedCatId && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <p className="text-xs font-semibold text-foreground">Categorias ({categories.length})</p>
-            <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={addCategory}>
-              <Plus className="h-3 w-3" /> Nova Categoria
-            </Button>
+            <div className="flex gap-1.5">
+              <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={importDefaultContent} disabled={importing}>
+                {importing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                Importar conteúdo padrão
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-[11px] gap-1" onClick={addCategory}>
+                <Plus className="h-3 w-3" /> Nova Categoria
+              </Button>
+            </div>
           </div>
 
           {categories.length === 0 && (
