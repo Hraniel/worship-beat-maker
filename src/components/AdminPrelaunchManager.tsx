@@ -201,7 +201,7 @@ const AdminPrelaunchManager: React.FC = () => {
                       <CalendarIcon className="h-4 w-4 mr-2" />
                       {selectedCalendarDate
                         ? format(selectedCalendarDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                        : 'Selecione a data'}
+                        : 'Sem data definida'}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -220,8 +220,27 @@ const AdminPrelaunchManager: React.FC = () => {
                   value={launchTime}
                   onChange={(e) => handleTimeChange(e.target.value)}
                   className="w-24 bg-slate-800 border-indigo-500/20 text-white text-sm"
+                  disabled={!launchDate}
                 />
+                {launchDate && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      setLaunchDate('');
+                      setLaunchTime('12:00');
+                      await saveConfig('prelaunch_date', '');
+                    }}
+                    className="border-red-500/30 text-red-300 hover:bg-red-950/50 shrink-0"
+                    title="Remover data"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
+              <p className="text-[10px] text-gray-500 mt-1">
+                Deixe sem data para exibir o pré-lançamento sem contagem regressiva.
+              </p>
             </div>
 
             {launchDate && (

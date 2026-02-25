@@ -36,8 +36,8 @@ export function usePrelaunchMode() {
         loading: false,
       };
 
-      // Check if launch date has passed
-      if (newState.launchDate && new Date(newState.launchDate).getTime() <= Date.now()) {
+      // Check if launch date has passed (only if a date is set)
+      if (newState.launchDate && newState.launchDate.trim() !== '' && new Date(newState.launchDate).getTime() <= Date.now()) {
         newState.enabled = false;
       }
 

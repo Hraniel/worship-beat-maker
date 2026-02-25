@@ -36,7 +36,7 @@ const useCountdown = (targetDate: string) => {
 
 const CountdownUnit = ({ value, label }: { value: number; label: string }) => (
   <div className="flex flex-col items-center">
-    <div className="bg-foreground/5 border border-border rounded-xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
+  <div className="bg-foreground/5 border border-border rounded-xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center">
       <span className="text-2xl sm:text-3xl font-extrabold text-foreground tabular-nums">
         {String(value).padStart(2, '0')}
       </span>
