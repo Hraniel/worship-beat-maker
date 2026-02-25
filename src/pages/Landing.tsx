@@ -1024,8 +1024,8 @@ const HowItWorks = ({ config, L }: { config: Record<string, string>; L: (key: st
           className="grid grid-cols-1 sm:grid-cols-3 gap-6"
         >
           {steps.map((item, i) => (
-            <motion.div key={item.step} variants={fadeUp} custom={i} className="relative">
-              <div className="text-6xl font-black leading-none mb-3" style={{ color: stepColor }}>
+            <motion.div key={item.step} variants={fadeUp} custom={i} className="relative text-center sm:text-left">
+              <div className="text-6xl font-black leading-none mb-3 mx-auto sm:mx-0" style={{ color: stepColor }}>
                 {item.step}
               </div>
               <h3 className="text-lg font-bold mb-2" style={{ color: itemTitleColor }}>
@@ -1522,11 +1522,12 @@ const Landing = () => {
       <Footer navigate={prelaunchNavigate} config={config} L={getLocalized} />
 
       {/* Prelaunch modal */}
-      {prelaunch.enabled && prelaunch.launchDate && (
+      {prelaunch.enabled && (prelaunch.launchDate || prelaunch.customMessage) && (
         <PrelaunchCountdownModal
           open={showPrelaunch}
           onOpenChange={setShowPrelaunch}
           launchDate={prelaunch.launchDate}
+          customMessage={prelaunch.customMessage}
         />
       )}
     </div>

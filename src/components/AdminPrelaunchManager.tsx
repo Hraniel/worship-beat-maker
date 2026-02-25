@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User } from 'lucide-react';
+import { Rocket, Users, Download, Loader2, Clock, Mail, Phone, User, MessageSquare } from 'lucide-react';
 
 interface Lead {
   id: string;
@@ -18,6 +19,7 @@ interface Lead {
 const AdminPrelaunchManager: React.FC = () => {
   const [enabled, setEnabled] = useState(false);
   const [launchDate, setLaunchDate] = useState('');
+  const [customMessage, setCustomMessage] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,13 +33,14 @@ const AdminPrelaunchManager: React.FC = () => {
     const { data } = await supabase
       .from('landing_config')
       .select('config_key, config_value')
-      .in('config_key', ['prelaunch_enabled', 'prelaunch_date']);
+      .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message']);
 
     const map: Record<string, string> = {};
     data?.forEach((r: any) => { map[r.config_key] = r.config_value; });
 
     setEnabled(map.prelaunch_enabled === 'true');
     setLaunchDate(map.prelaunch_date || '');
+    setCustomMessage(map.prelaunch_custom_message || '');
     setLoading(false);
   };
 
@@ -108,14 +111,41 @@ const AdminPrelaunchManager: React.FC = () => {
         </div>
 
         {enabled && (
-          <div className="space-y-3 pt-2 border-t border-indigo-500/10">
+          <div className="space-y-4 pt-2 border-t border-indigo-500/10">
+            {/* Custom message */}
             <div>
-              <Label className="text-xs text-gray-400">Data e Hora de Lançamento</Label>
+              <Label className="text-xs text-gray-400 flex items-center gap-1">
+                <MessageSquare className="h-3 w-3" />
+                Mensagem personalizada (substitui ou complementa o countdown)
+              </Label>
+              <div className="flex gap-2 mt-1">
+                <Textarea
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="Ex: Estamos em manutenção, voltamos em breve!"
+                  className="flex-1 bg-slate-800 border-indigo-500/20 text-white text-sm min-h-[60px]"
+                />
+                <Button size="sm" onClick={() => saveConfig('prelaunch_custom_message', customMessage)} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 self-end">
+                  {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Salvar'}
+                </Button>
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1">Se preenchida, aparece no popup. Se a data também estiver configurada, ambos aparecem.</p>
+            </div>
+
+            {/* Date */}
+            <div>
+              <Label className="text-xs text-gray-400">Data e Hora de Lançamento (opcional)</Label>
               <div className="flex gap-2 mt-1">
                 <Input
                   type="datetime-local"
                   value={launchDate ? launchDate.slice(0, 16) : ''}
-                  onChange={(e) => setLaunchDate(new Date(e.target.value).toISOString())}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setLaunchDate(new Date(e.target.value).toISOString());
+                    } else {
+                      setLaunchDate('');
+                    }
+                  }}
                   className="flex-1 bg-slate-800 border-indigo-500/20 text-white text-sm"
                 />
                 <Button size="sm" onClick={handleDateSave} disabled={saving} className="bg-indigo-600 hover:bg-indigo-700">

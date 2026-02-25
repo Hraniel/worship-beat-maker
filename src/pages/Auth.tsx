@@ -27,7 +27,7 @@ const Auth = () => {
   const [oauthLoading, setOauthLoading] = useState(false);
 
   // If prelaunch is active, show countdown instead of auth
-  if (!prelaunch.loading && prelaunch.enabled && prelaunch.launchDate) {
+  if (!prelaunch.loading && prelaunch.enabled && (prelaunch.launchDate || prelaunch.customMessage)) {
     return (
       <>
         <Navigate to="/" replace />
@@ -35,6 +35,7 @@ const Auth = () => {
           open={true}
           onOpenChange={() => {}}
           launchDate={prelaunch.launchDate}
+          customMessage={prelaunch.customMessage}
         />
       </>
     );
@@ -113,6 +114,10 @@ const Auth = () => {
           toast.error(error.message);
         } else {
           toast.success(t('auth.accountCreated'));
+          // Send welcome email via Resend (fire-and-forget)
+          try {
+            await supabase.functions.invoke('send-welcome-email', { body: { email } });
+          } catch { /* silent */ }
         }
       }
     } finally {

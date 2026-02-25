@@ -37,7 +37,6 @@ serve(async (req) => {
     let audienceId = Deno.env.get("RESEND_PRELAUNCH_AUDIENCE_ID");
 
     if (!audienceId) {
-      // List audiences and find or create "Glory Pads - Pré-lançamento"
       const { data: audiences } = await resend.audiences.list();
       const existing = audiences?.data?.find(
         (a: any) => a.name === "Glory Pads - Pre-lancamento"
@@ -72,6 +71,38 @@ serve(async (req) => {
 
     if (contactError) {
       console.error("Error adding contact:", contactError);
+    }
+
+    // Send confirmation email to the lead
+    const firstName = full_name.split(" ")[0];
+    try {
+      await resend.emails.send({
+        from: "Glory Pads <support@glorypads.com>",
+        to: [email],
+        subject: "Pré-cadastro confirmado! 🎉",
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; background: #ffffff; padding: 40px 24px;">
+            <div style="text-align: center; margin-bottom: 32px;">
+              <h1 style="font-size: 24px; font-weight: 700; color: #1a1a2e; margin: 0 0 8px 0;">Olá, ${firstName}!</h1>
+              <p style="font-size: 15px; color: #6b7280; margin: 0;">Seu pré-cadastro foi confirmado com sucesso.</p>
+            </div>
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+              <p style="font-size: 14px; color: #374151; line-height: 1.6; margin: 0;">
+                Você está na lista de espera do <strong>Glory Pads</strong>! Quando estivermos prontos para o lançamento, você será um dos primeiros a saber.
+              </p>
+            </div>
+            <p style="font-size: 13px; color: #9ca3af; text-align: center; margin: 0;">
+              Fique de olho no seu e-mail — boas notícias estão chegando!
+            </p>
+            <div style="text-align: center; margin-top: 32px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+              <p style="font-size: 12px; color: #d1d5db; margin: 0;">Glory Pads — Seus pads de worship na palma da mão</p>
+            </div>
+          </div>
+        `,
+      });
+    } catch (emailErr) {
+      console.error("Error sending confirmation email:", emailErr);
+      // Don't fail the whole request if email fails
     }
 
     return new Response(
