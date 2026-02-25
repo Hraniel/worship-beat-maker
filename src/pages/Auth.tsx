@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import logoDark from '@/assets/logo-dark.png';
 import logoLight from '@/assets/logo-light.png';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,9 +25,52 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
 
-  // During prelaunch, force login-only (no signup) but allow access to login
-  const isPrelaunchActive = !prelaunch.loading && prelaunch.enabled;
+  // Check if user has a valid access key to bypass prelaunch
+  useEffect(() => {
+    if (prelaunch.loading) return;
+
+    if (!prelaunch.enabled) {
+      setAccessGranted(true);
+      setCheckingAccess(false);
+      return;
+    }
+
+    const accessKey = searchParams.get('access');
+    if (!accessKey) {
+      setCheckingAccess(false);
+      return;
+    }
+
+    supabase
+      .from('landing_config')
+      .select('config_value')
+      .eq('config_key', 'prelaunch_access_key')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.config_value && data.config_value === accessKey) {
+          setAccessGranted(true);
+        }
+        setCheckingAccess(false);
+      });
+  }, [searchParams, prelaunch.enabled, prelaunch.loading]);
+
+  // If prelaunch is active and no valid access key, show popup
+  if (!prelaunch.loading && !checkingAccess && prelaunch.enabled && !accessGranted && (prelaunch.launchDate || prelaunch.customMessage)) {
+    return (
+      <>
+        <Navigate to="/" replace />
+        <PrelaunchCountdownModal
+          open={true}
+          onOpenChange={() => {}}
+          launchDate={prelaunch.launchDate}
+          customMessage={prelaunch.customMessage}
+        />
+      </>
+    );
+  }
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);
@@ -43,7 +86,7 @@ const Auth = () => {
     }
   };
 
-  if (loading) {
+  if (loading || checkingAccess || prelaunch.loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -89,7 +132,7 @@ const Auth = () => {
 
     setSubmitting(true);
     try {
-      if (isLogin || isPrelaunchActive) {
+      if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
           toast.error(error.message === 'Invalid login credentials'
@@ -102,7 +145,6 @@ const Auth = () => {
           toast.error(error.message);
         } else {
           toast.success(t('auth.accountCreated'));
-          // Send welcome email via Resend (fire-and-forget)
           try {
             await supabase.functions.invoke('send-welcome-email', { body: { email } });
           } catch { /* silent */ }
@@ -122,8 +164,8 @@ const Auth = () => {
           <p className="text-sm text-muted-foreground">
             {isForgot ? t('auth.resetSubtitle') : isLogin ? t('auth.loginSubtitle') : t('auth.signupSubtitle')}
           </p>
-          {isPrelaunchActive && (
-            <p className="text-xs text-amber-500 mt-1">Acesso restrito — apenas usuários autorizados podem entrar.</p>
+          {prelaunch.enabled && accessGranted && (
+            <p className="text-xs text-amber-500 mt-1">Acesso antecipado — apenas usuários autorizados.</p>
           )}
           <LanguageSelector compact className="justify-center mt-2" />
         </div>
@@ -223,18 +265,16 @@ const Auth = () => {
               </Button>
             </div>
 
-            {!isPrelaunchActive && (
-              <p className="text-center text-sm text-muted-foreground">
-                {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-primary hover:underline font-medium"
-                >
-                  {isLogin ? t('auth.signupAction') : t('auth.loginAction')}
-                </button>
-              </p>
-            )}
+            <p className="text-center text-sm text-muted-foreground">
+              {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}{' '}
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-primary hover:underline font-medium"
+              >
+                {isLogin ? t('auth.signupAction') : t('auth.loginAction')}
+              </button>
+            </p>
           </>
         )}
       </div>
