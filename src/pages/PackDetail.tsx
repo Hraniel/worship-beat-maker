@@ -302,36 +302,41 @@ const PackDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* Sounds grid */}
+        {/* Sounds list */}
         {pack.sounds.length > 0 && (
           <div>
             <h2 className="text-base font-semibold text-gray-900 mb-3">Sons incluídos</h2>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2.5">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               {pack.sounds.map((sound, idx) => (
                 <div
                   key={sound.id}
-                  className="aspect-square bg-white rounded-xl border border-gray-200 flex flex-col items-center justify-center gap-1.5 p-2 hover:bg-gray-50 hover:border-gray-300 transition-colors relative group"
+                  className={`flex items-center gap-3 px-4 py-3 ${idx < pack.sounds.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50 transition-colors`}
                 >
-                  {/* Play button overlay */}
+                  <span className="text-xs text-gray-300 w-5 shrink-0 text-right font-mono">{idx + 1}</span>
+
+                  {/* Play button */}
                   <button
                     onClick={() => handlePreview(sound)}
                     disabled={!sound.preview_path}
-                    className={`h-8 w-8 rounded-full flex items-center justify-center transition-colors ${
+                    className={`shrink-0 h-7 w-7 rounded-full flex items-center justify-center transition-colors ${
                       sound.preview_path
-                        ? 'hover:bg-gray-100 text-gray-400 hover:text-gray-900'
+                        ? 'hover:bg-gray-100 text-gray-500 hover:text-gray-900'
                         : 'text-gray-200 cursor-not-allowed'
                     }`}
                     title={sound.preview_path ? 'Ouvir preview' : 'Sem preview'}
                   >
                     {playingId === sound.id
-                      ? <Square className="h-4 w-4 text-violet-600" />
-                      : <Play className="h-4 w-4" />}
+                      ? <Square className="h-3.5 w-3.5 text-violet-600" />
+                      : <Play className="h-3.5 w-3.5" />}
                   </button>
 
-                  <p className="text-[11px] text-gray-700 font-medium text-center leading-tight truncate w-full px-1">{sound.short_name}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 truncate">{sound.name}</p>
+                    <p className="text-[11px] text-gray-400">{sound.short_name}</p>
+                  </div>
 
                   {sound.duration_ms > 0 && (
-                    <span className="text-[9px] text-gray-400 font-mono">
+                    <span className="text-[11px] text-gray-400 font-mono shrink-0">
                       {(sound.duration_ms / 1000).toFixed(1)}s
                     </span>
                   )}
