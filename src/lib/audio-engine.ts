@@ -147,25 +147,26 @@ export function setMetronomePan(pan: number) {
 
 // --- DRUM SYNTHESIS ---
 
-export function playKick(volume = 0.8, destination?: AudioNode) {
+export function playKick(volume = 0.8, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const gain = ctx.createGain();
   const osc = ctx.createOscillator();
   gain.connect(dest);
   osc.connect(gain);
-  osc.frequency.setValueAtTime(150, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.15);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.4);
+  osc.frequency.setValueAtTime(150, t);
+  osc.frequency.exponentialRampToValueAtTime(30, t + 0.15);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  osc.start(t);
+  osc.stop(t + 0.4);
 }
 
-export function playSnare(volume = 0.7, destination?: AudioNode) {
+export function playSnare(volume = 0.7, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
-  // Noise burst
+  const t = startTime ?? ctx.currentTime;
   const noiseLen = 0.2;
   const bufferSize = ctx.sampleRate * noiseLen;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -180,26 +181,26 @@ export function playSnare(volume = 0.7, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(noiseGain);
   noiseGain.connect(dest);
-  noiseGain.gain.setValueAtTime(volume, ctx.currentTime);
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + noiseLen);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + noiseLen);
-  // Tone body
+  noiseGain.gain.setValueAtTime(volume, t);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + noiseLen);
+  noise.start(t);
+  noise.stop(t + noiseLen);
   const osc = ctx.createOscillator();
   const oscGain = ctx.createGain();
   osc.connect(oscGain);
   oscGain.connect(dest);
-  osc.frequency.setValueAtTime(180, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.08);
-  oscGain.gain.setValueAtTime(volume * 0.7, ctx.currentTime);
-  oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.1);
+  osc.frequency.setValueAtTime(180, t);
+  osc.frequency.exponentialRampToValueAtTime(60, t + 0.08);
+  oscGain.gain.setValueAtTime(volume * 0.7, t);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+  osc.start(t);
+  osc.stop(t + 0.1);
 }
 
-export function playHiHatClosed(volume = 0.5, destination?: AudioNode) {
+export function playHiHatClosed(volume = 0.5, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const len = 0.08;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -214,15 +215,16 @@ export function playHiHatClosed(volume = 0.5, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + len);
+  noise.start(t);
+  noise.stop(t + len);
 }
 
-export function playHiHatOpen(volume = 0.5, destination?: AudioNode) {
+export function playHiHatOpen(volume = 0.5, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const len = 0.3;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -237,15 +239,16 @@ export function playHiHatOpen(volume = 0.5, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + len);
+  noise.start(t);
+  noise.stop(t + len);
 }
 
-export function playCrash(volume = 0.6, destination?: AudioNode) {
+export function playCrash(volume = 0.6, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const len = 1.2;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -260,15 +263,16 @@ export function playCrash(volume = 0.6, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + len);
+  noise.start(t);
+  noise.stop(t + len);
 }
 
-export function playRide(volume = 0.4, destination?: AudioNode) {
+export function playRide(volume = 0.4, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const len = 0.8;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -284,31 +288,33 @@ export function playRide(volume = 0.4, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + len);
+  noise.start(t);
+  noise.stop(t + len);
 }
 
-export function playTom(pitch: 'high' | 'mid' | 'low' = 'mid', volume = 0.7, destination?: AudioNode) {
+export function playTom(pitch: 'high' | 'mid' | 'low' = 'mid', volume = 0.7, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const freqs = { high: 220, mid: 150, low: 100 };
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
   gain.connect(dest);
-  osc.frequency.setValueAtTime(freqs[pitch], ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(freqs[pitch] * 0.4, ctx.currentTime + 0.2);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.3);
+  osc.frequency.setValueAtTime(freqs[pitch], t);
+  osc.frequency.exponentialRampToValueAtTime(freqs[pitch] * 0.4, t + 0.2);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  osc.start(t);
+  osc.stop(t + 0.3);
 }
 
-export function playClap(volume = 0.6, destination?: AudioNode) {
+export function playClap(volume = 0.6, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   for (let i = 0; i < 3; i++) {
     const delay = i * 0.01;
     const len = 0.1;
@@ -325,16 +331,17 @@ export function playClap(volume = 0.6, destination?: AudioNode) {
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(dest);
-    gain.gain.setValueAtTime(volume * 0.7, ctx.currentTime + delay);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + len);
-    noise.start(ctx.currentTime + delay);
-    noise.stop(ctx.currentTime + delay + len);
+    gain.gain.setValueAtTime(volume * 0.7, t + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + delay + len);
+    noise.start(t + delay);
+    noise.stop(t + delay + len);
   }
 }
 
-export function playShaker(volume = 0.4, destination?: AudioNode) {
+export function playShaker(volume = 0.4, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const len = 0.1;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -349,32 +356,34 @@ export function playShaker(volume = 0.4, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.linearRampToValueAtTime(0, t + len);
+  noise.start(t);
+  noise.stop(t + len);
 }
 
-export function playRiser(volume = 0.5, destination?: AudioNode) {
+export function playRiser(volume = 0.5, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = 'sawtooth';
   osc.connect(gain);
   gain.connect(dest);
-  osc.frequency.setValueAtTime(200, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(4000, ctx.currentTime + 1.5);
-  gain.gain.setValueAtTime(0.001, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 1.2);
-  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.5);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 1.5);
+  osc.frequency.setValueAtTime(200, t);
+  osc.frequency.exponentialRampToValueAtTime(4000, t + 1.5);
+  gain.gain.setValueAtTime(0.001, t);
+  gain.gain.linearRampToValueAtTime(volume, t + 1.2);
+  gain.gain.linearRampToValueAtTime(0, t + 1.5);
+  osc.start(t);
+  osc.stop(t + 1.5);
 }
 
-export function playSwell(volume = 0.5, destination?: AudioNode) {
+export function playSwell(volume = 0.5, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const len = 2;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -384,22 +393,23 @@ export function playSwell(volume = 0.5, destination?: AudioNode) {
   noise.buffer = buffer;
   const filter = ctx.createBiquadFilter();
   filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(200, ctx.currentTime);
-  filter.frequency.exponentialRampToValueAtTime(8000, ctx.currentTime + 1.5);
+  filter.frequency.setValueAtTime(200, t);
+  filter.frequency.exponentialRampToValueAtTime(8000, t + 1.5);
   const gain = ctx.createGain();
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(0.001, ctx.currentTime);
-  gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + 1.5);
-  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
+  gain.gain.setValueAtTime(0.001, t);
+  gain.gain.linearRampToValueAtTime(volume, t + 1.5);
+  gain.gain.linearRampToValueAtTime(0, t + len);
+  noise.start(t);
+  noise.stop(t + len);
 }
 
-export function playReverseCymbal(volume = 0.5, destination?: AudioNode) {
+export function playReverseCymbal(volume = 0.5, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
+  const t = startTime ?? ctx.currentTime;
   const len = 1;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -414,19 +424,19 @@ export function playReverseCymbal(volume = 0.5, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(0.001, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(volume, ctx.currentTime + len * 0.9);
-  gain.gain.linearRampToValueAtTime(0, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
+  gain.gain.setValueAtTime(0.001, t);
+  gain.gain.exponentialRampToValueAtTime(volume, t + len * 0.9);
+  gain.gain.linearRampToValueAtTime(0, t + len);
+  noise.start(t);
+  noise.stop(t + len);
 }
 
 // --- WORSHIP-STYLE SOUNDS ---
 
-export function playFingerSnap(volume = 0.5, destination?: AudioNode) {
+export function playFingerSnap(volume = 0.5, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
-  // Short, bright transient click
+  const t = startTime ?? ctx.currentTime;
   const len = 0.06;
   const bufferSize = ctx.sampleRate * len;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -442,27 +452,26 @@ export function playFingerSnap(volume = 0.5, destination?: AudioNode) {
   noise.connect(filter);
   filter.connect(gain);
   gain.connect(dest);
-  gain.gain.setValueAtTime(volume * 0.9, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + len);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + len);
-  // Add a subtle tone body for the "snap" character
+  gain.gain.setValueAtTime(volume * 0.9, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + len);
+  noise.start(t);
+  noise.stop(t + len);
   const osc = ctx.createOscillator();
   const oscGain = ctx.createGain();
   osc.connect(oscGain);
   oscGain.connect(dest);
-  osc.frequency.setValueAtTime(1800, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.02);
-  oscGain.gain.setValueAtTime(volume * 0.4, ctx.currentTime);
-  oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.03);
+  osc.frequency.setValueAtTime(1800, t);
+  osc.frequency.exponentialRampToValueAtTime(800, t + 0.02);
+  oscGain.gain.setValueAtTime(volume * 0.4, t);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+  osc.start(t);
+  osc.stop(t + 0.03);
 }
 
-export function playKickReverb(volume = 0.7, destination?: AudioNode) {
+export function playKickReverb(volume = 0.7, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
-  // Deep kick with long reverb tail
+  const t = startTime ?? ctx.currentTime;
   const convLen = 2.5;
   const convSize = ctx.sampleRate * convLen;
   const convBuffer = ctx.createBuffer(2, convSize, ctx.sampleRate);
@@ -481,24 +490,23 @@ export function playKickReverb(volume = 0.7, destination?: AudioNode) {
   dryGain.connect(dest);
   convolver.connect(wetGain);
   wetGain.connect(dest);
-  // Kick oscillator
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
   gain.connect(dryGain);
   gain.connect(convolver);
-  osc.frequency.setValueAtTime(80, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(25, ctx.currentTime + 0.25);
-  gain.gain.setValueAtTime(volume, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.5);
+  osc.frequency.setValueAtTime(80, t);
+  osc.frequency.exponentialRampToValueAtTime(25, t + 0.25);
+  gain.gain.setValueAtTime(volume, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+  osc.start(t);
+  osc.stop(t + 0.5);
 }
 
-export function playSnareReverb(volume = 0.6, destination?: AudioNode) {
+export function playSnareReverb(volume = 0.6, destination?: AudioNode, startTime?: number) {
   const ctx = getAudioContext();
   const dest = destination || getMasterGain();
-  // Snare with worship-style reverb tail
+  const t = startTime ?? ctx.currentTime;
   const convLen = 2;
   const convSize = ctx.sampleRate * convLen;
   const convBuffer = ctx.createBuffer(2, convSize, ctx.sampleRate);
@@ -517,7 +525,6 @@ export function playSnareReverb(volume = 0.6, destination?: AudioNode) {
   dryGain.connect(dest);
   convolver.connect(wetGain);
   wetGain.connect(dest);
-  // Noise burst
   const noiseLen = 0.15;
   const bufferSize = ctx.sampleRate * noiseLen;
   const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -534,22 +541,21 @@ export function playSnareReverb(volume = 0.6, destination?: AudioNode) {
   filter.connect(noiseGain);
   noiseGain.connect(dryGain);
   noiseGain.connect(convolver);
-  noiseGain.gain.setValueAtTime(volume, ctx.currentTime);
-  noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + noiseLen);
-  noise.start(ctx.currentTime);
-  noise.stop(ctx.currentTime + noiseLen);
-  // Tone body
+  noiseGain.gain.setValueAtTime(volume, t);
+  noiseGain.gain.exponentialRampToValueAtTime(0.001, t + noiseLen);
+  noise.start(t);
+  noise.stop(t + noiseLen);
   const osc = ctx.createOscillator();
   const oscGain = ctx.createGain();
   osc.connect(oscGain);
   oscGain.connect(dryGain);
   oscGain.connect(convolver);
-  osc.frequency.setValueAtTime(200, ctx.currentTime);
-  osc.frequency.exponentialRampToValueAtTime(80, ctx.currentTime + 0.06);
-  oscGain.gain.setValueAtTime(volume * 0.5, ctx.currentTime);
-  oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-  osc.start(ctx.currentTime);
-  osc.stop(ctx.currentTime + 0.08);
+  osc.frequency.setValueAtTime(200, t);
+  osc.frequency.exponentialRampToValueAtTime(80, t + 0.06);
+  oscGain.gain.setValueAtTime(volume * 0.5, t);
+  oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  osc.start(t);
+  osc.stop(t + 0.08);
 }
 
 
@@ -568,17 +574,17 @@ export function playMetronomeClick(accent = false, volume = 0.3, startTime?: num
   osc.stop(t + 0.05);
 }
 
-// Map sound IDs to play functions
-export const soundMap: Record<string, (volume?: number, destination?: AudioNode) => void> = {
+// Map sound IDs to play functions (with startTime support for precise scheduling)
+export const soundMap: Record<string, (volume?: number, destination?: AudioNode, startTime?: number) => void> = {
   kick: playKick,
   snare: playSnare,
   'hihat-closed': playHiHatClosed,
   'hihat-open': playHiHatOpen,
   crash: playCrash,
   ride: playRide,
-  'tom-high': (v, d) => playTom('high', v, d),
-  'tom-mid': (v, d) => playTom('mid', v, d),
-  'tom-low': (v, d) => playTom('low', v, d),
+  'tom-high': (v, d, t) => playTom('high', v, d, t),
+  'tom-mid': (v, d, t) => playTom('mid', v, d, t),
+  'tom-low': (v, d, t) => playTom('low', v, d, t),
   clap: playClap,
   shaker: playShaker,
   riser: playRiser,
@@ -634,7 +640,7 @@ export function playSound(id: string, volume = 0.7, destination?: AudioNode, sta
     return playCustomBuffer(id, volume, destination, startTime);
   }
   const fn = soundMap[id];
-  if (fn) fn(volume, destination);
+  if (fn) fn(volume, destination, startTime);
   return null;
 }
 
