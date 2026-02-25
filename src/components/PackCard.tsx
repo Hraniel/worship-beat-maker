@@ -101,7 +101,7 @@ const PackCard: React.FC<PackCardProps> = ({ pack, onPurchased }) => {
 
   return (
     <div
-      className="group relative aspect-square rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer max-w-[160px]"
+      className="group relative aspect-square w-full rounded-xl border border-border hover:border-primary/30 hover:shadow-md transition-all duration-200 overflow-hidden cursor-pointer"
       onClick={handleCardClick}
     >
       {/* Background: banner image or gradient color */}

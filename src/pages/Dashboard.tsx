@@ -518,8 +518,18 @@ const Dashboard = () => {
                 </button>
               ))}
             </div>
+            </div>
           </div>
-        </div>
+
+          {/* Decorative section divider */}
+          <div className="hidden lg:flex items-center gap-3 mb-2">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-violet-200 to-transparent" />
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-50 border border-violet-100">
+              <Sparkles className="h-3 w-3 text-violet-400" />
+              <span className="text-[10px] font-semibold text-violet-500 tracking-wide uppercase">{activeCategory}</span>
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-violet-200 to-transparent" />
+          </div>
 
         {/* Mobile category side drawer */}
         {showMobileFilter && (
@@ -668,17 +678,21 @@ const Dashboard = () => {
             )}
             {!packsLoading && (
               <>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-gray-500">
-                    <span className="font-semibold text-gray-900">{activeCategory}</span>
-                    {' '}· {filteredPacks.length} {t('dashboard.pack', { count: filteredPacks.length })}
-                  </p>
+                <div className="rounded-2xl bg-gradient-to-br from-gray-50/80 via-white to-violet-50/40 border border-gray-100 p-5">
+                  <div className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-5 gap-y-6 justify-items-center" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 150px))' }}>
+                    {filteredPacks.map(pack => (
+                      <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
-                  {filteredPacks.map(pack => (
-                    <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
-                  ))}
-                </div>
+                {filteredPacks.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="h-14 w-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                      <Music className="h-6 w-6 text-gray-300" />
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">{t('dashboard.noPacks', 'Nenhum pack encontrado')}</p>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -691,11 +705,27 @@ const Dashboard = () => {
               <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
             </div>
           )}
-          {!packsLoading && (
-            <div className="grid grid-cols-3 gap-2.5">
-              {filteredPacks.map(pack => (
-                <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
-              ))}
+          {!packsLoading && filteredPacks.length > 0 && (
+            <>
+              {/* Decorative divider */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+              </div>
+              <div className="grid grid-cols-3 gap-x-3 gap-y-5 justify-items-center">
+                {filteredPacks.map(pack => (
+                  <PackCard key={pack.id} pack={pack} onPurchased={refetch} />
+                ))}
+              </div>
+            </>
+          )}
+          {!packsLoading && filteredPacks.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="h-14 w-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                <Music className="h-6 w-6 text-gray-300" />
+              </div>
+              <p className="text-sm text-gray-400 font-medium">{t('dashboard.noPacks', 'Nenhum pack encontrado')}</p>
             </div>
           )}
         </div>
