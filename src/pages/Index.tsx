@@ -96,7 +96,7 @@ import TutorialGuide from "@/components/TutorialGuide";
 import SettingsDialog, { loadAudioSettings, type AudioSettings } from "@/components/SettingsDialog";
 import UpdateBanner from "@/components/UpdateBanner";
 import OfflineBanner from "@/components/OfflineBanner";
-import NotificationBanner from "@/components/NotificationBanner";
+import NotificationsSheet from "@/components/NotificationsSheet";
 import NotificationPromptBanner from "@/components/NotificationPromptBanner";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import PerformanceMode from "@/components/PerformanceMode";
@@ -119,6 +119,7 @@ import MidiIndicator from "@/components/MidiIndicator";
 import SilentModeBanner from "@/components/SilentModeBanner";
 import { useSilentModeDetector } from "@/hooks/useSilentModeDetector";
 import { useAppConfig } from "@/hooks/useAppConfig";
+import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
@@ -219,6 +220,8 @@ const Index = () => {
   const [storeLoading, setStoreLoading] = useState(false);
   const [openSetlistFromBanner, setOpenSetlistFromBanner] = useState(false);
   const [savedSongsOpen, setSavedSongsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const maintenanceMode = useMaintenanceMode();
   const reopenSetlistRef = useRef(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
     try { return localStorage.getItem('glory-selected-event-id') || null; } catch { return null; }
@@ -1271,13 +1274,15 @@ const Index = () => {
           onClose={() => setPerformanceModeOpen(false)}
         />
       )}
-      <NotificationBanner
+      <NotificationsSheet
+        open={notificationsOpen}
+        onOpenChange={setNotificationsOpen}
         notifications={adminNotifications}
         onMarkAsRead={markNotifAsRead}
         onMarkAllAsRead={markAllNotifsAsRead}
       />
       <UpdateBanner
-        show={needRefresh && isOnline}
+        show={needRefresh && isOnline && !maintenanceMode.enabled}
         onUpdate={async () => {
           await updateServiceWorker(true);
           window.location.reload();
@@ -1335,6 +1340,20 @@ const Index = () => {
                     >
                       <button
                         onClick={() => {
+                          setMobileMenuOpen(false);
+                          setNotificationsOpen(true);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors relative"
+                      >
+                        <Bell className="h-4 w-4 text-muted-foreground" /> Notificações
+                        {adminNotifications.length > 0 && (
+                          <span className="ml-auto bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                            {adminNotifications.length}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
                           handleInstallClick();
                           setMobileMenuOpen(false);
                         }}
@@ -1380,16 +1399,20 @@ const Index = () => {
                       >
                         <Sliders className="h-4 w-4 text-muted-foreground" /> {t('index.settings')}
                       </button>
-                      <div className="border-t border-border my-1" />
-                      <button
-                        onClick={() => {
-                          signOut();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" /> {t('index.signOut')}
-                      </button>
+                      {!maintenanceMode.enabled && (
+                        <>
+                          <div className="border-t border-border my-1" />
+                          <button
+                            onClick={() => {
+                              signOut();
+                              setMobileMenuOpen(false);
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors"
+                          >
+                            <LogOut className="h-4 w-4" /> {t('index.signOut')}
+                          </button>
+                        </>
+                      )}
                     </div>
                   </>
                 )}
@@ -1501,6 +1524,20 @@ const Index = () => {
                     >
                       <button
                         onClick={() => {
+                          setMobileMenuOpen(false);
+                          setNotificationsOpen(true);
+                        }}
+                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors relative"
+                      >
+                        <Bell className="h-4 w-4 text-muted-foreground" /> Notificações
+                        {adminNotifications.length > 0 && (
+                          <span className="ml-auto bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                            {adminNotifications.length}
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
                           handleInstallClick();
                           setMobileMenuOpen(false);
                         }}
@@ -1568,34 +1605,40 @@ const Index = () => {
                       >
                         <Store className="h-4 w-4 text-muted-foreground" /> {t('index.store')}
                       </button>
-                      <button
-                        onClick={async () => {
-                          setMobileMenuOpen(false);
-                          if ("caches" in window) {
-                            const keys = await caches.keys();
-                            await Promise.all(keys.map((k) => caches.delete(k)));
-                          }
-                          if ("serviceWorker" in navigator) {
-                            const regs = await navigator.serviceWorker.getRegistrations();
-                            await Promise.all(regs.map((r) => r.unregister()));
-                          }
-                          toast.success("Cache limpo! Recarregando...");
-                          setTimeout(() => window.location.reload(), 500);
-                        }}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
-                      >
-                        <RefreshCw className="h-4 w-4 text-muted-foreground" /> Atualizar App
-                      </button>
-                      <div className="border-t border-border my-1" />
-                      <button
-                        onClick={() => {
-                          signOut();
-                          setMobileMenuOpen(false);
-                        }}
-                        className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors"
-                      >
-                        <LogOut className="h-4 w-4" /> Sair
-                      </button>
+                      {!maintenanceMode.enabled && (
+                        <button
+                          onClick={async () => {
+                            setMobileMenuOpen(false);
+                            if ("caches" in window) {
+                              const keys = await caches.keys();
+                              await Promise.all(keys.map((k) => caches.delete(k)));
+                            }
+                            if ("serviceWorker" in navigator) {
+                              const regs = await navigator.serviceWorker.getRegistrations();
+                              await Promise.all(regs.map((r) => r.unregister()));
+                            }
+                            toast.success("Cache limpo! Recarregando...");
+                            setTimeout(() => window.location.reload(), 500);
+                          }}
+                          className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+                        >
+                          <RefreshCw className="h-4 w-4 text-muted-foreground" /> Atualizar App
+                        </button>
+                      )}
+                      {!maintenanceMode.enabled && (
+                        <>
+                          <div className="border-t border-border my-1" />
+                          <button
+                            onClick={() => {
+                              signOut();
+                              setMobileMenuOpen(false);
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-destructive hover:bg-muted transition-colors"
+                          >
+                            <LogOut className="h-4 w-4" /> Sair
+                          </button>
+                        </>
+                      )}
                     </div>
                   </>
                 )}

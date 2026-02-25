@@ -25,6 +25,7 @@ import AppLoadingScreen from "@/components/AppLoadingScreen";
 import { useAppReloadGuard } from "@/hooks/useAppReloadGuard";
 import { useLocaleSync } from "@/hooks/useLocaleSync";
 import { usePrelaunchMode } from "@/hooks/usePrelaunchMode";
+import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 import PrelaunchCountdownModal from "@/components/PrelaunchCountdownModal";
 
 const CACHE_VERSION_KEY = 'app_cache_version';
@@ -158,6 +159,43 @@ const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
   const prelaunch = usePrelaunchMode();
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isWhitelisted, setIsWhitelisted] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    if (!user?.id) { setChecking(false); return; }
+    
+    Promise.all([
+      supabase.from('user_roles').select('role').eq('user_id', user.id),
+      supabase.from('prelaunch_whitelist').select('id').eq('user_id', user.id).maybeSingle(),
+    ]).then(([rolesRes, whitelistRes]) => {
+      const roles = rolesRes.data?.map((r: any) => r.role) || [];
+      setIsAdmin(roles.includes('admin') || roles.includes('ceo'));
+      setIsWhitelisted(!!whitelistRes.data);
+      setChecking(false);
+    });
+  }, [user?.id]);
+
+  if (prelaunch.loading || checking) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (prelaunch.enabled && !isAdmin && !isWhitelisted) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
+// Blocks all login during maintenance (except admins)
+const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
+  const { enabled, loading } = useMaintenanceMode();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -173,7 +211,7 @@ const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
       });
   }, [user?.id]);
 
-  if (prelaunch.loading || checking) {
+  if (loading || checking) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -181,7 +219,7 @@ const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (prelaunch.enabled && !isAdmin) {
+  if (enabled && !isAdmin) {
     return <Navigate to="/" replace />;
   }
 
@@ -210,8 +248,8 @@ const App = () => (
                   <Sonner />
                   <Routes>
                     <Route path="/" element={<Landing />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/app" element={<ProtectedRoute><PrelaunchGate><AppGate><Index /></AppGate></PrelaunchGate></ProtectedRoute>} />
+                    <Route path="/auth" element={<MaintenanceGate><Auth /></MaintenanceGate>} />
+                    <Route path="/app" element={<ProtectedRoute><MaintenanceGate><PrelaunchGate><AppGate><Index /></AppGate></PrelaunchGate></MaintenanceGate></ProtectedRoute>} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/pricing" element={<ProtectedRoute><PrelaunchGate><Pricing /></PrelaunchGate></ProtectedRoute>} />
                     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
