@@ -48,11 +48,11 @@ let currentBpm = 120;
 let beatsPerBar = 4;
 let beatUnit = 4; // denominator of time signature
 
-// Sync (quantization) toggle
+// Sync (quantization) toggle — persisted in localStorage
 let syncEnabled = true;
 
-// Force loops to start on beat 1
-let forceLoopBeat1 = false;
+// Force loops to start on beat 1 — defaults to true
+let forceLoopBeat1 = true;
 
 // Disable metronome downbeat accent
 let metronomeAccentEnabled = true;
@@ -61,6 +61,7 @@ let metronomeAccentEnabled = true;
 
 export function setSyncEnabled(enabled: boolean) {
   syncEnabled = enabled;
+  localStorage.setItem('drum-pads-sync-enabled', String(enabled));
 }
 
 export function isSyncEnabled(): boolean {
@@ -95,6 +96,8 @@ export function isCountIn(): boolean {
 
 // Load persisted settings
 try {
+  const syncStored = localStorage.getItem('drum-pads-sync-enabled');
+  if (syncStored !== null) syncEnabled = syncStored === 'true';
   const b1 = localStorage.getItem('glory-force-loop-beat1');
   if (b1 !== null) forceLoopBeat1 = b1 === 'true';
   const acc = localStorage.getItem('glory-metronome-accent');
