@@ -259,7 +259,7 @@ const App = () => (
                   <Sonner />
                   <Routes>
                     <Route path="/" element={<Landing />} />
-                    <Route path="/auth" element={<MaintenanceGate><Auth /></MaintenanceGate>} />
+                    <Route path="/auth" element={<Auth />} />
                     <Route path="/app" element={<ProtectedRoute><MaintenanceGate><PrelaunchGate><AppGate><Index /></AppGate></PrelaunchGate></MaintenanceGate></ProtectedRoute>} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/pricing" element={<ProtectedRoute><PrelaunchGate><Pricing /></PrelaunchGate></ProtectedRoute>} />
