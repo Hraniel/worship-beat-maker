@@ -698,7 +698,9 @@ const AdminLandingEditor: React.FC = () => {
             {renderPaddingFields('cta')}
           </>)}
 
-          {renderVideoBlock('cta_video', 'CTA Final', '1920×500px')}
+          {renderVideoBlock('cta_card_video', 'Vídeo do Card Central', '1200×500px')}
+
+          {renderVideoBlock('cta_video', 'CTA Final (Seção)', '1920×500px')}
         </div>
       )}
 
