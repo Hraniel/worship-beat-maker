@@ -23,6 +23,7 @@ import {
   setMetronomePan,
   setPadPan,
   startBackgroundKeepAlive,
+  stopBackgroundKeepAlive,
 } from "@/lib/audio-engine";
 import { defaultPads, type SetlistSong } from "@/lib/sounds";
 import {
@@ -518,7 +519,8 @@ const Index = () => {
         getAudioContext()
           .resume()
           .catch(() => {});
-        // Re-start keep-alive in case it was killed
+        // Force full reset of keep-alive mechanisms
+        stopBackgroundKeepAlive();
         startBackgroundKeepAlive();
         // Update media session state
         if ("mediaSession" in navigator) {
