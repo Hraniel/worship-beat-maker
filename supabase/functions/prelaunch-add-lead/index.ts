@@ -76,7 +76,7 @@ serve(async (req) => {
     // Send confirmation email to the lead
     const firstName = full_name.split(" ")[0];
     try {
-      await resend.emails.send({
+      const emailResult = await resend.emails.send({
         from: "Glory Pads <support@glorypads.com>",
         to: [email],
         subject: "Pré-cadastro confirmado! 🎉",
@@ -100,8 +100,9 @@ serve(async (req) => {
           </div>
         `,
       });
+      console.log("Email send result:", JSON.stringify(emailResult));
     } catch (emailErr) {
-      console.error("Error sending confirmation email:", emailErr);
+      console.error("Error sending confirmation email:", JSON.stringify(emailErr));
       // Don't fail the whole request if email fails
     }
 
