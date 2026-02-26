@@ -20,6 +20,7 @@ import VapidGenerator from "./pages/VapidGenerator";
 import Help from "./pages/Help";
 import MyTickets from "./pages/MyTickets";
 import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AppLoadingScreen from "@/components/AppLoadingScreen";
@@ -249,6 +250,7 @@ const App = () => (
             <Route path="/s/:token" element={<SharedSetlist />} />
             <Route path="/install" element={<Install />} />
             <Route path="/privacidade" element={<Privacy />} />
+            <Route path="/termos" element={<Terms />} />
             <Route path="/vapid-generator" element={<VapidGenerator />} />
 
             {/* All other routes — wrapped in auth/subscription providers */}
