@@ -104,13 +104,23 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from response (may have markdown code fences)
+    // Parse JSON from response (may have markdown code fences or extra text)
     let translations: Record<string, string>;
     try {
-      const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      // Strip markdown fences
+      let cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      // Try direct parse first
       translations = JSON.parse(cleaned);
     } catch {
-      throw new Error("Failed to parse AI translation response");
+      // Fallback: extract the first JSON object from the response
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) throw new Error("No JSON found");
+        translations = JSON.parse(jsonMatch[0]);
+      } catch {
+        console.error("AI response content:", content.substring(0, 500));
+        throw new Error("Failed to parse AI translation response");
+      }
     }
 
     // Save translations as overrides
