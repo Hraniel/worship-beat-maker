@@ -8,7 +8,7 @@ import {
   Save, Loader2, Crown, Zap, Lock, Unlock, Plus, Trash2, RefreshCw,
   Music, Mic2, Waves, Sparkles, Activity, Radio, ListMusic, SlidersHorizontal,
   AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp, Cpu,
-  GripVertical,
+  GripVertical, ArrowRightLeft, AlertTriangle, CheckCircle2, Users,
 } from 'lucide-react';
 import type { PlanPricing, PlanFeature, FeatureGate } from '@/hooks/useLandingConfig';
 import { invalidateGatesCache } from '@/hooks/useFeatureGates';
@@ -184,7 +184,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const [gates, setGates] = useState<FeatureGate[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'pricing' | 'features' | 'gates'>('pricing');
+  const [activeTab, setActiveTab] = useState<'pricing' | 'features' | 'gates' | 'migration'>('pricing');
   const [newGate, setNewGate] = useState({ gate_key: '', gate_label: '', required_tier: 'pro', description: '' });
   const [addingGate, setAddingGate] = useState(false);
   const [newFeature, setNewFeature] = useState<Record<string, { feature_key: string; feature_label: string }>>({});
@@ -192,6 +192,14 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [expandedCatalogCategory, setExpandedCatalogCategory] = useState<string | null>(null);
   const [addingAll, setAddingAll] = useState(false);
+  // Migration state
+  const [migSourceProduct, setMigSourceProduct] = useState('');
+  const [migTargetPrice, setMigTargetPrice] = useState('');
+  const [migProration, setMigProration] = useState<'create_prorations' | 'none' | 'always_invoice'>('create_prorations');
+  const [migPreviewCount, setMigPreviewCount] = useState<number | null>(null);
+  const [migPreviewing, setMigPreviewing] = useState(false);
+  const [migMigrating, setMigMigrating] = useState(false);
+  const [migResult, setMigResult] = useState<{ migrated: number; failed: number; errors: string[] } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -462,6 +470,7 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
           { id: 'pricing', label: 'Preços & Limites' },
           { id: 'features', label: 'Recursos por Plano' },
           { id: 'gates', label: 'Bloqueios do App' },
+          { id: 'migration', label: 'Migração' },
         ] as const).map(({ id, label }) => (
           <button key={id} onClick={() => setActiveTab(id)}
             className={`flex-1 h-7 rounded-md text-xs font-medium transition-colors ${
@@ -775,6 +784,182 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── MIGRATION TAB ──────────────────────────────────────────────────── */}
+      {activeTab === 'migration' && (
+        <div className="space-y-4">
+          <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-amber-300">Migração em massa de assinantes</p>
+              <p className="text-[11px] text-amber-300/70 leading-relaxed mt-1">
+                Esta ferramenta atualiza <strong>todas</strong> as assinaturas ativas de um produto Stripe para um novo preço.
+                Use após criar um novo preço no Stripe (via aba "Preços & Limites") para migrar assinantes existentes.
+              </p>
+            </div>
+          </div>
+
+          <div className="border border-white/10 rounded-xl p-4 space-y-4">
+            <p className="text-xs font-semibold text-white">1. Selecione o plano de origem</p>
+            <div className="grid grid-cols-2 gap-3">
+              {(['pro', 'master'] as const).map(tier => {
+                const tierConfig = TIERS[tier];
+                const isSelected = migSourceProduct === ('product_id' in tierConfig ? tierConfig.product_id : '');
+                const productId = 'product_id' in tierConfig ? tierConfig.product_id : '';
+                return (
+                  <button
+                    key={tier}
+                    onClick={() => {
+                      setMigSourceProduct(productId);
+                      setMigPreviewCount(null);
+                      setMigResult(null);
+                    }}
+                    className={`flex items-center gap-2 p-3 rounded-lg border transition-all ${
+                      isSelected
+                        ? 'border-violet-500 bg-violet-500/10 ring-1 ring-violet-500/30'
+                        : 'border-white/10 bg-white/5 hover:bg-white/8'
+                    }`}
+                  >
+                    {tier === 'pro' ? <Zap className="h-4 w-4 text-violet-400" /> : <Crown className="h-4 w-4 text-amber-400" />}
+                    <div className="text-left">
+                      <p className="text-xs font-semibold text-white">{tierConfig.name}</p>
+                      <p className="text-[10px] text-white/40">R$ {tierConfig.price}/mês</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {migSourceProduct && (
+              <>
+                <p className="text-xs font-semibold text-white mt-4">2. ID do novo preço no Stripe</p>
+                <input
+                  className={inputCls}
+                  placeholder="price_xxxxxxxxxxxxx (novo Price ID do Stripe)"
+                  value={migTargetPrice}
+                  onChange={e => { setMigTargetPrice(e.target.value); setMigPreviewCount(null); setMigResult(null); }}
+                />
+                <p className="text-[10px] text-white/30">
+                  Quando você salva um novo preço na aba "Preços & Limites", o Stripe cria um novo Price ID automaticamente. Cole-o aqui.
+                  Você pode encontrá-lo na tabela plan_pricing (coluna stripe_price_id).
+                </p>
+
+                <p className="text-xs font-semibold text-white mt-4">3. Comportamento de cobrança</p>
+                <select
+                  className={inputCls}
+                  value={migProration}
+                  onChange={e => setMigProration(e.target.value as any)}
+                >
+                  <option value="create_prorations">Prorratear (cobrar diferença proporcional)</option>
+                  <option value="none">Sem prorratear (novo preço só na próxima renovação)</option>
+                  <option value="always_invoice">Faturar imediatamente (cobrar diferença agora)</option>
+                </select>
+
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={migPreviewing || !migSourceProduct}
+                    onClick={async () => {
+                      setMigPreviewing(true);
+                      setMigPreviewCount(null);
+                      try {
+                        const { data, error } = await supabase.functions.invoke('migrate-subscriptions', {
+                          body: { action: 'preview', source_product_id: migSourceProduct },
+                        });
+                        if (error) throw error;
+                        setMigPreviewCount(data.count);
+                      } catch (e: any) {
+                        toast.error(e.message || 'Erro ao buscar preview');
+                      } finally {
+                        setMigPreviewing(false);
+                      }
+                    }}
+                    className="h-8 px-4 text-xs border-white/20 text-white hover:bg-white/10"
+                  >
+                    {migPreviewing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Users className="h-3 w-3 mr-1" />}
+                    Verificar assinantes
+                  </Button>
+                </div>
+
+                {migPreviewCount !== null && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/25">
+                    <Users className="h-4 w-4 text-blue-400" />
+                    <p className="text-xs text-blue-300">
+                      <strong>{migPreviewCount}</strong> assinante{migPreviewCount !== 1 ? 's' : ''} será{migPreviewCount !== 1 ? 'ão' : ''} migrado{migPreviewCount !== 1 ? 's' : ''}.
+                    </p>
+                  </div>
+                )}
+
+                {migPreviewCount !== null && migPreviewCount > 0 && migTargetPrice && (
+                  <Button
+                    size="sm"
+                    disabled={migMigrating}
+                    onClick={async () => {
+                      if (!confirm(`Tem certeza que deseja migrar ${migPreviewCount} assinante(s) para o novo preço? Esta ação não pode ser desfeita.`)) return;
+                      setMigMigrating(true);
+                      setMigResult(null);
+                      try {
+                        const { data, error } = await supabase.functions.invoke('migrate-subscriptions', {
+                          body: {
+                            action: 'migrate',
+                            source_product_id: migSourceProduct,
+                            target_price_id: migTargetPrice,
+                            proration_behavior: migProration,
+                          },
+                        });
+                        if (error) throw error;
+                        setMigResult(data);
+                        if (data.failed === 0) {
+                          toast.success(`${data.migrated} assinante(s) migrado(s) com sucesso!`);
+                        } else {
+                          toast.warning(`${data.migrated} migrado(s), ${data.failed} falha(s)`);
+                        }
+                      } catch (e: any) {
+                        toast.error(e.message || 'Erro na migração');
+                      } finally {
+                        setMigMigrating(false);
+                      }
+                    }}
+                    className="h-8 px-4 text-xs bg-red-600 hover:bg-red-700 text-white w-full"
+                  >
+                    {migMigrating ? (
+                      <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Migrando...</>
+                    ) : (
+                      <><ArrowRightLeft className="h-3 w-3 mr-1" /> Migrar {migPreviewCount} assinante(s) agora</>
+                    )}
+                  </Button>
+                )}
+
+                {migResult && (
+                  <div className={`px-3 py-3 rounded-lg border space-y-2 ${
+                    migResult.failed === 0
+                      ? 'bg-green-500/10 border-green-500/25'
+                      : 'bg-amber-500/10 border-amber-500/25'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      {migResult.failed === 0
+                        ? <CheckCircle2 className="h-4 w-4 text-green-400" />
+                        : <AlertTriangle className="h-4 w-4 text-amber-400" />
+                      }
+                      <p className="text-xs font-semibold text-white">
+                        {migResult.migrated} migrado(s) • {migResult.failed} falha(s)
+                      </p>
+                    </div>
+                    {migResult.errors.length > 0 && (
+                      <div className="space-y-1">
+                        {migResult.errors.map((err, i) => (
+                          <p key={i} className="text-[10px] text-red-300 font-mono">{err}</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

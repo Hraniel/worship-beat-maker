@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.auto-translate]
 verify_jwt = false
+
+[functions.migrate-subscriptions]
+verify_jwt = false
