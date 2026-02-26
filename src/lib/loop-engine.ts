@@ -1,10 +1,8 @@
 // Unified clock engine: single timing source for loops AND metronome
-// Both sync to the same 16th-note subdivision grid
-// Uses a "lookahead scheduler" pattern (Chris Wilson's "A Tale of Two Clocks")
-// to pre-schedule audio events via the Web Audio clock, making timing resilient
-// to main-thread jank caused by external programs (e.g. MainStage, DAWs).
+// Loops now use pre-rendered AudioBuffers with native looping (AudioBufferSourceNode.loop = true)
+// which survives iOS background JS suspension. The timer is only needed for metronome + visual feedback.
 
-import { getAudioContext, playSound, playMetronomeClick, getPadPanner, hasCustomBuffer } from './audio-engine';
+import { getAudioContext, playMetronomeClick, getPadPanner, hasCustomBuffer, renderLoopToBuffer, getCustomBuffer, getMasterGain } from './audio-engine';
 import { startWorkerTimer, stopWorkerTimer } from './timer-worker';
 import type { PadSound } from './sounds';
 
@@ -24,6 +22,10 @@ interface ActiveLoop {
   startSubdivision: number;
 }
 
+// ── Native loop playback (OS-level, no JS timer needed) ──
+const nativeLoopSources = new Map<string, AudioBufferSourceNode>();
+const nativeLoopGains = new Map<string, GainNode>();
+
 // Loops queued to start on next beat 1 (when forceLoopBeat1 is enabled)
 let pendingLoops: Map<string, ActiveLoop> = new Map();
 // The earliest subdivision at which pending loops may activate (always the NEXT bar's beat 1)
@@ -32,33 +34,27 @@ let pendingActivateAtSub = 0;
 let isRunning = false;
 let activeLoops: Map<string, ActiveLoop> = new Map();
 let currentSubdivision = 0;
-// timerRef removed — now using Web Worker timer via timer-worker.ts
 let onSubdivisionCallback: ((sub: number) => void) | null = null;
-let lastTickTime = 0; // performance.now() of last tick
+let lastTickTime = 0;
 
 // --- Lookahead scheduler parameters ---
-// How far ahead (in seconds) we schedule audio events
-const SCHEDULE_AHEAD_TIME = 0.1; // 100ms lookahead
-// How often (in ms) the scheduler wakes up to schedule events
-const SCHEDULER_INTERVAL = 25; // 25ms – wakes up frequently but does very little work
+const SCHEDULE_AHEAD_TIME = 0.1;
+const SCHEDULER_INTERVAL = 25;
 
-// Web Audio clock: absolute audio time of the next subdivision to schedule
 let nextTickAudioTime = 0;
 
 let currentBpm = 120;
 let beatsPerBar = 4;
-let beatUnit = 4; // denominator of time signature
+let beatUnit = 4;
 
-// Sync (quantization) toggle — persisted in localStorage
+// Sync (quantization) toggle
 let syncEnabled = true;
 
-// Force loops to start on beat 1 — only when user enables in settings
+// Force loops to start on beat 1
 let forceLoopBeat1 = false;
 
 // Disable metronome downbeat accent
 let metronomeAccentEnabled = true;
-
-// Count-in removed
 
 export function setSyncEnabled(enabled: boolean) {
   syncEnabled = enabled;
@@ -120,10 +116,15 @@ let metronomeVolume = 0.3;
 const metronomeBeatListeners = new Set<(beat: number) => void>();
 
 export function setLoopBpm(bpm: number) {
+  const oldBpm = currentBpm;
   currentBpm = bpm;
   if (isRunning) {
     stopEngine();
     startEngine();
+  }
+  // Re-render all native loops at new BPM
+  if (oldBpm !== bpm) {
+    reRenderAllNativeLoops();
   }
 }
 
@@ -135,6 +136,8 @@ export function setLoopTimeSignature(ts: string) {
     stopEngine();
     startEngine();
   }
+  // Re-render all native loops with new time signature
+  reRenderAllNativeLoops();
 }
 
 export function setOnSubdivision(cb: ((sub: number) => void) | null) {
@@ -178,33 +181,118 @@ export function isMetronomeActive() {
   return metronomeEnabled;
 }
 
+// ── Native loop helpers ─────────────────────────────────────────────────────
+
+/** Start a native looping AudioBufferSourceNode for a pad */
+async function startNativeLoop(pad: PadSound, volume: number) {
+  // Stop any existing native source for this pad
+  stopNativeLoop(pad.id);
+
+  const ctx = getAudioContext();
+
+  let buffer: AudioBuffer;
+  let loopDuration: number;
+
+  if (hasCustomBuffer(pad.id)) {
+    // Custom imported audio — use the buffer directly
+    buffer = getCustomBuffer(pad.id)!;
+    loopDuration = buffer.duration;
+  } else if (pad.loopSteps && pad.loopSteps.length > 0) {
+    // Synthesized pattern — pre-render via OfflineAudioContext
+    buffer = await renderLoopToBuffer(
+      pad.id,
+      pad.loopSteps,
+      currentBpm,
+      beatsPerBar,
+      beatUnit,
+      pad.loopBars || 1,
+    );
+    // Use the clean loop duration (without decay tail)
+    loopDuration = (buffer as any).__loopDuration || buffer.duration;
+  } else {
+    // No steps and no custom buffer — nothing to play
+    return;
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = true;
+  source.loopStart = 0;
+  source.loopEnd = loopDuration;
+
+  const gainNode = ctx.createGain();
+  gainNode.gain.value = volume;
+
+  const panner = getPadPanner(pad.id);
+  source.connect(gainNode);
+  gainNode.connect(panner);
+
+  source.start(0);
+
+  nativeLoopSources.set(pad.id, source);
+  nativeLoopGains.set(pad.id, gainNode);
+
+  console.log(`[LoopEngine] Native loop started: ${pad.id} (duration=${loopDuration.toFixed(2)}s)`);
+}
+
+/** Stop a native looping source */
+function stopNativeLoop(padId: string) {
+  const src = nativeLoopSources.get(padId);
+  if (src) {
+    try { src.stop(); } catch { /* already stopped */ }
+    try { src.disconnect(); } catch {}
+    nativeLoopSources.delete(padId);
+  }
+  const gain = nativeLoopGains.get(padId);
+  if (gain) {
+    try { gain.disconnect(); } catch {}
+    nativeLoopGains.delete(padId);
+  }
+}
+
+/** Re-render and restart all active native loops (e.g. after BPM change) */
+async function reRenderAllNativeLoops() {
+  const loopsToRestart: { pad: PadSound; volume: number }[] = [];
+
+  for (const [, loop] of activeLoops) {
+    if (nativeLoopSources.has(loop.pad.id)) {
+      loopsToRestart.push({ pad: loop.pad, volume: loop.volume });
+    }
+  }
+
+  // Restart all in parallel
+  await Promise.all(loopsToRestart.map(l => startNativeLoop(l.pad, l.volume)));
+}
+
 // --- Loop management ---
 
 export function addLoop(pad: PadSound, volume: number) {
   if (!isRunning) {
     activeLoops.set(pad.id, { pad, volume, startSubdivision: 0 });
     startEngine();
+    // Start native loop playback
+    startNativeLoop(pad, volume);
   } else if (forceLoopBeat1) {
-    // Queue — loop will activate at the NEXT bar's beat 1 and begin at step 0 (kick)
+    // Queue — loop will activate at the NEXT bar's beat 1
     const SUBS = getSubdivisionsPerBar();
     const nextBar = (Math.floor(currentSubdivision / SUBS) + 1) * SUBS;
-    // Only push the activation point forward if this is a new batch or further out
     if (pendingLoops.size === 0 || nextBar > pendingActivateAtSub) {
       pendingActivateAtSub = nextBar;
     }
     pendingLoops.set(pad.id, { pad, volume, startSubdivision: nextBar });
+    // Native loop will start when pending loops are activated in schedulerTick
   } else {
-    // Immediate start aligned to next scheduler subdivision
     activeLoops.set(pad.id, { pad, volume, startSubdivision: currentSubdivision + 1 });
+    // Start native loop playback immediately
+    startNativeLoop(pad, volume);
   }
 }
 
 export function removeLoop(padId: string) {
   activeLoops.delete(padId);
   pendingLoops.delete(padId);
-  // Stop any playing custom buffer source
-  const src = activeLoopSources.get(padId);
-  if (src) { try { src.stop(); } catch { /* already stopped */ } activeLoopSources.delete(padId); }
+  // Stop native loop
+  stopNativeLoop(padId);
   if (isRunning && activeLoops.size === 0 && pendingLoops.size === 0 && !metronomeEnabled) {
     stopEngine();
   }
@@ -218,6 +306,11 @@ export function updateLoopVolume(padId: string, volume: number) {
   const pending = pendingLoops.get(padId);
   if (pending) {
     pending.volume = volume;
+  }
+  // Update native loop gain in real-time (no re-render needed)
+  const gainNode = nativeLoopGains.get(padId);
+  if (gainNode) {
+    gainNode.gain.setValueAtTime(volume, getAudioContext().currentTime);
   }
 }
 
@@ -233,10 +326,7 @@ export function getActiveLoopIds(): string[] {
   return [...activeLoops.keys(), ...pendingLoops.keys()];
 }
 
-// --- Schedule a single subdivision's audio at a precise audio time ---
-
-// Track active loop sources so we can stop them before restarting
-const activeLoopSources = new Map<string, AudioBufferSourceNode>();
+// --- Schedule a single subdivision (now only for metronome + visual feedback) ---
 
 function scheduleSubdivision(subdivision: number, audioTime: number) {
   const SUBS = getSubdivisionsPerBar();
@@ -245,24 +335,18 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
   if (pendingLoops.size > 0 && subdivision >= pendingActivateAtSub && (subdivision % SUBS) === 0) {
     for (const [id, loop] of pendingLoops) {
       activeLoops.set(id, loop);
+      // Start native loop for newly activated pending loops
+      startNativeLoop(loop.pad, loop.volume);
     }
     pendingLoops.clear();
   }
 
-  // Fire loop sounds for this subdivision
+  // Visual feedback for active loops (emit pad hit for UI glow)
   for (const [, loop] of activeLoops) {
     if (hasCustomBuffer(loop.pad.id)) {
       const totalSubs = SUBS * (loop.pad.loopBars || 1);
       const loopPos = ((subdivision - loop.startSubdivision) % totalSubs + totalSubs) % totalSubs;
       if (loopPos === 0) {
-        // Stop previous source to avoid overlap/cutting artifacts
-        const prevSource = activeLoopSources.get(loop.pad.id);
-        if (prevSource) {
-          try { prevSource.stop(audioTime); } catch { /* already stopped */ }
-        }
-        const panner = getPadPanner(loop.pad.id);
-        const source = playSound(loop.pad.id, loop.volume, panner, audioTime);
-        if (source) activeLoopSources.set(loop.pad.id, source);
         getEmitter()?.(loop.pad.id);
       }
       continue;
@@ -270,10 +354,8 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
     if (!loop.pad.loopSteps) continue;
     const totalSubs = SUBS * (loop.pad.loopBars || 1);
     const loopPos = ((subdivision - loop.startSubdivision) % totalSubs + totalSubs) % totalSubs;
-    for (const [sub, soundId] of loop.pad.loopSteps) {
+    for (const [sub] of loop.pad.loopSteps) {
       if (sub === loopPos) {
-        const panner = getPadPanner(loop.pad.id);
-        playSound(soundId, loop.volume, panner, audioTime);
         getEmitter()?.(loop.pad.id);
       }
     }
@@ -295,40 +377,31 @@ function scheduleSubdivision(subdivision: number, audioTime: number) {
 }
 
 // --- Lookahead scheduler ---
-// Wakes up periodically and schedules all subdivisions that fall within
-// the lookahead window. This decouples timing accuracy from main-thread latency.
 
 function schedulerTick() {
   const ctx = getAudioContext();
 
-  // Resume context if the OS suspended it (screen lock, background)
   if (ctx.state === 'suspended') {
     ctx.resume().catch(() => {});
   }
 
-  const intervalSec = 60 / currentBpm / 4; // duration of one 16th note
+  const intervalSec = 60 / currentBpm / 4;
   const SUBS = getSubdivisionsPerBar();
 
-  // --- Gap recovery: if nextTickAudioTime fell too far behind (e.g. timer frozen
-  // in background), skip ahead to present instead of scheduling hundreds of late events
+  // Gap recovery
   const gap = ctx.currentTime - nextTickAudioTime;
   if (gap > 0.5) {
-    // Calculate how many subdivisions we missed
     const missedSubs = Math.floor(gap / intervalSec);
-    // Advance currentSubdivision, keeping bar alignment
     currentSubdivision = (currentSubdivision + missedSubs) % (SUBS * 256);
-    // Re-anchor to now
     nextTickAudioTime = ctx.currentTime + 0.005;
     console.log(`[LoopEngine] Gap recovery: skipped ${missedSubs} subs (${gap.toFixed(2)}s behind)`);
   }
 
-  // Schedule all subdivisions within the lookahead window (max 8 per tick to avoid jank)
   let scheduled = 0;
   while (nextTickAudioTime < ctx.currentTime + SCHEDULE_AHEAD_TIME && scheduled < 8) {
     scheduleSubdivision(currentSubdivision, nextTickAudioTime);
     lastTickTime = performance.now();
 
-    // Advance — wrap at bar boundary only (keeps metronome & loops aligned)
     nextTickAudioTime += intervalSec;
     currentSubdivision = currentSubdivision + 1;
     if (currentSubdivision >= SUBS * 256) {
@@ -344,13 +417,9 @@ function startEngine() {
   currentSubdivision = 0;
 
   const ctx = getAudioContext();
-  // Anchor the first tick slightly in the future to allow pre-scheduling
   nextTickAudioTime = ctx.currentTime + 0.005;
 
-  // Use Web Worker timer — significantly less throttled in background on iOS
   startWorkerTimer(schedulerTick, SCHEDULER_INTERVAL);
-
-  // Run immediately once to schedule the first batch
   schedulerTick();
 }
 
@@ -369,7 +438,6 @@ export function resyncEngine() {
     ctx.resume().catch(() => {});
   }
   nextTickAudioTime = ctx.currentTime + 0.005;
-  // Restart worker timer in case it was killed
   stopWorkerTimer();
   startWorkerTimer(schedulerTick, SCHEDULER_INTERVAL);
   schedulerTick();
@@ -377,6 +445,13 @@ export function resyncEngine() {
 }
 
 export function stopAllLoops() {
+  // Stop all native loop sources
+  for (const [id] of activeLoops) {
+    stopNativeLoop(id);
+  }
+  for (const [id] of pendingLoops) {
+    stopNativeLoop(id);
+  }
   activeLoops.clear();
   pendingLoops.clear();
   if (!metronomeEnabled) {
@@ -386,7 +461,6 @@ export function stopAllLoops() {
 
 /**
  * Returns the delay in seconds to quantize a pad hit to the nearest 16th-note subdivision.
- * If the engine is not running, returns 0 (play immediately).
  */
 export function getQuantizeDelay(): number {
   if (!isRunning || !syncEnabled) return 0;

@@ -863,3 +863,68 @@ export function stopBackgroundKeepAlive() {
   }
   console.log('[AudioEngine] Background keep-alive stopped');
 }
+
+// ── Pre-render loop patterns into AudioBuffers ──────────────────────────────
+// Uses OfflineAudioContext to capture synthesized drum hits into a single buffer
+// that can be played with AudioBufferSourceNode.loop = true (OS-level looping,
+// no JS timer needed — survives iOS background suspension).
+
+/**
+ * Render a loop pattern (loopSteps) into a single AudioBuffer using OfflineAudioContext.
+ * For pads with custom imported audio, returns the existing buffer directly.
+ */
+export async function renderLoopToBuffer(
+  padId: string,
+  loopSteps: [number, string][],
+  bpm: number,
+  beatsPerBar: number,
+  beatUnit: number,
+  loopBars: number,
+): Promise<AudioBuffer> {
+  // For custom-imported audio buffers, return them directly
+  if (customBuffers.has(padId)) {
+    return customBuffers.get(padId)!;
+  }
+
+  const subsPerBeat = beatUnit === 8 ? 2 : 4;
+  const totalSubs = beatsPerBar * subsPerBeat * loopBars;
+  const subDuration = 60 / bpm / subsPerBeat; // duration of one subdivision in seconds
+  const totalDuration = totalSubs * subDuration;
+
+  // Add a tail so reverb/decay sounds don't clip at the loop boundary
+  const tailSeconds = 0.5;
+  const renderDuration = totalDuration + tailSeconds;
+
+  const sampleRate = 44100;
+  const offline = new OfflineAudioContext(2, Math.ceil(renderDuration * sampleRate), sampleRate);
+
+  // Schedule each hit into the offline context
+  for (const [subIndex, soundId] of loopSteps) {
+    const hitTime = subIndex * subDuration;
+    const fn = soundMap[soundId];
+    if (fn) {
+      // Route through offline destination
+      fn(0.8, offline.destination, hitTime);
+    }
+  }
+
+  const rendered = await offline.startRendering();
+
+  // Trim to exact loop duration (remove the tail from the loopable region)
+  // The caller will use source.loopEnd = totalDuration to handle this
+  // We store the full buffer (with tail) so the last hit's decay is audible
+  // but the loop point wraps cleanly.
+
+  // Attach metadata so the caller knows the clean loop length
+  (rendered as any).__loopDuration = totalDuration;
+
+  return rendered;
+}
+
+/**
+ * Get the custom AudioBuffer for a pad (if any). Used by loop-engine for
+ * custom-imported audio loops.
+ */
+export function getCustomBuffer(padId: string): AudioBuffer | undefined {
+  return customBuffers.get(padId);
+}
