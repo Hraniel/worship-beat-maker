@@ -712,6 +712,9 @@ if (typeof window !== 'undefined') {
 
 let keepAliveAudio: HTMLAudioElement | null = null;
 let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+let keepAliveOscillator: OscillatorNode | null = null;
+let keepAliveOscGain: GainNode | null = null;
+let webLockAbort: AbortController | null = null;
 
 function createSilentWav(): string {
   // 10-second silent WAV — longer buffers are less likely to be killed by iOS
@@ -743,9 +746,59 @@ function createSilentWav(): string {
   return URL.createObjectURL(blob);
 }
 
+/** Start a silent oscillator connected to AudioContext.destination to keep the audio graph alive */
+function startKeepAliveOscillator() {
+  stopKeepAliveOscillator();
+  try {
+    const ctx = ensureContext();
+    keepAliveOscGain = ctx.createGain();
+    keepAliveOscGain.gain.value = 0.0001; // near-zero but not zero
+    keepAliveOscGain.connect(ctx.destination);
+    keepAliveOscillator = ctx.createOscillator();
+    keepAliveOscillator.frequency.value = 0; // DC — inaudible
+    keepAliveOscillator.connect(keepAliveOscGain);
+    keepAliveOscillator.start();
+  } catch (e) {
+    console.warn('[AudioEngine] Oscillator keep-alive failed:', e);
+  }
+}
+
+function stopKeepAliveOscillator() {
+  if (keepAliveOscillator) {
+    try { keepAliveOscillator.stop(); } catch { /* already stopped */ }
+    try { keepAliveOscillator.disconnect(); } catch {}
+    keepAliveOscillator = null;
+  }
+  if (keepAliveOscGain) {
+    try { keepAliveOscGain.disconnect(); } catch {}
+    keepAliveOscGain = null;
+  }
+}
+
+/** Acquire a Web Lock that never resolves — prevents page from being frozen */
+function acquireWebLock() {
+  releaseWebLock();
+  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+    webLockAbort = new AbortController();
+    navigator.locks.request(
+      'glory-audio-keep-alive',
+      { signal: webLockAbort.signal },
+      () => new Promise<void>(() => { /* never resolves — keeps lock held */ }),
+    ).catch(() => { /* aborted or unsupported */ });
+  }
+}
+
+function releaseWebLock() {
+  if (webLockAbort) {
+    webLockAbort.abort();
+    webLockAbort = null;
+  }
+}
+
 export function startBackgroundKeepAlive() {
   if (keepAliveAudio) return;
   try {
+    // 1. Silent HTMLAudioElement (10s WAV loop)
     keepAliveAudio = new Audio();
     keepAliveAudio.src = createSilentWav();
     keepAliveAudio.loop = true;
@@ -756,7 +809,10 @@ export function startBackgroundKeepAlive() {
       keepAliveAudio = null;
     });
 
-    // Set Media Session metadata so the OS treats us as a real media app
+    // 2. Silent oscillator keep-alive via Web Audio graph
+    startKeepAliveOscillator();
+
+    // 3. Media Session metadata so the OS treats us as a real media app
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: 'Glory Pads',
@@ -766,20 +822,27 @@ export function startBackgroundKeepAlive() {
       navigator.mediaSession.playbackState = 'playing';
     }
 
-    // Periodic AudioContext watchdog: resume if suspended while in background
+    // 4. Web Locks API — prevent page freeze
+    acquireWebLock();
+
+    // 5. Aggressive watchdog (1s) — resume AudioContext + oscillator + audio element
     if (!keepAliveInterval) {
       keepAliveInterval = setInterval(() => {
         if (audioCtx && audioCtx.state === 'suspended') {
           audioCtx.resume().catch(() => {});
         }
-        // Also ensure the keep-alive audio element is still playing
+        // Re-ensure oscillator is alive
+        if (!keepAliveOscillator && audioCtx) {
+          startKeepAliveOscillator();
+        }
+        // Ensure the keep-alive audio element is still playing
         if (keepAliveAudio && keepAliveAudio.paused) {
           keepAliveAudio.play().catch(() => {});
         }
-      }, 3000);
+      }, 1000);
     }
 
-    console.log('[AudioEngine] Background keep-alive started (10s buffer + watchdog)');
+    console.log('[AudioEngine] Background keep-alive started (10s buffer + oscillator + Web Locks + 1s watchdog)');
   } catch (e) {
     console.warn('[AudioEngine] Keep-alive setup failed:', e);
     keepAliveAudio = null;
@@ -792,6 +855,8 @@ export function stopBackgroundKeepAlive() {
     keepAliveAudio.src = '';
     keepAliveAudio = null;
   }
+  stopKeepAliveOscillator();
+  releaseWebLock();
   if (keepAliveInterval) {
     clearInterval(keepAliveInterval);
     keepAliveInterval = null;
