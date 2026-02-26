@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText } from 'lucide-react';
+import { useBodyScroll } from '@/hooks/useBodyScroll';
 
 const Terms = () => {
+  useBodyScroll();
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border/40">

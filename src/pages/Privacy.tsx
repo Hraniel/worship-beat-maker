@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield } from 'lucide-react';
+import { useBodyScroll } from '@/hooks/useBodyScroll';
 
 const Privacy = () => {
+  useBodyScroll();
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
