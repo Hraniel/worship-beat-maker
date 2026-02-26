@@ -38,55 +38,56 @@ export function useSilentModeDetector() {
       // Resume context first — on iOS, first user interaction may leave it suspended
       if (ctx.state === "suspended") {
         await ctx.resume();
+        // Wait extra time after resume for iOS audio pipeline to stabilize
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
       if (ctx.state !== "running") {
         checkingRef.current = false;
         return;
       }
 
-      // Method: Create a very short audio buffer and play it.
-      // Measure how long the AudioContext takes to process it.
-      // On iOS with mute switch ON, the context may report normal
-      // processing but we detect via an alternate oscillator+analyser
-      // that reads back near the destination.
+      // Wait a bit more after returning from background to let audio pipeline warm up
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
-      // Use a known-working approach: create a very quiet oscillator,
-      // connect through a gain node to an analyser connected to 
-      // destination. The analyser should pick up energy if audio
-      // pipeline is active.
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      const dataArray = new Float32Array(analyser.frequencyBinCount);
+      // Run detection twice to avoid false positives after background resume
+      let silentCount = 0;
+      const attempts = 2;
 
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      // Audible enough for analyser but barely perceptible
-      gain.gain.value = 0.005;
-      osc.frequency.value = 440;
-      osc.type = "sine";
+      for (let i = 0; i < attempts; i++) {
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 256;
+        const dataArray = new Float32Array(analyser.frequencyBinCount);
 
-      osc.connect(gain);
-      gain.connect(analyser);
-      analyser.connect(ctx.destination);
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0.005;
+        osc.frequency.value = 440;
+        osc.type = "sine";
 
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(analyser);
+        analyser.connect(ctx.destination);
 
-      // Wait for the oscillator to be playing (100ms into 200ms tone)
-      await new Promise((resolve) => setTimeout(resolve, 100));
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.2);
 
-      // Read frequency data as floats (more precise than byte data)
-      analyser.getFloatFrequencyData(dataArray);
+        await new Promise((resolve) => setTimeout(resolve, 120));
 
-      // Check if there's any energy above noise floor (-100 dB)
-      const maxVal = Math.max(...dataArray);
-      const silent = maxVal < -90; // If all bins are below -90dB, likely silent
+        analyser.getFloatFrequencyData(dataArray);
+        const maxVal = Math.max(...dataArray);
+        if (maxVal < -90) silentCount++;
 
-      setIsSilent(silent);
+        osc.disconnect();
+        gain.disconnect();
+        analyser.disconnect();
 
-      osc.disconnect();
-      gain.disconnect();
-      analyser.disconnect();
+        if (i < attempts - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+      }
+
+      // Only flag silent if ALL attempts detected silence
+      setIsSilent(silentCount === attempts);
     } catch {
       // Detection failed — don't show warning
     } finally {
@@ -119,7 +120,8 @@ export function useSilentModeDetector() {
     const handler = () => {
       if (document.visibilityState === "visible") {
         lastCheckRef.current = 0;
-        setTimeout(checkSilentMode, 500);
+        // Wait longer after returning from background to avoid false positives
+        setTimeout(checkSilentMode, 1500);
       }
     };
     document.addEventListener("visibilitychange", handler);
