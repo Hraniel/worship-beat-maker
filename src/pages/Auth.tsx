@@ -66,10 +66,8 @@ const Auth = () => {
       });
   }, [searchParams, restrictedMode, restrictedLoading]);
 
-  // If restricted mode is active and no valid access key, redirect to landing
-  if (!restrictedLoading && !checkingAccess && restrictedMode && !accessGranted) {
-    return <Navigate to="/" replace />;
-  }
+  // Auth page is always accessible — PrelaunchGate / MaintenanceGate on
+  // protected routes will handle blocking unauthorized users after login.
 
   const handleOAuth = async (provider: 'google' | 'apple') => {
     setOauthLoading(true);
