@@ -1,59 +1,64 @@
 
-# Melhorar Persistencia de Audio em Segundo Plano
 
-## Problema
-Quando o app e minimizado no celular (especialmente iOS), o sistema operacional suspende o `AudioContext` e o `setInterval` do loop engine para de funcionar, cortando o audio dos loops, metronomo e pads.
+# Corrigir Audio em Segundo Plano -- Worker Timer + Recuperacao do Loop Engine
 
-## Causa Raiz
-- iOS Safari suspende agressivamente `setInterval`/`setTimeout` em background
-- O `AudioContext` e suspenso pelo OS quando a tab perde foco
-- O keep-alive atual (silent WAV + watchdog de 3s) nao e suficiente para iOS
+## Problema Real
+Os mecanismos de keep-alive atuais (Web Locks, oscillator silencioso, WAV silencioso) mantem o `AudioContext` vivo, mas o **`setInterval` do loop engine** (`loop-engine.ts`) e congelado pelo iOS quando o app vai para background. Quando o timer acorda, `nextTickAudioTime` ficou muito atras de `ctx.currentTime`, causando um burst de centenas de subdivisoes "atrasadas" ou simplesmente silencio.
 
-## Solucao
+## Solucao (2 partes)
 
-### 1. Web Locks API para evitar suspensao da pagina
-Usar `navigator.locks.request()` com uma promise que nunca resolve. Isso sinaliza ao browser que a pagina esta realizando trabalho critico e nao deve ser congelada.
+### 1. Web Worker Timer para o Loop Engine
+Mover o timer do scheduler para um **Web Worker inline** (criado via Blob URL). Timers em Web Workers sao **significativamente menos throttled** pelo iOS Safari em background comparado a timers na main thread.
 
-**Arquivo:** `src/lib/audio-engine.ts`
+**Arquivo:** `src/lib/timer-worker.ts` (novo)
+- Worker simples que recebe mensagens `start`/`stop` com intervalo
+- Posta `tick` de volta para a main thread a cada intervalo
 
-### 2. Watchdog mais agressivo (1s em vez de 3s)
-Reduzir o intervalo do watchdog de 3000ms para 1000ms para reagir mais rapido quando o AudioContext e suspenso.
+**Arquivo:** `src/lib/loop-engine.ts`
+- Substituir `window.setInterval(schedulerTick, 25)` pelo Web Worker timer
+- Fallback para `setInterval` caso Web Workers nao estejam disponiveis
 
-**Arquivo:** `src/lib/audio-engine.ts`
+### 2. Recuperacao Inteligente no schedulerTick
+Quando `nextTickAudioTime` fica muito atras de `ctx.currentTime` (ex: mais de 0.5s), significa que o timer ficou congelado. Em vez de tentar agendar centenas de subdivisoes atrasadas, **pular para o presente** mantendo o alinhamento de compasso.
 
-### 3. Oscillator keep-alive via Web Audio
-Adicionar um oscillator silencioso conectado diretamente ao `AudioContext.destination` (volume quase zero), que mantem o grafo de audio ativo mesmo quando o HTMLAudioElement e pausado pelo OS.
+**Arquivo:** `src/lib/loop-engine.ts`
+- Detectar gap > 0.5s entre `nextTickAudioTime` e `ctx.currentTime`
+- Reancorrar `nextTickAudioTime` para `ctx.currentTime + 0.005`
+- Manter `currentSubdivision` alinhado ao compasso para nao perder o ritmo
 
-**Arquivo:** `src/lib/audio-engine.ts`
-
-### 4. Recuperacao robusta no visibilitychange
-Quando o app volta ao foco, alem de `resume()`, reconectar o oscillator keep-alive caso tenha sido desconectado e forcar re-play do HTMLAudioElement.
+### 3. Visibility Recovery no Index.tsx
+Quando o app volta ao foco, forcar um "re-sync" do loop engine para garantir que o timer worker esta ativo.
 
 **Arquivo:** `src/pages/Index.tsx`
 
 ## Detalhes Tecnicos
 
 ```text
-+----------------------------------+
-|  startBackgroundKeepAlive()      |
-|                                  |
-|  1. HTMLAudioElement (10s WAV)   |
-|  2. Web Audio oscillator (DC)   |
-|  3. Media Session metadata      |
-|  4. Web Locks API               |
-|  5. Watchdog interval (1s)      |
-+----------------------------------+
+Main Thread                    Web Worker
++-----------+                  +------------+
+| loop-engine|  -- start(25) -->| setInterval|
+|           |  <-- tick --------|   (25ms)   |
+| schedulerTick()              |            |
+|   -> scheduleSubdivision()   |            |
+|   -> Web Audio pre-schedule  |            |
++-----------+                  +------------+
 ```
 
-### Mudancas em `audio-engine.ts`:
-- Adicionar oscillator keep-alive (frequencia 0Hz ou ganho 0.0001) ao `startBackgroundKeepAlive()`
-- Adicionar `navigator.locks.request('audio-keep-alive', ...)` para prevenir freeze
-- Reduzir watchdog para 1000ms
-- No watchdog, verificar tambem o oscillator keep-alive
+### Novo arquivo `src/lib/timer-worker.ts`:
+- Cria um Web Worker inline via `new Worker(URL.createObjectURL(new Blob(...)))`
+- Exporta funcoes `startWorkerTimer(callback, interval)` e `stopWorkerTimer()`
+- Fallback automatico para `setInterval` se Worker nao disponivel
 
-### Mudancas em `Index.tsx`:
-- Na recuperacao de visibilidade, chamar `stopBackgroundKeepAlive()` seguido de `startBackgroundKeepAlive()` para forcar reset completo dos mecanismos
+### Mudancas em `src/lib/loop-engine.ts`:
+- Importar e usar o worker timer em vez de `window.setInterval`
+- No `schedulerTick()`: adicionar deteccao de gap temporal e pular subdivisoes atrasadas em vez de tentar agenda-las todas
+- Limitar o while loop a no maximo ~8 subdivisoes por tick para evitar travamento
+
+### Mudancas em `src/pages/Index.tsx`:
+- No handler de `visibilitychange`, importar e chamar uma funcao `resyncEngine()` exportada do loop-engine para forcar re-ancoragem do timer
 
 ## Arquivos Modificados
-1. `src/lib/audio-engine.ts` - Mecanismos de keep-alive aprimorados
-2. `src/pages/Index.tsx` - Reset do keep-alive ao voltar do background
+1. `src/lib/timer-worker.ts` -- Novo: Web Worker timer inline
+2. `src/lib/loop-engine.ts` -- Worker timer + recuperacao de gap temporal
+3. `src/pages/Index.tsx` -- Chamar resync ao voltar do background
+
