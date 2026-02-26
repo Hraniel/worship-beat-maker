@@ -11,14 +11,10 @@ type Msg = { role: 'user' | 'assistant'; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/help-chat`;
 
-const WELCOME: Msg = {
-  role: 'assistant',
-  content: 'Olá! 👋 Sou o assistente do **Glory Pads**. Posso te ajudar com dúvidas sobre o app, como usar os pads, repertório, MIDI, loja, planos e muito mais.\n\nSe eu não conseguir resolver sua dúvida, posso te encaminhar para nosso **suporte humanizado** criando um ticket! Como posso te ajudar?',
-};
 
 export default function HelpChatWidget() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([WELCOME]);
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -58,7 +54,7 @@ export default function HelpChatWidget() {
           Authorization: `Bearer ${token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
-          messages: history.filter((m) => m !== WELCOME).map(({ role, content }) => ({ role, content })),
+          messages: history.map(({ role, content }) => ({ role, content })),
         }),
       });
 
