@@ -5,6 +5,7 @@
 // to main-thread jank caused by external programs (e.g. MainStage, DAWs).
 
 import { getAudioContext, playSound, playMetronomeClick, getPadPanner, hasCustomBuffer } from './audio-engine';
+import { startWorkerTimer, stopWorkerTimer } from './timer-worker';
 import type { PadSound } from './sounds';
 
 // Lazy import to avoid circular deps
@@ -31,7 +32,7 @@ let pendingActivateAtSub = 0;
 let isRunning = false;
 let activeLoops: Map<string, ActiveLoop> = new Map();
 let currentSubdivision = 0;
-let timerRef: number | null = null;
+// timerRef removed — now using Web Worker timer via timer-worker.ts
 let onSubdivisionCallback: ((sub: number) => void) | null = null;
 let lastTickTime = 0; // performance.now() of last tick
 
@@ -306,21 +307,34 @@ function schedulerTick() {
   }
 
   const intervalSec = 60 / currentBpm / 4; // duration of one 16th note
-
   const SUBS = getSubdivisionsPerBar();
 
-  // Schedule all subdivisions that fall within the lookahead window
-  while (nextTickAudioTime < ctx.currentTime + SCHEDULE_AHEAD_TIME) {
+  // --- Gap recovery: if nextTickAudioTime fell too far behind (e.g. timer frozen
+  // in background), skip ahead to present instead of scheduling hundreds of late events
+  const gap = ctx.currentTime - nextTickAudioTime;
+  if (gap > 0.5) {
+    // Calculate how many subdivisions we missed
+    const missedSubs = Math.floor(gap / intervalSec);
+    // Advance currentSubdivision, keeping bar alignment
+    currentSubdivision = (currentSubdivision + missedSubs) % (SUBS * 256);
+    // Re-anchor to now
+    nextTickAudioTime = ctx.currentTime + 0.005;
+    console.log(`[LoopEngine] Gap recovery: skipped ${missedSubs} subs (${gap.toFixed(2)}s behind)`);
+  }
+
+  // Schedule all subdivisions within the lookahead window (max 8 per tick to avoid jank)
+  let scheduled = 0;
+  while (nextTickAudioTime < ctx.currentTime + SCHEDULE_AHEAD_TIME && scheduled < 8) {
     scheduleSubdivision(currentSubdivision, nextTickAudioTime);
     lastTickTime = performance.now();
 
     // Advance — wrap at bar boundary only (keeps metronome & loops aligned)
     nextTickAudioTime += intervalSec;
     currentSubdivision = currentSubdivision + 1;
-    // Wrap at a large multiple of SUBS to prevent overflow while staying bar-aligned
     if (currentSubdivision >= SUBS * 256) {
       currentSubdivision = 0;
     }
+    scheduled++;
   }
 }
 
@@ -333,9 +347,8 @@ function startEngine() {
   // Anchor the first tick slightly in the future to allow pre-scheduling
   nextTickAudioTime = ctx.currentTime + 0.005;
 
-  // Use setInterval for the scheduler wake-up — it's lightweight and
-  // doesn't need to be precise since audio timing comes from ctx.currentTime
-  timerRef = window.setInterval(schedulerTick, SCHEDULER_INTERVAL);
+  // Use Web Worker timer — significantly less throttled in background on iOS
+  startWorkerTimer(schedulerTick, SCHEDULER_INTERVAL);
 
   // Run immediately once to schedule the first batch
   schedulerTick();
@@ -343,12 +356,24 @@ function startEngine() {
 
 function stopEngine() {
   isRunning = false;
-  if (timerRef !== null) {
-    clearInterval(timerRef);
-    timerRef = null;
-  }
+  stopWorkerTimer();
   currentSubdivision = 0;
   onSubdivisionCallback?.(0);
+}
+
+/** Force re-anchor the scheduler to ctx.currentTime. Call after returning from background. */
+export function resyncEngine() {
+  if (!isRunning) return;
+  const ctx = getAudioContext();
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
+  nextTickAudioTime = ctx.currentTime + 0.005;
+  // Restart worker timer in case it was killed
+  stopWorkerTimer();
+  startWorkerTimer(schedulerTick, SCHEDULER_INTERVAL);
+  schedulerTick();
+  console.log('[LoopEngine] Resynced after visibility change');
 }
 
 export function stopAllLoops() {
