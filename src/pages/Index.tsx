@@ -44,6 +44,7 @@ import {
   stopAllLoops,
   setMetronomeVolume,
   getMetronomeVolume,
+  resyncEngine,
 } from "@/lib/loop-engine";
 
 import { getAmbientVolume, setAmbientVolume } from "@/lib/ambient-engine";
@@ -522,6 +523,8 @@ const Index = () => {
         // Force full reset of keep-alive mechanisms
         stopBackgroundKeepAlive();
         startBackgroundKeepAlive();
+        // Re-sync the loop engine timer (worker may have been killed)
+        resyncEngine();
         // Update media session state
         if ("mediaSession" in navigator) {
           navigator.mediaSession.playbackState = "playing";
