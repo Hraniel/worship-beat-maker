@@ -33,32 +33,8 @@ serve(async (req) => {
 
     const resend = new Resend(resendKey);
 
-    // Try to get the audience ID from env, or create/find one
-    let audienceId = Deno.env.get("RESEND_PRELAUNCH_AUDIENCE_ID");
-
-    if (!audienceId) {
-      const { data: audiences } = await resend.audiences.list();
-      const existing = audiences?.data?.find(
-        (a: any) => a.name === "Glory Pads - Pre-lancamento"
-      );
-
-      if (existing) {
-        audienceId = existing.id;
-      } else {
-        const { data: newAudience } = await resend.audiences.create({
-          name: "Glory Pads - Pre-lancamento",
-        });
-        audienceId = newAudience?.id;
-      }
-    }
-
-    if (!audienceId) {
-      console.error("Could not create or find audience");
-      return new Response(
-        JSON.stringify({ error: "Could not create audience" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+    // Cached audience ID to avoid extra API calls and rate limits
+    const audienceId = Deno.env.get("RESEND_PRELAUNCH_AUDIENCE_ID") || "da9798b9-5bac-49e4-8018-a098f2824386";
 
     // Add contact to audience
     const { error: contactError } = await resend.contacts.create({
@@ -70,8 +46,11 @@ serve(async (req) => {
     });
 
     if (contactError) {
-      console.error("Error adding contact:", contactError);
+      console.error("Error adding contact:", JSON.stringify(contactError));
     }
+
+    // Delay to avoid Resend rate limit (2 req/s on free plan)
+    await new Promise((r) => setTimeout(r, 600));
 
     // Send confirmation email to the lead
     const firstName = full_name.split(" ")[0];
