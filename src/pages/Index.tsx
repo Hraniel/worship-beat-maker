@@ -457,6 +457,10 @@ const Index = () => {
   } = useUserNotifications();
   const { shouldShow: showNotifPrompt, dismiss: dismissNotifPrompt } = useNotificationPrompt(!!user);
 
+  // Include PWA install notification in badge count
+  const hasPwaInstallNotif = typeof window !== 'undefined' && !window.matchMedia('(display-mode: standalone)').matches && !localStorage.getItem('gp_pwa_install_dismissed');
+  const totalNotifCount = adminNotifications.length + (hasPwaInstallNotif ? 1 : 0);
+
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
@@ -1379,9 +1383,9 @@ const Index = () => {
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors relative"
                       >
                         <Bell className="h-4 w-4 text-muted-foreground" /> Notificações
-                        {adminNotifications.length > 0 && (
+                        {totalNotifCount > 0 && (
                           <span className="ml-auto bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {adminNotifications.length}
+                            {totalNotifCount}
                           </span>
                         )}
                       </button>
@@ -1563,9 +1567,9 @@ const Index = () => {
                         className="flex items-center gap-2 w-full px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors relative"
                       >
                         <Bell className="h-4 w-4 text-muted-foreground" /> Notificações
-                        {adminNotifications.length > 0 && (
+                        {totalNotifCount > 0 && (
                           <span className="ml-auto bg-primary text-primary-foreground text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                            {adminNotifications.length}
+                            {totalNotifCount}
                           </span>
                         )}
                       </button>
