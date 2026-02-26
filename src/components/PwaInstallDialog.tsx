@@ -105,6 +105,19 @@ const PwaInstallDialog: React.FC<PwaInstallDialogProps> = ({ open, onOpenChange 
           </ol>
         </div>
 
+        {/* iOS Chrome Instructions */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">🍎</div>
+            <p className="text-sm font-semibold text-foreground">iPhone / iPad (Chrome)</p>
+          </div>
+          <ol className="text-sm text-muted-foreground space-y-1.5 pl-8 list-decimal">
+            <li>Toque no botão <strong className="text-foreground">Compartilhar</strong> <Share className="inline h-3.5 w-3.5" /> na barra do Chrome</li>
+            <li>Role para baixo e toque em <strong className="text-foreground">"Adicionar à Tela de Início"</strong></li>
+            <li>Toque em <strong className="text-foreground">"Adicionar"</strong></li>
+          </ol>
+        </div>
+
         {/* Android Instructions */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
