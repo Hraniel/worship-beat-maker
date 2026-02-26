@@ -1,64 +1,79 @@
 
 
-# Corrigir Audio em Segundo Plano -- Worker Timer + Recuperacao do Loop Engine
+# Loops Nativas via Web Audio (Sem Dependencia de Timers JS)
 
 ## Problema Real
-Os mecanismos de keep-alive atuais (Web Locks, oscillator silencioso, WAV silencioso) mantem o `AudioContext` vivo, mas o **`setInterval` do loop engine** (`loop-engine.ts`) e congelado pelo iOS quando o app vai para background. Quando o timer acorda, `nextTickAudioTime` ficou muito atras de `ctx.currentTime`, causando um burst de centenas de subdivisoes "atrasadas" ou simplesmente silencio.
+O iOS Safari **suspende toda execucao de JavaScript** (incluindo Web Workers) apos ~30 segundos em background. Nenhum truque de keep-alive (Web Locks, oscillator silencioso, silent WAV) resolve isso porque o problema nao e o AudioContext sendo suspenso — e o **timer JS que agenda os sons** que para de funcionar.
 
-## Solucao (2 partes)
+A abordagem atual depende de um timer (setInterval no Worker) que acorda a cada 25ms para agendar subdivisoes. Quando o iOS congela o JS, nenhuma subdivisao e agendada = silencio.
 
-### 1. Web Worker Timer para o Loop Engine
-Mover o timer do scheduler para um **Web Worker inline** (criado via Blob URL). Timers em Web Workers sao **significativamente menos throttled** pelo iOS Safari em background comparado a timers na main thread.
+## Solucao: Pre-renderizar Loops como AudioBuffers Nativos
 
-**Arquivo:** `src/lib/timer-worker.ts` (novo)
-- Worker simples que recebe mensagens `start`/`stop` com intervalo
-- Posta `tick` de volta para a main thread a cada intervalo
+A Web Audio API suporta `AudioBufferSourceNode.loop = true`, que **funciona no nivel do OS** sem precisar de JavaScript. Uma vez que o buffer comeca a tocar em loop, ele continua tocando mesmo com JS congelado.
 
-**Arquivo:** `src/lib/loop-engine.ts`
-- Substituir `window.setInterval(schedulerTick, 25)` pelo Web Worker timer
-- Fallback para `setInterval` caso Web Workers nao estejam disponiveis
+### Como funciona:
 
-### 2. Recuperacao Inteligente no schedulerTick
-Quando `nextTickAudioTime` fica muito atras de `ctx.currentTime` (ex: mais de 0.5s), significa que o timer ficou congelado. Em vez de tentar agendar centenas de subdivisoes atrasadas, **pular para o presente** mantendo o alinhamento de compasso.
+```text
+ANTES (timer-dependente):
+  Timer JS (25ms) --> scheduleSubdivision() --> playKick/playSnare...
+  [iOS congela JS] --> silencio
 
-**Arquivo:** `src/lib/loop-engine.ts`
-- Detectar gap > 0.5s entre `nextTickAudioTime` e `ctx.currentTime`
-- Reancorrar `nextTickAudioTime` para `ctx.currentTime + 0.005`
-- Manter `currentSubdivision` alinhado ao compasso para nao perder o ritmo
+DEPOIS (nativo):
+  Pre-render loop inteiro num AudioBuffer
+  --> AudioBufferSourceNode.loop = true
+  --> Web Audio toca nativamente (sem JS)
+  [iOS congela JS] --> audio continua!
+```
 
-### 3. Visibility Recovery no Index.tsx
-Quando o app volta ao foco, forcar um "re-sync" do loop engine para garantir que o timer worker esta ativo.
+### Implementacao:
 
-**Arquivo:** `src/pages/Index.tsx`
+#### 1. Nova funcao `renderLoopToBuffer()` em `audio-engine.ts`
+- Usa `OfflineAudioContext` para renderizar o padrao de loop (kick, snare, etc.) em um unico AudioBuffer
+- Para loops com `loopSteps`, renderiza cada hit sintetizado na posicao correta do buffer
+- Para loops com custom buffer (audio importado), retorna o buffer existente diretamente
+- Duracao do buffer = (60/BPM) * beatsPerBar * loopBars
+
+#### 2. Mudancas em `loop-engine.ts`
+- Quando um loop e adicionado, chamar `renderLoopToBuffer()` para pre-renderizar
+- Tocar o buffer resultante com `source.loop = true` e `source.loopEnd` configurado
+- Manter o timer existente apenas para o **metronomo** e **visual feedback** (indicador de beat)
+- Quando o loop e removido, parar o source node
+- Quando BPM muda, re-renderizar e reiniciar os buffers
+
+#### 3. Volume dinamico via GainNode
+- Cada loop nativo tem seu proprio GainNode
+- `updateLoopVolume()` ajusta o gain em tempo real sem precisar re-renderizar
+
+### Limitacoes e trade-offs:
+- Mudar BPM requer re-renderizar os buffers (pequeno gap de ~50ms)
+- O metronomo continua dependente do timer (aceitavel — e so feedback visual/sonoro auxiliar)
+- Loops sintetizados (kick+snare patterns) precisam de OfflineAudioContext para renderizar
 
 ## Detalhes Tecnicos
 
-```text
-Main Thread                    Web Worker
-+-----------+                  +------------+
-| loop-engine|  -- start(25) -->| setInterval|
-|           |  <-- tick --------|   (25ms)   |
-| schedulerTick()              |            |
-|   -> scheduleSubdivision()   |            |
-|   -> Web Audio pre-schedule  |            |
-+-----------+                  +------------+
+### Novo em `audio-engine.ts`:
+```typescript
+// Renderiza um padrao de loop inteiro em um AudioBuffer
+export async function renderLoopToBuffer(
+  loopSteps: [number, string][],
+  bpm: number,
+  beatsPerBar: number,
+  loopBars: number,
+  volume: number
+): Promise<AudioBuffer>
 ```
 
-### Novo arquivo `src/lib/timer-worker.ts`:
-- Cria um Web Worker inline via `new Worker(URL.createObjectURL(new Blob(...)))`
-- Exporta funcoes `startWorkerTimer(callback, interval)` e `stopWorkerTimer()`
-- Fallback automatico para `setInterval` se Worker nao disponivel
+### Mudancas em `loop-engine.ts`:
+- `addLoop()`: chama renderLoopToBuffer() e inicia AudioBufferSourceNode com loop=true
+- `removeLoop()`: para o source node nativo
+- `setLoopBpm()`: re-renderiza todos os loops ativos
+- Novo Map `nativeLoopSources` para rastrear os source nodes nativos
+- Novo Map `nativeLoopGains` para controle de volume em tempo real
 
-### Mudancas em `src/lib/loop-engine.ts`:
-- Importar e usar o worker timer em vez de `window.setInterval`
-- No `schedulerTick()`: adicionar deteccao de gap temporal e pular subdivisoes atrasadas em vez de tentar agenda-las todas
-- Limitar o while loop a no maximo ~8 subdivisoes por tick para evitar travamento
-
-### Mudancas em `src/pages/Index.tsx`:
-- No handler de `visibilitychange`, importar e chamar uma funcao `resyncEngine()` exportada do loop-engine para forcar re-ancoragem do timer
+### `Index.tsx`:
+- Sem mudancas necessarias (a visibilitychange recovery continua como fallback)
 
 ## Arquivos Modificados
-1. `src/lib/timer-worker.ts` -- Novo: Web Worker timer inline
-2. `src/lib/loop-engine.ts` -- Worker timer + recuperacao de gap temporal
-3. `src/pages/Index.tsx` -- Chamar resync ao voltar do background
+1. `src/lib/audio-engine.ts` — Nova funcao `renderLoopToBuffer()` usando OfflineAudioContext
+2. `src/lib/loop-engine.ts` — Loops tocam via AudioBufferSourceNode.loop=true (nativo, sem timer)
 
