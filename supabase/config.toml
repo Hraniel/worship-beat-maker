@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.migrate-subscriptions]
 verify_jwt = false
+
+[functions.prelaunch-add-lead]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
