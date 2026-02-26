@@ -95,6 +95,11 @@ const Auth = () => {
   const redirectTo = searchParams.get('redirect') || '/app';
   if (user) return <Navigate to={redirectTo} replace />;
 
+  // Block login page during prelaunch/maintenance without access key
+  if (restrictedMode && !accessGranted) {
+    return <Navigate to="/" replace />;
+  }
+
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) {
