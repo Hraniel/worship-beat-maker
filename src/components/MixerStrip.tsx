@@ -33,6 +33,17 @@ export function emitPadHit(channelId: string) {
   }
 }
 
+/** Subscribe to pad-hit events (used by DrumPad for MIDI animation). Returns unsubscribe fn. */
+export function subscribePadHit(channelId: string, cb: () => void): () => void {
+  if (!padHitListeners.has(channelId)) {
+    padHitListeners.set(channelId, new Set());
+  }
+  padHitListeners.get(channelId)!.add(cb);
+  return () => {
+    padHitListeners.get(channelId)?.delete(cb);
+  };
+}
+
 function usePadHitFlash(channelId: string): number {
   const [flash, setFlash] = useState(0);
   const timerRef = useRef<number | null>(null);
