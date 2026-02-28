@@ -1,7 +1,7 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ZoomPopup from './ZoomPopup';
 import { playSound, getPadPanner, unlockAudioContext } from '@/lib/audio-engine';
-import { emitPadHit } from './MixerStrip';
+import { emitPadHit, subscribePadHit } from './MixerStrip';
 import { getQuantizeDelay, isLoopEngineRunning } from '@/lib/loop-engine';
 import { X, Volume2, Lock, Repeat, AudioWaveform, Pencil, Settings2, Palette, Upload, Store, RefreshCw } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
@@ -57,7 +57,17 @@ const DrumPad: React.FC<DrumPadProps> = ({
   onResetPad, onResetAllPads, onGateBlocked, onPadPlayed
 }) => {
   const [isActive, setIsActive] = useState(false);
+  const midiTimeoutRef = useRef<number | null>(null);
   const { t } = useTranslation();
+
+  // Listen for external pad hits (MIDI) to trigger animation
+  useEffect(() => {
+    return subscribePadHit(pad.id, () => {
+      setIsActive(true);
+      if (midiTimeoutRef.current) clearTimeout(midiTimeoutRef.current);
+      midiTimeoutRef.current = window.setTimeout(() => setIsActive(false), 120);
+    });
+  }, [pad.id]);
   const [showMenu, setShowMenu] = useState(false);
   const [showEffects, setShowEffects] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
