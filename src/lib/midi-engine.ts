@@ -1,5 +1,9 @@
 // ── MIDI Engine ─────────────────────────────────────────────────────────────
-// Centralises Web MIDI API access, channel filtering, note mapping and Learn mode.
+// Centralises MIDI access with dual-mode support:
+// 1. Web MIDI API (browsers like Chrome)
+// 2. Capacitor native plugin (Android app from Play Store)
+
+import { Capacitor } from '@capacitor/core';
 
 export interface MidiDevice {
   id: string;
@@ -149,30 +153,36 @@ let learnCb: LearnCallback | null = null;
 let ccLearnFunctionId: CCFunctionId | null = null;
 let ccLearnCb: CCLearnCallback | null = null;
 
-function collectDevices(): MidiDevice[] {
-  if (!midiAccess) return [];
-  const devices: MidiDevice[] = [];
-  midiAccess.inputs.forEach((input) => {
-    devices.push({
-      id: input.id,
-      name: input.name || 'Unknown',
-      manufacturer: input.manufacturer || '',
-    });
-  });
-  return devices;
+// Capacitor native plugin listener cleanup
+let nativeListenerCleanup: (() => void) | null = null;
+
+// ── Detect which MIDI backend to use ────────────────────────────────────────
+
+type MidiBackend = 'native' | 'webmidi' | 'none';
+
+function detectBackend(): MidiBackend {
+  // On native Android/iOS Capacitor app → use native plugin
+  if (Capacitor.isNativePlatform()) {
+    return 'native';
+  }
+  // In browser with Web MIDI support
+  if (typeof navigator !== 'undefined' && typeof (navigator as any).requestMIDIAccess === 'function') {
+    return 'webmidi';
+  }
+  return 'none';
 }
 
-function handleMidiMessage(e: MIDIMessageEvent) {
-  const data = e.data;
-  if (!data || data.length < 3) return;
+let activeBackend: MidiBackend = 'none';
 
-  const status = data[0];
+// ── Shared message handler (used by both backends) ──────────────────────────
+
+function handleMidiData(status: number, data1: number, data2: number) {
   const msgChannel = (status & 0x0f) + 1; // 1-16
   const type = status & 0xf0;
-  const note = data[1];
-  const velocity = data[2];
+  const note = data1;
+  const velocity = data2;
 
-  // Note On: filter by note channel (bypass channel filter in learn mode)
+  // Note On
   if (type === 0x90 && velocity > 0) {
     // Learn mode: capture note regardless of channel
     if (learnPadId) {
@@ -192,10 +202,8 @@ function handleMidiMessage(e: MIDIMessageEvent) {
     }
   }
 
-  // Note On with velocity 0 treated as Note Off — also capture in learn mode
-  // Some controllers send CC for buttons; capture CC during note learn as fallback
+  // CC during note learn → map CC as pseudo-note
   if (type === 0xb0 && learnPadId) {
-    // Use CC number as a pseudo-note mapping (offset by 1000 to avoid collision)
     const pseudoNote = 1000 + note;
     mappings[pseudoNote] = learnPadId;
     saveMappings(mappings);
@@ -205,12 +213,12 @@ function handleMidiMessage(e: MIDIMessageEvent) {
     return;
   }
 
-  // Control Change (CC): filter by CC channel
+  // Control Change (CC)
   if (type === 0xb0 && !learnPadId) {
     if (ccChannel !== 'all' && msgChannel !== ccChannel) return;
-    // CC Learn mode: capture CC number and return (bypass channel filter)
+
+    // CC Learn mode
     if (ccLearnFunctionId) {
-      // Remove any existing mapping for this function
       for (const [key, val] of Object.entries(ccMappings)) {
         if (val === ccLearnFunctionId) {
           delete ccMappings[Number(key)];
@@ -224,7 +232,7 @@ function handleMidiMessage(e: MIDIMessageEvent) {
       return;
     }
 
-    // Check if this CC is mapped as a pad trigger (pseudo-note)
+    // Check if CC is mapped as pad trigger
     const pseudoNote = 1000 + note;
     const padId = mappings[pseudoNote];
     if (padId && velocity > 0) {
@@ -232,52 +240,131 @@ function handleMidiMessage(e: MIDIMessageEvent) {
       return;
     }
 
-    ccCb?.(note, velocity, msgChannel); // note = CC number, velocity = CC value
+    ccCb?.(note, velocity, msgChannel);
   }
+}
+
+// ── Web MIDI backend ────────────────────────────────────────────────────────
+
+function handleWebMidiMessage(e: MIDIMessageEvent) {
+  const data = e.data;
+  if (!data || data.length < 3) return;
+  handleMidiData(data[0], data[1], data[2]);
+}
+
+function collectDevicesWebMidi(): MidiDevice[] {
+  if (!midiAccess) return [];
+  const devices: MidiDevice[] = [];
+  midiAccess.inputs.forEach((input) => {
+    devices.push({
+      id: input.id,
+      name: input.name || 'Unknown',
+      manufacturer: input.manufacturer || '',
+    });
+  });
+  return devices;
 }
 
 function bindInputs() {
   if (!midiAccess) return;
   midiAccess.inputs.forEach((input) => {
-    input.onmidimessage = handleMidiMessage;
+    input.onmidimessage = handleWebMidiMessage;
   });
+}
+
+async function initWebMidi(): Promise<boolean> {
+  try {
+    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+    console.log('MIDI enabled (Web MIDI):', midiAccess);
+    bindInputs();
+
+    midiAccess.onstatechange = () => {
+      bindInputs();
+      deviceChangeCb?.(collectDevicesWebMidi());
+    };
+
+    deviceChangeCb?.(collectDevicesWebMidi());
+    return true;
+  } catch (err) {
+    console.error('Web MIDI failed:', err);
+    return false;
+  }
+}
+
+// ── Native Capacitor backend ────────────────────────────────────────────────
+
+async function initNativeMidi(): Promise<boolean> {
+  try {
+    const { default: CapacitorMidi } = await import('@/plugins/capacitor-midi');
+
+    // Listen for MIDI messages from native
+    const msgListener = await CapacitorMidi.addListener('midiMessage', (event) => {
+      handleMidiData(event.status, event.data1, event.data2);
+    });
+
+    // Listen for device changes
+    const devListener = await CapacitorMidi.addListener('deviceChange', (event) => {
+      const devices: MidiDevice[] = event.devices || [];
+      deviceChangeCb?.(devices);
+    });
+
+    // Start native MIDI scanning
+    await CapacitorMidi.start();
+
+    // Get initial devices
+    const { devices } = await CapacitorMidi.getDevices();
+    deviceChangeCb?.(devices || []);
+
+    // Store cleanup
+    nativeListenerCleanup = () => {
+      msgListener.remove();
+      devListener.remove();
+      CapacitorMidi.stop();
+    };
+
+    console.log('MIDI enabled (Native Capacitor)');
+    return true;
+  } catch (err) {
+    console.error('Native MIDI failed:', err);
+    return false;
+  }
+}
+
+function collectDevicesNative(): MidiDevice[] {
+  // For native, devices are pushed via events; return empty for sync call
+  // The actual devices are delivered asynchronously via deviceChange listener
+  return [];
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
 export function isMidiSupported(): boolean {
-  try {
-    return typeof navigator !== 'undefined' && typeof (navigator as any).requestMIDIAccess === 'function';
-  } catch {
-    return false;
-  }
+  return detectBackend() !== 'none';
+}
+
+export function getMidiBackend(): MidiBackend {
+  return activeBackend;
 }
 
 export async function initMidi(): Promise<boolean> {
-  if (!isMidiSupported()) {
-    console.warn('MIDI not supported in this browser');
+  const backend = detectBackend();
+  if (backend === 'none') {
+    console.warn('MIDI not supported on this platform');
     return false;
   }
-  try {
-    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-    console.log("MIDI enabled:", midiAccess);
-    bindInputs();
 
-    midiAccess.onstatechange = () => {
-      bindInputs();
-      deviceChangeCb?.(collectDevices());
-    };
+  activeBackend = backend;
 
-    deviceChangeCb?.(collectDevices());
-    return true;
-  } catch (err) {
-    console.error("MIDI failed:", err);
-    return false;
+  if (backend === 'native') {
+    return initNativeMidi();
   }
+  return initWebMidi();
 }
 
 export function getConnectedDevices(): MidiDevice[] {
-  return collectDevices();
+  if (activeBackend === 'webmidi') return collectDevicesWebMidi();
+  // Native devices are delivered via events
+  return [];
 }
 
 export function getChannel(): MidiChannel {
