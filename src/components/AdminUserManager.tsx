@@ -345,26 +345,26 @@ interface GrantPackModalProps {
   user: UserRow;
   onClose: () => void;
   onGrant: (userId: string, packId: string, packName: string) => Promise<void>;
+  onRevoke: (userId: string, packId: string, packName: string) => Promise<void>;
   callAdmin: (body: object) => Promise<any>;
 }
 
-const GrantPackModal: React.FC<GrantPackModalProps> = ({ user, onClose, onGrant, callAdmin }) => {
+const GrantPackModal: React.FC<GrantPackModalProps> = ({ user, onClose, onGrant, onRevoke, callAdmin }) => {
   const [packs, setPacks] = useState<{ id: string; name: string; category: string }[]>([]);
   const [ownedPackIds, setOwnedPackIds] = useState<Set<string>>(new Set());
   const [loadingPacks, setLoadingPacks] = useState(true);
   const [grantingId, setGrantingId] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     (async () => {
       try {
-        // Fetch all available packs
         const { data: allPacks } = await supabase
           .from('store_packs')
           .select('id, name, category')
           .order('name');
 
-        // Fetch user's existing purchases
         const purchaseData = await callAdmin({ action: 'get-purchases', userId: user.id });
         const owned = new Set<string>((purchaseData.purchases || []).map((p: any) => p.pack_id));
 
@@ -385,6 +385,18 @@ const GrantPackModal: React.FC<GrantPackModalProps> = ({ user, onClose, onGrant,
     setGrantingId(null);
   };
 
+  const handleRevoke = async (pack: { id: string; name: string }) => {
+    if (!window.confirm(`Revogar pack "${pack.name}" deste usuário?`)) return;
+    setRevokingId(pack.id);
+    await onRevoke(user.id, pack.id, pack.name);
+    setOwnedPackIds(prev => {
+      const next = new Set(prev);
+      next.delete(pack.id);
+      return next;
+    });
+    setRevokingId(null);
+  };
+
   const q = search.toLowerCase().trim();
   const filtered = packs.filter(p => !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
 
@@ -393,7 +405,7 @@ const GrantPackModal: React.FC<GrantPackModalProps> = ({ user, onClose, onGrant,
       <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-violet-400" />
-          <p className="text-sm font-semibold text-foreground">Conceder Pack Grátis</p>
+          <p className="text-sm font-semibold text-foreground">Conceder / Revogar Pack</p>
         </div>
         <p className="text-xs text-muted-foreground truncate">{user.email}</p>
 
@@ -424,9 +436,15 @@ const GrantPackModal: React.FC<GrantPackModalProps> = ({ user, onClose, onGrant,
                     <p className="text-[10px] text-muted-foreground">{p.category}</p>
                   </div>
                   {owned ? (
-                    <span className="text-[10px] text-emerald-400 font-medium shrink-0 flex items-center gap-0.5">
-                      <CheckCircle className="h-2.5 w-2.5" /> Possui
-                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[10px] px-2 border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0"
+                      onClick={() => handleRevoke(p)}
+                      disabled={revokingId === p.id}
+                    >
+                      {revokingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Revogar'}
+                    </Button>
                   ) : (
                     <Button
                       size="sm"
@@ -615,6 +633,16 @@ const AdminUserManager: React.FC = () => {
     }
   };
 
+  const handleRevokePack = async (userId: string, packId: string, packName: string) => {
+    try {
+      await callAdmin({ action: 'reset-purchase', userId, packId });
+      toast.success(`Pack "${packName}" revogado com sucesso.`);
+      fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao revogar pack');
+    }
+  };
+
   const getCurrentRoleLabel = (user: UserRow) => {
     if (user.is_ceo) return 'CEO';
     if (user.is_admin) return 'Admin';
@@ -668,6 +696,7 @@ const AdminUserManager: React.FC = () => {
           user={grantPackModal}
           onClose={() => setGrantPackModal(null)}
           onGrant={handleGrantPack}
+          onRevoke={handleRevokePack}
           callAdmin={callAdmin}
         />
       )}
