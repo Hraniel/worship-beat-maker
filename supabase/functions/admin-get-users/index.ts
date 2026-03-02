@@ -193,6 +193,33 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
+    // ── Grant pack for free ─────────────────────────────────────────────────────
+    if (action === 'grant-pack') {
+      const { userId: targetUserId, packId } = body;
+      if (!targetUserId || !/^[0-9a-f-]{36}$/.test(targetUserId)) {
+        return new Response(JSON.stringify({ error: 'Invalid userId' }), { status: 400, headers: corsHeaders });
+      }
+      if (!packId || !/^[0-9a-f-]{36}$/.test(packId)) {
+        return new Response(JSON.stringify({ error: 'Invalid packId' }), { status: 400, headers: corsHeaders });
+      }
+      // Check if already purchased
+      const { data: existing } = await supabase
+        .from('user_purchases')
+        .select('id')
+        .eq('user_id', targetUserId)
+        .eq('pack_id', packId)
+        .maybeSingle();
+      if (existing) {
+        return new Response(JSON.stringify({ error: 'Usuário já possui este pack' }), { status: 400, headers: corsHeaders });
+      }
+      const { error: insertErr } = await supabase.from('user_purchases').insert({
+        user_id: targetUserId,
+        pack_id: packId,
+      });
+      if (insertErr) throw insertErr;
+      return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
     // ── Get user purchases ───────────────────────────────────────────────────────
     if (action === 'get-purchases') {
       const targetUserId = body.userId;

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import {
   Shield, ShieldOff, Users, Loader2, ShoppingBag, Calendar, ChevronDown,
   ShieldCheck, Search, Trash2, Mail, Key, Ban, Gift, Clock, Globe, RotateCcw,
-  User, Phone, CreditCard, CheckCircle,
+  User, Phone, CreditCard, CheckCircle, Package,
 } from 'lucide-react';
 
 import { useAdminRole, UserRole } from '@/hooks/useAdminRole';
@@ -340,6 +340,118 @@ const ResetPurchaseModal: React.FC<ResetPurchaseModalProps> = ({ user, onClose, 
   );
 };
 
+// ── Grant Pack Modal ────────────────────────────────────────────────────────────
+interface GrantPackModalProps {
+  user: UserRow;
+  onClose: () => void;
+  onGrant: (userId: string, packId: string, packName: string) => Promise<void>;
+  callAdmin: (body: object) => Promise<any>;
+}
+
+const GrantPackModal: React.FC<GrantPackModalProps> = ({ user, onClose, onGrant, callAdmin }) => {
+  const [packs, setPacks] = useState<{ id: string; name: string; category: string }[]>([]);
+  const [ownedPackIds, setOwnedPackIds] = useState<Set<string>>(new Set());
+  const [loadingPacks, setLoadingPacks] = useState(true);
+  const [grantingId, setGrantingId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // Fetch all available packs
+        const { data: allPacks } = await supabase
+          .from('store_packs')
+          .select('id, name, category')
+          .order('name');
+
+        // Fetch user's existing purchases
+        const purchaseData = await callAdmin({ action: 'get-purchases', userId: user.id });
+        const owned = new Set<string>((purchaseData.purchases || []).map((p: any) => p.pack_id));
+
+        setPacks(allPacks || []);
+        setOwnedPackIds(owned);
+      } catch {
+        toast.error('Erro ao buscar packs');
+      } finally {
+        setLoadingPacks(false);
+      }
+    })();
+  }, [user.id]);
+
+  const handleGrant = async (pack: { id: string; name: string }) => {
+    setGrantingId(pack.id);
+    await onGrant(user.id, pack.id, pack.name);
+    setOwnedPackIds(prev => new Set(prev).add(pack.id));
+    setGrantingId(null);
+  };
+
+  const q = search.toLowerCase().trim();
+  const filtered = packs.filter(p => !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-card border border-border rounded-2xl p-5 w-full max-w-sm space-y-4 shadow-2xl">
+        <div className="flex items-center gap-2">
+          <Package className="h-4 w-4 text-violet-400" />
+          <p className="text-sm font-semibold text-foreground">Conceder Pack Grátis</p>
+        </div>
+        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Buscar pack..."
+            className="w-full h-8 pl-7 pr-3 text-xs rounded-lg bg-background border border-input text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </div>
+
+        {loadingPacks ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-3">Nenhum pack encontrado</p>
+        ) : (
+          <div className="space-y-1.5 max-h-64 overflow-y-auto">
+            {filtered.map(p => {
+              const owned = ownedPackIds.has(p.id);
+              return (
+                <div key={p.id} className="flex items-center justify-between gap-2 bg-muted/50 rounded-lg px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-foreground truncate">{p.name}</p>
+                    <p className="text-[10px] text-muted-foreground">{p.category}</p>
+                  </div>
+                  {owned ? (
+                    <span className="text-[10px] text-emerald-400 font-medium shrink-0 flex items-center gap-0.5">
+                      <CheckCircle className="h-2.5 w-2.5" /> Possui
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-6 text-[10px] px-2 border-violet-500/40 text-violet-400 hover:bg-violet-500/10 shrink-0"
+                      onClick={() => handleGrant(p)}
+                      disabled={grantingId === p.id}
+                    >
+                      {grantingId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Conceder'}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="pt-1">
+          <Button size="sm" variant="ghost" className="w-full h-8 text-xs" onClick={onClose}>Fechar</Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main Component ─────────────────────────────────────────────────────────────
 const AdminUserManager: React.FC = () => {
   const { role: myRole } = useAdminRole();
@@ -353,6 +465,7 @@ const AdminUserManager: React.FC = () => {
   const [grantModal, setGrantModal] = useState<UserRow | null>(null);
   const [credModal, setCredModal] = useState<UserRow | null>(null);
   const [resetPurchaseModal, setResetPurchaseModal] = useState<UserRow | null>(null);
+  const [grantPackModal, setGrantPackModal] = useState<UserRow | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const getToken = async () => {
@@ -492,6 +605,16 @@ const AdminUserManager: React.FC = () => {
     }
   };
 
+  const handleGrantPack = async (userId: string, packId: string, packName: string) => {
+    try {
+      await callAdmin({ action: 'grant-pack', userId, packId });
+      toast.success(`Pack "${packName}" concedido gratuitamente!`);
+      fetchUsers();
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao conceder pack');
+    }
+  };
+
   const getCurrentRoleLabel = (user: UserRow) => {
     if (user.is_ceo) return 'CEO';
     if (user.is_admin) return 'Admin';
@@ -537,6 +660,14 @@ const AdminUserManager: React.FC = () => {
           user={resetPurchaseModal}
           onClose={() => setResetPurchaseModal(null)}
           onReset={handleResetPurchase}
+          callAdmin={callAdmin}
+        />
+      )}
+      {grantPackModal && (
+        <GrantPackModal
+          user={grantPackModal}
+          onClose={() => setGrantPackModal(null)}
+          onGrant={handleGrantPack}
           callAdmin={callAdmin}
         />
       )}
@@ -747,6 +878,12 @@ const AdminUserManager: React.FC = () => {
                     className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 transition-colors"
                   >
                     <Gift className="h-2.5 w-2.5" /> Acesso grátis
+                  </button>
+                  <button
+                    onClick={() => setGrantPackModal(user)}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium border border-violet-500/30 text-violet-400 hover:bg-violet-500/10 transition-colors"
+                  >
+                    <Package className="h-2.5 w-2.5" /> Pack grátis
                   </button>
                     {user.purchase_count > 0 && (
                     <button
