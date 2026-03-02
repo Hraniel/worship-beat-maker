@@ -25,11 +25,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      })
+      .catch(() => {
+        // Offline: Supabase stores session in localStorage — try to recover it
+        try {
+          const storageKey = Object.keys(localStorage).find(k => k.startsWith('sb-') && k.endsWith('-auth-token'));
+          if (storageKey) {
+            const raw = localStorage.getItem(storageKey);
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const cachedSession = parsed?.currentSession ?? parsed;
+              if (cachedSession?.user) {
+                setSession(cachedSession as Session);
+                setUser(cachedSession.user as User);
+              }
+            }
+          }
+        } catch { /* ignore parse errors */ }
+        setLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);

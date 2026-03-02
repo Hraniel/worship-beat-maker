@@ -177,17 +177,40 @@ const Index = () => {
   const [masterVolume, setMasterVol] = useState(0.7);
   const [metronomeVol, setMetronomeVol] = useState(getMetronomeVolume);
   const [ambientVol, setAmbientVol] = useState(getAmbientVolume);
-  const [bpm, setBpm] = useState(120);
-  const [timeSignature, setTimeSignature] = useState("4/4");
+  const [bpm, setBpmRaw] = useState(() => {
+    const saved = Number(localStorage.getItem("drum-pads-working-bpm"));
+    return saved > 0 ? saved : 120;
+  });
+  const setBpm = useCallback((v: number) => {
+    setBpmRaw(v);
+    localStorage.setItem("drum-pads-working-bpm", String(v));
+  }, []);
+  const [timeSignature, setTimeSignatureRaw] = useState(() => localStorage.getItem("drum-pads-working-ts") || "4/4");
+  const setTimeSignature = useCallback((v: string) => {
+    setTimeSignatureRaw(v);
+    localStorage.setItem("drum-pads-working-ts", v);
+  }, []);
   const [activeLoops, setActiveLoops] = useState<Set<string>>(new Set());
-  const [padVolumes, setPadVolumes] = useState<Record<string, number>>({});
-  const [currentSongId, setCurrentSongId] = useState<string | null>(null);
+  const [padVolumes, setPadVolumes] = useState<Record<string, number>>(() => {
+    try { const d = localStorage.getItem("drum-pads-volumes"); return d ? JSON.parse(d) : {}; } catch { return {}; }
+  });
+  const [currentSongId, setCurrentSongIdRaw] = useState<string | null>(() => localStorage.getItem("drum-pads-current-song-id"));
+  const setCurrentSongId = useCallback((id: string | null) => {
+    setCurrentSongIdRaw(id);
+    if (id) localStorage.setItem("drum-pads-current-song-id", id);
+    else localStorage.removeItem("drum-pads-current-song-id");
+  }, []);
   const [audioReady, setAudioReady] = useState(false);
   const [customSounds, setCustomSounds] = useState<Record<string, string>>(loadCustomNames);
   const [metronomeOpen, setMetronomeOpen] = useState(true);
   const [metronomeIsPlaying, setMetronomeIsPlaying] = useState(false);
-  const [spotifyTrackName, setSpotifyTrackName] = useState<string | null>(null);
-  const [spotifyKey, setSpotifyKey] = useState<string | null>(null);
+  const [spotifyTrackName, setSpotifyTrackName] = useState<string | null>(() => localStorage.getItem("drum-pads-working-track"));
+  const [spotifyKey, setSpotifyKeyRaw] = useState<string | null>(() => localStorage.getItem("drum-pads-working-key"));
+  const setSpotifyKey = useCallback((v: string | null) => {
+    setSpotifyKeyRaw(v);
+    if (v) localStorage.setItem("drum-pads-working-key", v);
+    else localStorage.removeItem("drum-pads-working-key");
+  }, []);
   const [editingHeaderBpm, setEditingHeaderBpm] = useState(false);
   const [headerBpmValue, setHeaderBpmValue] = useState("");
   const [showSavePrompt, setShowSavePrompt] = useState(false);
@@ -535,7 +558,20 @@ const Index = () => {
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+
+    // pagehide fires when the app is fully closed (mobile swipe away)
+    // beforeunload fires on desktop tab close / navigation
+    const handlePageHide = () => {
+      autoSaveCurrentSongRef.current?.();
+    };
+    window.addEventListener("pagehide", handlePageHide);
+    window.addEventListener("beforeunload", handlePageHide);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("pagehide", handlePageHide);
+      window.removeEventListener("beforeunload", handlePageHide);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -746,7 +782,11 @@ const Index = () => {
   );
 
   const handlePadVolumeChange = useCallback((padId: string, vol: number) => {
-    setPadVolumes((prev) => ({ ...prev, [padId]: vol }));
+    setPadVolumes((prev) => {
+      const next = { ...prev, [padId]: vol };
+      localStorage.setItem("drum-pads-volumes", JSON.stringify(next));
+      return next;
+    });
     updateLoopVolume(padId, vol);
   }, []);
 
@@ -1039,6 +1079,12 @@ const Index = () => {
     setlists,
     updateSetlist,
   ]);
+
+  // Persist spotifyTrackName so it survives full app close
+  useEffect(() => {
+    if (spotifyTrackName) localStorage.setItem("drum-pads-working-track", spotifyTrackName);
+    else localStorage.removeItem("drum-pads-working-track");
+  }, [spotifyTrackName]);
 
   // Keep ref updated so key-change effect calls the latest closure
   useEffect(() => {
