@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { useTranslation } from "react-i18next";
 import { useBodyScroll } from "@/hooks/useBodyScroll";
 import LanguageSelector from "@/components/LanguageSelector";
@@ -1449,6 +1450,25 @@ const Landing = () => {
   const maintenance = useMaintenanceMode();
   const restrictedMode = prelaunch.enabled || maintenance.enabled;
   const [showPrelaunch, setShowPrelaunch] = useState(false);
+
+  // Redirect installed app users (PWA/Capacitor) straight to login
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    if (
+      isStandalone &&
+      !user &&
+      !authLoading &&
+      !prelaunch.loading &&
+      !prelaunch.enabled &&
+      !maintenance.loading &&
+      !maintenance.enabled
+    ) {
+      navigate('/auth', { replace: true });
+    }
+  }, [user, authLoading, prelaunch.loading, prelaunch.enabled, maintenance.loading, maintenance.enabled, navigate]);
 
   // Intercept navigation when prelaunch or maintenance is active
   const prelaunchNavigate = useCallback((...args: any[]) => {
