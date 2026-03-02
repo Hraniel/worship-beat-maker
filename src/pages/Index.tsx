@@ -255,7 +255,7 @@ const Index = () => {
   });
   const midiCCCallbacksRef = useRef<import('@/hooks/useMidi').MidiCCCallbacks>({});
   const loopPadIds = useMemo(() => new Set(defaultPads.filter(p => p.isLoop).map(p => p.id)), []);
-  const [pendingLoopImport, setPendingLoopImport] = useState<{ padId: string; file: File } | null>(null);
+  const [pendingLoopImport, setPendingLoopImport] = useState<{ padId: string; file?: File; storeSound?: { soundName: string; arrayBuffer: ArrayBuffer } } | null>(null);
   const midiNoteCallbacksRef = useRef<import('@/hooks/useMidi').MidiNoteCallbacks>({
     isLoopPad: (padId: string) => loopPadIds.has(padId),
   });
@@ -423,7 +423,7 @@ const Index = () => {
   );
 
   // Import from Glory Store
-  const handleImportStoreSound = useCallback(
+  const executeImportStoreSound = useCallback(
     async (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => {
       try {
         await loadCustomBuffer(padId, arrayBuffer);
@@ -459,6 +459,17 @@ const Index = () => {
       }
     },
     [customSounds],
+  );
+
+  const handleImportStoreSound = useCallback(
+    (padId: string, soundName: string, arrayBuffer: ArrayBuffer) => {
+      if (loopPadIds.has(padId)) {
+        setPendingLoopImport({ padId, storeSound: { soundName, arrayBuffer } });
+        return;
+      }
+      executeImportStoreSound(padId, soundName, arrayBuffer);
+    },
+    [loopPadIds, executeImportStoreSound],
   );
 
   const {
@@ -761,12 +772,15 @@ const Index = () => {
 
   const handleLoopImportConfirm = useCallback((newBpm: number) => {
     if (!pendingLoopImport) return;
-    // Set metronome BPM before importing
     setBpm(newBpm);
     setLoopBpm(newBpm);
-    executeImportSound(pendingLoopImport.padId, pendingLoopImport.file);
+    if (pendingLoopImport.file) {
+      executeImportSound(pendingLoopImport.padId, pendingLoopImport.file);
+    } else if (pendingLoopImport.storeSound) {
+      executeImportStoreSound(pendingLoopImport.padId, pendingLoopImport.storeSound.soundName, pendingLoopImport.storeSound.arrayBuffer);
+    }
     setPendingLoopImport(null);
-  }, [pendingLoopImport, executeImportSound]);
+  }, [pendingLoopImport, executeImportSound, executeImportStoreSound]);
 
   const handleRemoveCustomSound = useCallback(
     async (padId: string) => {
@@ -2629,7 +2643,7 @@ const Index = () => {
       {/* Loop import BPM dialog */}
       <LoopImportBpmDialog
         open={!!pendingLoopImport}
-        fileName={pendingLoopImport?.file.name || ''}
+        fileName={pendingLoopImport?.file?.name || pendingLoopImport?.storeSound?.soundName || ''}
         currentBpm={bpm}
         onConfirm={handleLoopImportConfirm}
         onCancel={() => setPendingLoopImport(null)}
