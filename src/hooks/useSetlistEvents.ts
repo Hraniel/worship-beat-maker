@@ -37,11 +37,16 @@ export function useSetlistEvents() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Persist to localStorage whenever events change
-  useEffect(() => {
-    if (!cacheKey || events.length === 0) return;
-    try { localStorage.setItem(cacheKey, JSON.stringify(events)); } catch {}
-  }, [events, cacheKey]);
+  // Wrapper that syncs to localStorage immediately (critical for pagehide saves)
+  const setEventsAndCache = useCallback((updater: SetlistEvent[] | ((prev: SetlistEvent[]) => SetlistEvent[])) => {
+    setEvents(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (cacheKey && next.length > 0) {
+        try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
+      }
+      return next;
+    });
+  }, [cacheKey]);
 
   const fetchEvents = useCallback(async () => {
     if (!user) { setEvents([]); setLoading(false); return; }
@@ -74,7 +79,7 @@ export function useSetlistEvents() {
       if (error) throw error;
       const raw = data as any;
       const ev: SetlistEvent = { ...raw, songs_data: raw.songs_data || [] };
-      setEvents(prev => [...prev, ev].sort((a, b) => a.event_date.localeCompare(b.event_date)));
+      setEventsAndCache(prev => [...prev, ev].sort((a, b) => a.event_date.localeCompare(b.event_date)));
       toast.success('Evento criado!');
       return ev;
     } catch (e: any) {
@@ -92,7 +97,7 @@ export function useSetlistEvents() {
         .eq('id', id)
         .eq('user_id', user.id);
       if (error) throw error;
-      setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+      setEventsAndCache(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
       toast.success('Evento atualizado!');
     } catch (e: any) {
       toast.error(e.message || 'Erro ao atualizar evento');
@@ -108,7 +113,7 @@ export function useSetlistEvents() {
         .eq('id', id)
         .eq('user_id', user.id);
       if (error) throw error;
-      setEvents(prev => prev.filter(e => e.id !== id));
+      setEventsAndCache(prev => prev.filter(e => e.id !== id));
       toast.success('Evento removido');
     } catch (e: any) {
       toast.error(e.message || 'Erro ao remover evento');
@@ -124,7 +129,7 @@ export function useSetlistEvents() {
         .eq('id', id)
         .eq('user_id', user.id);
       if (error) throw error;
-      setEvents(prev => prev.map(e => e.id === id ? { ...e, is_public } : e));
+      setEventsAndCache(prev => prev.map(e => e.id === id ? { ...e, is_public } : e));
     } catch (e: any) {
       toast.error(e.message || 'Erro ao atualizar compartilhamento');
     }
@@ -142,7 +147,7 @@ export function useSetlistEvents() {
         .eq('id', eventId)
         .eq('user_id', user.id);
       if (error) throw error;
-      setEvents(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
+      setEventsAndCache(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
     } catch (e: any) {
       toast.error(e.message || 'Erro ao adicionar música');
     }
@@ -160,7 +165,7 @@ export function useSetlistEvents() {
         .eq('id', eventId)
         .eq('user_id', user.id);
       if (error) throw error;
-      setEvents(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
+      setEventsAndCache(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
     } catch (e: any) {
       toast.error(e.message || 'Erro ao remover música');
     }
@@ -168,7 +173,7 @@ export function useSetlistEvents() {
 
   const reorderEventSongs = useCallback(async (eventId: string, newSongs: EventSong[]) => {
     if (!user) return;
-    setEvents(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
+    setEventsAndCache(prev => prev.map(e => e.id === eventId ? { ...e, songs_data: newSongs } : e));
     try {
       const { error } = await supabase
         .from('setlist_events' as any)
