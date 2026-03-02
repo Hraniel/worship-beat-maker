@@ -16,8 +16,22 @@ interface DbSetlist {
 
 export function useSetlists() {
   const { user } = useAuth();
-  const [setlists, setSetlists] = useState<DbSetlist[]>([]);
+  const cacheKey = user ? `setlists_cache_${user.id}` : null;
+
+  const [setlists, setSetlists] = useState<DbSetlist[]>(() => {
+    if (!cacheKey) return [];
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
   const [loading, setLoading] = useState(true);
+
+  // Persist to localStorage whenever setlists change
+  useEffect(() => {
+    if (!cacheKey || setlists.length === 0) return;
+    try { localStorage.setItem(cacheKey, JSON.stringify(setlists)); } catch {}
+  }, [setlists, cacheKey]);
 
   const fetchSetlists = useCallback(async () => {
     if (!user) {
@@ -33,23 +47,25 @@ export function useSetlists() {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setSetlists(
-        (data || []).map((d) => ({
-          id: d.id,
-          name: d.name,
-          songs: (d.songs as unknown as SetlistSong[]) || [],
-          created_at: d.created_at,
-          updated_at: d.updated_at,
-          sort_order: d.sort_order ?? 0,
-        }))
-      );
+      const parsed = (data || []).map((d) => ({
+        id: d.id,
+        name: d.name,
+        songs: (d.songs as unknown as SetlistSong[]) || [],
+        created_at: d.created_at,
+        updated_at: d.updated_at,
+        sort_order: d.sort_order ?? 0,
+      }));
+      setSetlists(parsed);
     } catch (e) {
       console.error('Failed to fetch setlists:', e);
-      toast.error('Erro ao carregar setlists');
+      // Only show error if no cached data
+      if (!cacheKey || !localStorage.getItem(cacheKey)) {
+        toast.error('Erro ao carregar setlists');
+      }
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, cacheKey]);
 
   useEffect(() => {
     fetchSetlists();

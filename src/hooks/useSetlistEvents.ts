@@ -26,8 +26,22 @@ export interface SetlistEvent {
 
 export function useSetlistEvents() {
   const { user } = useAuth();
-  const [events, setEvents] = useState<SetlistEvent[]>([]);
+  const cacheKey = user ? `setlist_events_cache_${user.id}` : null;
+
+  const [events, setEvents] = useState<SetlistEvent[]>(() => {
+    if (!cacheKey) return [];
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      return cached ? JSON.parse(cached) : [];
+    } catch { return []; }
+  });
   const [loading, setLoading] = useState(true);
+
+  // Persist to localStorage whenever events change
+  useEffect(() => {
+    if (!cacheKey || events.length === 0) return;
+    try { localStorage.setItem(cacheKey, JSON.stringify(events)); } catch {}
+  }, [events, cacheKey]);
 
   const fetchEvents = useCallback(async () => {
     if (!user) { setEvents([]); setLoading(false); return; }
@@ -38,7 +52,8 @@ export function useSetlistEvents() {
         .eq('user_id', user.id)
         .order('event_date', { ascending: true });
       if (error) throw error;
-      setEvents(((data || []) as any[]).map(d => ({ ...d, songs_data: d.songs_data || [] })));
+      const parsed = ((data || []) as any[]).map(d => ({ ...d, songs_data: d.songs_data || [] }));
+      setEvents(parsed);
     } catch (e) {
       console.error('Failed to fetch setlist events:', e);
     } finally {
