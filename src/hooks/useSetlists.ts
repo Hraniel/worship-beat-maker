@@ -27,11 +27,16 @@ export function useSetlists() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Persist to localStorage whenever setlists change
-  useEffect(() => {
-    if (!cacheKey || setlists.length === 0) return;
-    try { localStorage.setItem(cacheKey, JSON.stringify(setlists)); } catch {}
-  }, [setlists, cacheKey]);
+  // Wrapper that syncs to localStorage immediately (critical for pagehide saves)
+  const setSetlistsAndCache = useCallback((updater: DbSetlist[] | ((prev: DbSetlist[]) => DbSetlist[])) => {
+    setSetlists(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (cacheKey && next.length > 0) {
+        try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
+      }
+      return next;
+    });
+  }, [cacheKey]);
 
   const fetchSetlists = useCallback(async () => {
     if (!user) {
@@ -97,7 +102,7 @@ export function useSetlists() {
           updated_at: data.updated_at,
           sort_order: newOrder,
         };
-        setSetlists((prev) => [...prev, newSetlist]);
+        setSetlistsAndCache((prev) => [...prev, newSetlist]);
         toast.success('Setlist salva!');
         return newSetlist;
       } catch (e) {
@@ -112,6 +117,19 @@ export function useSetlists() {
   const updateSetlist = useCallback(
     async (id: string, songs: SetlistSong[]) => {
       if (!user) return;
+
+      // Synchronously update localStorage so pagehide/beforeunload saves persist
+      const updatedList = (prev: DbSetlist[]) =>
+        prev.map((s) => (s.id === id ? { ...s, songs, updated_at: new Date().toISOString() } : s));
+
+      setSetlists((prev) => {
+        const next = updatedList(prev);
+        if (cacheKey) {
+          try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
+        }
+        return next;
+      });
+
       try {
         const { error } = await supabase
           .from('setlists')
@@ -120,15 +138,12 @@ export function useSetlists() {
           .eq('user_id', user.id);
 
         if (error) throw error;
-        setSetlists((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, songs, updated_at: new Date().toISOString() } : s))
-        );
       } catch (e) {
         console.error('Failed to update setlist:', e);
-        toast.error('Erro ao atualizar setlist');
+        // Don't show error toast during pagehide saves
       }
     },
-    [user]
+    [user, cacheKey]
   );
 
   const deleteSetlist = useCallback(
@@ -142,7 +157,7 @@ export function useSetlists() {
           .eq('user_id', user.id);
 
         if (error) throw error;
-        setSetlists((prev) => prev.filter((s) => s.id !== id));
+        setSetlistsAndCache((prev) => prev.filter((s) => s.id !== id));
         toast.success('Setlist removida');
       } catch (e) {
         console.error('Failed to delete setlist:', e);
@@ -156,7 +171,7 @@ export function useSetlists() {
     async (reorderedIds: string[]) => {
       if (!user) return;
       // Optimistic update
-      setSetlists((prev) => {
+      setSetlistsAndCache((prev) => {
         const map = new Map(prev.map((s) => [s.id, s]));
         return reorderedIds
           .map((id, i) => {
