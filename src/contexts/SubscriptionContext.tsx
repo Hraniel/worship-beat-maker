@@ -15,7 +15,13 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { session } = useAuth();
-  const [tier, setTier] = useState<TierKey>('free');
+  const [tier, setTierState] = useState<TierKey>(() => {
+    try { return (localStorage.getItem('app_cached_tier') as TierKey) || 'free'; } catch { return 'free'; }
+  });
+  const setTier = useCallback((t: TierKey) => {
+    setTierState(t);
+    try { localStorage.setItem('app_cached_tier', t); } catch {}
+  }, []);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
