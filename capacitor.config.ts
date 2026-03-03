@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://worship-beat-maker.lovable.app?forceHideBadge=true',
     cleartext: true,
+    androidScheme: 'https',
   },
   android: {
     allowMixedContent: true,
