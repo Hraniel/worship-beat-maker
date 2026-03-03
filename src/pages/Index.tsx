@@ -578,10 +578,33 @@ const Index = () => {
     window.addEventListener("pagehide", handlePageHide);
     window.addEventListener("beforeunload", handlePageHide);
 
+    // Capacitor native: reliable appStateChange listener
+    let capListenerHandle: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const { App: CapApp } = await import("@capacitor/app");
+        const handle = await CapApp.addListener("appStateChange", (state) => {
+          if (!state.isActive) {
+            autoSaveCurrentSongRef.current?.();
+          }
+        });
+        capListenerHandle = handle;
+      } catch {
+        // Not running in Capacitor — ignore
+      }
+    })();
+
+    // Periodic auto-save every 30s as safety net for hard kills
+    const periodicSaveInterval = setInterval(() => {
+      autoSaveCurrentSongRef.current?.();
+    }, 30_000);
+
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("pagehide", handlePageHide);
       window.removeEventListener("beforeunload", handlePageHide);
+      capListenerHandle?.remove();
+      clearInterval(periodicSaveInterval);
     };
   }, []);
 
