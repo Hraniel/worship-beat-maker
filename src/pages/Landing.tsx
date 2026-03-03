@@ -1460,6 +1460,18 @@ const Landing = () => {
       !!(window as any).Capacitor?.isNativePlatform?.() ||
       document.URL.startsWith('capacitor://') ||
       document.URL.startsWith('https://glorypads.com');
+    
+    console.log('[Landing redirect]', {
+      isStandalone,
+      user: !!user,
+      authLoading,
+      prelaunchLoading: prelaunch.loading,
+      prelaunchEnabled: prelaunch.enabled,
+      maintenanceLoading: maintenance.loading,
+      maintenanceEnabled: maintenance.enabled,
+      url: document.URL,
+    });
+
     if (
       isStandalone &&
       !user &&
@@ -1469,6 +1481,7 @@ const Landing = () => {
       !maintenance.loading &&
       !maintenance.enabled
     ) {
+      console.log('[Landing redirect] → navigating to /auth');
       navigate('/auth', { replace: true });
     }
   }, [user, authLoading, prelaunch.loading, prelaunch.enabled, maintenance.loading, maintenance.enabled, navigate]);
