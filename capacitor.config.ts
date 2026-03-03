@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Glory Pads',
   webDir: 'dist',
   server: {
-    url: 'https://glorypads.com?forceHideBadge=true',
+    url: 'https://glorypads.com/app?forceHideBadge=true',
     cleartext: true,
     androidScheme: 'https',
   },
