@@ -1456,7 +1456,10 @@ const Landing = () => {
   useEffect(() => {
     const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
+      (window.navigator as any).standalone === true ||
+      !!(window as any).Capacitor?.isNativePlatform?.() ||
+      document.URL.startsWith('capacitor://') ||
+      document.URL.startsWith('https://glorypads.com');
     if (
       isStandalone &&
       !user &&
