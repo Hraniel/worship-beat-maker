@@ -19,6 +19,7 @@ interface ActiveLoop {
   pad: PadSound;
   volume: number;
   startSubdivision: number;
+  originalBpm: number; // BPM when this loop was started
 }
 
 // ── Native loop playback for custom-imported audio ──
