@@ -106,8 +106,7 @@ export function setLoopBpm(bpm: number) {
     for (const [padId, loop] of activeLoops) {
       const src = nativeLoopSources.get(padId);
       if (src) {
-        const loopBpm = loop.pad.loopBpm || oldBpm;
-        src.playbackRate.value = bpm / loopBpm;
+        src.playbackRate.value = bpm / loop.originalBpm;
       }
     }
   }
