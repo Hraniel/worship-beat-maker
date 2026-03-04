@@ -148,9 +148,12 @@ const Metronome: React.FC<MetronomeProps> = ({
               onChange={(e) => setEditBpmValue(e.target.value)}
               onBlur={commitBpmEdit}
               onKeyDown={handleBpmKeyDown}
-              className="w-12 h-6 text-xs font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
+              autoFocus
+              className="w-14 h-7 text-sm font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
               min={40}
               max={240}
+              inputMode="numeric"
+              pattern="[0-9]*"
             />
           ) : (
             <button

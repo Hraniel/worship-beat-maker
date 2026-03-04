@@ -100,8 +100,16 @@ export function setLoopBpm(bpm: number) {
     stopEngine();
     startEngine();
   }
-  // Re-start native loops at new BPM (custom audio loops don't change, but
-  // we could adjust playbackRate in the future)
+  // Adjust playbackRate of native loops to match new BPM
+  if (oldBpm > 0 && bpm !== oldBpm) {
+    for (const [padId, loop] of activeLoops) {
+      const src = nativeLoopSources.get(padId);
+      if (src) {
+        const loopBpm = loop.pad.loopBpm || oldBpm;
+        src.playbackRate.value = bpm / loopBpm;
+      }
+    }
+  }
 }
 
 export function setLoopTimeSignature(ts: string) {
