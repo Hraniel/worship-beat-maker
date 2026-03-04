@@ -203,7 +203,7 @@ export function addLoop(pad: PadSound, volume: number) {
   const isCustom = hasCustomBuffer(pad.id);
 
   if (!isRunning) {
-    activeLoops.set(pad.id, { pad, volume, startSubdivision: 0 });
+    activeLoops.set(pad.id, { pad, volume, startSubdivision: 0, originalBpm: currentBpm });
     startEngine();
     if (isCustom) startNativeLoop(pad, volume);
   } else if (forceLoopBeat1) {
@@ -212,9 +212,9 @@ export function addLoop(pad: PadSound, volume: number) {
     if (pendingLoops.size === 0 || nextBar > pendingActivateAtSub) {
       pendingActivateAtSub = nextBar;
     }
-    pendingLoops.set(pad.id, { pad, volume, startSubdivision: nextBar });
+    pendingLoops.set(pad.id, { pad, volume, startSubdivision: nextBar, originalBpm: currentBpm });
   } else {
-    activeLoops.set(pad.id, { pad, volume, startSubdivision: currentSubdivision + 1 });
+    activeLoops.set(pad.id, { pad, volume, startSubdivision: currentSubdivision + 1, originalBpm: currentBpm });
     if (isCustom) startNativeLoop(pad, volume);
   }
 }
