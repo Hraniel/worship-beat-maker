@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Play, Pause, Minus, Plus, Lock, Volume2 } from 'lucide-react';
+import { Play, Pause, Minus, Plus, Lock, Gauge } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { enableMetronome, disableMetronome, onMetronomeBeat, setSyncEnabled, isSyncEnabled } from '@/lib/loop-engine';
@@ -131,7 +131,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           <Minus className="h-3 w-3" />
         </Button>
         <div className="flex-1 flex items-center gap-2">
-          <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Gauge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           <Slider
             value={[localBpm]}
             onValueChange={([v]) => handleBpmSlider(v)}
@@ -148,9 +148,12 @@ const Metronome: React.FC<MetronomeProps> = ({
               onChange={(e) => setEditBpmValue(e.target.value)}
               onBlur={commitBpmEdit}
               onKeyDown={handleBpmKeyDown}
-              className="w-12 h-6 text-xs font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
+              autoFocus
+              className="w-14 h-7 text-sm font-bold text-center bg-muted border border-primary rounded px-1 focus:outline-none text-foreground tabular-nums"
               min={40}
               max={240}
+              inputMode="numeric"
+              pattern="[0-9]*"
             />
           ) : (
             <button

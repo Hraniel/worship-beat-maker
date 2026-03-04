@@ -19,6 +19,7 @@ interface ActiveLoop {
   pad: PadSound;
   volume: number;
   startSubdivision: number;
+  originalBpm: number; // BPM when this loop was started
 }
 
 // ── Native loop playback for custom-imported audio ──
@@ -100,8 +101,15 @@ export function setLoopBpm(bpm: number) {
     stopEngine();
     startEngine();
   }
-  // Re-start native loops at new BPM (custom audio loops don't change, but
-  // we could adjust playbackRate in the future)
+  // Adjust playbackRate of native loops to match new BPM
+  if (oldBpm > 0 && bpm !== oldBpm) {
+    for (const [padId, loop] of activeLoops) {
+      const src = nativeLoopSources.get(padId);
+      if (src) {
+        src.playbackRate.value = bpm / loop.originalBpm;
+      }
+    }
+  }
 }
 
 export function setLoopTimeSignature(ts: string) {
@@ -195,7 +203,7 @@ export function addLoop(pad: PadSound, volume: number) {
   const isCustom = hasCustomBuffer(pad.id);
 
   if (!isRunning) {
-    activeLoops.set(pad.id, { pad, volume, startSubdivision: 0 });
+    activeLoops.set(pad.id, { pad, volume, startSubdivision: 0, originalBpm: currentBpm });
     startEngine();
     if (isCustom) startNativeLoop(pad, volume);
   } else if (forceLoopBeat1) {
@@ -204,9 +212,9 @@ export function addLoop(pad: PadSound, volume: number) {
     if (pendingLoops.size === 0 || nextBar > pendingActivateAtSub) {
       pendingActivateAtSub = nextBar;
     }
-    pendingLoops.set(pad.id, { pad, volume, startSubdivision: nextBar });
+    pendingLoops.set(pad.id, { pad, volume, startSubdivision: nextBar, originalBpm: currentBpm });
   } else {
-    activeLoops.set(pad.id, { pad, volume, startSubdivision: currentSubdivision + 1 });
+    activeLoops.set(pad.id, { pad, volume, startSubdivision: currentSubdivision + 1, originalBpm: currentBpm });
     if (isCustom) startNativeLoop(pad, volume);
   }
 }
