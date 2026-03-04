@@ -131,7 +131,7 @@ const Metronome: React.FC<MetronomeProps> = ({
           <Minus className="h-3 w-3" />
         </Button>
         <div className="flex-1 flex items-center gap-2">
-          <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <Gauge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
           <Slider
             value={[localBpm]}
             onValueChange={([v]) => handleBpmSlider(v)}
