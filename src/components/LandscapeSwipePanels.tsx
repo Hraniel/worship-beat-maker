@@ -132,7 +132,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
       </div>
 
       {/* Right: Tab system (Mix / Met) */}
-      <div className="w-[42%] max-w-[320px] md:max-w-[400px] shrink-0 flex flex-col min-h-0 border-l border-border/30">
+      <div className="w-[42%] max-w-[320px] md:max-w-[400px] shrink-0 flex flex-col min-h-0 border-l border-transparent">
 
         {focusMode ? (
           /* Focus mode: BPM bar + ultra-compact ambient pads */
