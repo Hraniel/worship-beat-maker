@@ -200,6 +200,13 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const [migPreviewing, setMigPreviewing] = useState(false);
   const [migMigrating, setMigMigrating] = useState(false);
   const [migResult, setMigResult] = useState<{ migrated: number; failed: number; errors: string[] } | null>(null);
+  // Lifetime / payment mode state
+  const [paymentMode, setPaymentMode] = useState<'subscription' | 'lifetime'>('subscription');
+  const [lifetimePrice, setLifetimePrice] = useState('14.90');
+  const [lifetimeName, setLifetimeName] = useState('Acesso Vitalício');
+  const [lifetimeCta, setLifetimeCta] = useState('Comprar agora');
+  const [lifetimeStripePriceId, setLifetimeStripePriceId] = useState('');
+  const [lifetimeStripeProductId, setLifetimeStripeProductId] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -208,14 +215,28 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [p, f, g] = await Promise.all([
+      const [p, f, g, lc] = await Promise.all([
         supabase.from('plan_pricing').select('*').order('price_brl'),
         supabase.from('plan_features').select('*').order('sort_order'),
         supabase.from('feature_gates').select('*').order('gate_label'),
+        supabase.from('app_config').select('config_key, config_value').in('config_key', [
+          'payment_mode', 'lifetime_price_brl', 'lifetime_name', 'lifetime_cta_text',
+          'lifetime_stripe_price_id', 'lifetime_stripe_product_id',
+        ]),
       ]);
       if (p.data) setPricing(p.data as PlanPricing[]);
       if (f.data) setFeatures(f.data as PlanFeature[]);
       if (g.data) setGates(g.data as FeatureGate[]);
+      if (lc.data) {
+        const map: Record<string, string> = {};
+        (lc.data as any[]).forEach(r => { map[r.config_key] = r.config_value; });
+        if (map.payment_mode) setPaymentMode(map.payment_mode as any);
+        if (map.lifetime_price_brl) setLifetimePrice(map.lifetime_price_brl);
+        if (map.lifetime_name) setLifetimeName(map.lifetime_name);
+        if (map.lifetime_cta_text) setLifetimeCta(map.lifetime_cta_text);
+        if (map.lifetime_stripe_price_id) setLifetimeStripePriceId(map.lifetime_stripe_price_id);
+        if (map.lifetime_stripe_product_id) setLifetimeStripeProductId(map.lifetime_stripe_product_id);
+      }
     } finally {
       setLoading(false);
     }
