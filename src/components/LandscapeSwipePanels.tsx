@@ -90,16 +90,16 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
                   </div>
                 )}
                 {/* Metronome */}
-                <div className="shrink-0 border-t border-border/30">
+                <div className="shrink-0">
                   {metronome}
                 </div>
                 {/* Continuous Pads */}
-                <div className="shrink-0 px-1.5 py-1 border-t border-border/30">
+                <div className="shrink-0 px-1.5 py-1">
                   {ambientPads}
                 </div>
                 {/* Tap Tempo */}
                 {toolsPanel && (
-                  <div className="shrink-0 border-t border-border/30 px-1 py-1 min-h-[260px]">
+                  <div className="shrink-0 px-1 py-1 min-h-[260px]">
                     {toolsPanel}
                   </div>
                 )}
