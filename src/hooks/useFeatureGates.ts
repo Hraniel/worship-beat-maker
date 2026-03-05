@@ -58,21 +58,10 @@ export interface GateCheckResult {
 
 export function useFeatureGates() {
   const { tier } = useSubscription();
-  const { user } = useAuth();
-  const { isEnabled } = useAppConfig();
+  const { isUnlocked: isNewUserUnlocked } = useNewUserUnlock();
   const [gates, setGates] = useState<FeatureGate[]>(cachedGates ?? []);
   const [loading, setLoading] = useState(!cachedGates);
   const mountedRef = useRef(true);
-
-  // Check if user registered within 24h and unlock-all is enabled
-  const isNewUserUnlocked = useCallback((): boolean => {
-    if (!user?.created_at) return false;
-    if (!isEnabled('app_new_user_unlock_all')) return false;
-    const createdAt = new Date(user.created_at).getTime();
-    const now = Date.now();
-    const hours24 = 24 * 60 * 60 * 1000;
-    return (now - createdAt) <= hours24;
-  }, [user, isEnabled]);
 
   const refresh = useCallback(async () => {
     cachedGates = null;
