@@ -2093,7 +2093,7 @@ const Index = () => {
               ) : undefined
             }
             metronome={
-              <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+              <div className="glass-card rounded-lg overflow-hidden" data-tutorial="metronome">
                 <div
                   className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => setMetronomeOpen((prev) => !prev)}
