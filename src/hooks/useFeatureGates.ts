@@ -106,7 +106,7 @@ export function useFeatureGates() {
 
   const canAccess = useCallback((gateKey: string): GateCheckResult => {
     // New users get full access when config is enabled
-    if (isNewUserUnlocked()) {
+    if (isNewUserUnlocked) {
       const gate = gates.find(g => g.gate_key === gateKey);
       return { allowed: true, requiredTier: gate?.required_tier ?? null, gate: gate ?? null };
     }
