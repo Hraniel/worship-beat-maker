@@ -2003,6 +2003,7 @@ const Index = () => {
                   }}
                   onPadPlayed={triggerSilentCheck}
                 />
+                <PadOnboardingTip />
               </div>
             }
             ambientPads={
