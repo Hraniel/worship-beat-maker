@@ -124,6 +124,7 @@ import { useSilentModeDetector } from "@/hooks/useSilentModeDetector";
 import { useAppConfig } from "@/hooks/useAppConfig";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 import LoopImportBpmDialog from "@/components/LoopImportBpmDialog";
+import NewUserBadge from "@/components/NewUserBadge";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
@@ -1572,8 +1573,9 @@ const Index = () => {
               )}
             </div>
 
-            {/* Center: Current song name */}
-            <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center">
+            {/* Center: Current song name + new user badge */}
+            <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center gap-1.5">
+              <NewUserBadge />
               {currentSongName ? (
                 <span className="text-[11px] sm:text-xs font-medium text-primary truncate block">
                   ♪ {currentSongName}

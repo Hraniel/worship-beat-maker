@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useAppConfig } from '@/hooks/useAppConfig';
+import { useNewUserUnlock } from '@/hooks/useNewUserUnlock';
 
 export interface FeatureGate {
   id: string;
@@ -59,21 +58,10 @@ export interface GateCheckResult {
 
 export function useFeatureGates() {
   const { tier } = useSubscription();
-  const { user } = useAuth();
-  const { isEnabled } = useAppConfig();
+  const { isUnlocked: isNewUserUnlocked } = useNewUserUnlock();
   const [gates, setGates] = useState<FeatureGate[]>(cachedGates ?? []);
   const [loading, setLoading] = useState(!cachedGates);
   const mountedRef = useRef(true);
-
-  // Check if user registered within 24h and unlock-all is enabled
-  const isNewUserUnlocked = useCallback((): boolean => {
-    if (!user?.created_at) return false;
-    if (!isEnabled('app_new_user_unlock_all')) return false;
-    const createdAt = new Date(user.created_at).getTime();
-    const now = Date.now();
-    const hours24 = 24 * 60 * 60 * 1000;
-    return (now - createdAt) <= hours24;
-  }, [user, isEnabled]);
 
   const refresh = useCallback(async () => {
     cachedGates = null;
@@ -118,7 +106,7 @@ export function useFeatureGates() {
 
   const canAccess = useCallback((gateKey: string): GateCheckResult => {
     // New users get full access when config is enabled
-    if (isNewUserUnlocked()) {
+    if (isNewUserUnlocked) {
       const gate = gates.find(g => g.gate_key === gateKey);
       return { allowed: true, requiredTier: gate?.required_tier ?? null, gate: gate ?? null };
     }

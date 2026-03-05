@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { usePaymentMode } from '@/hooks/usePaymentMode';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNewUserUnlock } from '@/hooks/useNewUserUnlock';
 
 export interface UpgradeGatePayload {
   gateKey: string;
@@ -42,8 +43,16 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
   const { t } = useTranslation();
   const paymentMode = usePaymentMode();
   const [loading, setLoading] = React.useState(false);
+  const { isUnlocked: isNewUserUnlocked } = useNewUserUnlock();
 
-  if (!payload) return null;
+  // New user with full access — auto-close modal
+  React.useEffect(() => {
+    if (payload && isNewUserUnlocked) {
+      onClose();
+    }
+  }, [payload, isNewUserUnlocked, onClose]);
+
+  if (!payload || isNewUserUnlocked) return null;
 
   const meta = TIER_META[payload.requiredTier] ?? TIER_META.pro;
 
