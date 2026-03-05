@@ -487,7 +487,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
       )}
       {/* Activate event confirmation dialog */}
       <AlertDialog open={showActivateConfirm} onOpenChange={setShowActivateConfirm}>
-        <AlertDialogContent className="max-w-xs rounded-xl">
+        <AlertDialogContent className="max-w-xs rounded-xl z-[400]" onCloseAutoFocus={(e) => e.preventDefault()}>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-base">
               <PlayCircle className="h-5 w-5 text-primary" />
@@ -584,7 +584,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           {t('setlist.title')}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden">
+      <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden pointer-events-auto">
         <SheetHeader>
           <SheetTitle className="text-foreground">{t('setlist.title')}</SheetTitle>
           <SheetDescription className="text-muted-foreground">
