@@ -1091,6 +1091,7 @@ const Index = () => {
       padNames: { ...padNames },
       padPans: { ...padPans },
       padEffects: { ...padEffects },
+      padColors: { ...padColors },
       customSounds: { ...customSounds },
       midiMappings: getMidiMappings(),
       midiCCMappings: getMidiCCMappings() as any,
@@ -1112,6 +1113,7 @@ const Index = () => {
     padNames,
     padPans,
     padEffects,
+    padColors,
     customSounds,
     setlists,
     updateSetlist,
@@ -1153,6 +1155,7 @@ const Index = () => {
         padNames: { ...padNames },
         padPans: { ...padPans },
         padEffects: { ...padEffects },
+        padColors: { ...padColors },
         customSounds: { ...customSounds },
         midiMappings: getMidiMappings(),
         midiCCMappings: getMidiCCMappings() as any,
@@ -1169,7 +1172,7 @@ const Index = () => {
         setCurrentSongId(result.id);
       }
     },
-    [bpm, timeSignature, spotifyKey, padVolumes, padNames, padPans, padEffects, customSounds, createSetlist],
+    [bpm, timeSignature, spotifyKey, padVolumes, padNames, padPans, padEffects, padColors, customSounds, createSetlist],
   );
 
   const handleLoadSong = useCallback(
@@ -1192,6 +1195,10 @@ const Index = () => {
       setPadNames(song.padNames || {});
       setPadPans(song.padPans || {});
       setPadEffects(song.padEffects || {});
+      // Restore pad colors
+      const restoredColors = song.padColors || {};
+      setPadColors(restoredColors);
+      localStorage.setItem("drum-pads-pad-colors", JSON.stringify(restoredColors));
 
       // Remove all current custom buffers first
       const currentCustomIds = Object.keys(customSounds);
@@ -1268,6 +1275,7 @@ const Index = () => {
           padNames: {},
           padPans: {},
           padEffects: {},
+          padColors: {},
           customSounds: {},
         } as SetlistSong;
       })
@@ -1293,6 +1301,7 @@ const Index = () => {
           padNames: {},
           padPans: {},
           padEffects: {},
+          padColors: {},
           customSounds: {},
         };
         handleLoadSong(songToLoad);
