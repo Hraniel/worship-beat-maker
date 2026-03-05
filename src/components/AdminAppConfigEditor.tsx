@@ -204,8 +204,9 @@ const AdminAppConfigEditor: React.FC = () => {
                     <Switch
                       checked={getVal(f.key, 'true') !== 'false'}
                       onCheckedChange={v => {
-                        setVal(f.key, v ? 'true' : 'false');
-                        setTimeout(() => saveKey(f.key), 0);
+                        const newVal = v ? 'true' : 'false';
+                        setVal(f.key, newVal);
+                        saveKey(f.key, newVal);
                         if (f.key === 'app_new_user_unlock_all' && !v) {
                           toast.success('Acesso total desativado — todos os acessos gratuitos de 24h foram revogados imediatamente.', { duration: 5000 });
                         } else if (f.key === 'app_new_user_unlock_all' && v) {
