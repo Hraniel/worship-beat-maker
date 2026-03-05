@@ -264,7 +264,7 @@ const Index = () => {
     isLoopPad: (padId: string) => loopPadIds.has(padId),
   });
   const midiGateAccess = canAccess('midi');
-  const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed, midiNoteCallbacksRef.current);
+  const midi = useMidi(padEffects, effectiveFeatureTier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed, midiNoteCallbacksRef.current);
 
   // Mixer gate check
   const mixerFaderAccess = canAccess("mixer_faders");
