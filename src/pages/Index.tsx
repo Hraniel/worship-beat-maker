@@ -2192,7 +2192,7 @@ const Index = () => {
         {/* Footer - hidden in landscape/tablet/desktop since mixer/metronome are in side panel */}
         {!isLandscape && !isTablet && !isDesktop && (
           <footer
-            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t glass-surface lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "flex-none lg:h-auto lg:flex-1" : ""}`}
+            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border/10 glass-surface lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "flex-none lg:h-auto lg:flex-1" : ""}`}
             style={{
               ...(!focusMode && !isDesktop ? { height: footerHeight } : {}),
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -2428,7 +2428,7 @@ const Index = () => {
                         </div>
                       </div>
                       {/* Mini metronome bar */}
-                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-1 rounded-md border border-border/30 bg-card/60">
+                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-1 rounded-md bg-card/60">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
                           <span className="text-[9px] text-muted-foreground">BPM</span>
@@ -2482,7 +2482,7 @@ const Index = () => {
                     <div className={footerPage === 3 ? "h-full flex flex-col" : "hidden"}>
                       <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} fullPage />
                       {/* Mini metronome bar */}
-                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-2 rounded-md border border-border/30 bg-card/60 shrink-0">
+                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-2 rounded-md bg-card/60 shrink-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
                           <span className="text-[9px] text-muted-foreground">BPM</span>
@@ -2510,7 +2510,7 @@ const Index = () => {
       {/* Safe-area shortcut bar — OUTSIDE overflow-hidden container so it's never clipped */}
       {!isLandscape && !isTablet && (
         <div
-          className="glass-surface border-t shrink-0 lg:hidden"
+          className="glass-surface border-t border-border/10 shrink-0 lg:hidden relative z-20"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           <div className="flex items-center justify-around" style={{ paddingTop: focusMode ? "0px" : "4px" }}>

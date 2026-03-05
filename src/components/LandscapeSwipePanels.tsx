@@ -60,11 +60,11 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
             {padGrid}
           </div>
           {/* Right side panel — all controls stacked with scroll */}
-          <div className={`${isDesktop ? 'w-[360px]' : 'w-[320px]'} shrink-0 flex flex-col min-h-0 border-l border-border/30`}>
+          <div className={`${isDesktop ? 'w-[360px]' : 'w-[320px]'} shrink-0 flex flex-col min-h-0 border-l border-transparent`}>
             {focusMode ? (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="hidden">{metronome}</div>
-                <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-border/30 shrink-0">
+                <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-transparent shrink-0">
                   <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
                   <span className="text-[10px] text-muted-foreground">BPM</span>
                   {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
@@ -90,16 +90,16 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
                   </div>
                 )}
                 {/* Metronome */}
-                <div className="shrink-0 border-t border-border/30">
+                <div className="shrink-0">
                   {metronome}
                 </div>
                 {/* Continuous Pads */}
-                <div className="shrink-0 px-1.5 py-1 border-t border-border/30">
+                <div className="shrink-0 px-1.5 py-1">
                   {ambientPads}
                 </div>
                 {/* Tap Tempo */}
                 {toolsPanel && (
-                  <div className="shrink-0 border-t border-border/30 px-1 py-1 min-h-[260px]">
+                  <div className="shrink-0 px-1 py-1 min-h-[260px]">
                     {toolsPanel}
                   </div>
                 )}
@@ -132,14 +132,14 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
       </div>
 
       {/* Right: Tab system (Mix / Met) */}
-      <div className="w-[42%] max-w-[320px] md:max-w-[400px] shrink-0 flex flex-col min-h-0 border-l border-border/30">
+      <div className="w-[42%] max-w-[320px] md:max-w-[400px] shrink-0 flex flex-col min-h-0 border-l border-transparent">
 
         {focusMode ? (
           /* Focus mode: BPM bar + ultra-compact ambient pads */
           <div className="flex flex-col flex-1 min-h-0">
             {/* Hidden metronome to keep audio alive */}
             <div className="hidden">{metronome}</div>
-            <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-border/30 shrink-0">
+            <div className="flex items-center justify-center gap-2 px-3 py-1.5 border-b border-transparent shrink-0">
               <span className="text-sm font-bold text-foreground tabular-nums">{bpm}</span>
               <span className="text-[10px] text-muted-foreground">BPM</span>
               {spotifyKey && <span className="text-[10px] font-semibold text-primary">· {spotifyKey}</span>}
@@ -165,16 +165,16 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
               {mixer}
             </div>
             {/* Metronome — full, below faders */}
-            <div className="shrink-0 border-t border-border/30">
+            <div className="shrink-0">
               {metronome}
             </div>
             {/* Continuous Pads */}
-            <div className="shrink-0 px-1.5 py-1 border-t border-border/30">
+            <div className="shrink-0 px-1.5 py-1">
               {ambientPads}
             </div>
             {/* Tap Tempo */}
             {toolsPanel && (
-              <div className="shrink-0 border-t border-border/30 px-1 py-1 min-h-[260px]">
+              <div className="shrink-0 px-1 py-1 min-h-[260px]">
                 {toolsPanel}
               </div>
             )}
