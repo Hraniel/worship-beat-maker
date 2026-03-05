@@ -18,7 +18,7 @@ export const DEFAULT_EFFECTS: PadEffects = {
   eqLow: 0,
   eqMid: 0,
   eqHigh: 0,
-  reverb: 0,
+  reverb: 0.3,
   delay: 0,
   delayTime: 0.3,
   delaySyncBpm: false,
