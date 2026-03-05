@@ -2482,7 +2482,7 @@ const Index = () => {
                     <div className={footerPage === 3 ? "h-full flex flex-col" : "hidden"}>
                       <AmbientPads panDisabled={audioSettings.ambientStereo === "mono"} fullPage />
                       {/* Mini metronome bar */}
-                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-2 rounded-md border border-border/30 bg-card/60 shrink-0">
+                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-2 rounded-md bg-card/60 shrink-0">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
                           <span className="text-[9px] text-muted-foreground">BPM</span>
