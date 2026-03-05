@@ -37,6 +37,7 @@
     "signupSubtitle": "Crea tu cuenta",
     "resetSubtitle": "Recuperar contraseña",
     "accountCreated": "¡Cuenta creada con éxito!",
+    "confirmEmailSent": "¡Cuenta creada! Revisa tu correo electrónico para confirmar tu registro antes de iniciar sesión.",
     "resetSent": "¡Correo de recuperación enviado! Revisa tu bandeja de entrada.",
     "fillAllFields": "Completa todos los campos",
     "passwordMinLength": "La contraseña debe tener al menos 6 caracteres",

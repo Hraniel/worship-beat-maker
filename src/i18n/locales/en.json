@@ -52,6 +52,7 @@
     "signupSubtitle": "Create your account",
     "resetSubtitle": "Reset password",
     "accountCreated": "Account created successfully!",
+    "confirmEmailSent": "Account created! Check your email to confirm your registration before logging in.",
     "resetSent": "Reset email sent! Check your inbox.",
     "fillAllFields": "Please fill in all fields",
     "passwordMinLength": "Password must be at least 6 characters",
