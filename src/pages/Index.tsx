@@ -1463,7 +1463,7 @@ const Index = () => {
                 {mobileMenuOpen && (
                   <>
                     <div
-                      className="fixed inset-0 z-40"
+                      className="fixed inset-0 z-[290]"
                       onClick={() => {
                         setMobileMenuOpen(false);
                       }}
