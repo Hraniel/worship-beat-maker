@@ -183,16 +183,9 @@ const AdminAnalytics: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const { data: session } = await supabase.auth.getSession();
-        const token = session?.session?.access_token;
-        if (!token) return;
-        const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-        const resp = await fetch(`https://${projectId}.supabase.co/functions/v1/subscription-stats`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (resp.ok) {
-          const json = await resp.json();
-          setSubStats(json);
+        const { data, error } = await supabase.functions.invoke('subscription-stats');
+        if (!error && data) {
+          setSubStats(data);
         }
       } catch (e) {
         console.error('Subscription stats error:', e);
