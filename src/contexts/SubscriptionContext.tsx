@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { getTierByProductId, TIERS, type TierKey } from '@/lib/tiers';
+import { useNewUserUnlock } from '@/hooks/useNewUserUnlock';
 
 interface SubscriptionContextType {
   tier: TierKey;
@@ -77,13 +78,21 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => clearInterval(interval);
   }, [session, checkSubscription]);
 
+  const { isUnlocked: isNewUserUnlocked } = useNewUserUnlock();
+
+  // When new user unlock is active, elevate tierConfig to master-level limits
+  const effectiveTierConfig = useMemo(() => {
+    if (isNewUserUnlocked) return TIERS.master;
+    return TIERS[tier];
+  }, [tier, isNewUserUnlocked]);
+
   return (
     <SubscriptionContext.Provider value={{
       tier,
       loading,
       subscriptionEnd,
       checkSubscription,
-      tierConfig: TIERS[tier],
+      tierConfig: effectiveTierConfig,
     }}>
       {children}
     </SubscriptionContext.Provider>
