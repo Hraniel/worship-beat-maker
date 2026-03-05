@@ -1653,7 +1653,7 @@ const Index = () => {
                       }}
                     />
                     <div
-                      className="fixed right-2 top-12 z-50 glass-card rounded-lg py-1.5 min-w-[220px] animate-scale-in origin-top-right"
+                      className="fixed right-2 top-12 z-[300] glass-card rounded-lg py-1.5 min-w-[220px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
