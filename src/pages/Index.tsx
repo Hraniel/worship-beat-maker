@@ -1961,8 +1961,8 @@ const Index = () => {
                 className="w-full h-full flex items-center justify-center min-w-0 min-h-0 overflow-hidden"
               >
                 <PadGrid
-                  isMasterTier={tier === "master"}
-                  tier={tier}
+                  isMasterTier={effectiveFeatureTier === "master"}
+                  tier={effectiveFeatureTier}
                   pads={defaultPads}
                   padVolumes={padVolumes}
                   activeLoops={activeLoops}
