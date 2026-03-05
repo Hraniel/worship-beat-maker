@@ -83,6 +83,11 @@ body {
     --pad-crash: 340 70% 55%;
     --pad-tom: 15 70% 50%;
 
+    /* Pad surface colors (dark theme: white-based) */
+    --pad-surface: 0 0% 100%;
+    --pad-active-bg: 0 0% 22%;
+    --pad-overlay: 0 0% 0%;
+
     --sidebar-background: 240 8% 6%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 262 80% 55%;
