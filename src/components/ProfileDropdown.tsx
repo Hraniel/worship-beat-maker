@@ -305,7 +305,7 @@ export default function ProfileDropdown() {
                 <Button onClick={() => { setMenuOpen(false); navigate('/pricing'); }} size="sm" className="w-full h-8 text-xs rounded-lg bg-white hover:bg-gray-50 text-black border border-gray-300">
                   <Zap className="h-3 w-3 mr-1" /> {t('dashboard.upgrade')}
                 </Button>
-              ) : (
+              ) : tier === 'lifetime' ? null : (
                 <Button onClick={handleManageSubscription} size="sm" className="w-full h-8 text-xs rounded-lg bg-white hover:bg-gray-50 text-black border border-gray-300" disabled={portalLoading}>
                   {portalLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('dashboard.manageSubscription')}
                 </Button>
