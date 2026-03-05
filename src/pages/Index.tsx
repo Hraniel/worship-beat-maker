@@ -2290,7 +2290,7 @@ const Index = () => {
               )}
 
               {/* Metronome — below faders, always expanded */}
-              <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+              <div className="glass-card rounded-lg overflow-hidden" data-tutorial="metronome">
                 <Metronome
                   bpm={bpm}
                   onBpmChange={setBpm}
