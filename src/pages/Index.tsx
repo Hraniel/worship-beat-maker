@@ -2078,9 +2078,9 @@ const Index = () => {
                         },
                       ]}
                     />
-                  )}
-                </div>
-              ) : undefined
+                    </div>
+                  </div>
+                ) : undefined
             }
             metronome={
               <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
