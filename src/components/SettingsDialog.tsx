@@ -895,7 +895,7 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
             {(() => {
               const panAccess = canAccess('pan_control');
               return (
-                <div className="relative">
+                <div className="relative" data-tutorial="audio-stereo-pan">
                   {!panAccess.allowed && (
                     <div
                       className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg cursor-pointer"
