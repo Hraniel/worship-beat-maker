@@ -28,11 +28,22 @@ export const TIERS = {
     audioEffects: true,
     price: 14.99,
   },
+  lifetime: {
+    name: 'Vitalício',
+    product_id: 'prod_U5set4nFJ33JoH',
+    price_id: 'price_1T7gtLRsrW8NGuEjAt4aggDV',
+    maxPads: 16,
+    maxImports: 999,
+    individualVolume: true,
+    audioEffects: true,
+    price: 14.90,
+  },
 } as const;
 
 export type TierKey = keyof typeof TIERS;
 
 export function getTierByProductId(productId: string | null): TierKey {
+  if (productId === TIERS.lifetime.product_id) return 'lifetime';
   if (productId === TIERS.master.product_id) return 'master';
   if (productId === TIERS.pro.product_id) return 'pro';
   return 'free';
