@@ -60,7 +60,7 @@ const LandscapeSwipePanels: React.FC<LandscapeSwipePanelsProps> = ({
             {padGrid}
           </div>
           {/* Right side panel — all controls stacked with scroll */}
-          <div className={`${isDesktop ? 'w-[360px]' : 'w-[320px]'} shrink-0 flex flex-col min-h-0 border-l border-border/30`}>
+          <div className={`${isDesktop ? 'w-[360px]' : 'w-[320px]'} shrink-0 flex flex-col min-h-0 border-l border-transparent`}>
             {focusMode ? (
               <div className="flex flex-col flex-1 min-h-0">
                 <div className="hidden">{metronome}</div>
