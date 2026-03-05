@@ -1301,6 +1301,7 @@ const Index = () => {
           padNames: {},
           padPans: {},
           padEffects: {},
+          padColors: {},
           customSounds: {},
         };
         handleLoadSong(songToLoad);
