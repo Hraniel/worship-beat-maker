@@ -50,6 +50,7 @@ const TOGGLE_FIELDS = [
   { key: 'app_enable_loop', label: 'Loop Engine', desc: 'Ativar/desativar gravação de loops' },
   { key: 'app_enable_effects', label: 'Efeitos de Pad', desc: 'Ativar/desativar efeitos sonoros nos pads' },
   { key: 'app_enable_bpm_search', label: 'Busca de BPM', desc: 'Ativar/desativar busca de BPM por música' },
+  { key: 'app_new_user_unlock_all', label: 'Desbloquear tudo para novos usuários', desc: 'Novos usuários (cadastrados há menos de 24h) terão todos os recursos desbloqueados' },
 ];
 
 const ONBOARDING_FIELDS = [
