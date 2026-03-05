@@ -45,12 +45,12 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
   return (
     <>
       <div
-        className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-md"
         onClick={onClose}
       />
 
       <div className="fixed z-[201] inset-0 flex items-center justify-center p-4 pointer-events-none">
-        <div className={`pointer-events-auto relative w-[90vw] max-w-sm rounded-2xl border ${meta.border} bg-card shadow-2xl overflow-hidden`}>
+        <div className={`pointer-events-auto relative w-[90vw] max-w-sm rounded-2xl glass-card ${meta.border} overflow-hidden`}>
 
           <div className={`h-1 w-full ${payload.requiredTier === 'master' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' : 'bg-gradient-to-r from-violet-500 to-fuchsia-500'}`} />
 

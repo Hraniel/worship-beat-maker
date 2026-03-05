@@ -1554,7 +1554,7 @@ const Index = () => {
             </div>
           </header>
         ) : (
-          <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b border-primary/20 bg-primary/10 shrink-0">
+          <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b glass-surface shrink-0">
             {/* Left: Event name (mobile + tablet/desktop) */}
             <div className="flex items-center gap-1.5 min-w-0 shrink-0">
               {selectedEvent ? (
@@ -1653,7 +1653,7 @@ const Index = () => {
                       }}
                     />
                     <div
-                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1.5 min-w-[220px] animate-scale-in origin-top-right"
+                      className="absolute right-0 top-full mt-1 z-50 glass-card rounded-lg py-1.5 min-w-[220px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
@@ -1793,7 +1793,7 @@ const Index = () => {
         )
       ) : (
         /* Focus mode header: only repertoire */
-        <header className="flex items-center justify-between px-3 py-1.5 border-b border-border bg-card shrink-0">
+        <header className="flex items-center justify-between px-3 py-1.5 border-b glass-surface shrink-0">
           <div className="flex items-center gap-2 min-w-0">
             {currentSongName && (
               <span className="text-xs font-medium text-primary truncate max-w-[200px]">♪ {currentSongName}</span>
@@ -2093,7 +2093,7 @@ const Index = () => {
               ) : undefined
             }
             metronome={
-              <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+              <div className="glass-card rounded-lg overflow-hidden" data-tutorial="metronome">
                 <div
                   className="flex items-center justify-between w-full px-3 py-1.5 hover:bg-muted/50 transition-colors cursor-pointer"
                   onClick={() => setMetronomeOpen((prev) => !prev)}
@@ -2192,7 +2192,7 @@ const Index = () => {
         {/* Footer - hidden in landscape/tablet/desktop since mixer/metronome are in side panel */}
         {!isLandscape && !isTablet && !isDesktop && (
           <footer
-            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t border-border bg-card/50 backdrop-blur lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "flex-none lg:h-auto lg:flex-1" : ""}`}
+            className={`shrink-0 lg:w-[320px] xl:w-[360px] lg:border-l lg:border-t-0 border-t glass-surface lg:overflow-y-auto ${focusMode ? "p-1 max-h-[20vh] md:max-h-none lg:max-h-none focus-footer" : "p-0 lg:p-3 md:max-h-none lg:max-h-none overflow-hidden"} ${!focusMode ? "flex-none lg:h-auto lg:flex-1" : ""}`}
             style={{
               ...(!focusMode && !isDesktop ? { height: footerHeight } : {}),
               paddingBottom: "env(safe-area-inset-bottom, 0px)",
@@ -2290,7 +2290,7 @@ const Index = () => {
               )}
 
               {/* Metronome — below faders, always expanded */}
-              <div className="bg-card rounded-lg border border-border overflow-hidden" data-tutorial="metronome">
+              <div className="glass-card rounded-lg overflow-hidden" data-tutorial="metronome">
                 <Metronome
                   bpm={bpm}
                   onBpmChange={setBpm}
@@ -2510,7 +2510,7 @@ const Index = () => {
       {/* Safe-area shortcut bar — OUTSIDE overflow-hidden container so it's never clipped */}
       {!isLandscape && !isTablet && (
         <div
-          className="bg-card/80 backdrop-blur-sm border-t border-border/30 shrink-0 lg:hidden"
+          className="glass-surface border-t shrink-0 lg:hidden"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           <div className="flex items-center justify-around" style={{ paddingTop: focusMode ? "0px" : "4px" }}>
