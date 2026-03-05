@@ -890,8 +890,8 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         return <ThemeSettings />;
       case 'audio':
         return (
-          <div className="flex flex-col gap-3 w-full">
-            <AudioOutputSelector />
+          <div className="flex flex-col gap-3 w-full" data-tutorial="audio-settings">
+            <div data-tutorial="audio-output"><AudioOutputSelector /></div>
             {(() => {
               const panAccess = canAccess('pan_control');
               return (
