@@ -94,8 +94,8 @@ const AdminAppConfigEditor: React.FC = () => {
     });
   };
 
-  const saveKey = async (key: string) => {
-    const value = rows.find(r => r.config_key === key)?.config_value ?? '';
+  const saveKey = async (key: string, explicitValue?: string) => {
+    const value = explicitValue ?? rows.find(r => r.config_key === key)?.config_value ?? '';
     setSaving(key);
     try {
       const { data: existing } = await supabase.from('landing_config').select('id').eq('config_key', key).maybeSingle();
