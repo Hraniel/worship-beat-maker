@@ -2428,7 +2428,7 @@ const Index = () => {
                         </div>
                       </div>
                       {/* Mini metronome bar */}
-                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-1 rounded-md border border-border/30 bg-card/60">
+                      <div className="flex items-center justify-between gap-2 px-3 py-1 mt-1 rounded-md bg-card/60">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-foreground tabular-nums">{bpm}</span>
                           <span className="text-[9px] text-muted-foreground">BPM</span>
