@@ -2510,7 +2510,7 @@ const Index = () => {
       {/* Safe-area shortcut bar — OUTSIDE overflow-hidden container so it's never clipped */}
       {!isLandscape && !isTablet && (
         <div
-          className="glass-surface border-t shrink-0 lg:hidden"
+          className="glass-surface border-t border-border/10 shrink-0 lg:hidden relative z-20"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
           <div className="flex items-center justify-around" style={{ paddingTop: focusMode ? "0px" : "4px" }}>
