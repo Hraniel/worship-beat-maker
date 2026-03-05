@@ -66,6 +66,7 @@ serve(async (req) => {
     const TIER_PRODUCT_MAP: Record<string, string> = {
       pro: "prod_Tz7nOBkWdUxb9Q",
       master: "prod_Tz7oenwSZLQFdS",
+      lifetime: "prod_U5set4nFJ33JoH",
     };
 
     const { data: grantedRows, error: grantedError } = await supabaseClient
