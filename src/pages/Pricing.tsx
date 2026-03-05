@@ -222,6 +222,9 @@ const Pricing = () => {
                         <span className="text-sm text-muted-foreground font-normal">{displayPeriod}</span>
                       )}
                     </p>
+                    {tierKey !== 'free' && (
+                      <p className="text-xs font-semibold text-primary">{t('pricing.trialBadge', '🎉 3 dias grátis para experimentar!')}</p>
+                    )}
                   </div>
 
                   <ul className="space-y-2 text-sm flex-1">
