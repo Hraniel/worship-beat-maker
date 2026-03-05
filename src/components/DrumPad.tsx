@@ -89,11 +89,11 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const longPressRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
-  const { tier, tierConfig } = useSubscription();
+  const { tierConfig } = useSubscription();
   const { canAccess } = useFeatureGates();
 
-  const isPro = tier === 'pro' || tier === 'master';
-  const isMaster = tier === 'master';
+  const isPro = tierConfig.individualVolume;
+  const isMaster = tierConfig.audioEffects;
 
   const goToPricing = useCallback((gateKey: string, feature: string) => {
     const result = canAccess(gateKey);

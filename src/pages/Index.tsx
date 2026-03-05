@@ -125,6 +125,7 @@ import { useAppConfig } from "@/hooks/useAppConfig";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 import LoopImportBpmDialog from "@/components/LoopImportBpmDialog";
 import NewUserBadge from "@/components/NewUserBadge";
+import { useNewUserUnlock } from "@/hooks/useNewUserUnlock";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
@@ -163,6 +164,8 @@ const Index = () => {
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { tier } = useSubscription();
+  const { isUnlocked: isNewUserUnlocked } = useNewUserUnlock();
+  const effectiveFeatureTier = isNewUserUnlocked ? 'master' : tier;
   const { canAccess } = useFeatureGates();
   usePresenceTracker(user?.id);
   const isOnline = useOnlineStatus();
@@ -261,7 +264,7 @@ const Index = () => {
     isLoopPad: (padId: string) => loopPadIds.has(padId),
   });
   const midiGateAccess = canAccess('midi');
-  const midi = useMidi(padEffects, tier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed, midiNoteCallbacksRef.current);
+  const midi = useMidi(padEffects, effectiveFeatureTier === 'master', padVolumes, midiCCCallbacksRef.current, midiGateAccess.allowed, midiNoteCallbacksRef.current);
 
   // Mixer gate check
   const mixerFaderAccess = canAccess("mixer_faders");
@@ -1958,8 +1961,8 @@ const Index = () => {
                 className="w-full h-full flex items-center justify-center min-w-0 min-h-0 overflow-hidden"
               >
                 <PadGrid
-                  isMasterTier={tier === "master"}
-                  tier={tier}
+                  isMasterTier={effectiveFeatureTier === "master"}
+                  tier={effectiveFeatureTier}
                   pads={defaultPads}
                   padVolumes={padVolumes}
                   activeLoops={activeLoops}
