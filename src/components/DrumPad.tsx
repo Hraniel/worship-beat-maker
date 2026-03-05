@@ -304,7 +304,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
       {showMenu && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setShowMenu(false)} />
-          <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border rounded-lg shadow-2xl p-3 min-w-[240px] max-w-[300px] max-h-[80vh] overflow-y-auto space-y-2">
+          <div className="fixed z-[101] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 glass-card rounded-lg p-3 min-w-[240px] max-w-[300px] max-h-[80vh] overflow-y-auto space-y-2">
             <div className="flex items-center justify-between mb-1">
               <span className="text-xs font-semibold text-foreground">{pad.name}</span>
               <button

@@ -160,7 +160,7 @@ const Auth = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <div className="w-full max-w-sm space-y-6">
+      <div className="w-full max-w-sm space-y-6 glass-card rounded-2xl p-6">
         <div className="text-center space-y-2">
           <img src={document.documentElement.classList.contains('dark') ? logoLight : logoDark} alt="DPW" className="h-12 w-12 mx-auto" />
           <h1 className="text-xl font-bold text-foreground tracking-widest">{t('auth.title')}</h1>
