@@ -206,7 +206,13 @@ const AdminAppConfigEditor: React.FC = () => {
                       onCheckedChange={v => {
                         setVal(f.key, v ? 'true' : 'false');
                         setTimeout(() => saveKey(f.key), 0);
-                        toast.success(v ? `${f.label} ativado` : `${f.label} desativado`);
+                        if (f.key === 'app_new_user_unlock_all' && !v) {
+                          toast.success('Acesso total desativado — todos os acessos gratuitos de 24h foram revogados imediatamente.', { duration: 5000 });
+                        } else if (f.key === 'app_new_user_unlock_all' && v) {
+                          toast.success('Acesso total ativado — novos usuários terão 24h de acesso completo.', { duration: 5000 });
+                        } else {
+                          toast.success(v ? `${f.label} ativado` : `${f.label} desativado`);
+                        }
                       }}
                     />
                   </div>
