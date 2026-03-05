@@ -39,7 +39,7 @@ serve(async (req) => {
     if (!roleData) throw new Error("Forbidden: admin only");
 
     const body = await req.json();
-    const { type, id, price_cents, name, current_stripe_price_id, current_stripe_product_id } = body;
+    const { type, id, price_cents, name, current_stripe_price_id, current_stripe_product_id, is_one_time } = body;
 
     if (!type || !id || price_cents === undefined || !name) {
       throw new Error("Missing required fields: type, id, price_cents, name");
@@ -63,8 +63,11 @@ serve(async (req) => {
     } else if (type === "plan") {
       // Plans use fixed product IDs (managed in tiers.ts / Stripe)
       if (!productId) throw new Error("product_id is required for plan sync");
+    } else if (type === "lifetime") {
+      // Lifetime uses fixed product ID
+      if (!productId) throw new Error("product_id is required for lifetime sync");
     } else {
-      throw new Error("Invalid type: must be 'pack' or 'plan'");
+      throw new Error("Invalid type: must be 'pack', 'plan', or 'lifetime'");
     }
 
     // ── Create new Stripe Price ────────────────────────────────────────────────
@@ -74,7 +77,8 @@ serve(async (req) => {
       currency: "brl",
     };
 
-    if (type === "plan") {
+    // Only add recurring for subscription plans (not packs or lifetime)
+    if (type === "plan" && !is_one_time) {
       priceParams.recurring = { interval: "month" };
     }
 

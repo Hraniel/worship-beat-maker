@@ -3,9 +3,10 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 import { supabase } from '@/integrations/supabase/client';
 import { TIERS, type TierKey } from '@/lib/tiers';
 import { useLandingConfig } from '@/hooks/useLandingConfig';
+import { usePaymentMode } from '@/hooks/usePaymentMode';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Check, Crown, Zap, X, Loader2 } from 'lucide-react';
+import { Check, Crown, Zap, X, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useBodyScroll } from '@/hooks/useBodyScroll';
@@ -91,10 +92,11 @@ const Pricing = () => {
   const { t } = useTranslation();
   const { tier: currentTier, checkSubscription } = useSubscription();
   const { user } = useAuth();
-  const [loadingTier, setLoadingTier] = useState<TierKey | null>(null);
+  const [loadingTier, setLoadingTier] = useState<string | null>(null);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const navigate = useNavigate();
   const { pricing, features, loading } = useLandingConfig();
+  const paymentMode = usePaymentMode();
 
   const handleCheckout = async (tierKey: TierKey) => {
     if (tierKey === 'free') return;
@@ -103,6 +105,22 @@ const Pricing = () => {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { tier: tierKey },
       });
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error(t('pricing.checkoutError'));
+    } finally {
+      setLoadingTier(null);
+    }
+  };
+
+  const handleLifetimeCheckout = async () => {
+    setLoadingTier('lifetime');
+    try {
+      const { data, error } = await supabase.functions.invoke('create-lifetime-checkout');
       if (error) throw error;
       if (data?.url) {
         window.location.href = data.url;
@@ -145,6 +163,8 @@ const Pricing = () => {
     }
   };
 
+  const isLifetimeOwner = currentTier === 'lifetime';
+
   return (
     <div className="min-h-screen bg-background overflow-y-auto" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
       {showCancelModal && (
@@ -163,11 +183,68 @@ const Pricing = () => {
           <p className="text-sm text-muted-foreground">{t('pricing.subtitle')}</p>
         </div>
 
-        {loading ? (
+        {loading || paymentMode.loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : paymentMode.isLifetime ? (
+          /* ── LIFETIME MODE ─────────────────────────────────────── */
+          <div className="max-w-sm mx-auto">
+            {isLifetimeOwner ? (
+              <div className="relative rounded-xl border-2 border-primary bg-primary/5 p-6 space-y-4 text-center">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap">
+                  {t('pricing.yourPlan')}
+                </span>
+                <div className="flex items-center justify-center gap-2 text-foreground">
+                  <Sparkles className="h-5 w-5 text-amber-400" />
+                  <h2 className="text-lg font-bold">{paymentMode.lifetime_name}</h2>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Você já possui acesso completo ao app! 🎉
+                </p>
+                <Button variant="outline" className="w-full" disabled>
+                  {t('pricing.currentPlan')}
+                </Button>
+              </div>
+            ) : (
+              <div className="relative rounded-xl border-2 border-primary bg-primary/5 shadow-lg shadow-primary/20 p-6 space-y-5 text-center">
+                <div className="flex items-center justify-center gap-2 text-foreground">
+                  <Sparkles className="h-5 w-5 text-amber-400" />
+                  <h2 className="text-lg font-bold">{paymentMode.lifetime_name}</h2>
+                </div>
+                <p className="text-3xl font-bold text-foreground">
+                  R${paymentMode.lifetime_price_brl.toFixed(2)}
+                  <span className="text-sm text-muted-foreground font-normal ml-1">pagamento único</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Desbloqueie todas as funcionalidades do app para sempre.
+                </p>
+
+                {/* Show master features */}
+                <ul className="space-y-2 text-sm text-left">
+                  {features
+                    .filter(f => f.tier === 'master' && f.enabled)
+                    .sort((a, b) => a.sort_order - b.sort_order)
+                    .map((f) => (
+                      <li key={f.feature_key} className="flex items-start gap-2 text-foreground">
+                        <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: 'hsl(142 70% 50%)' }} />
+                        {f.feature_label}
+                      </li>
+                    ))}
+                </ul>
+
+                <Button
+                  className="w-full gap-2 font-semibold bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black"
+                  onClick={handleLifetimeCheckout}
+                  disabled={loadingTier === 'lifetime'}
+                >
+                  {loadingTier === 'lifetime' ? t('pricing.wait') : paymentMode.lifetime_cta_text}
+                </Button>
+              </div>
+            )}
+          </div>
         ) : (
+          /* ── SUBSCRIPTION MODE ─────────────────────────────────── */
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {tierOrder.map((tierKey) => {
               const ti = TIERS[tierKey];
@@ -275,7 +352,7 @@ const Pricing = () => {
           </div>
         )}
 
-        {currentTier !== 'free' && (
+        {currentTier !== 'free' && !isLifetimeOwner && (
           <p className="text-center text-xs text-muted-foreground">
             {t('pricing.updateHint')}{' '}
             <button onClick={checkSubscription} className="text-primary hover:underline">

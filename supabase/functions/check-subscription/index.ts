@@ -66,6 +66,7 @@ serve(async (req) => {
     const TIER_PRODUCT_MAP: Record<string, string> = {
       pro: "prod_Tz7nOBkWdUxb9Q",
       master: "prod_Tz7oenwSZLQFdS",
+      lifetime: "prod_U5set4nFJ33JoH",
     };
 
     const { data: grantedRows, error: grantedError } = await supabaseClient
@@ -107,6 +108,47 @@ serve(async (req) => {
 
     const customerId = customers.data[0].id;
     logStep("Found customer", { customerId });
+
+    // --- Check for lifetime (one-time) purchase ---
+    const { data: lifetimeConfig } = await supabaseClient
+      .from("app_config")
+      .select("config_key, config_value")
+      .in("config_key", ["payment_mode", "lifetime_stripe_product_id"]);
+
+    const paymentMode = lifetimeConfig?.find((c: any) => c.config_key === "payment_mode")?.config_value;
+    const lifetimeProductId = lifetimeConfig?.find((c: any) => c.config_key === "lifetime_stripe_product_id")?.config_value;
+
+    if (paymentMode === "lifetime" && lifetimeProductId) {
+      // Check for completed checkout sessions with this product
+      try {
+        const sessions = await retryAsync(() =>
+          stripe.checkout.sessions.list({
+            customer: customerId,
+            status: "complete",
+            limit: 100,
+          })
+        );
+
+        const hasLifetime = sessions.data.some((s: any) => {
+          return s.mode === "payment" && s.metadata?.purchase_type === "lifetime";
+        });
+
+        if (hasLifetime) {
+          logStep("Lifetime purchase found");
+          return new Response(JSON.stringify({
+            subscribed: true,
+            product_id: lifetimeProductId,
+            subscription_end: null,
+            is_lifetime: true,
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+      } catch (e) {
+        logStep("Error checking lifetime sessions", { error: String(e) });
+      }
+    }
 
     // Retry subscription lookup too
     const subscriptions = await retryAsync(() => 

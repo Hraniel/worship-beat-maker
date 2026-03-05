@@ -10,9 +10,11 @@ export interface FeatureGate {
   description: string | null;
 }
 
-const TIER_ORDER = ['free', 'pro', 'master'] as const;
+const TIER_ORDER = ['free', 'pro', 'master', 'lifetime'] as const;
 
 function tierIndex(tier: string): number {
+  // lifetime has same access level as master
+  if (tier === 'lifetime') return TIER_ORDER.indexOf('master');
   const idx = TIER_ORDER.indexOf(tier as typeof TIER_ORDER[number]);
   return idx === -1 ? 0 : idx;
 }

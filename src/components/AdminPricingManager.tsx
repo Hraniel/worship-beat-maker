@@ -8,7 +8,7 @@ import {
   Save, Loader2, Crown, Zap, Lock, Unlock, Plus, Trash2, RefreshCw,
   Music, Mic2, Waves, Sparkles, Activity, Radio, ListMusic, SlidersHorizontal,
   AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp, Cpu,
-  GripVertical, ArrowRightLeft, AlertTriangle, CheckCircle2, Users,
+  GripVertical, ArrowRightLeft, AlertTriangle, CheckCircle2, Users, ShoppingBag,
 } from 'lucide-react';
 import type { PlanPricing, PlanFeature, FeatureGate } from '@/hooks/useLandingConfig';
 import { invalidateGatesCache } from '@/hooks/useFeatureGates';
@@ -200,6 +200,13 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const [migPreviewing, setMigPreviewing] = useState(false);
   const [migMigrating, setMigMigrating] = useState(false);
   const [migResult, setMigResult] = useState<{ migrated: number; failed: number; errors: string[] } | null>(null);
+  // Lifetime / payment mode state
+  const [paymentMode, setPaymentMode] = useState<'subscription' | 'lifetime'>('subscription');
+  const [lifetimePrice, setLifetimePrice] = useState('14.90');
+  const [lifetimeName, setLifetimeName] = useState('Acesso Vitalício');
+  const [lifetimeCta, setLifetimeCta] = useState('Comprar agora');
+  const [lifetimeStripePriceId, setLifetimeStripePriceId] = useState('');
+  const [lifetimeStripeProductId, setLifetimeStripeProductId] = useState('');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -208,14 +215,28 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [p, f, g] = await Promise.all([
+      const [p, f, g, lc] = await Promise.all([
         supabase.from('plan_pricing').select('*').order('price_brl'),
         supabase.from('plan_features').select('*').order('sort_order'),
         supabase.from('feature_gates').select('*').order('gate_label'),
+        supabase.from('app_config').select('config_key, config_value').in('config_key', [
+          'payment_mode', 'lifetime_price_brl', 'lifetime_name', 'lifetime_cta_text',
+          'lifetime_stripe_price_id', 'lifetime_stripe_product_id',
+        ]),
       ]);
       if (p.data) setPricing(p.data as PlanPricing[]);
       if (f.data) setFeatures(f.data as PlanFeature[]);
       if (g.data) setGates(g.data as FeatureGate[]);
+      if (lc.data) {
+        const map: Record<string, string> = {};
+        (lc.data as any[]).forEach(r => { map[r.config_key] = r.config_value; });
+        if (map.payment_mode) setPaymentMode(map.payment_mode as any);
+        if (map.lifetime_price_brl) setLifetimePrice(map.lifetime_price_brl);
+        if (map.lifetime_name) setLifetimeName(map.lifetime_name);
+        if (map.lifetime_cta_text) setLifetimeCta(map.lifetime_cta_text);
+        if (map.lifetime_stripe_price_id) setLifetimeStripePriceId(map.lifetime_stripe_price_id);
+        if (map.lifetime_stripe_product_id) setLifetimeStripeProductId(map.lifetime_stripe_product_id);
+      }
     } finally {
       setLoading(false);
     }
@@ -485,6 +506,142 @@ const AdminPricingManager: React.FC<Props> = ({ onRefresh }) => {
       {/* ── PRICING TAB ──────────────────────────────────────────────────────── */}
       {activeTab === 'pricing' && (
         <div className="space-y-4">
+          {/* ── PAYMENT MODE TOGGLE ──────────────────────────────────── */}
+          <div className="border border-amber-700/40 rounded-xl p-4 space-y-3 bg-amber-950/10">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ShoppingBag className="h-4 w-4 text-amber-400" />
+                <span className="text-sm font-semibold text-white">Modo de Pagamento</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-medium ${paymentMode === 'subscription' ? 'text-violet-400' : 'text-white/30'}`}>Mensal</span>
+                <Switch
+                  checked={paymentMode === 'lifetime'}
+                  onCheckedChange={async (checked) => {
+                    const newMode = checked ? 'lifetime' : 'subscription';
+                    setPaymentMode(newMode);
+                    setSaving('payment-mode');
+                    try {
+                      const { data: existing } = await supabase.from('app_config').select('id').eq('config_key', 'payment_mode').maybeSingle();
+                      if (existing) {
+                        await supabase.from('app_config').update({ config_value: newMode }).eq('config_key', 'payment_mode');
+                      } else {
+                        await supabase.from('app_config').insert({ config_key: 'payment_mode', config_value: newMode });
+                      }
+                      toast.success(`Modo alterado para ${checked ? 'Compra Única' : 'Assinatura Mensal'}!`);
+                      onRefresh?.();
+                    } catch (e: any) {
+                      toast.error(e.message);
+                    } finally {
+                      setSaving(null);
+                    }
+                  }}
+                  disabled={saving === 'payment-mode'}
+                />
+                <span className={`text-[10px] font-medium ${paymentMode === 'lifetime' ? 'text-amber-400' : 'text-white/30'}`}>Compra Única</span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-white/40">
+              {paymentMode === 'lifetime'
+                ? '✅ Compra única ativa — os planos mensais estão ocultos. Todas as funcionalidades (exceto Loja) serão desbloqueadas com um pagamento único.'
+                : 'Os planos de assinatura mensal estão ativos com Free, Pro e Master.'}
+            </p>
+
+            {paymentMode === 'lifetime' && (
+              <div className="space-y-3 pt-2 border-t border-amber-700/30">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Nome do Plano</label>
+                    <input className={inputCls} value={lifetimeName}
+                      onChange={e => setLifetimeName(e.target.value)}
+                      onBlur={async () => {
+                        setSaving('lt-name');
+                        try {
+                          const { data: ex } = await supabase.from('app_config').select('id').eq('config_key', 'lifetime_name').maybeSingle();
+                          if (ex) await supabase.from('app_config').update({ config_value: lifetimeName }).eq('config_key', 'lifetime_name');
+                          else await supabase.from('app_config').insert({ config_key: 'lifetime_name', config_value: lifetimeName });
+                          toast.success('Salvo!');
+                        } catch (e: any) { toast.error(e.message); }
+                        finally { setSaving(null); }
+                      }} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Preço (R$)</label>
+                    <input className={inputCls} type="number" step="0.01" min="0" value={lifetimePrice}
+                      onChange={e => setLifetimePrice(e.target.value)}
+                      onBlur={async () => {
+                        setSaving('lt-price');
+                        try {
+                          const { data: ex } = await supabase.from('app_config').select('id').eq('config_key', 'lifetime_price_brl').maybeSingle();
+                          if (ex) await supabase.from('app_config').update({ config_value: lifetimePrice }).eq('config_key', 'lifetime_price_brl');
+                          else await supabase.from('app_config').insert({ config_key: 'lifetime_price_brl', config_value: lifetimePrice });
+
+                          // Sync with Stripe
+                          const priceCents = Math.round(parseFloat(lifetimePrice) * 100);
+                          if (priceCents > 0 && lifetimeStripeProductId) {
+                            try {
+                              const { data: syncData, error: syncErr } = await supabase.functions.invoke('admin-sync-stripe-price', {
+                                body: {
+                                  type: 'lifetime',
+                                  id: 'lifetime',
+                                  price_cents: priceCents,
+                                  name: lifetimeName,
+                                  current_stripe_price_id: lifetimeStripePriceId || null,
+                                  current_stripe_product_id: lifetimeStripeProductId,
+                                  is_one_time: true,
+                                },
+                              });
+                              if (syncErr) throw syncErr;
+                              if (syncData?.stripe_price_id) {
+                                setLifetimeStripePriceId(syncData.stripe_price_id);
+                                const { data: ex2 } = await supabase.from('app_config').select('id').eq('config_key', 'lifetime_stripe_price_id').maybeSingle();
+                                if (ex2) await supabase.from('app_config').update({ config_value: syncData.stripe_price_id }).eq('config_key', 'lifetime_stripe_price_id');
+                                else await supabase.from('app_config').insert({ config_key: 'lifetime_stripe_price_id', config_value: syncData.stripe_price_id });
+                              }
+                              toast.success('Preço salvo e Stripe atualizado!');
+                            } catch (stripeErr: any) {
+                              toast.warning(`Preço salvo, mas erro no Stripe: ${stripeErr?.message || stripeErr}`);
+                            }
+                          } else {
+                            toast.success('Preço salvo!');
+                          }
+                        } catch (e: any) { toast.error(e.message); }
+                        finally { setSaving(null); }
+                      }} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Texto do Botão (CTA)</label>
+                    <input className={inputCls} value={lifetimeCta}
+                      onChange={e => setLifetimeCta(e.target.value)}
+                      onBlur={async () => {
+                        setSaving('lt-cta');
+                        try {
+                          const { data: ex } = await supabase.from('app_config').select('id').eq('config_key', 'lifetime_cta_text').maybeSingle();
+                          if (ex) await supabase.from('app_config').update({ config_value: lifetimeCta }).eq('config_key', 'lifetime_cta_text');
+                          else await supabase.from('app_config').insert({ config_key: 'lifetime_cta_text', config_value: lifetimeCta });
+                          toast.success('Salvo!');
+                        } catch (e: any) { toast.error(e.message); }
+                        finally { setSaving(null); }
+                      }} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Stripe Product ID</label>
+                    <input className={`${inputCls} font-mono text-[10px]`} value={lifetimeStripeProductId} readOnly
+                      title="Gerado automaticamente" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── SUBSCRIPTION PLANS (hidden label when lifetime) ─────── */}
+          {paymentMode === 'lifetime' && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/10">
+              <span className="text-[11px] text-white/40">📋 Os planos mensais abaixo estão <strong className="text-white/60">ocultos</strong> para os usuários enquanto o modo Compra Única estiver ativo.</span>
+            </div>
+          )}
+
           <p className="text-[11px] text-white/40">Defina preços, limites e aparência dos cards na landing page e no app.</p>
           <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25">
             <span className="text-amber-400 text-xs shrink-0">⚠️</span>
