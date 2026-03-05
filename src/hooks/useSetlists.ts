@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import type { SetlistSong } from '@/lib/sounds';
 import type { Json } from '@/integrations/supabase/types';
+import { enqueue, flushQueue } from '@/lib/offline-sync-queue';
 
 interface DbSetlist {
   id: string;
@@ -27,7 +28,6 @@ export function useSetlists() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Wrapper that syncs to localStorage immediately (critical for pagehide saves)
   const setSetlistsAndCache = useCallback((updater: DbSetlist[] | ((prev: DbSetlist[]) => DbSetlist[])) => {
     setSetlists(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
@@ -37,6 +37,22 @@ export function useSetlists() {
       return next;
     });
   }, [cacheKey]);
+
+  // Sync queued operations when back online
+  useEffect(() => {
+    const handleOnline = () => {
+      flushQueue(supabase).then(count => {
+        if (count > 0) {
+          fetchSetlists(); // refresh from server after sync
+          toast.success('Dados sincronizados com a nuvem');
+        }
+      });
+    };
+    window.addEventListener('online', handleOnline);
+    // Also try on mount
+    if (navigator.onLine) handleOnline();
+    return () => window.removeEventListener('online', handleOnline);
+  }, []);
 
   const fetchSetlists = useCallback(async () => {
     if (!user) {
@@ -63,7 +79,6 @@ export function useSetlists() {
       setSetlistsAndCache(parsed);
     } catch (e) {
       console.error('Failed to fetch setlists:', e);
-      // Only show error if no cached data
       if (!cacheKey || !localStorage.getItem(cacheKey)) {
         toast.error('Erro ao carregar setlists');
       }
@@ -79,8 +94,23 @@ export function useSetlists() {
   const createSetlist = useCallback(
     async (name: string, songs: SetlistSong[]) => {
       if (!user) return null;
+      const maxOrder = setlists.reduce((max, s) => Math.max(max, s.sort_order), 0);
+      const tempId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const newSetlist: DbSetlist = {
+        id: tempId,
+        name,
+        songs,
+        created_at: now,
+        updated_at: now,
+        sort_order: maxOrder + 1,
+      };
+
+      // Optimistic local update
+      setSetlistsAndCache((prev) => [...prev, newSetlist]);
+      toast.success('Setlist salva!');
+
       try {
-        const maxOrder = setlists.reduce((max, s) => Math.max(max, s.sort_order), 0);
         const { data, error } = await supabase
           .from('setlists')
           .insert({
@@ -93,37 +123,37 @@ export function useSetlists() {
           .single();
 
         if (error) throw error;
-        const newOrder = setlists.reduce((max, s) => Math.max(max, s.sort_order), 0) + 1;
-        const newSetlist: DbSetlist = {
+        // Replace temp ID with real ID
+        const realSetlist: DbSetlist = {
           id: data.id,
           name: data.name,
           songs: (data.songs as unknown as SetlistSong[]) || [],
           created_at: data.created_at,
           updated_at: data.updated_at,
-          sort_order: newOrder,
+          sort_order: data.sort_order ?? maxOrder + 1,
         };
-        setSetlistsAndCache((prev) => [...prev, newSetlist]);
-        toast.success('Setlist salva!');
-        return newSetlist;
+        setSetlistsAndCache((prev) => prev.map(s => s.id === tempId ? realSetlist : s));
+        return realSetlist;
       } catch (e) {
-        console.error('Failed to create setlist:', e);
-        toast.error('Erro ao salvar setlist');
-        return null;
+        console.error('Failed to create setlist (queued for sync):', e);
+        enqueue({
+          table: 'setlists',
+          action: 'insert',
+          payload: { user_id: user.id, name, songs: songs as unknown as Json, sort_order: maxOrder + 1 },
+        });
+        return newSetlist;
       }
     },
-    [user]
+    [user, setlists]
   );
 
   const updateSetlist = useCallback(
     async (id: string, songs: SetlistSong[]) => {
       if (!user) return;
 
-      // Synchronously update localStorage so pagehide/beforeunload saves persist
-      const updatedList = (prev: DbSetlist[]) =>
-        prev.map((s) => (s.id === id ? { ...s, songs, updated_at: new Date().toISOString() } : s));
-
+      // Optimistic local update
       setSetlists((prev) => {
-        const next = updatedList(prev);
+        const next = prev.map((s) => (s.id === id ? { ...s, songs, updated_at: new Date().toISOString() } : s));
         if (cacheKey) {
           try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
         }
@@ -139,8 +169,13 @@ export function useSetlists() {
 
         if (error) throw error;
       } catch (e) {
-        console.error('Failed to update setlist:', e);
-        // Don't show error toast during pagehide saves
+        console.error('Failed to update setlist (queued for sync):', e);
+        enqueue({
+          table: 'setlists',
+          action: 'update',
+          payload: { songs: songs as unknown as Json },
+          filters: { id, user_id: user.id },
+        });
       }
     },
     [user, cacheKey]
@@ -149,6 +184,11 @@ export function useSetlists() {
   const deleteSetlist = useCallback(
     async (id: string) => {
       if (!user) return;
+
+      // Optimistic local update
+      setSetlistsAndCache((prev) => prev.filter((s) => s.id !== id));
+      toast.success('Setlist removida');
+
       try {
         const { error } = await supabase
           .from('setlists')
@@ -157,11 +197,14 @@ export function useSetlists() {
           .eq('user_id', user.id);
 
         if (error) throw error;
-        setSetlistsAndCache((prev) => prev.filter((s) => s.id !== id));
-        toast.success('Setlist removida');
       } catch (e) {
-        console.error('Failed to delete setlist:', e);
-        toast.error('Erro ao remover setlist');
+        console.error('Failed to delete setlist (queued for sync):', e);
+        enqueue({
+          table: 'setlists',
+          action: 'delete',
+          payload: {},
+          filters: { id, user_id: user.id },
+        });
       }
     },
     [user]
@@ -170,7 +213,6 @@ export function useSetlists() {
   const reorderSetlists = useCallback(
     async (reorderedIds: string[]) => {
       if (!user) return;
-      // Optimistic update
       setSetlistsAndCache((prev) => {
         const map = new Map(prev.map((s) => [s.id, s]));
         return reorderedIds
@@ -180,7 +222,6 @@ export function useSetlists() {
           })
           .filter(Boolean) as DbSetlist[];
       });
-      // Persist
       try {
         const updates = reorderedIds.map((id, i) =>
           supabase
@@ -192,11 +233,18 @@ export function useSetlists() {
         await Promise.all(updates);
       } catch (e) {
         console.error('Failed to reorder setlists:', e);
-        toast.error('Erro ao reordenar setlists');
-        fetchSetlists(); // rollback
+        // Queue individual reorder ops
+        reorderedIds.forEach((id, i) => {
+          enqueue({
+            table: 'setlists',
+            action: 'update',
+            payload: { sort_order: i },
+            filters: { id, user_id: user.id },
+          });
+        });
       }
     },
-    [user, fetchSetlists]
+    [user]
   );
 
   return { setlists, loading, createSetlist, updateSetlist, deleteSetlist, reorderSetlists, refetch: fetchSetlists };
