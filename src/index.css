@@ -142,6 +142,11 @@ body {
     --pad-crash: 340 70% 55%;
     --pad-tom: 15 70% 50%;
 
+    /* Pad surface colors (light theme: dark-based) */
+    --pad-surface: 240 10% 15%;
+    --pad-active-bg: 240 8% 85%;
+    --pad-overlay: 240 10% 10%;
+
     --fader-fill: 0 0% 10%;
     --fader-thumb: 0 0% 25%;
     --fader-thumb-active: 0 0% 5%;

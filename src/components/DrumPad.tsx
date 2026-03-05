@@ -237,20 +237,20 @@ const DrumPad: React.FC<DrumPadProps> = ({
         `}
         style={{
           background: isActive
-            ? (customColor ? `hsl(${colorHsl} / ${0.25 * colorOpacity})` : 'hsl(0 0% 22%)')
+            ? (customColor ? `hsl(${colorHsl} / ${0.25 * colorOpacity})` : 'hsl(var(--pad-active-bg))')
             : isLooping
             ? (customColor ? `hsl(${colorHsl} / ${0.08 * colorOpacity})` : colorRef(0.06))
-            : 'linear-gradient(145deg, hsl(0 0% 100% / 0.06) 0%, hsl(0 0% 100% / 0.02) 100%)',
-          border: '1px solid hsl(0 0% 100% / 0.08)',
+            : 'linear-gradient(145deg, hsl(var(--pad-surface) / 0.06) 0%, hsl(var(--pad-surface) / 0.02) 100%)',
+          border: '1px solid hsl(var(--pad-surface) / 0.1)',
           backdropFilter: 'blur(12px) saturate(1.3)',
           WebkitBackdropFilter: 'blur(12px) saturate(1.3)',
           boxShadow: isActive
             ? (customColor
                 ? `0 0 24px hsl(${colorHsl} / ${0.45 * colorOpacity}), inset 0 0 12px hsl(${colorHsl} / ${0.15 * colorOpacity})`
-                : '0 0 20px hsl(0 0% 100% / 0.25), inset 0 0 10px hsl(0 0% 100% / 0.08)')
+                : '0 0 20px hsl(var(--pad-surface) / 0.25), inset 0 0 10px hsl(var(--pad-surface) / 0.08)')
             : isLooping
             ? (customColor ? `0 0 14px hsl(${colorHsl} / ${0.3 * colorOpacity})` : `0 0 14px ${colorRef(0.25)}`)
-            : 'inset 0 1px 0 hsl(0 0% 100% / 0.04)',
+            : 'inset 0 1px 0 hsl(var(--pad-surface) / 0.04)',
         }}
       >
         {/* Top color bar */}
