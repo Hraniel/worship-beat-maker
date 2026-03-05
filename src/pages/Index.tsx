@@ -2365,15 +2365,17 @@ const Index = () => {
                       {/* Faders */}
                       <div className="flex items-end pb-0">
                         <div className="w-full" data-tutorial="volume-master">
-                          {showMixerLocked ? (
-                            <button
-                              onClick={openMixerGate}
-                              className="w-full flex flex-col items-center justify-center gap-1.5 py-4 bg-card rounded-lg border border-border/50 text-muted-foreground hover:bg-muted/40 transition-colors"
-                            >
-                              <Lock className="h-4 w-4" />
-                              <span className="text-[10px]">{t('index.mixerProPlan')}</span>
-                            </button>
-                          ) : (
+                          <div className="relative">
+                            {showMixerLocked && (
+                              <button
+                                onClick={openMixerGate}
+                                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 bg-background/60 backdrop-blur-[2px] rounded-lg cursor-pointer hover:bg-background/70 transition-colors"
+                              >
+                                <Lock className="h-5 w-5 text-primary" />
+                                <span className="text-[10px] font-medium text-foreground">{t('index.mixerProPlan')}</span>
+                              </button>
+                            )}
+                            <div className={showMixerLocked ? "opacity-40 pointer-events-none" : ""}>
                             <MixerStrip
                               controlledPage={faderPage}
                               onControlledPageChange={setFaderPage}
@@ -2411,7 +2413,8 @@ const Index = () => {
                                 },
                               ]}
                             />
-                          )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                       {/* Mini metronome bar */}
