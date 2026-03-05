@@ -68,6 +68,7 @@ export interface SetlistSong {
   padNames?: Record<string, string>;
   padPans?: Record<string, number>;
   padEffects?: Record<string, any>;
+  padColors?: Record<string, any>;
   customSounds?: Record<string, string>;
   midiMappings?: Record<number, string>;
   midiCCMappings?: Record<number, string>;

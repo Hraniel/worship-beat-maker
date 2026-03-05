@@ -1195,6 +1195,10 @@ const Index = () => {
       setPadNames(song.padNames || {});
       setPadPans(song.padPans || {});
       setPadEffects(song.padEffects || {});
+      // Restore pad colors
+      const restoredColors = song.padColors || {};
+      setPadColors(restoredColors);
+      localStorage.setItem("drum-pads-pad-colors", JSON.stringify(restoredColors));
 
       // Remove all current custom buffers first
       const currentCustomIds = Object.keys(customSounds);
