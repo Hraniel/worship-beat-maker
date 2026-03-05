@@ -97,7 +97,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed z-50 flex flex-col items-center justify-center"
+      className="fixed z-[200] flex flex-col items-center justify-center"
       style={{
         background: 'hsl(240 10% 4%)',
         top: 0, left: 0, right: 0, bottom: 0,
