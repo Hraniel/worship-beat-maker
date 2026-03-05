@@ -558,46 +558,6 @@ const DrumPad: React.FC<DrumPadProps> = ({
               {t('drumPad.resetAllPads')}
             </button>
 
-            {/* Effects - Master tier */}
-            <div className="h-px bg-border" />
-            <button
-              className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md transition-colors ${
-                showEffects ? 'text-primary bg-primary/10' : 'text-foreground hover:bg-muted'
-              }`}
-              onClick={() => setShowEffects(prev => !prev)}
-            >
-              <AudioWaveform className="h-3.5 w-3.5" />
-              {t('drumPad.effects')}
-              {!isMaster && <Lock className="h-3 w-3 ml-auto text-muted-foreground" />}
-              {isMaster && hasActiveEffects(effects) && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-              )}
-            </button>
-            {showEffects && (
-              <div className="relative">
-                {!isMaster && (
-                  <button
-                    onClick={() => {
-                      const result = canAccess('pad_effects');
-                      if (!result.allowed && result.gate && onGateBlocked) {
-                        onGateBlocked('pad_effects');
-                      }
-                    }}
-                    className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-background/60 backdrop-blur-[2px] rounded-md cursor-pointer hover:bg-background/70 transition-colors"
-                  >
-                    <Lock className="h-4 w-4 text-primary" />
-                    <span className="text-[9px] font-medium text-foreground">{t('drumPad.masterPlan')}</span>
-                  </button>
-                )}
-                <div className={!isMaster ? "opacity-40 pointer-events-none" : ""}>
-                  <PadEffectsPanel
-                    effects={effects}
-                    bpm={bpm}
-                    onChange={(fx) => onEffectsChange?.(pad.id, fx)}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </>
       )}
