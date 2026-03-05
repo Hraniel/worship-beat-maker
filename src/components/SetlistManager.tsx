@@ -584,7 +584,7 @@ const SetlistManager: React.FC<SetlistManagerProps> = ({
           {t('setlist.title')}
         </Button>
       </SheetTrigger>
-      <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden">
+      <SheetContent side="right" className="bg-card border-border flex flex-col overflow-hidden pointer-events-auto">
         <SheetHeader>
           <SheetTitle className="text-foreground">{t('setlist.title')}</SheetTitle>
           <SheetDescription className="text-muted-foreground">
