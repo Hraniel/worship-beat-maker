@@ -75,6 +75,16 @@ const DrumPad: React.FC<DrumPadProps> = ({
   const [isRenaming, setIsRenaming] = useState(false);
   const [draggingPadVol, setDraggingPadVol] = useState(false);
   const [renameValue, setRenameValue] = useState('');
+
+  // Reset all sub-menus whenever the main menu opens
+  useEffect(() => {
+    if (showMenu) {
+      setShowEffects(false);
+      setShowColorPicker(false);
+      setShowStorePicker(false);
+      setIsRenaming(false);
+    }
+  }, [showMenu]);
   const timeoutRef = useRef<number | null>(null);
   const longPressRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
