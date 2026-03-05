@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCheck, X, Download } from 'lucide-react';
+import { Bell, CheckCheck, X, Download, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import type { AdminNotification } from '@/hooks/useUserNotifications';
@@ -54,18 +54,32 @@ const NotificationsSheet: React.FC<NotificationsSheetProps> = ({
                 <Bell className="h-4 w-4" />
                 Notificações
               </SheetTitle>
-              {totalCount > 1 && (
-                <button
-                  onClick={() => {
-                    onMarkAllAsRead();
-                    dismissPwaNotif();
-                  }}
-                  className="flex items-center gap-1 text-[10px] font-medium text-primary hover:bg-primary/10 px-2 py-1 rounded-md transition-colors"
-                >
-                  <CheckCheck className="h-3 w-3" />
-                  Marcar todas como lidas
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {totalCount > 1 && (
+                  <button
+                    onClick={() => {
+                      onMarkAllAsRead();
+                      dismissPwaNotif();
+                    }}
+                    className="flex items-center gap-1 text-[10px] font-medium text-primary hover:bg-primary/10 px-2 py-1 rounded-md transition-colors"
+                  >
+                    <CheckCheck className="h-3 w-3" />
+                    Marcar todas
+                  </button>
+                )}
+                {totalCount > 0 && (
+                  <button
+                    onClick={() => {
+                      onMarkAllAsRead();
+                      dismissPwaNotif();
+                    }}
+                    className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:bg-destructive/10 px-2 py-1 rounded-md transition-colors"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Apagar todas
+                  </button>
+                )}
+              </div>
             </div>
           </SheetHeader>
           <div className="overflow-y-auto max-h-[calc(100vh-80px)]">
