@@ -231,8 +231,9 @@ const AdminAppConfigEditor: React.FC = () => {
                       <Switch
                         checked={getVal('app_onboarding_enabled', 'true') !== 'false'}
                         onCheckedChange={v => {
-                          setVal('app_onboarding_enabled', v ? 'true' : 'false');
-                          setTimeout(() => saveKey('app_onboarding_enabled'), 0);
+                          const newVal = v ? 'true' : 'false';
+                          setVal('app_onboarding_enabled', newVal);
+                          saveKey('app_onboarding_enabled', newVal);
                         }}
                       />
                     </div>
