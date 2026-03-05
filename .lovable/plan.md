@@ -1,53 +1,59 @@
 
 
-# Plano: Mixer preview, Efeitos preview e Exclusão do CEO no Analytics
+# Verificação: Persistência de dados ao fechar o app Capacitor
 
-## 1. Mixer visível mas bloqueado para Free
+## Análise do estado atual
 
-**Arquivo:** `src/pages/Index.tsx` (3 ocorrências em linhas ~2033, ~2227, ~2363)
+Após revisar o código, identifiquei como cada tipo de dado é persistido:
 
-Atualmente, quando `showMixerLocked` é true, exibe apenas um botão com cadeado. Mudar para:
-- Sempre renderizar o `<MixerStrip>` mas com **interação desabilitada** (pointer-events-none + opacity reduzida)
-- Sobrepor um overlay com cadeado + texto clicável que abre o gate
+### O que já funciona corretamente
 
-```text
-┌─────────────────────────────┐
-│  MixerStrip (opacity-50,    │
-│  pointer-events-none)       │
-│  ┌───────────────────────┐  │
-│  │  🔒 Plano Pro         │  │  ← overlay clicável
-│  └───────────────────────┘  │
-└─────────────────────────────┘
+| Dado | Mecanismo | Sobrevive ao fechamento? |
+|------|-----------|--------------------------|
+| **Login/Sessão** | Supabase Auth (localStorage automático) + fallback offline | ✅ Sim |
+| **BPM, Time Signature, Key** | localStorage (escrita imediata) | ✅ Sim |
+| **Volumes dos pads** | localStorage | ✅ Sim |
+| **Pan dos pads** | localStorage | ✅ Sim |
+| **Nomes customizados** | localStorage | ✅ Sim |
+| **Tamanho dos pads** | localStorage | ✅ Sim |
+| **Setlists (lista)** | Supabase + cache localStorage | ✅ Sim |
+| **Eventos agendados** | Supabase + cache localStorage | ✅ Sim |
+| **Sons customizados** | IndexedDB | ✅ Sim |
+| **Ambient pads customizados** | IndexedDB | ✅ Sim |
+| **Música ativa (ID)** | localStorage | ✅ Sim |
+| **Tier de assinatura** | localStorage cache | ✅ Sim |
+| **Sync/metronome settings** | localStorage | ✅ Sim |
+
+### Ponto crítico: Auto-save da música atual
+
+O auto-save da música ativa (que salva BPM, Key, efeitos, MIDI mappings de volta no setlist do Supabase) depende de eventos `pagehide` e `beforeunload`:
+
+```typescript
+window.addEventListener("pagehide", handlePageHide);
+window.addEventListener("beforeunload", handlePageHide);
 ```
 
-## 2. Efeitos dos pads visíveis mas bloqueados para não-Master
+**No Capacitor Android WebView**, o comportamento desses eventos é **inconsistente**:
+- `pagehide` **pode não disparar** quando o app é removido das recentes (swipe-away)
+- `beforeunload` **raramente dispara** em WebViews Android
+- `visibilitychange` para `hidden` **dispara na maioria dos casos** ao minimizar, mas **não ao matar o app**
 
-**Arquivo:** `src/components/DrumPad.tsx` (linhas ~508-534)
+### Risco identificado
 
-Atualmente, usuários não-Master veem apenas `<LockedMasterRow>`. Mudar para:
-- Mostrar o botão "Efeitos" clicável que abre/fecha o `<PadEffectsPanel>`
-- O painel fica visível mas com overlay de bloqueio (pointer-events-none + opacity + cadeado)
-- Clique no overlay abre o gate de upgrade
+Se o usuário altera BPM/Key/efeitos/MIDI de uma música e fecha o app (swipe-away), essas alterações **podem não ser salvas no Supabase**. Porém, os valores individuais (BPM, volumes, pans) ficam no localStorage — o problema é que **não são re-associados à música do setlist**.
 
-## 3. Excluir CEO do Analytics (compras e planos)
+## Plano de correção
 
-**Arquivo:** `src/components/AdminAnalytics.tsx`
+### 1. Adicionar listener do Capacitor App para `appStateChange`
+Instalar `@capacitor/app` e usar o evento `appStateChange` que é **garantido** no Android/iOS quando o app vai para background ou é fechado.
 
-- Buscar da tabela `user_roles` os user_ids com role `ceo`
-- Filtrar esses IDs das listas de `purchases` e `cancellations` antes de calcular KPIs
-- Não altera o edge function `subscription-stats` (o CEO provavelmente não tem assinatura Stripe real, mas caso tenha, filtrar no frontend pelo email)
+### 2. Salvar com `Capacitor.App.addListener('appStateChange')`
+Quando `isActive === false`, chamar `autoSaveCurrentSong()` — este é o mecanismo nativo confiável.
 
-**Arquivo:** `supabase/functions/subscription-stats/index.ts`
+### 3. Adicionar save periódico como safety net
+Um `setInterval` (a cada 30-60s) que salva a música ativa automaticamente, garantindo que no máximo 1 minuto de alterações seja perdido em caso de kill forçado.
 
-- Buscar o email do CEO da tabela `user_roles` + `auth.users`
-- Excluir assinaturas cujo customer email seja do CEO
-
-## Resumo de arquivos
-
-| Arquivo | Alteração |
-|---------|-----------|
-| `src/pages/Index.tsx` | Mixer preview com overlay de bloqueio (3 ocorrências) |
-| `src/components/DrumPad.tsx` | Efeitos visíveis mas bloqueados para não-Master |
-| `src/components/AdminAnalytics.tsx` | Filtrar compras/receita do CEO |
-| `supabase/functions/subscription-stats/index.ts` | Filtrar assinaturas do CEO |
+## Arquivos a modificar
+- `package.json` — adicionar `@capacitor/app`
+- `src/pages/Index.tsx` — adicionar listener `appStateChange` + save periódico
 

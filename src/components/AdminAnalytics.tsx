@@ -87,14 +87,17 @@ const AdminAnalytics: React.FC = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [{ data: purchaseData }, { data: packData }, { data: cancelData }] = await Promise.all([
+        const [{ data: purchaseData }, { data: packData }, { data: cancelData }, { data: ceoRoles }] = await Promise.all([
           supabase.from('user_purchases').select('pack_id, user_id, purchased_at'),
           supabase.from('store_packs').select('id, name, price_cents'),
           supabase.from('cancellation_reasons' as any).select('*').order('created_at', { ascending: false }).limit(100),
+          supabase.from('user_roles').select('user_id').eq('role', 'ceo'),
         ]);
-        setPurchases(purchaseData || []);
+        const ceoIds = new Set((ceoRoles || []).map((r: any) => r.user_id));
+        const filteredPurchaseData = (purchaseData || []).filter(p => !ceoIds.has(p.user_id));
+        setPurchases(filteredPurchaseData);
         setPacks(packData || []);
-        const cancelList = (cancelData as unknown as CancellationReason[]) || [];
+        const cancelList = ((cancelData as unknown as CancellationReason[]) || []).filter(c => !ceoIds.has(c.user_id));
         setCancellations(cancelList);
 
         // Fetch user emails for online users & cancellations
