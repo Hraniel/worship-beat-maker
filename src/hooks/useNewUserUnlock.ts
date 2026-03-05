@@ -3,12 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 const NEW_USER_UNLOCK_KEY = 'app_new_user_unlock_all';
+const UNLOCK_CACHE_KEY = 'app_new_user_unlock_cached';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function useNewUserUnlock() {
   const { user } = useAuth();
 
-  const [unlockEnabled, setUnlockEnabled] = useState(false);
+  const [unlockEnabled, setUnlockEnabled] = useState(() => {
+    try { return localStorage.getItem(UNLOCK_CACHE_KEY) === 'true'; } catch { return false; }
+  });
   const [remainingMs, setRemainingMs] = useState<number>(0);
 
   const shouldSyncConfig = useMemo(() => {
@@ -18,18 +21,25 @@ export function useNewUserUnlock() {
   }, [user?.created_at]);
 
   const refreshUnlockFlag = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('landing_config')
-      .select('config_value')
-      .eq('config_key', NEW_USER_UNLOCK_KEY)
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from('landing_config')
+        .select('config_value')
+        .eq('config_key', NEW_USER_UNLOCK_KEY)
+        .maybeSingle();
 
-    if (error) {
-      console.warn('[NEW-USER-UNLOCK] failed to refresh config', error);
-      return;
+      if (error) {
+        console.warn('[NEW-USER-UNLOCK] failed to refresh config (using cached)', error);
+        return; // keep cached value
+      }
+
+      const enabled = data?.config_value === 'true';
+      setUnlockEnabled(enabled);
+      try { localStorage.setItem(UNLOCK_CACHE_KEY, String(enabled)); } catch {}
+    } catch {
+      // Offline — keep cached value
+      console.warn('[NEW-USER-UNLOCK] offline, using cached value');
     }
-
-    setUnlockEnabled(data?.config_value === 'true');
   }, []);
 
   const calcRemaining = useCallback(() => {
