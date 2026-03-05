@@ -892,24 +892,46 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         return (
           <div className="flex flex-col gap-3 w-full">
             <AudioOutputSelector />
-            <StereoOption
-              id="pads" label={t('settings.pads')}
-              mode={settings.padsStereo} side={settings.padsSide}
-              onModeChange={(v) => update({ padsStereo: v, padsSide: v === 'mono' ? null : settings.padsSide })}
-              onSideChange={(v) => update({ padsSide: v })}
-            />
-            <StereoOption
-              id="ambient" label={t('index.continuousPads')}
-              mode={settings.ambientStereo} side={settings.ambientSide}
-              onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}
-              onSideChange={(v) => update({ ambientSide: v })}
-            />
-            <StereoOption
-              id="metronome" label={t('settings.metronome')}
-              mode={settings.metronomeStereo} side={settings.metronomeSide}
-              onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
-              onSideChange={(v) => update({ metronomeSide: v })}
-            />
+            {(() => {
+              const panAccess = canAccess('pan_control');
+              return (
+                <div className="relative">
+                  {!panAccess.allowed && (
+                    <div
+                      className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg cursor-pointer"
+                      onClick={() => navigate('/pricing')}
+                    >
+                      <Lock className="h-4 w-4 text-primary" />
+                      <span className="text-[10px] font-medium text-primary">
+                        {t('upgradeGate.plan')} {panAccess.requiredTier === 'master' ? 'Master' : 'Pro'}
+                      </span>
+                    </div>
+                  )}
+                  <div className={!panAccess.allowed ? 'opacity-40 pointer-events-none' : ''}>
+                    <div className="flex flex-col gap-3">
+                      <StereoOption
+                        id="pads" label={t('settings.pads')}
+                        mode={settings.padsStereo} side={settings.padsSide}
+                        onModeChange={(v) => update({ padsStereo: v, padsSide: v === 'mono' ? null : settings.padsSide })}
+                        onSideChange={(v) => update({ padsSide: v })}
+                      />
+                      <StereoOption
+                        id="ambient" label={t('index.continuousPads')}
+                        mode={settings.ambientStereo} side={settings.ambientSide}
+                        onModeChange={(v) => update({ ambientStereo: v, ambientSide: v === 'mono' ? null : settings.ambientSide })}
+                        onSideChange={(v) => update({ ambientSide: v })}
+                      />
+                      <StereoOption
+                        id="metronome" label={t('settings.metronome')}
+                        mode={settings.metronomeStereo} side={settings.metronomeSide}
+                        onModeChange={(v) => update({ metronomeStereo: v, metronomeSide: v === 'mono' ? null : settings.metronomeSide })}
+                        onSideChange={(v) => update({ metronomeSide: v })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {pads && pads.length > 0 && (
               <PadConfigList
