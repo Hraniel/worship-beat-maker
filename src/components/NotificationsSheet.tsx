@@ -54,32 +54,18 @@ const NotificationsSheet: React.FC<NotificationsSheetProps> = ({
                 <Bell className="h-4 w-4" />
                 Notificações
               </SheetTitle>
-              <div className="flex items-center gap-1">
-                {totalCount > 1 && (
-                  <button
-                    onClick={() => {
-                      onMarkAllAsRead();
-                      dismissPwaNotif();
-                    }}
-                    className="flex items-center gap-1 text-[10px] font-medium text-primary hover:bg-primary/10 px-2 py-1 rounded-md transition-colors"
-                  >
-                    <CheckCheck className="h-3 w-3" />
-                    Marcar todas
-                  </button>
-                )}
-                {totalCount > 0 && (
-                  <button
-                    onClick={() => {
-                      onMarkAllAsRead();
-                      dismissPwaNotif();
-                    }}
-                    className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:bg-destructive/10 px-2 py-1 rounded-md transition-colors"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Apagar todas
-                  </button>
-                )}
-              </div>
+              {totalCount > 1 && (
+                <button
+                  onClick={() => {
+                    onMarkAllAsRead();
+                    dismissPwaNotif();
+                  }}
+                  className="flex items-center gap-1 text-[10px] font-medium text-primary hover:bg-primary/10 px-2 py-1 rounded-md transition-colors"
+                >
+                  <CheckCheck className="h-3 w-3" />
+                  Marcar todas como lidas
+                </button>
+              )}
             </div>
           </SheetHeader>
           <div className="overflow-y-auto max-h-[calc(100vh-80px)]">
