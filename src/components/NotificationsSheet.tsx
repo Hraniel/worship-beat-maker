@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, CheckCheck, X, Download } from 'lucide-react';
+import { Bell, CheckCheck, X, Download, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import type { AdminNotification } from '@/hooks/useUserNotifications';
