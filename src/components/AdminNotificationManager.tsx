@@ -124,6 +124,23 @@ const AdminNotificationManager: React.FC = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!confirm('Tem certeza que deseja apagar todas as notificações enviadas?')) return;
+    try {
+      const ids = notifications.map(n => n.id);
+      if (ids.length === 0) return;
+      // Delete reads first, then notifications
+      for (const id of ids) {
+        await supabase.from('user_notification_reads').delete().eq('notification_id', id);
+      }
+      await (supabase.from('admin_notifications') as any).delete().in('id', ids);
+      setNotifications([]);
+      toast.success('Todas as notificações foram apagadas');
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao apagar notificações');
+    }
+  };
+
   const filteredUsers = users.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase()));
 
   return (
