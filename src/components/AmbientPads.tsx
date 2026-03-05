@@ -175,15 +175,17 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
                   `}
                   style={{
                     backgroundColor: isActive
-                      ? fullPage ? 'hsl(0 0% 24%)' : 'hsl(0 0% 18%)'
-                      : fullPage ? 'hsl(0 0% 13%)' : 'hsl(0 0% 11%)',
+                      ? fullPage ? 'hsl(0 0% 100% / 0.1)' : 'hsl(0 0% 100% / 0.08)'
+                      : fullPage ? 'hsl(0 0% 100% / 0.04)' : 'hsl(0 0% 100% / 0.03)',
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
                     boxShadow: isActive
                       ? fullPage
-                        ? 'inset 0 0 0 1.5px hsl(0 0% 35%), 0 0 14px hsl(0 0% 100% / 0.10)'
-                        : 'inset 0 0 0 1px hsl(0 0% 28%), 0 0 10px hsl(0 0% 100% / 0.05)'
+                        ? 'inset 0 0 0 1.5px hsl(0 0% 100% / 0.15), 0 0 14px hsl(0 0% 100% / 0.05)'
+                        : 'inset 0 0 0 1px hsl(0 0% 100% / 0.12), 0 0 10px hsl(0 0% 100% / 0.03)'
                       : fullPage
-                        ? 'inset 0 0 0 1px hsl(0 0% 18%)'
-                        : 'inset 0 0 0 1px hsl(0 0% 15%)',
+                        ? 'inset 0 0 0 1px hsl(0 0% 100% / 0.06)'
+                        : 'inset 0 0 0 1px hsl(0 0% 100% / 0.05)',
                   }}>
                   {note}
                   {isCustom &&
