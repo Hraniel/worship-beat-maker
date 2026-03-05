@@ -231,7 +231,7 @@ const DrumPad: React.FC<DrumPadProps> = ({
         onPointerLeave={handlePointerUp}
         className={`
           relative flex flex-col items-center justify-center rounded-lg
-          border border-white/10 transition-all duration-75 select-none cursor-pointer
+          transition-all duration-75 select-none cursor-pointer
           aspect-square w-full touch-none overflow-hidden
           ${isActive && !isLocked ? 'animate-pad-pulse' : ''}
         `}
