@@ -1155,6 +1155,7 @@ const Index = () => {
         padNames: { ...padNames },
         padPans: { ...padPans },
         padEffects: { ...padEffects },
+        padColors: { ...padColors },
         customSounds: { ...customSounds },
         midiMappings: getMidiMappings(),
         midiCCMappings: getMidiCCMappings() as any,
