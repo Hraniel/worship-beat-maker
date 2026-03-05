@@ -51,6 +51,7 @@ const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: str
   free: { label: 'Free', icon: null, cls: 'bg-gray-100 text-gray-600' },
   pro: { label: 'Pro', icon: <Zap className="h-3 w-3" />, cls: 'bg-violet-100 text-violet-700' },
   master: { label: 'Master', icon: <Crown className="h-3 w-3" />, cls: 'bg-amber-100 text-amber-700' },
+  lifetime: { label: 'Vitalício', icon: <Crown className="h-3 w-3" />, cls: 'bg-emerald-100 text-emerald-700' },
 };
 
 interface ProfileData {
