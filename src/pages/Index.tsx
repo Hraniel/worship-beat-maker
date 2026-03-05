@@ -1275,6 +1275,7 @@ const Index = () => {
           padNames: {},
           padPans: {},
           padEffects: {},
+          padColors: {},
           customSounds: {},
         } as SetlistSong;
       })
