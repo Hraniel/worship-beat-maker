@@ -1469,7 +1469,7 @@ const Index = () => {
                       }}
                     />
                     <div
-                      className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-xl py-1.5 min-w-[200px] animate-scale-in origin-top-right"
+                      className="fixed right-2 top-12 z-50 bg-card border border-border rounded-lg shadow-xl py-1.5 min-w-[200px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
@@ -1653,7 +1653,7 @@ const Index = () => {
                       }}
                     />
                     <div
-                      className="absolute right-0 top-full mt-1 z-50 glass-card rounded-lg py-1.5 min-w-[220px] animate-scale-in origin-top-right"
+                      className="fixed right-2 top-12 z-50 glass-card rounded-lg py-1.5 min-w-[220px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
