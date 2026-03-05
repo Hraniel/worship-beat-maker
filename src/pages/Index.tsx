@@ -164,6 +164,8 @@ const Index = () => {
   const { t } = useTranslation();
   const { signOut, user } = useAuth();
   const { tier } = useSubscription();
+  const { isUnlocked: isNewUserUnlocked } = useNewUserUnlock();
+  const effectiveFeatureTier = isNewUserUnlocked ? 'master' : tier;
   const { canAccess } = useFeatureGates();
   usePresenceTracker(user?.id);
   const isOnline = useOnlineStatus();
