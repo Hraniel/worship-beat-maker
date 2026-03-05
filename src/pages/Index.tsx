@@ -1463,13 +1463,13 @@ const Index = () => {
                 {mobileMenuOpen && (
                   <>
                     <div
-                      className="fixed inset-0 z-40"
+                      className="fixed inset-0 z-[290]"
                       onClick={() => {
                         setMobileMenuOpen(false);
                       }}
                     />
                     <div
-                      className="fixed right-2 top-12 z-50 bg-card border border-border rounded-lg shadow-xl py-1.5 min-w-[200px] animate-scale-in origin-top-right"
+                      className="fixed right-2 top-12 z-[300] bg-card border border-border rounded-lg shadow-xl py-1.5 min-w-[200px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
@@ -1647,13 +1647,13 @@ const Index = () => {
                 {mobileMenuOpen && (
                   <>
                     <div
-                      className="fixed inset-0 z-40"
+                      className="fixed inset-0 z-[290]"
                       onClick={() => {
                         setMobileMenuOpen(false);
                       }}
                     />
                     <div
-                      className="fixed right-2 top-12 z-50 glass-card rounded-lg py-1.5 min-w-[220px] animate-scale-in origin-top-right"
+                      className="fixed right-2 top-12 z-[300] glass-card rounded-lg py-1.5 min-w-[220px] animate-scale-in origin-top-right"
                       style={{ backgroundColor: "hsl(var(--card))" }}
                     >
                       <button
