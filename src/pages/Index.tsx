@@ -1554,7 +1554,7 @@ const Index = () => {
             </div>
           </header>
         ) : (
-          <header className="flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b glass-surface shrink-0">
+          <header className="relative z-[320] overflow-visible flex items-center justify-between px-2 sm:px-3 py-1 sm:py-2 border-b glass-surface shrink-0">
             {/* Left: Event name (mobile + tablet/desktop) */}
             <div className="flex items-center gap-1.5 min-w-0 shrink-0">
               {selectedEvent ? (
