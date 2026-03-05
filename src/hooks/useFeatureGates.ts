@@ -59,9 +59,21 @@ export interface GateCheckResult {
 
 export function useFeatureGates() {
   const { tier } = useSubscription();
+  const { user } = useAuth();
+  const { isEnabled } = useAppConfig();
   const [gates, setGates] = useState<FeatureGate[]>(cachedGates ?? []);
   const [loading, setLoading] = useState(!cachedGates);
   const mountedRef = useRef(true);
+
+  // Check if user registered within 24h and unlock-all is enabled
+  const isNewUserUnlocked = useCallback((): boolean => {
+    if (!user?.created_at) return false;
+    if (!isEnabled('app_new_user_unlock_all')) return false;
+    const createdAt = new Date(user.created_at).getTime();
+    const now = Date.now();
+    const hours24 = 24 * 60 * 60 * 1000;
+    return (now - createdAt) <= hours24;
+  }, [user, isEnabled]);
 
   const refresh = useCallback(async () => {
     cachedGates = null;
@@ -105,11 +117,16 @@ export function useFeatureGates() {
   }, [refresh]);
 
   const canAccess = useCallback((gateKey: string): GateCheckResult => {
+    // New users get full access when config is enabled
+    if (isNewUserUnlocked()) {
+      const gate = gates.find(g => g.gate_key === gateKey);
+      return { allowed: true, requiredTier: gate?.required_tier ?? null, gate: gate ?? null };
+    }
     const gate = gates.find(g => g.gate_key === gateKey);
     if (!gate) return { allowed: true, requiredTier: null, gate: null };
     const allowed = tierIndex(tier) >= tierIndex(gate.required_tier);
     return { allowed, requiredTier: gate.required_tier, gate };
-  }, [gates, tier]);
+  }, [gates, tier, isNewUserUnlocked]);
 
   return { gates, loading, canAccess, tier };
 }
