@@ -1113,6 +1113,7 @@ const Index = () => {
     padNames,
     padPans,
     padEffects,
+    padColors,
     customSounds,
     setlists,
     updateSetlist,
