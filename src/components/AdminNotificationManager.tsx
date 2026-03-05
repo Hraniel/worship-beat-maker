@@ -209,8 +209,15 @@ const AdminNotificationManager: React.FC = () => {
       {/* History */}
       {notifications.length > 0 && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-border">
+          <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
             <p className="text-xs font-semibold text-foreground">Histórico</p>
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:bg-destructive/10 px-2 py-1 rounded-md transition-colors"
+            >
+              <Trash2 className="h-3 w-3" />
+              Apagar todas
+            </button>
           </div>
           <div className="divide-y divide-border">
             {notifications.map(n => (
