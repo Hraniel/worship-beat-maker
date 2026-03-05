@@ -143,11 +143,20 @@ const Auth = () => {
             : error.message);
         }
       } else {
-        const { error } = await signUp(email, password);
+        const { error, data } = await signUp(email, password);
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success(t('auth.accountCreated'));
+          // If email confirmation is required, user won't have a session yet
+          const needsConfirmation = !data?.session;
+          if (needsConfirmation) {
+            toast.success(t('auth.confirmEmailSent'), { duration: 8000 });
+            setEmail('');
+            setPassword('');
+            setIsLogin(true);
+          } else {
+            toast.success(t('auth.accountCreated'));
+          }
           try {
             await supabase.functions.invoke('send-welcome-email', { body: { email } });
           } catch { /* silent */ }
