@@ -133,7 +133,7 @@ const AmbientPads: React.FC<AmbientPadsProps> = ({ panDisabled, fullPage }) => {
         {isLocked && (
           <button
             className="absolute inset-0 z-10 flex items-center justify-center gap-1.5 rounded-[5px] cursor-pointer group"
-            style={{ background: 'hsl(0 0% 0% / 0.55)', backdropFilter: 'blur(1px)' }}
+            style={{ background: 'hsl(var(--pad-overlay) / 0.55)', backdropFilter: 'blur(1px)' }}
             onClick={() => {
               const r = canAccess('ambient_pads');
               if (!r.allowed && r.gate) {
