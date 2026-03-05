@@ -4,6 +4,7 @@ import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
 import { Slider } from "@/components/ui/slider";
 import PadGrid from "@/components/PadGrid";
+import PadOnboardingTip from "@/components/PadOnboardingTip";
 import Metronome from "@/components/Metronome";
 import MixerStrip from "@/components/MixerStrip";
 import ToolsPanel, { getTapRedirectTarget } from "@/components/ToolsPanel";
