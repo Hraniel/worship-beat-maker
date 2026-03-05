@@ -890,12 +890,12 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         return <ThemeSettings />;
       case 'audio':
         return (
-          <div className="flex flex-col gap-3 w-full">
-            <AudioOutputSelector />
+          <div className="flex flex-col gap-3 w-full" data-tutorial="audio-settings">
+            <div data-tutorial="audio-output"><AudioOutputSelector /></div>
             {(() => {
               const panAccess = canAccess('pan_control');
               return (
-                <div className="relative">
+                <div className="relative" data-tutorial="audio-stereo-pan">
                   {!panAccess.allowed && (
                     <div
                       className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg cursor-pointer"

@@ -1,0 +1,1 @@
+UPDATE help_categories SET sort_order = sort_order + 1 WHERE sort_order >= 3 AND id != 'be30b384-225a-42df-b759-61828159c521';
