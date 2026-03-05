@@ -84,6 +84,24 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
     ],
   },
   {
+    id: 'audio-settings',
+    label: 'Configurações de Áudio',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="audio-output"]',
+        title: 'Saída de Áudio',
+        description: 'Escolha o dispositivo de saída (placa de áudio, interface USB, fone). Disponível para todos os planos.',
+        prepareEvent: 'tutorial:open-settings-audio',
+      },
+      {
+        targetSelector: '[data-tutorial="audio-stereo-pan"]',
+        title: 'Stereo / Mono e Pan',
+        description: 'Defina se Pads, Continuous Pads e Metrônomo tocam em Stereo ou Mono, e direcione para L ou R. Recurso exclusivo do plano Pro.',
+        prepareEvent: 'tutorial:open-settings-audio',
+      },
+    ],
+  },
+  {
     id: 'volume',
     label: 'Volume e Pan Master',
     steps: [
