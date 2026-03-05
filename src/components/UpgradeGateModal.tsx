@@ -86,6 +86,9 @@ const UpgradeGateModal: React.FC<Props> = ({ payload, onClose, onNavigateToPrici
               <p className="text-sm text-muted-foreground mt-2">
                 {t('upgradeGate.availableFrom', { plan: meta.label })}
               </p>
+              <p className="text-xs font-semibold text-primary mt-1">
+                🎉 {t('upgradeGate.trialHint', 'Experimente 3 dias grátis!')}
+              </p>
             </div>
 
             <div className="flex flex-col gap-2">
