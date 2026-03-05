@@ -41,7 +41,7 @@ export function useSetlistEvents() {
   const setEventsAndCache = useCallback((updater: SetlistEvent[] | ((prev: SetlistEvent[]) => SetlistEvent[])) => {
     setEvents(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (cacheKey && next.length > 0) {
+      if (cacheKey) {
         try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
       }
       return next;
@@ -58,7 +58,7 @@ export function useSetlistEvents() {
         .order('event_date', { ascending: true });
       if (error) throw error;
       const parsed = ((data || []) as any[]).map(d => ({ ...d, songs_data: d.songs_data || [] }));
-      setEvents(parsed);
+      setEventsAndCache(parsed);
     } catch (e) {
       console.error('Failed to fetch setlist events:', e);
     } finally {

@@ -31,7 +31,7 @@ export function useSetlists() {
   const setSetlistsAndCache = useCallback((updater: DbSetlist[] | ((prev: DbSetlist[]) => DbSetlist[])) => {
     setSetlists(prev => {
       const next = typeof updater === 'function' ? updater(prev) : updater;
-      if (cacheKey && next.length > 0) {
+      if (cacheKey) {
         try { localStorage.setItem(cacheKey, JSON.stringify(next)); } catch {}
       }
       return next;
@@ -60,7 +60,7 @@ export function useSetlists() {
         updated_at: d.updated_at,
         sort_order: d.sort_order ?? 0,
       }));
-      setSetlists(parsed);
+      setSetlistsAndCache(parsed);
     } catch (e) {
       console.error('Failed to fetch setlists:', e);
       // Only show error if no cached data
