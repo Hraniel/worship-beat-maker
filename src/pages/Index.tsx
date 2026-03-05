@@ -1572,8 +1572,9 @@ const Index = () => {
               )}
             </div>
 
-            {/* Center: Current song name */}
-            <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center">
+            {/* Center: Current song name + new user badge */}
+            <div className="flex-1 min-w-0 mx-1 sm:mx-2 flex items-center justify-center gap-1.5">
+              <NewUserBadge />
               {currentSongName ? (
                 <span className="text-[11px] sm:text-xs font-medium text-primary truncate block">
                   ♪ {currentSongName}
