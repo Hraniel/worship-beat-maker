@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Bell, Send, Users, User, Loader2, Check } from 'lucide-react';
+import { Bell, Send, Users, User, Loader2, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface Notification {
@@ -124,6 +124,23 @@ const AdminNotificationManager: React.FC = () => {
     }
   };
 
+  const handleDeleteAll = async () => {
+    if (!confirm('Tem certeza que deseja apagar todas as notificações enviadas?')) return;
+    try {
+      const ids = notifications.map(n => n.id);
+      if (ids.length === 0) return;
+      // Delete reads first, then notifications
+      for (const id of ids) {
+        await supabase.from('user_notification_reads').delete().eq('notification_id', id);
+      }
+      await (supabase.from('admin_notifications') as any).delete().in('id', ids);
+      setNotifications([]);
+      toast.success('Todas as notificações foram apagadas');
+    } catch (e: any) {
+      toast.error(e.message || 'Erro ao apagar notificações');
+    }
+  };
+
   const filteredUsers = users.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase()));
 
   return (
@@ -209,8 +226,15 @@ const AdminNotificationManager: React.FC = () => {
       {/* History */}
       {notifications.length > 0 && (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-border">
+          <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
             <p className="text-xs font-semibold text-foreground">Histórico</p>
+            <button
+              onClick={handleDeleteAll}
+              className="flex items-center gap-1 text-[10px] font-medium text-destructive hover:bg-destructive/10 px-2 py-1 rounded-md transition-colors"
+            >
+              <Trash2 className="h-3 w-3" />
+              Apagar todas
+            </button>
           </div>
           <div className="divide-y divide-border">
             {notifications.map(n => (
