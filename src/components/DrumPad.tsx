@@ -240,14 +240,17 @@ const DrumPad: React.FC<DrumPadProps> = ({
             ? (customColor ? `hsl(${colorHsl} / ${0.25 * colorOpacity})` : 'hsl(0 0% 22%)')
             : isLooping
             ? (customColor ? `hsl(${colorHsl} / ${0.08 * colorOpacity})` : colorRef(0.06))
-            : 'linear-gradient(145deg, hsl(0 0% 8%) 0%, hsl(0 0% 4%) 100%)',
+            : 'linear-gradient(145deg, hsl(0 0% 100% / 0.06) 0%, hsl(0 0% 100% / 0.02) 100%)',
+          border: '1px solid hsl(0 0% 100% / 0.08)',
+          backdropFilter: 'blur(12px) saturate(1.3)',
+          WebkitBackdropFilter: 'blur(12px) saturate(1.3)',
           boxShadow: isActive
             ? (customColor
                 ? `0 0 24px hsl(${colorHsl} / ${0.45 * colorOpacity}), inset 0 0 12px hsl(${colorHsl} / ${0.15 * colorOpacity})`
                 : '0 0 20px hsl(0 0% 100% / 0.25), inset 0 0 10px hsl(0 0% 100% / 0.08)')
             : isLooping
             ? (customColor ? `0 0 14px hsl(${colorHsl} / ${0.3 * colorOpacity})` : `0 0 14px ${colorRef(0.25)}`)
-            : 'none',
+            : 'inset 0 1px 0 hsl(0 0% 100% / 0.04)',
         }}
       >
         {/* Top color bar */}
