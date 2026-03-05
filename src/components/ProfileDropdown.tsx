@@ -51,6 +51,7 @@ const tierBadge: Record<string, { label: string; icon: React.ReactNode; cls: str
   free: { label: 'Free', icon: null, cls: 'bg-gray-100 text-gray-600' },
   pro: { label: 'Pro', icon: <Zap className="h-3 w-3" />, cls: 'bg-violet-100 text-violet-700' },
   master: { label: 'Master', icon: <Crown className="h-3 w-3" />, cls: 'bg-amber-100 text-amber-700' },
+  lifetime: { label: 'Vitalício', icon: <Crown className="h-3 w-3" />, cls: 'bg-emerald-100 text-emerald-700' },
 };
 
 interface ProfileData {
@@ -304,7 +305,7 @@ export default function ProfileDropdown() {
                 <Button onClick={() => { setMenuOpen(false); navigate('/pricing'); }} size="sm" className="w-full h-8 text-xs rounded-lg bg-white hover:bg-gray-50 text-black border border-gray-300">
                   <Zap className="h-3 w-3 mr-1" /> {t('dashboard.upgrade')}
                 </Button>
-              ) : (
+              ) : tier === 'lifetime' ? null : (
                 <Button onClick={handleManageSubscription} size="sm" className="w-full h-8 text-xs rounded-lg bg-white hover:bg-gray-50 text-black border border-gray-300" disabled={portalLoading}>
                   {portalLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : t('dashboard.manageSubscription')}
                 </Button>
