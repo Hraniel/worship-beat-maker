@@ -728,7 +728,8 @@
     "resetThisPad": "Redefinir este pad",
     "resetAllPads": "Redefinir todos os pads",
     "effects": "Efeitos",
-    "audioEffects": "Efeitos de áudio"
+    "audioEffects": "Efeitos de áudio",
+    "masterPlan": "Plano Master"
   },
   "ambient": {
     "padError": "Erro no pad: {{msg}}",

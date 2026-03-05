@@ -35,6 +35,17 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: '2025-08-27.basil' });
 
+    // Get CEO user IDs to exclude from stats
+    const { data: ceoRoles } = await supabase.from('user_roles').select('user_id').eq('role', 'ceo');
+    const ceoUserIds = new Set((ceoRoles || []).map((r: any) => r.user_id));
+
+    // Get CEO emails from auth.users
+    const ceoEmails = new Set<string>();
+    for (const uid of ceoUserIds) {
+      const { data: { user: ceoUser } } = await supabase.auth.admin.getUserById(uid);
+      if (ceoUser?.email) ceoEmails.add(ceoUser.email.toLowerCase());
+    }
+
     // List active subscriptions (fetch up to 100)
     const subscriptions = await stripe.subscriptions.list({ status: 'active', limit: 100 });
 
@@ -42,6 +53,18 @@ Deno.serve(async (req) => {
     let master_count = 0;
 
     for (const sub of subscriptions.data) {
+      // Exclude CEO subscriptions
+      const customerEmail = (sub.customer as any)?.email?.toLowerCase?.() ?? '';
+      if (ceoEmails.has(customerEmail)) continue;
+
+      // If customer is just an ID, fetch the customer to get email
+      if (typeof sub.customer === 'string' && ceoEmails.size > 0) {
+        try {
+          const customer = await stripe.customers.retrieve(sub.customer);
+          if ('email' in customer && customer.email && ceoEmails.has(customer.email.toLowerCase())) continue;
+        } catch {}
+      }
+
       const productId = sub.items.data[0]?.price?.product as string | undefined;
       if (productId === PRO_PRODUCT_ID) pro_count++;
       else if (productId === MASTER_PRODUCT_ID) master_count++;
