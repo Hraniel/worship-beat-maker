@@ -125,6 +125,7 @@ import { useAppConfig } from "@/hooks/useAppConfig";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
 import LoopImportBpmDialog from "@/components/LoopImportBpmDialog";
 import NewUserBadge from "@/components/NewUserBadge";
+import { useNewUserUnlock } from "@/hooks/useNewUserUnlock";
 const CUSTOM_NAMES_KEY = "drum-pads-custom-names";
 const PAD_SIZE_KEY = "drum-pads-pad-size";
 const FOCUS_MODE_KEY = "drum-pads-focus-mode";
