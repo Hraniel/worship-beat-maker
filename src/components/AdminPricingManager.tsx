@@ -8,7 +8,7 @@ import {
   Save, Loader2, Crown, Zap, Lock, Unlock, Plus, Trash2, RefreshCw,
   Music, Mic2, Waves, Sparkles, Activity, Radio, ListMusic, SlidersHorizontal,
   AudioWaveform, Palette, Search, BarChart3, Drum, Volume2, Star, ChevronDown, ChevronUp, Cpu,
-  GripVertical, ArrowRightLeft, AlertTriangle, CheckCircle2, Users,
+  GripVertical, ArrowRightLeft, AlertTriangle, CheckCircle2, Users, ShoppingBag,
 } from 'lucide-react';
 import type { PlanPricing, PlanFeature, FeatureGate } from '@/hooks/useLandingConfig';
 import { invalidateGatesCache } from '@/hooks/useFeatureGates';
