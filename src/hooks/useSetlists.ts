@@ -60,7 +60,7 @@ export function useSetlists() {
         updated_at: d.updated_at,
         sort_order: d.sort_order ?? 0,
       }));
-      setSetlists(parsed);
+      setSetlistsAndCache(parsed);
     } catch (e) {
       console.error('Failed to fetch setlists:', e);
       // Only show error if no cached data
