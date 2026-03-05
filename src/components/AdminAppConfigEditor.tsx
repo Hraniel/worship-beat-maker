@@ -94,8 +94,8 @@ const AdminAppConfigEditor: React.FC = () => {
     });
   };
 
-  const saveKey = async (key: string) => {
-    const value = rows.find(r => r.config_key === key)?.config_value ?? '';
+  const saveKey = async (key: string, explicitValue?: string) => {
+    const value = explicitValue ?? rows.find(r => r.config_key === key)?.config_value ?? '';
     setSaving(key);
     try {
       const { data: existing } = await supabase.from('landing_config').select('id').eq('config_key', key).maybeSingle();
@@ -204,8 +204,9 @@ const AdminAppConfigEditor: React.FC = () => {
                     <Switch
                       checked={getVal(f.key, 'true') !== 'false'}
                       onCheckedChange={v => {
-                        setVal(f.key, v ? 'true' : 'false');
-                        setTimeout(() => saveKey(f.key), 0);
+                        const newVal = v ? 'true' : 'false';
+                        setVal(f.key, newVal);
+                        saveKey(f.key, newVal);
                         if (f.key === 'app_new_user_unlock_all' && !v) {
                           toast.success('Acesso total desativado — todos os acessos gratuitos de 24h foram revogados imediatamente.', { duration: 5000 });
                         } else if (f.key === 'app_new_user_unlock_all' && v) {
@@ -230,8 +231,9 @@ const AdminAppConfigEditor: React.FC = () => {
                       <Switch
                         checked={getVal('app_onboarding_enabled', 'true') !== 'false'}
                         onCheckedChange={v => {
-                          setVal('app_onboarding_enabled', v ? 'true' : 'false');
-                          setTimeout(() => saveKey('app_onboarding_enabled'), 0);
+                          const newVal = v ? 'true' : 'false';
+                          setVal('app_onboarding_enabled', newVal);
+                          saveKey('app_onboarding_enabled', newVal);
                         }}
                       />
                     </div>
