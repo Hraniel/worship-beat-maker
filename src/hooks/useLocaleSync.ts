@@ -12,7 +12,7 @@ export function useLocaleSync() {
   const { i18n } = useTranslation();
   const { user } = useAuth();
 
-  // Load locale from profile on login
+  // Sync locale between i18n and profile on login
   useEffect(() => {
     if (!user?.id) return;
 
@@ -22,8 +22,17 @@ export function useLocaleSync() {
       .eq('user_id', user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data?.locale && data.locale !== i18n.language) {
-          i18n.changeLanguage(data.locale);
+        const profileLocale = data?.locale || 'pt-BR';
+        const currentLocale = i18n.language;
+
+        // If user picked a language before logging in (e.g. on Auth page),
+        // persist that choice to the profile instead of overwriting it.
+        if (currentLocale && currentLocale !== profileLocale) {
+          supabase
+            .from('profiles')
+            .update({ locale: currentLocale })
+            .eq('user_id', user.id)
+            .then(() => {});
         }
       });
   }, [user?.id]);
