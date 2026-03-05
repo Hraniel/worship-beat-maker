@@ -1172,7 +1172,7 @@ const Index = () => {
         setCurrentSongId(result.id);
       }
     },
-    [bpm, timeSignature, spotifyKey, padVolumes, padNames, padPans, padEffects, customSounds, createSetlist],
+    [bpm, timeSignature, spotifyKey, padVolumes, padNames, padPans, padEffects, padColors, customSounds, createSetlist],
   );
 
   const handleLoadSong = useCallback(
