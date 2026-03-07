@@ -168,6 +168,9 @@ const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!user?.id) { setChecking(false); return; }
     
+    // If offline, skip network checks — allow access
+    if (!navigator.onLine) { setChecking(false); return; }
+
     Promise.all([
       supabase.from('user_roles').select('role').eq('user_id', user.id),
       supabase.from('prelaunch_whitelist').select('id').eq('user_id', user.id).maybeSingle(),
@@ -179,13 +182,15 @@ const PrelaunchGate = ({ children }: { children: React.ReactNode }) => {
       setIsWhitelisted(whitelisted);
       setChecking(false);
 
-      // If prelaunch active and user is not authorized, sign them out
       if (prelaunch.enabled && !admin && !whitelisted) {
         setBlocked(true);
         const { toast } = await import('sonner');
         toast.error('Acesso restrito. Você não está na lista de acesso antecipado.');
         await supabase.auth.signOut();
       }
+    }).catch(() => {
+      // Offline fallback — allow access
+      setChecking(false);
     });
   }, [user?.id, prelaunch.enabled]);
 
