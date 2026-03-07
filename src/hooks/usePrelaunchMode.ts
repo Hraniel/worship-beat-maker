@@ -19,12 +19,14 @@ export function usePrelaunchMode() {
     let mounted = true;
 
     const load = async () => {
-      const { data } = await supabase
-        .from('landing_config')
-        .select('config_key, config_value')
-        .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message']);
+      try {
+        const { data, error } = await supabase
+          .from('landing_config')
+          .select('config_key, config_value')
+          .in('config_key', ['prelaunch_enabled', 'prelaunch_date', 'prelaunch_custom_message']);
 
-      if (!mounted) return;
+        if (error) throw error;
+        if (!mounted) return;
 
       const map: Record<string, string> = {};
       data?.forEach((r: any) => { map[r.config_key] = r.config_value; });
