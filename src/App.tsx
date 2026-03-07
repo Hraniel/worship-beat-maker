@@ -219,18 +219,17 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!user?.id) { setChecking(false); return; }
     if (!navigator.onLine) { setChecking(false); return; }
-    supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .then(({ data }) => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
         const roles = data?.map((r: any) => r.role) || [];
         setIsAdmin(roles.includes('admin') || roles.includes('ceo'));
-        setChecking(false);
-      })
-      .catch(() => {
-        setChecking(false);
-      });
+      } catch { /* offline fallback */ }
+      setChecking(false);
+    })();
   }, [user?.id]);
 
   if (loading || checking) {
