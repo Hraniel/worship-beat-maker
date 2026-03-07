@@ -34,6 +34,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
+    // If offline, skip network call and use cached tier
+    if (!navigator.onLine) {
+      setLoading(false);
+      return;
+    }
+
     const maxRetries = 2;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
@@ -41,7 +47,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (error) throw error;
         const result = data as { subscribed: boolean; product_id: string | null; subscription_end: string | null };
         
-        // If we got an error field in the response, retry
         if (result && 'error' in result) {
           throw new Error(String((result as any).error));
         }
@@ -49,17 +54,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setTier(getTierByProductId(result.product_id));
         setSubscriptionEnd(result.subscription_end);
         setLoading(false);
-        return; // Success, exit retry loop
+        return;
       } catch (e) {
         console.warn(`Subscription check attempt ${attempt + 1} failed:`, e);
         if (attempt === maxRetries) {
-          // Only fallback to free on final failure - keep current tier if already set
           if (tier === 'free') {
             setTier('free');
           }
-          // Don't reset to free if user previously had a valid subscription
         } else {
-          // Wait before retry
           await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
         }
       }

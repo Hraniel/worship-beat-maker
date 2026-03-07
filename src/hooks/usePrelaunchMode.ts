@@ -43,8 +43,14 @@ export function usePrelaunchMode() {
         newState.enabled = false;
       }
 
-      cachedState = newState;
-      setState(newState);
+        cachedState = newState;
+        setState(newState);
+      } catch {
+        // Offline or error — use cached or default to disabled
+        if (!mounted) return;
+        const fallback: PrelaunchState = cachedState ?? { enabled: false, launchDate: '', customMessage: '', loading: false };
+        setState({ ...fallback, loading: false });
+      }
     };
 
     load();
