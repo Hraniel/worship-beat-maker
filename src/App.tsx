@@ -218,6 +218,7 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!user?.id) { setChecking(false); return; }
+    if (!navigator.onLine) { setChecking(false); return; }
     supabase
       .from('user_roles')
       .select('role')
@@ -225,6 +226,9 @@ const MaintenanceGate = ({ children }: { children: React.ReactNode }) => {
       .then(({ data }) => {
         const roles = data?.map((r: any) => r.role) || [];
         setIsAdmin(roles.includes('admin') || roles.includes('ceo'));
+        setChecking(false);
+      })
+      .catch(() => {
         setChecking(false);
       });
   }, [user?.id]);
