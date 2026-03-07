@@ -11,17 +11,25 @@ export function useMaintenanceMode() {
     let mounted = true;
 
     const load = async () => {
-      const { data } = await supabase
-        .from('landing_config')
-        .select('config_value')
-        .eq('config_key', 'maintenance_enabled')
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('landing_config')
+          .select('config_value')
+          .eq('config_key', 'maintenance_enabled')
+          .maybeSingle();
 
-      if (!mounted) return;
-      const val = data?.config_value === 'true';
-      cachedMaintenance = val;
-      setEnabled(val);
-      setLoading(false);
+        if (error) throw error;
+        if (!mounted) return;
+        const val = data?.config_value === 'true';
+        cachedMaintenance = val;
+        setEnabled(val);
+        setLoading(false);
+      } catch {
+        // Offline — use cached value or default to disabled
+        if (!mounted) return;
+        setEnabled(cachedMaintenance ?? false);
+        setLoading(false);
+      }
     };
 
     load();
