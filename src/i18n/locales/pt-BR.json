@@ -631,7 +631,19 @@
     "noSongSelected": "Nenhuma música selecionada",
     "key": "Tom",
     "previous": "Anterior",
-    "next": "Próxima"
+    "next": "Próxima",
+    "transposeUp": "Transpor acima",
+    "transposeDown": "Transpor abaixo",
+    "liveCues": "Sinais ao Vivo",
+    "sendCue": "Enviar sinal para a banda",
+    "cue_chorus": "Refrão",
+    "cue_verse": "Verso",
+    "cue_bridge": "Ponte",
+    "cue_down": "Desce",
+    "cue_up": "Sobe",
+    "cue_cut": "Corta",
+    "cue_worship": "Ministração",
+    "inMeasures": "em {{count}} compassos"
   },
   "toolsPanel": {
     "tapToDetect": "Toque para detectar",

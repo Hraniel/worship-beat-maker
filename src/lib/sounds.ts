@@ -57,6 +57,22 @@ export const defaultPads: PadSound[] = [
   { id: 'reverse-cymbal', name: 'Rev Cymbal', shortName: 'RVC', category: 'effects', colorVar: '--pad-effects' },
 ];
 
+export type DynamicsIntensity = 'pp' | 'p' | 'mp' | 'mf' | 'f' | 'ff';
+
+export interface SongSection {
+  id: string;
+  name: string;
+  startMeasure: number;
+  endMeasure: number;
+  intensity: DynamicsIntensity;
+}
+
+export interface SongMarker {
+  id: string;
+  measure: number;
+  label: string;
+}
+
 export interface SetlistSong {
   id: string;
   name: string;
@@ -74,6 +90,9 @@ export interface SetlistSong {
   midiCCMappings?: Record<number, string>;
   midiChannel?: string | number;
   midiCCChannel?: string | number;
+  sections?: SongSection[];
+  markers?: SongMarker[];
+  totalMeasures?: number;
 }
 
 export interface Setlist {

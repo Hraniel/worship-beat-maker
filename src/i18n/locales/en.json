@@ -631,7 +631,19 @@
     "noSongSelected": "No song selected",
     "key": "Key",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "transposeUp": "Transpose up",
+    "transposeDown": "Transpose down",
+    "liveCues": "Live Cues",
+    "sendCue": "Send cue to band",
+    "cue_chorus": "Chorus",
+    "cue_verse": "Verse",
+    "cue_bridge": "Bridge",
+    "cue_down": "Down",
+    "cue_up": "Up",
+    "cue_cut": "Cut",
+    "cue_worship": "Worship",
+    "inMeasures": "in {{count}} bars"
   },
   "toolsPanel": {
     "tapToDetect": "Tap to detect",

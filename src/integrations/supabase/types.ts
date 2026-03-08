@@ -429,6 +429,33 @@ export type Database = {
         }
         Relationships: []
       }
+      live_cues: {
+        Row: {
+          created_at: string
+          cue_label: string
+          cue_type: string
+          id: string
+          sent_by: string
+          setlist_id: string
+        }
+        Insert: {
+          created_at?: string
+          cue_label?: string
+          cue_type: string
+          id?: string
+          sent_by: string
+          setlist_id: string
+        }
+        Update: {
+          created_at?: string
+          cue_label?: string
+          cue_type?: string
+          id?: string
+          sent_by?: string
+          setlist_id?: string
+        }
+        Relationships: []
+      }
       pack_sounds: {
         Row: {
           category: string

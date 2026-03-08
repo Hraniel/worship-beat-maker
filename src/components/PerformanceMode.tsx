@@ -2,6 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, ChevronLeft, ChevronRight, Play, Pause, Maximize } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SetlistSong } from '@/lib/sounds';
+import TransposeControl from '@/components/performance/TransposeControl';
+import SongDynamicsBar from '@/components/performance/SongDynamicsBar';
+import RehearsalCounter from '@/components/performance/RehearsalCounter';
+import LiveCuePanel from '@/components/performance/LiveCuePanel';
 
 interface PerformanceModeProps {
   songs: SetlistSong[];
@@ -9,6 +13,9 @@ interface PerformanceModeProps {
   bpm: number;
   spotifyKey: string | null;
   metronomeIsPlaying: boolean;
+  currentBeat?: number;
+  currentMeasure?: number;
+  setlistId?: string | null;
   onTogglePlay: () => void;
   onLoadSong: (song: SetlistSong) => void;
   onClose: () => void;
@@ -24,10 +31,11 @@ const KEY_COLORS: Record<string, string> = {
 };
 
 const PerformanceMode: React.FC<PerformanceModeProps> = ({
-  songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, onTogglePlay, onLoadSong, onClose,
+  songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, currentBeat = 0, currentMeasure = 0, setlistId, onTogglePlay, onLoadSong, onClose,
 }) => {
   const { t } = useTranslation();
   const [fullscreen, setFullscreen] = useState(false);
+  const [transpose, setTranspose] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -36,6 +44,9 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const currentSong = currentIndex >= 0 ? songs[currentIndex] : null;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < songs.length - 1;
+
+  // Reset transpose when song changes
+  useEffect(() => { setTranspose(0); }, [currentSongId]);
 
   const goNext = useCallback(() => {
     if (hasNext) onLoadSong(songs[currentIndex + 1]);
@@ -93,6 +104,10 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
 
   const keyBase = spotifyKey?.split(' ')[0] || '';
   const keyColorClass = KEY_COLORS[keyBase] || 'bg-primary';
+  const beatsPerMeasure = currentSong ? parseInt(currentSong.timeSignature.split('/')[0]) : 4;
+  const hasSections = currentSong?.sections && currentSong.sections.length > 0;
+  const hasMarkers = currentSong?.markers && currentSong.markers.length > 0;
+  const totalMeasures = currentSong?.totalMeasures || 0;
 
   return (
     <div
@@ -118,6 +133,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <LiveCuePanel setlistId={setlistId || null} isLeader={true} />
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
@@ -135,8 +151,19 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
         </div>
       </div>
 
+      {/* Dynamics bar */}
+      {hasSections && (
+        <div className="absolute top-16 left-0 right-0 flex justify-center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+          <SongDynamicsBar
+            sections={currentSong!.sections!}
+            totalMeasures={totalMeasures}
+            currentMeasure={currentMeasure}
+          />
+        </div>
+      )}
+
       {/* Main content */}
-      <div className="flex flex-col items-center justify-center gap-6 px-8 text-center w-full max-w-2xl">
+      <div className="flex flex-col items-center justify-center gap-4 px-8 text-center w-full max-w-2xl">
         <div className="space-y-2">
           {currentSong ? (
             <h1 className="text-4xl sm:text-6xl font-black text-foreground tracking-tight leading-none break-words">
@@ -148,22 +175,40 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
         </div>
 
         <div className="flex items-center gap-6">
+          {/* BPM */}
           <div className="text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">BPM</p>
             <p className="text-8xl sm:text-9xl font-black text-primary tabular-nums leading-none">{bpm}</p>
           </div>
 
+          {/* Key with transpose */}
           {spotifyKey && (
             <div className="text-center">
               <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{t('performance.key')}</p>
-              <div className={`${keyColorClass} text-white text-3xl sm:text-4xl font-black px-5 py-3 rounded-2xl shadow-lg`}>
-                {spotifyKey}
+              <div className={`${keyColorClass} text-white px-4 py-3 rounded-2xl shadow-lg`}>
+                <TransposeControl
+                  originalKey={spotifyKey}
+                  transpose={transpose}
+                  onTransposeChange={setTranspose}
+                />
               </div>
             </div>
           )}
         </div>
 
-        {currentSong?.timeSignature && (
+        {/* Rehearsal counter */}
+        {totalMeasures > 0 && (
+          <RehearsalCounter
+            currentMeasure={currentMeasure}
+            totalMeasures={totalMeasures}
+            currentBeat={currentBeat}
+            beatsPerMeasure={beatsPerMeasure}
+            markers={currentSong?.markers || []}
+            isPlaying={metronomeIsPlaying}
+          />
+        )}
+
+        {currentSong?.timeSignature && !totalMeasures && (
           <p className="text-xl text-muted-foreground font-semibold">{currentSong.timeSignature}</p>
         )}
       </div>

@@ -46,6 +46,7 @@ import {
   setMetronomeVolume,
   getMetronomeVolume,
   resyncEngine,
+  onMetronomeBeat,
 } from "@/lib/loop-engine";
 
 import { getAmbientVolume, setAmbientVolume } from "@/lib/ambient-engine";
@@ -243,6 +244,9 @@ const Index = () => {
   const [masterPanState, setMasterPanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [performanceModeOpen, setPerformanceModeOpen] = useState(false);
+  const [perfBeat, setPerfBeat] = useState(0);
+  const [perfMeasure, setPerfMeasure] = useState(0);
+  const perfBeatCountRef = useRef(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [footerPage, setFooterPage] = useState(0);
   const [faderPage, setFaderPage] = useState(0);
@@ -511,7 +515,28 @@ const Index = () => {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  // Tutorial auto-expand listeners
+  // Beat/measure tracking for performance mode
+  useEffect(() => {
+    const beatsPerMeasure = parseInt(timeSignature.split('/')[0]) || 4;
+    const unsub = onMetronomeBeat((beat: number) => {
+      setPerfBeat(beat);
+      if (beat === 0) {
+        perfBeatCountRef.current += 1;
+        setPerfMeasure(perfBeatCountRef.current);
+      }
+    });
+    return () => unsub?.();
+  }, [timeSignature]);
+
+  // Reset measure counter when song changes or metronome stops
+  useEffect(() => {
+    if (!metronomeIsPlaying) {
+      perfBeatCountRef.current = 0;
+      setPerfMeasure(0);
+      setPerfBeat(0);
+    }
+  }, [metronomeIsPlaying, currentSongId]);
+
   useEffect(() => {
     const expandMetronome = () => setMetronomeOpen(true);
     window.addEventListener("tutorial:expand-metronome", expandMetronome);
@@ -1408,6 +1433,9 @@ const Index = () => {
           bpm={bpm}
           spotifyKey={spotifyKey}
           metronomeIsPlaying={metronomeIsPlaying}
+          currentBeat={perfBeat}
+          currentMeasure={perfMeasure}
+          setlistId={currentSongId}
           onTogglePlay={() => setMetronomeIsPlaying((p) => !p)}
           onLoadSong={handleLoadSong}
           onClose={() => setPerformanceModeOpen(false)}
