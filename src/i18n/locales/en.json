@@ -643,7 +643,10 @@
     "cue_up": "Up",
     "cue_cut": "Cut",
     "cue_worship": "Worship",
-    "inMeasures": "in {{count}} bars"
+    "inMeasures": "in {{count}} bars",
+    "selectEvent": "Select event",
+    "broadcastTo": "Broadcast to",
+    "clearEvent": "Clear selection"
   },
   "toolsPanel": {
     "tapToDetect": "Tap to detect",

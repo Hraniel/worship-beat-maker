@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, Maximize } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Maximize, Calendar, Radio } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SetlistSong } from '@/lib/sounds';
 import TransposeControl from '@/components/performance/TransposeControl';
 import SongDynamicsBar from '@/components/performance/SongDynamicsBar';
 import RehearsalCounter from '@/components/performance/RehearsalCounter';
 import LiveCuePanel from '@/components/performance/LiveCuePanel';
+
+export interface PerformanceEvent {
+  id: string;
+  name: string;
+  event_date: string;
+}
 
 interface PerformanceModeProps {
   songs: SetlistSong[];
@@ -16,6 +22,9 @@ interface PerformanceModeProps {
   currentBeat?: number;
   currentMeasure?: number;
   setlistId?: string | null;
+  events?: PerformanceEvent[];
+  selectedEventId?: string | null;
+  onSelectEvent?: (eventId: string | null) => void;
   onTogglePlay: () => void;
   onLoadSong: (song: SetlistSong) => void;
   onClose: () => void;
@@ -31,11 +40,12 @@ const KEY_COLORS: Record<string, string> = {
 };
 
 const PerformanceMode: React.FC<PerformanceModeProps> = ({
-  songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, currentBeat = 0, currentMeasure = 0, setlistId, onTogglePlay, onLoadSong, onClose,
+  songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, currentBeat = 0, currentMeasure = 0, setlistId, events = [], selectedEventId, onSelectEvent, onTogglePlay, onLoadSong, onClose,
 }) => {
   const { t } = useTranslation();
   const [fullscreen, setFullscreen] = useState(false);
   const [transpose, setTranspose] = useState(0);
+  const [showEventPicker, setShowEventPicker] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -124,16 +134,80 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     >
       {/* Top bar */}
       <div
-        className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 pb-2"
+        className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 sm:px-6 pb-2"
         style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}
       >
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground font-medium">
-            {currentIndex + 1} / {songs.length}
-          </span>
+          {/* Event selector */}
+          {events.length > 0 && (
+            <div className="relative">
+              <button
+                onClick={() => setShowEventPicker(p => !p)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  selectedEventId
+                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                    : 'bg-white/10 text-muted-foreground hover:text-foreground border border-white/10'
+                }`}
+              >
+                <Radio className="h-3.5 w-3.5" />
+                <span className="truncate max-w-[120px]">
+                  {selectedEventId
+                    ? events.find(e => e.id === selectedEventId)?.name || 'Evento'
+                    : t('performance.selectEvent')}
+                </span>
+                {selectedEventId && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
+              </button>
+              {showEventPicker && (
+                <div className="absolute top-full mt-2 left-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-2 shadow-2xl min-w-[200px] z-50">
+                  <p className="text-[10px] text-muted-foreground font-medium mb-1.5 px-2 uppercase tracking-wider">
+                    {t('performance.broadcastTo')}
+                  </p>
+                  {events.map(ev => (
+                    <button
+                      key={ev.id}
+                      onClick={() => {
+                        onSelectEvent?.(ev.id === selectedEventId ? null : ev.id);
+                        setShowEventPicker(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-all ${
+                        ev.id === selectedEventId
+                          ? 'bg-red-500/20 text-red-400 font-bold'
+                          : 'text-foreground hover:bg-white/10'
+                      }`}
+                    >
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
+                      <div className="text-left flex-1 min-w-0">
+                        <p className="truncate font-medium">{ev.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{ev.event_date}</p>
+                      </div>
+                      {ev.id === selectedEventId && <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />}
+                    </button>
+                  ))}
+                  {selectedEventId && (
+                    <button
+                      onClick={() => { onSelectEvent?.(null); setShowEventPicker(false); }}
+                      className="w-full text-center text-[10px] text-muted-foreground hover:text-foreground py-1.5 mt-1 border-t border-border"
+                    >
+                      {t('performance.clearEvent')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {!events.length && (
+            <span className="text-xs text-muted-foreground font-medium">
+              {currentIndex + 1} / {songs.length}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <LiveCuePanel setlistId={setlistId || null} isLeader={true} />
+          {events.length > 0 && (
+            <span className="text-xs text-muted-foreground font-medium">
+              {currentIndex + 1} / {songs.length}
+            </span>
+          )}
+          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} />
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"

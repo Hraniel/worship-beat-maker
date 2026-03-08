@@ -1436,6 +1436,9 @@ const Index = () => {
           currentBeat={perfBeat}
           currentMeasure={perfMeasure}
           setlistId={selectedEventId || currentSongId}
+          events={setlistEventsHook.events.filter(e => e.is_public).map(e => ({ id: e.id, name: e.name, event_date: e.event_date }))}
+          selectedEventId={selectedEventId}
+          onSelectEvent={handleSelectEvent}
           onTogglePlay={() => setMetronomeIsPlaying((p) => !p)}
           onLoadSong={handleLoadSong}
           onClose={() => setPerformanceModeOpen(false)}
