@@ -243,6 +243,9 @@ const Index = () => {
   const [masterPanState, setMasterPanState] = useState(0);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [performanceModeOpen, setPerformanceModeOpen] = useState(false);
+  const [perfBeat, setPerfBeat] = useState(0);
+  const [perfMeasure, setPerfMeasure] = useState(0);
+  const perfBeatCountRef = useRef(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [footerPage, setFooterPage] = useState(0);
   const [faderPage, setFaderPage] = useState(0);
