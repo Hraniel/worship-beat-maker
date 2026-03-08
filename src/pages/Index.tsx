@@ -46,6 +46,7 @@ import {
   setMetronomeVolume,
   getMetronomeVolume,
   resyncEngine,
+  onMetronomeBeat,
 } from "@/lib/loop-engine";
 
 import { getAmbientVolume, setAmbientVolume } from "@/lib/ambient-engine";
