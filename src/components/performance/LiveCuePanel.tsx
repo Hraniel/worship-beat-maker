@@ -22,7 +22,7 @@ const CUE_PRESETS = [
 const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [flash, setFlash] = useState<{ label: string; color: string; emoji: string } | null>(null);
+  const [flash, setFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
   const [showPanel, setShowPanel] = useState(false);
   const flashTimerRef = useRef<number | null>(null);
 
