@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, Maximize } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Maximize, Calendar, Radio } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SetlistSong } from '@/lib/sounds';
 import TransposeControl from '@/components/performance/TransposeControl';
 import SongDynamicsBar from '@/components/performance/SongDynamicsBar';
 import RehearsalCounter from '@/components/performance/RehearsalCounter';
 import LiveCuePanel from '@/components/performance/LiveCuePanel';
+
+export interface PerformanceEvent {
+  id: string;
+  name: string;
+  event_date: string;
+}
 
 interface PerformanceModeProps {
   songs: SetlistSong[];
@@ -16,6 +22,9 @@ interface PerformanceModeProps {
   currentBeat?: number;
   currentMeasure?: number;
   setlistId?: string | null;
+  events?: PerformanceEvent[];
+  selectedEventId?: string | null;
+  onSelectEvent?: (eventId: string | null) => void;
   onTogglePlay: () => void;
   onLoadSong: (song: SetlistSong) => void;
   onClose: () => void;
