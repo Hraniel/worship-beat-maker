@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Music, Download, ChevronRight, Loader2, Calendar } from 'lucide-react';
+import { Music, ChevronRight, Loader2, Calendar, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SharedSong {
   id: string;
@@ -29,6 +30,16 @@ const KEY_COLORS: Record<string, string> = {
   'Bb': 'bg-indigo-500', 'B': 'bg-violet-500',
 };
 
+const CUE_PRESETS = [
+  { key: 'chorus', icon: Music, color: 'bg-purple-500' },
+  { key: 'verse', icon: BookOpen, color: 'bg-blue-500' },
+  { key: 'bridge', icon: Waypoints, color: 'bg-teal-500' },
+  { key: 'down', icon: ChevronDown, color: 'bg-sky-500' },
+  { key: 'up', icon: ChevronUp, color: 'bg-orange-500' },
+  { key: 'cut', icon: Hand, color: 'bg-red-500' },
+  { key: 'worship', icon: Heart, color: 'bg-amber-500' },
+];
+
 const formatEventDate = (dateStr: string) => {
   try {
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -45,7 +56,10 @@ const SharedSetlist: React.FC = () => {
   const [setlist, setSetlist] = useState<SharedSetlistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [flash, setFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
+  const flashTimerRef = useRef<number | null>(null);
 
+  // Fetch setlist data
   useEffect(() => {
     if (!token) { setError('Token inválido'); setLoading(false); return; }
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -65,6 +79,36 @@ const SharedSetlist: React.FC = () => {
       .catch((e) => setError(e.message || 'Erro ao carregar setlist'))
       .finally(() => setLoading(false));
   }, [token]);
+
+  // Subscribe to live cues in real-time
+  useEffect(() => {
+    if (!setlist?.id) return;
+
+    const channel = supabase
+      .channel(`shared-live-cues-${setlist.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'live_cues', filter: `setlist_id=eq.${setlist.id}` },
+        (payload) => {
+          const cue = payload.new as any;
+          const preset = CUE_PRESETS.find(p => p.key === cue.cue_type);
+          const IconComp = preset?.icon || Music;
+          setFlash({
+            label: cue.cue_label || cue.cue_type,
+            color: preset?.color || 'bg-primary',
+            icon: IconComp,
+          });
+          if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+          flashTimerRef.current = window.setTimeout(() => setFlash(null), 3000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+    };
+  }, [setlist?.id]);
 
   if (loading) {
     return (
@@ -88,7 +132,19 @@ const SharedSetlist: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
+      {/* Live cue fullscreen flash */}
+      {flash && (
+        <div className={`fixed inset-0 z-[300] flex items-center justify-center ${flash.color}/30 animate-in fade-in duration-200`}>
+          <div className="text-center animate-in zoom-in-50 duration-300">
+            <flash.icon className="h-20 w-20 text-white mx-auto drop-shadow-lg" />
+            <p className="text-5xl sm:text-6xl font-black text-white mt-4 drop-shadow-lg">
+              {flash.label}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
@@ -103,6 +159,11 @@ const SharedSetlist: React.FC = () => {
           <p className="text-[10px] text-muted-foreground">
             {setlist.songs.length} {t('sharedSetlist.songs')} · {t('sharedSetlist.readOnly')}
           </p>
+        </div>
+        {/* Live indicator */}
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/15 border border-red-500/30">
+          <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Live</span>
         </div>
       </div>
 
@@ -145,23 +206,6 @@ const SharedSetlist: React.FC = () => {
             );
           })
         )}
-      </div>
-
-      {/* CTA */}
-      <div className="max-w-lg mx-auto px-4 py-6">
-        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 text-center space-y-3">
-          <div className="h-12 w-12 rounded-2xl bg-primary mx-auto flex items-center justify-center">
-            <Music className="h-6 w-6 text-primary-foreground" />
-          </div>
-          <h2 className="font-bold text-foreground">{t('sharedSetlist.ctaTitle')}</h2>
-          <p className="text-sm text-muted-foreground">{t('sharedSetlist.ctaDesc')}</p>
-          <Link to="/auth">
-            <Button className="w-full gap-2 mt-2">
-              <Download className="h-4 w-4" />
-              {t('sharedSetlist.ctaButton')}
-            </Button>
-          </Link>
-        </div>
       </div>
     </div>
   );
