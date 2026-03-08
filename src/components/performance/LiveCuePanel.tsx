@@ -64,9 +64,9 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       cue_type: cueKey,
       cue_label: cueLabel,
     } as any);
-    // Show own flash too
     const preset = CUE_PRESETS.find(p => p.key === cueKey);
-    setFlash({ label: cueLabel, color: preset?.color || 'bg-primary', emoji: preset?.emoji || '🎵' });
+    const IconComp = preset?.icon || Music;
+    setFlash({ label: cueLabel, color: preset?.color || 'bg-primary', icon: IconComp });
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     flashTimerRef.current = window.setTimeout(() => setFlash(null), 2000);
     setShowPanel(false);
