@@ -315,7 +315,7 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
           <button onClick={copyLink}
             className="w-full flex items-center gap-2 text-xs bg-background border border-border rounded-md px-2 py-1.5 hover:bg-muted transition-colors text-left mt-1.5">
             <Link2 className="h-3 w-3 text-primary shrink-0" />
-            <span className="truncate text-muted-foreground">{window.location.origin}/s/{event.share_token?.slice(0, 8)}…</span>
+            <span className="truncate text-muted-foreground">{shareBase.replace(/^https?:\/\//, '')}/s/{event.share_token?.slice(0, 8)}…</span>
             <span className="ml-auto text-primary font-medium shrink-0">{t('setlist.copy')}</span>
           </button>
         )}
