@@ -104,7 +104,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
                 {t('performance.sendCue')}
               </p>
               <div className="grid grid-cols-2 gap-1.5">
-                {CUE_PRESETS.map((cue) => (
+                {CUE_PRESETS.filter(c => c.key !== 'worship').map((cue) => (
                   <button
                     key={cue.key}
                     onClick={() => sendCue(cue.key, t(`performance.cue_${cue.key}`))}
