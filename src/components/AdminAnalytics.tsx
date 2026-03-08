@@ -184,8 +184,10 @@ const AdminAnalytics: React.FC = () => {
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke('subscription-stats');
-        if (!error && data) {
+        if (!error && data && typeof data.total_mrr === 'number') {
           setSubStats(data);
+        } else {
+          console.warn('Subscription stats response:', data, error);
         }
       } catch (e) {
         console.error('Subscription stats error:', e);
