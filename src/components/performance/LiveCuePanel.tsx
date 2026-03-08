@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Radio, Music, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -9,19 +10,19 @@ interface LiveCuePanelProps {
 }
 
 const CUE_PRESETS = [
-  { key: 'chorus', emoji: '🎵', color: 'bg-purple-500' },
-  { key: 'verse', emoji: '📖', color: 'bg-blue-500' },
-  { key: 'bridge', emoji: '🌉', color: 'bg-teal-500' },
-  { key: 'down', emoji: '⬇️', color: 'bg-sky-500' },
-  { key: 'up', emoji: '⬆️', color: 'bg-orange-500' },
-  { key: 'cut', emoji: '✋', color: 'bg-red-500' },
-  { key: 'worship', emoji: '🙏', color: 'bg-amber-500' },
+  { key: 'chorus', icon: Music, color: 'bg-purple-500' },
+  { key: 'verse', icon: BookOpen, color: 'bg-blue-500' },
+  { key: 'bridge', icon: Waypoints, color: 'bg-teal-500' },
+  { key: 'down', icon: ChevronDown, color: 'bg-sky-500' },
+  { key: 'up', icon: ChevronUp, color: 'bg-orange-500' },
+  { key: 'cut', icon: Hand, color: 'bg-red-500' },
+  { key: 'worship', icon: Heart, color: 'bg-amber-500' },
 ];
 
 const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [flash, setFlash] = useState<{ label: string; color: string; emoji: string } | null>(null);
+  const [flash, setFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
   const [showPanel, setShowPanel] = useState(false);
   const flashTimerRef = useRef<number | null>(null);
 
@@ -37,10 +38,11 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
           const cue = payload.new as any;
           if (cue.sent_by === user?.id) return; // Don't flash own cues
           const preset = CUE_PRESETS.find(p => p.key === cue.cue_type);
+          const IconComp = preset?.icon || Music;
           setFlash({
             label: cue.cue_label || cue.cue_type,
             color: preset?.color || 'bg-primary',
-            emoji: preset?.emoji || '🎵',
+            icon: IconComp,
           });
           if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
           flashTimerRef.current = window.setTimeout(() => setFlash(null), 2500);
@@ -62,9 +64,9 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       cue_type: cueKey,
       cue_label: cueLabel,
     } as any);
-    // Show own flash too
     const preset = CUE_PRESETS.find(p => p.key === cueKey);
-    setFlash({ label: cueLabel, color: preset?.color || 'bg-primary', emoji: preset?.emoji || '🎵' });
+    const IconComp = preset?.icon || Music;
+    setFlash({ label: cueLabel, color: preset?.color || 'bg-primary', icon: IconComp });
     if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     flashTimerRef.current = window.setTimeout(() => setFlash(null), 2000);
     setShowPanel(false);
@@ -76,8 +78,8 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       {flash && (
         <div className={`fixed inset-0 z-[300] flex items-center justify-center ${flash.color}/30 animate-in fade-in duration-200`}>
           <div className="text-center animate-in zoom-in-50 duration-300">
-            <span className="text-6xl">{flash.emoji}</span>
-            <p className="text-4xl sm:text-5xl font-black text-white mt-2 drop-shadow-lg">
+            <flash.icon className="h-16 w-16 text-white mx-auto" />
+            <p className="text-4xl sm:text-5xl font-black text-white mt-3 drop-shadow-lg">
               {flash.label}
             </p>
           </div>
@@ -92,7 +94,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
             className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
             title={t('performance.liveCues')}
           >
-            <span className="text-lg">📡</span>
+            <Radio className="h-5 w-5" />
           </button>
 
           {/* Cue selection popup */}
@@ -108,7 +110,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
                     onClick={() => sendCue(cue.key, t(`performance.cue_${cue.key}`))}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95`}
                   >
-                    <span>{cue.emoji}</span>
+                    <cue.icon className="h-4 w-4" />
                     <span>{t(`performance.cue_${cue.key}`)}</span>
                   </button>
                 ))}

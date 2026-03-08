@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { AlertTriangle } from 'lucide-react';
 import type { SongMarker } from '@/lib/sounds';
 
 interface RehearsalCounterProps {
@@ -69,8 +70,8 @@ const RehearsalCounter: React.FC<RehearsalCounterProps> = ({
       {/* Marker alert */}
       {alertMarker && (
         <div className="animate-pulse mt-1 px-4 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40">
-          <span className="text-sm font-bold text-amber-400">
-            ⚡ {alertMarker.label} {t('performance.inMeasures', { count: 2 })}
+          <span className="text-sm font-bold text-amber-400 flex items-center gap-1.5">
+            <AlertTriangle className="h-4 w-4" /> {alertMarker.label} {t('performance.inMeasures', { count: 2 })}
           </span>
         </div>
       )}
