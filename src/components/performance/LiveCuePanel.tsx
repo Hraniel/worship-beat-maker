@@ -10,13 +10,13 @@ interface LiveCuePanelProps {
 }
 
 const CUE_PRESETS = [
-  { key: 'chorus', emoji: '🎵', color: 'bg-purple-500' },
-  { key: 'verse', emoji: '📖', color: 'bg-blue-500' },
-  { key: 'bridge', emoji: '🌉', color: 'bg-teal-500' },
-  { key: 'down', emoji: '⬇️', color: 'bg-sky-500' },
-  { key: 'up', emoji: '⬆️', color: 'bg-orange-500' },
-  { key: 'cut', emoji: '✋', color: 'bg-red-500' },
-  { key: 'worship', emoji: '🙏', color: 'bg-amber-500' },
+  { key: 'chorus', icon: Music, color: 'bg-purple-500' },
+  { key: 'verse', icon: BookOpen, color: 'bg-blue-500' },
+  { key: 'bridge', icon: Waypoints, color: 'bg-teal-500' },
+  { key: 'down', icon: ChevronDown, color: 'bg-sky-500' },
+  { key: 'up', icon: ChevronUp, color: 'bg-orange-500' },
+  { key: 'cut', icon: Hand, color: 'bg-red-500' },
+  { key: 'worship', icon: Heart, color: 'bg-amber-500' },
 ];
 
 const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true }) => {
