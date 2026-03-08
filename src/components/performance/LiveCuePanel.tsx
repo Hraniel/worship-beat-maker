@@ -56,12 +56,12 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
 
   const sendCue = useCallback(async (cueKey: string, cueLabel: string) => {
     if (!setlistId || !user) return;
-    await supabase.from('live_cues').insert({
+    await supabase.from('live_cues' as any).insert({
       setlist_id: setlistId,
       sent_by: user.id,
       cue_type: cueKey,
       cue_label: cueLabel,
-    });
+    } as any);
     // Show own flash too
     const preset = CUE_PRESETS.find(p => p.key === cueKey);
     setFlash({ label: cueLabel, color: preset?.color || 'bg-primary', emoji: preset?.emoji || '🎵' });
