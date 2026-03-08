@@ -38,10 +38,11 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
           const cue = payload.new as any;
           if (cue.sent_by === user?.id) return; // Don't flash own cues
           const preset = CUE_PRESETS.find(p => p.key === cue.cue_type);
+          const IconComp = preset?.icon || Music;
           setFlash({
             label: cue.cue_label || cue.cue_type,
             color: preset?.color || 'bg-primary',
-            emoji: preset?.emoji || '🎵',
+            icon: IconComp,
           });
           if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
           flashTimerRef.current = window.setTimeout(() => setFlash(null), 2500);
