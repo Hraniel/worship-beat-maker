@@ -104,14 +104,14 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
                 {t('performance.sendCue')}
               </p>
               <div className="grid grid-cols-2 gap-1.5">
-                {CUE_PRESETS.filter(c => c.key !== 'worship').map((cue) => (
+                {CUE_PRESETS.map((cue) => (
                   <button
                     key={cue.key}
                     onClick={() => sendCue(cue.key, t(`performance.cue_${cue.key}`))}
-                    className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95`}
+                    className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95 ${cue.key === 'worship' ? 'col-span-2' : ''}`}
                   >
-                    <cue.icon className="h-4 w-4" />
-                    <span>{t(`performance.cue_${cue.key}`)}</span>
+                    <cue.icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{t(`performance.cue_${cue.key}`)}</span>
                   </button>
                 ))}
               </div>
