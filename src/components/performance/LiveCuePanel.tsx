@@ -78,8 +78,8 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       {flash && (
         <div className={`fixed inset-0 z-[300] flex items-center justify-center ${flash.color}/30 animate-in fade-in duration-200`}>
           <div className="text-center animate-in zoom-in-50 duration-300">
-            <span className="text-6xl">{flash.emoji}</span>
-            <p className="text-4xl sm:text-5xl font-black text-white mt-2 drop-shadow-lg">
+            <flash.icon className="h-16 w-16 text-white mx-auto" />
+            <p className="text-4xl sm:text-5xl font-black text-white mt-3 drop-shadow-lg">
               {flash.label}
             </p>
           </div>
