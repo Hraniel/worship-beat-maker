@@ -1411,6 +1411,9 @@ const Index = () => {
           bpm={bpm}
           spotifyKey={spotifyKey}
           metronomeIsPlaying={metronomeIsPlaying}
+          currentBeat={perfBeat}
+          currentMeasure={perfMeasure}
+          setlistId={currentSongId}
           onTogglePlay={() => setMetronomeIsPlaying((p) => !p)}
           onLoadSong={handleLoadSong}
           onClose={() => setPerformanceModeOpen(false)}
