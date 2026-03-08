@@ -515,7 +515,28 @@ const Index = () => {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  // Tutorial auto-expand listeners
+  // Beat/measure tracking for performance mode
+  useEffect(() => {
+    const beatsPerMeasure = parseInt(timeSignature.split('/')[0]) || 4;
+    const unsub = onMetronomeBeat((beat: number) => {
+      setPerfBeat(beat);
+      if (beat === 0) {
+        perfBeatCountRef.current += 1;
+        setPerfMeasure(perfBeatCountRef.current);
+      }
+    });
+    return () => unsub?.();
+  }, [timeSignature]);
+
+  // Reset measure counter when song changes or metronome stops
+  useEffect(() => {
+    if (!metronomeIsPlaying) {
+      perfBeatCountRef.current = 0;
+      setPerfMeasure(0);
+      setPerfBeat(0);
+    }
+  }, [metronomeIsPlaying, currentSongId]);
+
   useEffect(() => {
     const expandMetronome = () => setMetronomeOpen(true);
     window.addEventListener("tutorial:expand-metronome", expandMetronome);
