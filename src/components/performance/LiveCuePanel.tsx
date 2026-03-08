@@ -110,7 +110,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
                     onClick={() => sendCue(cue.key, t(`performance.cue_${cue.key}`))}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95`}
                   >
-                    <span>{cue.emoji}</span>
+                    <cue.icon className="h-4 w-4" />
                     <span>{t(`performance.cue_${cue.key}`)}</span>
                   </button>
                 ))}
