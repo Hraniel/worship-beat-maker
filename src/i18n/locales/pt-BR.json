@@ -643,7 +643,10 @@
     "cue_up": "Sobe",
     "cue_cut": "Corta",
     "cue_worship": "Ministração",
-    "inMeasures": "em {{count}} compassos"
+    "inMeasures": "em {{count}} compassos",
+    "selectEvent": "Selecionar evento",
+    "broadcastTo": "Transmitir para",
+    "clearEvent": "Limpar seleção"
   },
   "toolsPanel": {
     "tapToDetect": "Toque para detectar",
