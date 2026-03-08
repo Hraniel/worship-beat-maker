@@ -157,6 +157,12 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
   const [newSongBpm, setNewSongBpm] = useState('120');
   const [newSongKey, setNewSongKey] = useState('');
   const [newSongTimeSignature, setNewSongTimeSignature] = useState('4/4');
+  const [appBaseUrl, setAppBaseUrl] = useState('');
+
+  useEffect(() => {
+    supabase.from('landing_config').select('config_value').eq('config_key', 'app_url').maybeSingle()
+      .then(({ data }) => { if (data?.config_value) setAppBaseUrl(data.config_value.replace(/\/$/, '')); });
+  }, []);
 
   useEffect(() => {
     if (isSelected && expandTrigger) setExpanded(true);
@@ -167,8 +173,10 @@ const EventCard: React.FC<EventCardProps & { expandTrigger?: number }> = ({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  const shareBase = appBaseUrl || window.location.origin;
+
   const copyLink = () => {
-    const url = `${window.location.origin}/s/${event.share_token}`;
+    const url = `${shareBase}/s/${event.share_token}`;
     navigator.clipboard.writeText(url).then(() => toast.success(t('setlist.linkCopied'))).catch(() => toast.error(t('setlist.copyError')));
   };
 
