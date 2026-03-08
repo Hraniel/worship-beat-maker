@@ -29,6 +29,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import type { SetlistSong } from '@/lib/sounds';
 import { useSetlistEvents, type SetlistEvent, type EventSong } from '@/hooks/useSetlistEvents';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SetlistManagerProps {
   songs: SetlistSong[];
