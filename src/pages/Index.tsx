@@ -1460,7 +1460,7 @@ const Index = () => {
       {!focusMode ? (
         !currentSongId ? (
           /* No song selected: show selection banner AS the header */
-          <header className="relative z-[50] overflow-visible flex items-center justify-between px-3 py-2 bg-primary/10 border-b border-primary/20 shrink-0">
+          <header className="relative z-[50] overflow-visible flex items-center justify-between px-3 py-3 bg-primary/10 border-b border-primary/20 shrink-0 min-h-[44px]">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <Calendar className="h-4 w-4 text-primary shrink-0" />
               <span className="text-xs font-medium text-primary">
