@@ -94,7 +94,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
             className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
             title={t('performance.liveCues')}
           >
-            <span className="text-lg">📡</span>
+            <Radio className="h-5 w-5" />
           </button>
 
           {/* Cue selection popup */}
