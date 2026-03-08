@@ -86,8 +86,8 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
         </div>
       )}
 
-      {/* Cue trigger button */}
-      {isLeader && setlistId && (
+      {/* Cue trigger button — always visible */}
+      {isLeader && (
         <div className="relative">
           <button
             onClick={() => setShowPanel(p => !p)}
@@ -97,9 +97,9 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
             <Radio className="h-5 w-5" />
           </button>
 
-          {/* Cue selection popup */}
+          {/* Cue selection popup — opens downward */}
           {showPanel && (
-            <div className="absolute bottom-full mb-2 right-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-3 shadow-2xl min-w-[200px] z-50">
+            <div className="absolute top-full mt-2 right-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-3 shadow-2xl min-w-[220px] z-50">
               <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wider">
                 {t('performance.sendCue')}
               </p>
@@ -108,7 +108,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
                   <button
                     key={cue.key}
                     onClick={() => sendCue(cue.key, t(`performance.cue_${cue.key}`))}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95`}
+                    className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95`}
                   >
                     <cue.icon className="h-4 w-4" />
                     <span>{t(`performance.cue_${cue.key}`)}</span>
