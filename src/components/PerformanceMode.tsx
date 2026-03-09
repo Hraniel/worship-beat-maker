@@ -43,6 +43,50 @@ const KEY_COLORS: Record<string, string> = {
   'Bb': 'bg-indigo-500', 'B': 'bg-violet-500',
 };
 
+/* ── Sortable song row ── */
+interface SortableSongItemProps {
+  song: SetlistSong;
+  index: number;
+  isActive: boolean;
+  canDrag: boolean;
+  onSelect: () => void;
+}
+
+const SortableSongItem: React.FC<SortableSongItemProps> = ({ song, index, isActive, canDrag, onSelect }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined, opacity: isDragging ? 0.7 : 1 };
+  const songKeyBase = song.key?.split(' ')[0] || '';
+  const songKeyColor = KEY_COLORS[songKeyBase] || '';
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 rounded-xl px-3 py-3 transition-all ${
+        isActive
+          ? 'bg-primary/20 border border-primary/40'
+          : 'bg-white/5 border border-transparent hover:bg-white/10'
+      }`}
+    >
+      {canDrag && (
+        <button {...attributes} {...listeners} className="touch-none p-1 -ml-1 shrink-0 cursor-grab active:cursor-grabbing">
+          <GripVertical className="h-5 w-5 text-muted-foreground/50" />
+        </button>
+      )}
+      <span className="text-xs font-bold text-muted-foreground/50 w-5 text-center shrink-0">{index + 1}</span>
+      <button onClick={onSelect} className="flex-1 min-w-0 text-left">
+        <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>{song.name}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[10px] text-muted-foreground tabular-nums">{song.bpm} BPM</span>
+          {song.key && (
+            <span className={`${songKeyColor} text-white text-[9px] font-bold px-1.5 py-0.5 rounded`}>{song.key}</span>
+          )}
+        </div>
+      </button>
+    </div>
+  );
+};
+
 const PerformanceMode: React.FC<PerformanceModeProps> = ({
   songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, currentBeat = 0, currentMeasure = 0, setlistId, events = [], selectedEventId, onSelectEvent, onTogglePlay, onLoadSong, onClose, onReorderSongs,
 }) => {
