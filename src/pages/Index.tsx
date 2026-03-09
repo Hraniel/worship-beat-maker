@@ -1464,13 +1464,18 @@ const Index = () => {
 
             // Broadcast reorder to public links
             if (broadcastId) {
-              supabase
-                .channel(`live-cues-${broadcastId}`)
-                .send({
-                  type: 'broadcast',
-                  event: 'reorder',
-                  payload: { songs: simpleSongs },
-                });
+              const ch = supabase.channel(`live-cues-reorder-${broadcastId}`);
+              ch.subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                  ch.send({
+                    type: 'broadcast',
+                    event: 'reorder',
+                    payload: { songs: simpleSongs },
+                  }).then(() => {
+                    supabase.removeChannel(ch);
+                  });
+                }
+              });
             }
           }}
         />
