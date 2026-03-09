@@ -5,7 +5,6 @@ export interface PerformanceSettings {
   quickCueButtonsVisible: boolean;
   keepPanelOpenAfterSend: boolean;
   vibrateOnCue: boolean;
-  pinCueByDefault: boolean;
   soundOnCue: boolean;
   cueLabels: Partial<Record<CueKey, string>>;
 }
@@ -14,10 +13,9 @@ const STORAGE_KEY = 'glory-performance-settings';
 
 export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
   cueDisplaySeconds: 5,
-  quickCueButtonsVisible: false,
+  quickCueButtonsVisible: true,
   keepPanelOpenAfterSend: false,
   vibrateOnCue: true,
-  pinCueByDefault: false,
   soundOnCue: false,
   cueLabels: {},
 };
@@ -46,10 +44,9 @@ export function loadPerformanceSettings(): PerformanceSettings {
 
     return {
       cueDisplaySeconds: clampSeconds(Number(parsed.cueDisplaySeconds ?? DEFAULT_PERFORMANCE_SETTINGS.cueDisplaySeconds)),
-      quickCueButtonsVisible: Boolean(parsed.quickCueButtonsVisible),
+      quickCueButtonsVisible: parsed.quickCueButtonsVisible !== false,
       keepPanelOpenAfterSend: Boolean(parsed.keepPanelOpenAfterSend),
       vibrateOnCue: parsed.vibrateOnCue !== false,
-      pinCueByDefault: Boolean(parsed.pinCueByDefault),
       soundOnCue: Boolean(parsed.soundOnCue),
       cueLabels: safeLabels,
     };
