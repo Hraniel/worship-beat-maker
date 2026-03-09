@@ -140,7 +140,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
   return (
     <>
       {flash && (
-        <div className={`fixed inset-x-0 top-16 z-[250] flex justify-center pointer-events-none animate-in fade-in slide-in-from-top-4 duration-300`}>
+        <div className="fixed inset-x-0 top-16 z-[250] flex justify-center pointer-events-none animate-in fade-in slide-in-from-top-4 duration-300">
           <div className={`${flash.color} rounded-2xl shadow-2xl px-6 py-4 flex items-center gap-3 max-w-xs pointer-events-auto`}>
             <flash.icon className="h-8 w-8 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
             <p className="text-xl font-black text-white drop-shadow-lg truncate">{flash.label}</p>
@@ -149,84 +149,143 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
       )}
 
       {isLeader && (
-        <div className="relative">
+        <>
           {!settings.quickCueButtonsVisible && (
-            <button
-              onClick={() => setShowPanel((p) => !p)}
-              className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
-              title={t('performance.liveCues')}
-            >
-              <Radio className="h-5 w-5" />
-            </button>
-          )}
+            <div className="relative">
+              <button
+                onClick={() => setShowPanel((p) => !p)}
+                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+                title={t('performance.liveCues')}
+              >
+                <Radio className="h-5 w-5" />
+              </button>
 
-          {panelVisible && (
-            <div className="absolute top-full mt-2 right-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-3 shadow-2xl min-w-[240px] z-50">
-              <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wider">
-                {t('performance.sendCue')}
-              </p>
+              {showPanel && (
+                <div className="absolute top-full mt-2 right-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-3 shadow-2xl min-w-[240px] z-50">
+                  <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wider">
+                    {t('performance.sendCue')}
+                  </p>
 
-              {/* Song target selector */}
-              {songs.length > 0 && (
-                <div className="mb-3">
-                  <button
-                    onClick={() => setShowSongPicker(p => !p)}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all border ${
-                      targetSongId 
-                        ? 'bg-primary/20 border-primary/30 text-primary' 
-                        : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Target className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate flex-1 text-left">
-                      {targetSong ? targetSong.name : t('performance.targetSong')}
-                    </span>
-                  </button>
-
-                  {showSongPicker && (
-                    <div className="mt-2 bg-muted/50 rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto">
+                  {songs.length > 0 && (
+                    <div className="mb-3">
                       <button
-                        onClick={() => { setTargetSongId(null); setShowSongPicker(false); }}
-                        className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
-                          !targetSongId ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
+                        onClick={() => setShowSongPicker(p => !p)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all border ${
+                          targetSongId 
+                            ? 'bg-primary/20 border-primary/30 text-primary' 
+                            : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
                         }`}
                       >
-                        {t('performance.clearEvent')}
+                        <Target className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate flex-1 text-left">
+                          {targetSong ? targetSong.name : t('performance.targetSong')}
+                        </span>
                       </button>
-                      {songs.map(song => (
-                        <button
-                          key={song.id}
-                          onClick={() => { setTargetSongId(song.id); setShowSongPicker(false); }}
-                          className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors truncate ${
-                            targetSongId === song.id ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
-                          }`}
-                        >
-                          {song.name}
-                        </button>
-                      ))}
+
+                      {showSongPicker && (
+                        <div className="mt-2 bg-muted/50 rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto">
+                          <button
+                            onClick={() => { setTargetSongId(null); setShowSongPicker(false); }}
+                            className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
+                              !targetSongId ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
+                            }`}
+                          >
+                            {t('performance.clearEvent')}
+                          </button>
+                          {songs.map(song => (
+                            <button
+                              key={song.id}
+                              onClick={() => { setTargetSongId(song.id); setShowSongPicker(false); }}
+                              className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors truncate ${
+                                targetSongId === song.id ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
+                              }`}
+                            >
+                              {song.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {CUE_PRESETS.map((cue) => {
+                      const cueLabel = getCueLabel(cue.key, t(`performance.cue_${cue.key}`), settings);
+                      return (
+                        <button
+                          key={cue.key}
+                          onClick={() => sendCue(cue.key)}
+                          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95 ${cue.key === 'worship' ? 'col-span-2' : ''}`}
+                        >
+                          <cue.icon className="h-4 w-4 shrink-0" />
+                          <span className="truncate">{cueLabel}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-
-              <div className="grid grid-cols-2 gap-1.5">
-                {CUE_PRESETS.map((cue) => {
-                  const cueLabel = getCueLabel(cue.key, t(`performance.cue_${cue.key}`), settings);
-                  return (
-                    <button
-                      key={cue.key}
-                      onClick={() => sendCue(cue.key)}
-                      className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95 ${cue.key === 'worship' ? 'col-span-2' : ''}`}
-                    >
-                      <cue.icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{cueLabel}</span>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           )}
-        </div>
+
+          {/* Inline quick buttons — rendered outside dropdown, positioned by parent */}
+          {settings.quickCueButtonsVisible && (
+            <div className="inline-flex items-center gap-1.5">
+              {songs.length > 0 && (
+                <button
+                  onClick={() => setShowSongPicker(p => !p)}
+                  className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all border ${
+                    targetSongId
+                      ? 'bg-primary/20 border-primary/30 text-primary'
+                      : 'bg-white/10 border-white/10 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Target className="h-3 w-3 shrink-0" />
+                  <span className="truncate max-w-[80px]">{targetSong ? targetSong.name : t('performance.targetSong')}</span>
+                </button>
+              )}
+              {CUE_PRESETS.map((cue) => {
+                const cueLabel = getCueLabel(cue.key, t(`performance.cue_${cue.key}`), settings);
+                return (
+                  <button
+                    key={cue.key}
+                    onClick={() => sendCue(cue.key)}
+                    className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-bold text-white ${cue.color} hover:brightness-110 transition-all active:scale-95`}
+                    title={cueLabel}
+                  >
+                    <cue.icon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="hidden sm:inline truncate max-w-[60px]">{cueLabel}</span>
+                  </button>
+                );
+              })}
+
+              {/* Song picker popover for quick mode */}
+              {showSongPicker && (
+                <div className="absolute top-full mt-2 right-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-2 shadow-2xl min-w-[180px] z-50 max-h-48 overflow-y-auto">
+                  <button
+                    onClick={() => { setTargetSongId(null); setShowSongPicker(false); }}
+                    className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
+                      !targetSongId ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
+                    }`}
+                  >
+                    {t('performance.clearEvent')}
+                  </button>
+                  {songs.map(song => (
+                    <button
+                      key={song.id}
+                      onClick={() => { setTargetSongId(song.id); setShowSongPicker(false); }}
+                      className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors truncate ${
+                        targetSongId === song.id ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
+                      }`}
+                    >
+                      {song.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </>
   );
