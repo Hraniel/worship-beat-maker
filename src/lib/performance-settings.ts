@@ -13,10 +13,9 @@ const STORAGE_KEY = 'glory-performance-settings';
 
 export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
   cueDisplaySeconds: 5,
-  quickCueButtonsVisible: false,
+  quickCueButtonsVisible: true,
   keepPanelOpenAfterSend: false,
   vibrateOnCue: true,
-  pinCueByDefault: false,
   soundOnCue: false,
   cueLabels: {},
 };
