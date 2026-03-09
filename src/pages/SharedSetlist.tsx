@@ -130,11 +130,22 @@ const SharedSetlist: React.FC = () => {
       setCueVisible(true);
       setHistory(prev => [entry, ...prev].slice(0, 3));
 
-      // Highlight song if targeted
-      if (targetSongId) {
-        setHighlightedSongId(targetSongId);
-        if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-        highlightTimerRef.current = window.setTimeout(() => setHighlightedSongId(null), 10000);
+      // Highlight song if targeted — match by ID first, then by name
+      if (targetSongId || targetSongName) {
+        setSetlist(prev => {
+          if (!prev) return prev;
+          const matchById = prev.songs.find(s => s.id === targetSongId);
+          const matchByName = !matchById && targetSongName
+            ? prev.songs.find(s => s.name === targetSongName)
+            : null;
+          const matchedId = matchById?.id || matchByName?.id || targetSongId;
+          if (matchedId) {
+            setHighlightedSongId(matchedId);
+            if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+            highlightTimerRef.current = window.setTimeout(() => setHighlightedSongId(null), 10000);
+          }
+          return prev;
+        });
       }
 
       // Vibrate if enabled
@@ -165,7 +176,15 @@ const SharedSetlist: React.FC = () => {
       .on('broadcast', { event: 'reorder' }, (payload) => {
         const newSongs = payload.payload?.songs;
         if (Array.isArray(newSongs) && newSongs.length > 0) {
-          setSetlist(prev => prev ? { ...prev, songs: newSongs as SharedSong[] } : prev);
+          setSetlist(prev => {
+            if (!prev) return prev;
+            // Map reordered songs: try to match by name to preserve existing IDs, fallback to broadcast data
+            const mapped = newSongs.map((ns: any) => {
+              const existing = prev.songs.find(s => s.name === ns.name);
+              return existing || (ns as SharedSong);
+            });
+            return { ...prev, songs: mapped };
+          });
         }
       })
       .subscribe();
