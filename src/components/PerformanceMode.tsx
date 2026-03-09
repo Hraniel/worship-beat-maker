@@ -98,6 +98,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const liveCueChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const currentIndex = songs.findIndex(s => s.id === currentSongId);
   const currentSong = currentIndex >= 0 ? songs[currentIndex] : null;
