@@ -664,7 +664,12 @@
     "customLabelsDesc": "Set custom names for each cue type.",
     "settingsTip": "These settings affect how cues are sent and displayed during performance mode.",
     "targetSong": "Highlight song",
-    "targetSongDesc": "Choose a song to highlight on the public page"
+    "targetSongDesc": "Choose a song to highlight on the public page",
+    "holyricsTargetScreen": "Target screen",
+    "holyricsTargetScreenHint": "Set where cues will be displayed in Holyrics.",
+    "holyricsScreenStage": "Stage monitor only (band)",
+    "holyricsScreenFront": "Front projection only (congregation)",
+    "holyricsScreenAll": "All screens"
   },
   "toolsPanel": {
     "tapToDetect": "Tap to detect",

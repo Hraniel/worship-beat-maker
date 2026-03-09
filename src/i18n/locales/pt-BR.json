@@ -665,7 +665,12 @@
     "settingsTip": "Essas configurações afetam como os sinais são enviados e exibidos durante o modo performance.",
     "targetSong": "Destacar música",
     "targetSongDesc": "Escolha uma música para destacar na página pública",
-    "songList": "Lista de músicas"
+    "songList": "Lista de músicas",
+    "holyricsTargetScreen": "Tela de destino",
+    "holyricsTargetScreenHint": "Defina onde os sinais serão exibidos no Holyrics.",
+    "holyricsScreenStage": "Apenas retorno (banda)",
+    "holyricsScreenFront": "Apenas projeção (igreja)",
+    "holyricsScreenAll": "Todas as telas"
   },
   "toolsPanel": {
     "tapToDetect": "Toque para detectar",
