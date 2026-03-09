@@ -984,9 +984,147 @@ function PerformanceSettingsPanel() {
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
         <p className="text-xs font-medium text-foreground">{t('common.tip')}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          {t('performance.settingsTip', 'Os sinais ao vivo são enviados em tempo real para todos que acessam o link público do evento. Selecione um evento público no Performance e compartilhe o link com sua equipe. A música ativa é destacada automaticamente no link.')}
+          {t('performance.settingsTip', 'Os sinais ao vivo são enviados em tempo real para todos que acessam o link público do evento. Selecione um evento público no Performance e compartilhe o link com sua equipe.')}
         </p>
       </div>
+
+      {/* Holyrics Integration */}
+      <HolyricsSettingsPanel settings={settings} onUpdate={update} />
+    </div>
+  );
+}
+
+// ── Holyrics Integration Settings ───────────────────────────────────────────
+
+function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSettings; onUpdate: (partial: Partial<PerformanceSettings>) => void }) {
+  const { t } = useTranslation();
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+
+  const holyrics = settings.holyrics || DEFAULT_HOLYRICS_CONFIG;
+
+  const updateHolyrics = (partial: Partial<HolyricsConfig>) => {
+    onUpdate({ holyrics: { ...holyrics, ...partial } });
+    setTestResult(null);
+  };
+
+  const testConnection = async () => {
+    if (!holyrics.host || !holyrics.token) return;
+    setTesting(true);
+    setTestResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('holyrics-proxy', {
+        body: {
+          host: holyrics.host,
+          token: holyrics.token,
+          action: 'SetAlert',
+          payload: {
+            text: '✅ GloryPads conectado!',
+            show: true,
+            display_ahead: true,
+            close_after_seconds: 3,
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setTestResult('success');
+    } catch (err) {
+      console.error('[Holyrics] Test failed:', err);
+      setTestResult('error');
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-card/50 p-4 space-y-4">
+      <div className="flex items-center gap-2">
+        <img src="https://holyrics.com.br/favicon.ico" alt="Holyrics" className="w-4 h-4" />
+        <span className="text-sm font-semibold text-foreground">{t('performance.holyricsIntegration', 'Integração Holyrics')}</span>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        {t('performance.holyricsDesc', 'Envie sinais para o Holyrics e exiba alertas sobrepostos na projeção sem interromper a letra. Configure a API Server no Holyrics (Arquivo > Configurações > API Server).')}
+      </p>
+
+      {/* Enable toggle */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-foreground">{t('performance.holyricsEnabled', 'Ativar integração')}</p>
+          <p className="text-xs text-muted-foreground">{t('performance.holyricsEnabledDesc', 'Enviar sinais também para o Holyrics')}</p>
+        </div>
+        <button
+          onClick={() => updateHolyrics({ enabled: !holyrics.enabled })}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            holyrics.enabled ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${holyrics.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Host input */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-foreground">{t('performance.holyricsHost', 'IP:PORTA do Holyrics')}</label>
+        <input
+          type="text"
+          value={holyrics.host}
+          onChange={(e) => updateHolyrics({ host: e.target.value.trim() })}
+          placeholder="192.168.1.100:8091"
+          className="w-full h-9 px-3 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          {t('performance.holyricsHostHint', 'Encontre em: Holyrics > Arquivo > Configurações > API Server')}
+        </p>
+      </div>
+
+      {/* Token input */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-foreground">{t('performance.holyricsToken', 'Token de acesso')}</label>
+        <input
+          type="password"
+          value={holyrics.token}
+          onChange={(e) => updateHolyrics({ token: e.target.value.trim() })}
+          placeholder="••••••••••••"
+          className="w-full h-9 px-3 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          {t('performance.holyricsTokenHint', 'Gere um token com permissão "SetAlert" no API Server do Holyrics.')}
+        </p>
+      </div>
+
+      {/* Test button */}
+      <button
+        onClick={testConnection}
+        disabled={testing || !holyrics.host || !holyrics.token}
+        className={`w-full h-9 text-sm font-medium rounded-md border transition-colors flex items-center justify-center gap-2 ${
+          testResult === 'success'
+            ? 'border-green-500/50 bg-green-500/10 text-green-500'
+            : testResult === 'error'
+            ? 'border-destructive/50 bg-destructive/10 text-destructive'
+            : 'border-border bg-muted/30 text-foreground hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed'
+        }`}
+      >
+        {testing ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : testResult === 'success' ? (
+          <>{t('performance.holyricsTestSuccess', '✓ Conectado!')}</>
+        ) : testResult === 'error' ? (
+          <>{t('performance.holyricsTestError', '✗ Falha na conexão')}</>
+        ) : (
+          <>{t('performance.holyricsTest', 'Testar Conexão')}</>
+        )}
+      </button>
+
+      {testResult === 'error' && (
+        <p className="text-xs text-destructive">
+          {t('performance.holyricsTestErrorHint', 'Verifique se o Holyrics está aberto, o API Server está ativo e o IP/Token estão corretos.')}
+        </p>
+      )}
     </div>
   );
 }

@@ -141,6 +141,10 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
         },
       });
 
+      // Send to Holyrics if enabled
+      const holyrics = settings.holyrics || DEFAULT_HOLYRICS_CONFIG;
+      sendToHolyrics(holyrics, cueLabel, settings.cueDisplaySeconds);
+
       const preset = CUE_PRESETS.find((p) => p.key === cueKey);
       const IconComp = preset?.icon || Music;
       const flash = { label: cueLabel, color: preset?.color || 'bg-primary', icon: IconComp };
