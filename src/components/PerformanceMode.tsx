@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio, List, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SetlistSong } from '@/lib/sounds';
 import TransposeControl from '@/components/performance/TransposeControl';
@@ -28,6 +28,7 @@ interface PerformanceModeProps {
   onTogglePlay: () => void;
   onLoadSong: (song: SetlistSong) => void;
   onClose: () => void;
+  onReorderSongs?: (reorderedSongs: SetlistSong[]) => void;
 }
 
 const KEY_COLORS: Record<string, string> = {
@@ -40,11 +41,12 @@ const KEY_COLORS: Record<string, string> = {
 };
 
 const PerformanceMode: React.FC<PerformanceModeProps> = ({
-  songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, currentBeat = 0, currentMeasure = 0, setlistId, events = [], selectedEventId, onSelectEvent, onTogglePlay, onLoadSong, onClose,
+  songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, currentBeat = 0, currentMeasure = 0, setlistId, events = [], selectedEventId, onSelectEvent, onTogglePlay, onLoadSong, onClose, onReorderSongs,
 }) => {
   const { t } = useTranslation();
   const [transpose, setTranspose] = useState(0);
   const [showEventPicker, setShowEventPicker] = useState(false);
+  const [showSongList, setShowSongList] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -67,14 +69,17 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Escape') { 
+        if (showSongList) { setShowSongList(false); return; }
+        onClose(); return; 
+      }
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown') goNext();
       if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') goPrev();
       if (e.key === ' ') { e.preventDefault(); onTogglePlay(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [goNext, goPrev, onClose, onTogglePlay]);
+  }, [goNext, goPrev, onClose, onTogglePlay, showSongList]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -93,12 +98,19 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     touchStartY.current = null;
   }, [goNext, goPrev]);
 
+  const moveSong = useCallback((index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= songs.length) return;
+    const reordered = [...songs];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+    onReorderSongs?.(reordered);
+  }, [songs, onReorderSongs]);
 
   const keyBase = spotifyKey?.split(' ')[0] || '';
   const keyColorClass = KEY_COLORS[keyBase] || 'bg-primary';
   const beatsPerMeasure = currentSong ? parseInt(currentSong.timeSignature.split('/')[0]) : 4;
   const hasSections = currentSong?.sections && currentSong.sections.length > 0;
-  const hasMarkers = currentSong?.markers && currentSong.markers.length > 0;
   const totalMeasures = currentSong?.totalMeasures || 0;
 
   return (
@@ -182,6 +194,14 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} />
+          {/* Song list toggle */}
+          <button
+            onClick={() => setShowSongList(p => !p)}
+            className={`p-2 rounded-full transition-colors ${showSongList ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-white/10'}`}
+            title={t('performance.songList')}
+          >
+            <List className="h-5 w-5" />
+          </button>
           <button
             onClick={onClose}
             className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
@@ -191,6 +211,73 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Song list panel (overlay) */}
+      {showSongList && (
+        <div className="absolute inset-0 z-[210] flex flex-col" style={{ background: 'hsl(240 10% 4% / 0.97)' }}>
+          <div
+            className="flex items-center justify-between px-4 sm:px-6 pb-3 shrink-0"
+            style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+          >
+            <h2 className="text-sm font-bold text-foreground">{t('performance.songList')}</h2>
+            <button
+              onClick={() => setShowSongList(false)}
+              className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-1">
+            {songs.map((song, i) => {
+              const isActive = song.id === currentSongId;
+              const songKeyBase = song.key?.split(' ')[0] || '';
+              const songKeyColor = KEY_COLORS[songKeyBase] || '';
+              return (
+                <div
+                  key={song.id}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-3 transition-all ${
+                    isActive
+                      ? 'bg-primary/20 border border-primary/40'
+                      : 'bg-white/5 border border-transparent hover:bg-white/10'
+                  }`}
+                >
+                  <span className="text-xs font-bold text-muted-foreground/50 w-5 text-center shrink-0">{i + 1}</span>
+                  <button
+                    onClick={() => { onLoadSong(song); setShowSongList(false); }}
+                    className="flex-1 min-w-0 text-left"
+                  >
+                    <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>{song.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{song.bpm} BPM</span>
+                      {song.key && (
+                        <span className={`${songKeyColor} text-white text-[9px] font-bold px-1.5 py-0.5 rounded`}>{song.key}</span>
+                      )}
+                    </div>
+                  </button>
+                  {onReorderSongs && (
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button
+                        onClick={() => moveSong(i, 'up')}
+                        disabled={i === 0}
+                        className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-all active:scale-90"
+                      >
+                        <ArrowUp className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                      <button
+                        onClick={() => moveSong(i, 'down')}
+                        disabled={i === songs.length - 1}
+                        className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-all active:scale-90"
+                      >
+                        <ArrowDown className="h-4 w-4 text-muted-foreground" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Dynamics bar */}
       {hasSections && (
