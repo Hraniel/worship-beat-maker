@@ -1085,16 +1085,16 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
 
       {/* Host input */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">{t('performance.holyricsHost', 'IP:PORTA do Holyrics')}</label>
+        <label className="text-xs font-medium text-foreground">{t('performance.holyricsHost', 'Endereço do Holyrics')}</label>
         <input
           type="text"
           value={holyrics.host}
           onChange={(e) => updateHolyrics({ host: e.target.value.trim() })}
-          placeholder="192.168.1.100:8091"
+          placeholder="192.168.1.100:8091 ou seu-tunel.trycloudflare.com"
           className="w-full h-9 px-3 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <p className="text-[10px] text-muted-foreground">
-          {t('performance.holyricsHostHint', 'Encontre em: Holyrics > Arquivo > Configurações > API Server')}
+          {t('performance.holyricsHostHint2', 'IP:PORTA local (Android) ou URL de túnel público como Cloudflare Tunnel (PWA). Encontre o IP em: Holyrics > Arquivo > Configurações > API Server.')}
         </p>
       </div>
 
