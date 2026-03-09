@@ -1023,23 +1023,14 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
     if (result.ok) {
       setTestResult('success');
       setTestMessage(
-        result.isLocal
-          ? t('performance.holyricsTestSuccessLocal', 'Sinal enviado via rede local. Confira no Holyrics se o alerta apareceu.')
-          : t('performance.holyricsTestSuccessProxy', 'Sinal enviado via nuvem. Confira no Holyrics se o alerta apareceu.')
+        t('performance.holyricsTestSuccessProxy', 'Sinal enviado via nuvem. Confira no Holyrics se o alerta apareceu.')
       );
     } else {
       setTestResult('error');
       const errMsg = result.error || '';
-      const isMixedContent = result.isLocal && /mixed content|failed to fetch|networkerror|aborted/i.test(errMsg);
+      const detail = result.detail || '';
 
-      if (isMixedContent) {
-        setTestMessage(
-          t(
-            'performance.holyricsTestHttpsHint',
-            'Navegador bloqueou HTTP local em página HTTPS. Use uma URL de túnel público (ex: Cloudflare Tunnel) ou o app Android.'
-          )
-        );
-      } else if (errMsg.includes('Signal timed out')) {
+      if (/Signal timed out|timeout|aborted/i.test(errMsg)) {
         setTestMessage(
           t(
             'performance.holyricsTimeoutHint',
@@ -1048,7 +1039,8 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
         );
       } else {
         setTestMessage(
-          t('performance.holyricsTestErrorHint', 'Verifique se o Holyrics está aberto, o API Server está ativo e o IP/Token estão corretos.')
+          t('performance.holyricsTestErrorHint', 'Verifique se o Holyrics está aberto, o API Server está ativo e o IP/Token estão corretos.') +
+          (detail ? ` (${detail})` : errMsg ? ` (${errMsg})` : '')
         );
       }
     }

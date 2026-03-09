@@ -2,58 +2,26 @@ import { supabase } from '@/integrations/supabase/client';
 import type { HolyricsConfig } from '@/lib/performance-settings';
 
 /**
- * Detects whether a host string is a private/local network address.
- * Private hosts require direct fetch (works in Android WebView with allowMixedContent).
- * Public hosts (tunnels like Cloudflare/ngrok) go through the edge function proxy.
- */
-function isPrivateHost(host: string): boolean {
-  const hostname = host.split(':')[0] || '';
-  return /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname);
-}
-
-/**
- * Call Holyrics API action.
- * - Private IPs → direct fetch with `mode: 'no-cors'` (works in Android/Capacitor WebView)
- * - Public URLs (tunnels) → edge function proxy (works everywhere incl. PWA)
+ * Call Holyrics API action via edge function proxy.
+ * Always uses the proxy to get real response feedback (avoids no-cors opaque responses).
  */
 async function callHolyrics(
   host: string,
   token: string,
   action: string,
   payload: Record<string, unknown>,
-): Promise<{ ok: boolean; error?: string }> {
-  const isLocal = isPrivateHost(host);
-
-  if (isLocal) {
-    // Direct call — works in Android WebView (allowMixedContent: true)
-    const url = `http://${host}/api/${encodeURIComponent(action)}?token=${encodeURIComponent(token)}`;
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 5000);
-    try {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-        mode: 'no-cors',
-      });
-      return { ok: true };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      return { ok: false, error: msg };
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  // Public host (tunnel) → edge function proxy
+): Promise<{ ok: boolean; status?: number; data?: any; error?: string }> {
   try {
     const { data, error } = await supabase.functions.invoke('holyrics-proxy', {
       body: { host, token, action, payload },
     });
     if (error) return { ok: false, error: error.message || 'Edge function error' };
     if (data?.error) return { ok: false, error: data.error };
-    return { ok: true };
+    // Check if Holyrics actually accepted the request
+    if (data?.ok === false) {
+      return { ok: false, status: data.status, data: data.data, error: `Holyrics returned status ${data.status}` };
+    }
+    return { ok: true, status: data?.status, data: data?.data };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { ok: false, error: msg };
@@ -76,16 +44,18 @@ export async function sendToHolyrics(
 
   try {
     if (targetScreen === 'stage' || targetScreen === 'all') {
-      await callHolyrics(host, token, 'SetTextCommunicationPanel', { text: cueLabel });
+      const result = await callHolyrics(host, token, 'SetTextCommunicationPanel', { text: cueLabel });
+      if (!result.ok) console.warn('[Holyrics] SetTextCommunicationPanel failed:', result.error, result.data);
     }
 
     if (targetScreen === 'front' || targetScreen === 'all') {
-      await callHolyrics(host, token, 'SetAlert', {
+      const result = await callHolyrics(host, token, 'SetAlert', {
         text: cueLabel,
         show: true,
         display_ahead: true,
         close_after_seconds: displaySeconds,
       });
+      if (!result.ok) console.warn('[Holyrics] SetAlert failed:', result.error, result.data);
     }
   } catch (err) {
     console.error('[Holyrics] Failed to send cue:', err);
@@ -98,10 +68,9 @@ export async function sendToHolyrics(
 export async function testHolyricsConnection(
   host: string,
   token: string,
-): Promise<{ ok: boolean; isLocal: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; detail?: string }> {
   const h = host.trim();
   const t = token.trim();
-  const isLocal = isPrivateHost(h);
 
   const result = await callHolyrics(h, t, 'SetAlert', {
     text: '✅ GloryPads conectado!',
@@ -110,5 +79,8 @@ export async function testHolyricsConnection(
     close_after_seconds: 3,
   });
 
-  return { ...result, isLocal };
+  if (!result.ok) {
+    return { ok: false, error: result.error, detail: JSON.stringify(result.data) };
+  }
+  return { ok: true };
 }
