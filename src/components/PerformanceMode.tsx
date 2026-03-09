@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio, List, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio, List, GripVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SetlistSong } from '@/lib/sounds';
 import TransposeControl from '@/components/performance/TransposeControl';
 import SongDynamicsBar from '@/components/performance/SongDynamicsBar';
 import RehearsalCounter from '@/components/performance/RehearsalCounter';
 import LiveCuePanel from '@/components/performance/LiveCuePanel';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export interface PerformanceEvent {
   id: string;
@@ -38,6 +41,50 @@ const KEY_COLORS: Record<string, string> = {
   'Gb': 'bg-green-500', 'G': 'bg-teal-500', 'G#': 'bg-cyan-500',
   'Ab': 'bg-cyan-500', 'A': 'bg-blue-500', 'A#': 'bg-indigo-500',
   'Bb': 'bg-indigo-500', 'B': 'bg-violet-500',
+};
+
+/* ── Sortable song row ── */
+interface SortableSongItemProps {
+  song: SetlistSong;
+  index: number;
+  isActive: boolean;
+  canDrag: boolean;
+  onSelect: () => void;
+}
+
+const SortableSongItem: React.FC<SortableSongItemProps> = ({ song, index, isActive, canDrag, onSelect }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined, opacity: isDragging ? 0.7 : 1 };
+  const songKeyBase = song.key?.split(' ')[0] || '';
+  const songKeyColor = KEY_COLORS[songKeyBase] || '';
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-2 rounded-xl px-3 py-3 transition-all ${
+        isActive
+          ? 'bg-primary/20 border border-primary/40'
+          : 'bg-white/5 border border-transparent hover:bg-white/10'
+      }`}
+    >
+      {canDrag && (
+        <button {...attributes} {...listeners} className="touch-none p-1 -ml-1 shrink-0 cursor-grab active:cursor-grabbing">
+          <GripVertical className="h-5 w-5 text-muted-foreground/50" />
+        </button>
+      )}
+      <span className="text-xs font-bold text-muted-foreground/50 w-5 text-center shrink-0">{index + 1}</span>
+      <button onClick={onSelect} className="flex-1 min-w-0 text-left">
+        <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>{song.name}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[10px] text-muted-foreground tabular-nums">{song.bpm} BPM</span>
+          {song.key && (
+            <span className={`${songKeyColor} text-white text-[9px] font-bold px-1.5 py-0.5 rounded`}>{song.key}</span>
+          )}
+        </div>
+      </button>
+    </div>
+  );
 };
 
 const PerformanceMode: React.FC<PerformanceModeProps> = ({
@@ -98,13 +145,18 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     touchStartY.current = null;
   }, [goNext, goPrev]);
 
-  const moveSong = useCallback((index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= songs.length) return;
-    const reordered = [...songs];
-    const [moved] = reordered.splice(index, 1);
-    reordered.splice(newIndex, 0, moved);
-    onReorderSongs?.(reordered);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = songs.findIndex(s => s.id === active.id);
+    const newIndex = songs.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    onReorderSongs?.(arrayMove(songs, oldIndex, newIndex));
   }, [songs, onReorderSongs]);
 
   const keyBase = spotifyKey?.split(' ')[0] || '';
@@ -213,7 +265,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
       </div>
 
       {/* Song list panel (overlay) */}
-      {showSongList && (
+       {showSongList && (
         <div className="absolute inset-0 z-[210] flex flex-col" style={{ background: 'hsl(240 10% 4% / 0.97)' }}>
           <div
             className="flex items-center justify-between px-4 sm:px-6 pb-3 shrink-0"
@@ -228,53 +280,20 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-1">
-            {songs.map((song, i) => {
-              const isActive = song.id === currentSongId;
-              const songKeyBase = song.key?.split(' ')[0] || '';
-              const songKeyColor = KEY_COLORS[songKeyBase] || '';
-              return (
-                <div
-                  key={song.id}
-                  className={`flex items-center gap-2 rounded-xl px-3 py-3 transition-all ${
-                    isActive
-                      ? 'bg-primary/20 border border-primary/40'
-                      : 'bg-white/5 border border-transparent hover:bg-white/10'
-                  }`}
-                >
-                  <span className="text-xs font-bold text-muted-foreground/50 w-5 text-center shrink-0">{i + 1}</span>
-                  <button
-                    onClick={() => { onLoadSong(song); setShowSongList(false); }}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>{song.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground tabular-nums">{song.bpm} BPM</span>
-                      {song.key && (
-                        <span className={`${songKeyColor} text-white text-[9px] font-bold px-1.5 py-0.5 rounded`}>{song.key}</span>
-                      )}
-                    </div>
-                  </button>
-                  {onReorderSongs && (
-                    <div className="flex flex-col gap-0.5 shrink-0">
-                      <button
-                        onClick={() => moveSong(i, 'up')}
-                        disabled={i === 0}
-                        className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-all active:scale-90"
-                      >
-                        <ArrowUp className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                      <button
-                        onClick={() => moveSong(i, 'down')}
-                        disabled={i === songs.length - 1}
-                        className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-all active:scale-90"
-                      >
-                        <ArrowDown className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={songs.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                {songs.map((song, i) => (
+                  <SortableSongItem
+                    key={song.id}
+                    song={song}
+                    index={i}
+                    isActive={song.id === currentSongId}
+                    canDrag={!!onReorderSongs}
+                    onSelect={() => { onLoadSong(song); setShowSongList(false); }}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
       )}
