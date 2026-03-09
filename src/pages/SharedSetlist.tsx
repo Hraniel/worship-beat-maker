@@ -140,10 +140,6 @@ const SharedSetlist: React.FC = () => {
           });
         }
       })
-      .on('broadcast', { event: 'highlight-song' }, (payload) => {
-        const { song_name } = payload.payload || {};
-        if (song_name) setHighlightedSongName(song_name);
-      })
       .subscribe();
 
     return () => {
