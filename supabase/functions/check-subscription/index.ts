@@ -100,6 +100,33 @@ serve(async (req) => {
     const customers = await retryAsync(() => stripe.customers.list({ email, limit: 1 }));
     if (customers.data.length === 0) {
       logStep("No Stripe customer found");
+
+      // Fallback: check recent checkout sessions by email for lifetime purchases
+      if (paymentMode === "lifetime" && lifetimeProductId) {
+        try {
+          const sessions = await retryAsync(() =>
+            stripe.checkout.sessions.list({ customer_email: email, status: "complete", limit: 20 })
+          );
+          const hasLifetime = sessions.data.some((s: any) =>
+            s.mode === "payment" && s.metadata?.purchase_type === "lifetime" && s.payment_status === "paid"
+          );
+          if (hasLifetime) {
+            logStep("Lifetime purchase found via session email fallback");
+            return new Response(JSON.stringify({
+              subscribed: true,
+              product_id: lifetimeProductId,
+              subscription_end: null,
+              is_lifetime: true,
+            }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
+            });
+          }
+        } catch (e) {
+          logStep("Error in session email fallback", { error: String(e) });
+        }
+      }
+
       return new Response(JSON.stringify({ subscribed: false, product_id: null, subscription_end: null }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

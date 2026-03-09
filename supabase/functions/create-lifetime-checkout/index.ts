@@ -55,17 +55,21 @@ serve(async (req) => {
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2025-08-27.basil" });
 
+    // Always ensure a Stripe customer exists so check-subscription can find them
     const customers = await stripe.customers.list({ email, limit: 1 });
-    let customerId: string | undefined;
+    let customerId: string;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+    } else {
+      const newCustomer = await stripe.customers.create({ email, metadata: { supabase_user_id: userId } });
+      customerId = newCustomer.id;
+      logStep("Created new Stripe customer", { customerId });
     }
 
     const origin = req.headers.get("origin") || req.headers.get("referer")?.replace(/\/[^/]*$/, "") || "https://worship-beat-maker.lovable.app";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : email,
       line_items: [{ price: priceId, quantity: 1 }],
       mode: "payment",
       success_url: `${origin}/app`,
