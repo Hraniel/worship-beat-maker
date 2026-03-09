@@ -221,7 +221,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
       </div>
 
       {/* Song list panel (overlay) */}
-      {showSongList && (
+       {showSongList && (
         <div className="absolute inset-0 z-[210] flex flex-col" style={{ background: 'hsl(240 10% 4% / 0.97)' }}>
           <div
             className="flex items-center justify-between px-4 sm:px-6 pb-3 shrink-0"
@@ -236,53 +236,20 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 pb-6 space-y-1">
-            {songs.map((song, i) => {
-              const isActive = song.id === currentSongId;
-              const songKeyBase = song.key?.split(' ')[0] || '';
-              const songKeyColor = KEY_COLORS[songKeyBase] || '';
-              return (
-                <div
-                  key={song.id}
-                  className={`flex items-center gap-2 rounded-xl px-3 py-3 transition-all ${
-                    isActive
-                      ? 'bg-primary/20 border border-primary/40'
-                      : 'bg-white/5 border border-transparent hover:bg-white/10'
-                  }`}
-                >
-                  <span className="text-xs font-bold text-muted-foreground/50 w-5 text-center shrink-0">{i + 1}</span>
-                  <button
-                    onClick={() => { onLoadSong(song); setShowSongList(false); }}
-                    className="flex-1 min-w-0 text-left"
-                  >
-                    <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary' : 'text-foreground'}`}>{song.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-muted-foreground tabular-nums">{song.bpm} BPM</span>
-                      {song.key && (
-                        <span className={`${songKeyColor} text-white text-[9px] font-bold px-1.5 py-0.5 rounded`}>{song.key}</span>
-                      )}
-                    </div>
-                  </button>
-                  {onReorderSongs && (
-                    <div className="flex flex-col gap-0.5 shrink-0">
-                      <button
-                        onClick={() => moveSong(i, 'up')}
-                        disabled={i === 0}
-                        className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-all active:scale-90"
-                      >
-                        <ArrowUp className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                      <button
-                        onClick={() => moveSong(i, 'down')}
-                        disabled={i === songs.length - 1}
-                        className="p-1.5 rounded-lg hover:bg-white/10 disabled:opacity-20 transition-all active:scale-90"
-                      >
-                        <ArrowDown className="h-4 w-4 text-muted-foreground" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={songs.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                {songs.map((song, i) => (
+                  <SortableSongItem
+                    key={song.id}
+                    song={song}
+                    index={i}
+                    isActive={song.id === currentSongId}
+                    canDrag={!!onReorderSongs}
+                    onSelect={() => { onLoadSong(song); setShowSongList(false); }}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
       )}
