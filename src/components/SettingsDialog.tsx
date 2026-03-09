@@ -996,6 +996,132 @@ function PerformanceSettingsPanel() {
   );
 }
 
+// ── Cloudflare Tunnel Guide ──────────────────────────────────────────────────
+
+function CloudflareTunnelGuide() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline"
+      >
+        <ExternalLink className="h-3 w-3" />
+        {open ? 'Fechar guia do Cloudflare Tunnel' : 'Como configurar o Cloudflare Tunnel?'}
+        <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-foreground">
+          <p className="font-semibold text-sm">☁️ Configurar Cloudflare Tunnel (acesso remoto)</p>
+          <p className="text-muted-foreground">
+            O Cloudflare Tunnel permite que o Glory Pads se conecte ao Holyrics pela internet, 
+            sem precisar estar na mesma rede Wi-Fi. Ideal para uso via PWA no navegador.
+          </p>
+
+          {/* Step 1 */}
+          <div className="space-y-1">
+            <p className="font-semibold">1. Baixe o Cloudflared</p>
+            <p className="text-muted-foreground">Instale o cliente do Cloudflare Tunnel no computador onde roda o Holyrics:</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <a
+                href="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.msi"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary/20 transition-colors"
+              >
+                <Download className="h-3 w-3" /> Windows (64-bit)
+              </a>
+              <a
+                href="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary/20 transition-colors"
+              >
+                <Download className="h-3 w-3" /> macOS (Intel)
+              </a>
+              <a
+                href="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-primary/10 text-primary text-[11px] font-medium hover:bg-primary/20 transition-colors"
+              >
+                <Download className="h-3 w-3" /> macOS (Apple Silicon)
+              </a>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div className="space-y-1">
+            <p className="font-semibold">2. Confirme a porta do API Server</p>
+            <p className="text-muted-foreground">
+              No Holyrics, vá em <strong>Arquivo → Configurações → API Server</strong> e veja a porta configurada (padrão: <code className="bg-muted px-1 rounded">8091</code>).
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div className="space-y-1">
+            <p className="font-semibold">3. Abra o terminal e execute</p>
+            <p className="text-muted-foreground">Cole o comando abaixo no Prompt de Comando (Windows) ou Terminal (Mac):</p>
+            <div className="relative mt-1">
+              <pre className="bg-background border border-border rounded-md p-2.5 text-[11px] font-mono overflow-x-auto whitespace-pre-wrap break-all select-all">
+{`cloudflared tunnel --url http://localhost:8091`}
+              </pre>
+              <button
+                type="button"
+                onClick={() => navigator.clipboard.writeText('cloudflared tunnel --url http://localhost:8091')}
+                className="absolute top-1.5 right-1.5 p-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground"
+                title="Copiar"
+              >
+                <Copy className="h-3 w-3" />
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              ⚠️ Se a sua porta for diferente de 8091, substitua no comando acima.
+            </p>
+          </div>
+
+          {/* Step 4 */}
+          <div className="space-y-1">
+            <p className="font-semibold">4. Copie a URL gerada</p>
+            <p className="text-muted-foreground">
+              O terminal irá mostrar uma URL como:
+            </p>
+            <pre className="bg-background border border-border rounded-md p-2 text-[11px] font-mono text-primary">
+{`https://abc-xyz-123.trycloudflare.com`}
+            </pre>
+            <p className="text-muted-foreground">
+              Copie essa URL e cole no campo <strong>"Endereço do Holyrics"</strong> acima.
+            </p>
+          </div>
+
+          {/* Step 5 */}
+          <div className="space-y-1">
+            <p className="font-semibold">5. Pronto!</p>
+            <p className="text-muted-foreground">
+              Clique em <strong>"Testar Conexão"</strong> para verificar. A cada reinício do Cloudflared, 
+              uma nova URL será gerada — basta atualizar aqui.
+            </p>
+          </div>
+
+          {/* Tips */}
+          <div className="rounded-md bg-primary/5 border border-primary/20 p-2.5 space-y-1">
+            <p className="font-semibold text-primary text-[11px]">💡 Dicas</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-0.5 text-[11px]">
+              <li>O Cloudflared precisa estar rodando enquanto usar o Glory Pads remotamente.</li>
+              <li>Para porta personalizada, ajuste o número no comando.</li>
+              <li>No Windows, você pode criar um atalho na área de trabalho com o comando para facilitar.</li>
+              <li>Não precisa de conta Cloudflare para o túnel rápido (Quick Tunnel).</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Holyrics Integration Settings ───────────────────────────────────────────
 
 function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSettings; onUpdate: (partial: Partial<PerformanceSettings>) => void }) {
