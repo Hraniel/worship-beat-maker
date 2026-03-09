@@ -130,11 +130,22 @@ const SharedSetlist: React.FC = () => {
       setCueVisible(true);
       setHistory(prev => [entry, ...prev].slice(0, 3));
 
-      // Highlight song if targeted
-      if (targetSongId) {
-        setHighlightedSongId(targetSongId);
-        if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-        highlightTimerRef.current = window.setTimeout(() => setHighlightedSongId(null), 10000);
+      // Highlight song if targeted — match by ID first, then by name
+      if (targetSongId || targetSongName) {
+        setSetlist(prev => {
+          if (!prev) return prev;
+          const matchById = prev.songs.find(s => s.id === targetSongId);
+          const matchByName = !matchById && targetSongName
+            ? prev.songs.find(s => s.name === targetSongName)
+            : null;
+          const matchedId = matchById?.id || matchByName?.id || targetSongId;
+          if (matchedId) {
+            setHighlightedSongId(matchedId);
+            if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+            highlightTimerRef.current = window.setTimeout(() => setHighlightedSongId(null), 10000);
+          }
+          return prev;
+        });
       }
 
       // Vibrate if enabled
