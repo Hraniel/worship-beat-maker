@@ -1203,9 +1203,9 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
         )}
       </button>
 
-      {testResult === 'error' && (
-        <p className="text-xs text-destructive">
-          {t('performance.holyricsTestErrorHint', 'Verifique se o Holyrics está aberto, o API Server está ativo e o IP/Token estão corretos.')}
+      {!!testMessage && (
+        <p className={`text-xs ${testResult === 'error' ? 'text-destructive' : 'text-muted-foreground'}`}>
+          {testMessage}
         </p>
       )}
     </div>
