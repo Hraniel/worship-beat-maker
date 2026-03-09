@@ -1429,7 +1429,7 @@ const Index = () => {
       {/* Performance Mode overlay */}
       {performanceModeOpen && (
         <PerformanceMode
-          songs={songs}
+          songs={navSongs}
           currentSongId={currentSongId}
           bpm={bpm}
           spotifyKey={spotifyKey}
@@ -1444,19 +1444,26 @@ const Index = () => {
           onLoadSong={handleLoadSong}
           onClose={() => setPerformanceModeOpen(false)}
           onReorderSongs={(reordered) => {
-            // Reorder setlists based on new song order
-            const reorderedIds = reordered.map((s: any) => s._setlistId || s.id);
-            reorderSetlists(reorderedIds);
-            // Broadcast reorder to public links
             const broadcastId = selectedEventId || currentSongId;
+            const simpleSongs = reordered.map((s: any) => ({
+              id: s.id || s._setlistId,
+              name: s.name,
+              bpm: s.bpm,
+              timeSignature: s.timeSignature,
+              key: s.key || null,
+            }));
+
+            if (selectedEventId) {
+              // Update event songs_data in DB
+              setlistEventsHook.reorderEventSongs(selectedEventId, simpleSongs as any);
+            } else {
+              // Fallback: reorder setlists
+              const reorderedIds = reordered.map((s: any) => s._setlistId || s.id);
+              reorderSetlists(reorderedIds);
+            }
+
+            // Broadcast reorder to public links
             if (broadcastId) {
-              const simpleSongs = reordered.map((s: any) => ({
-                id: s.id || s._setlistId,
-                name: s.name,
-                bpm: s.bpm,
-                timeSignature: s.timeSignature,
-                key: s.key || null,
-              }));
               supabase
                 .channel(`live-cues-${broadcastId}`)
                 .send({

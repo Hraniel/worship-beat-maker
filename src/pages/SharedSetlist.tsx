@@ -128,7 +128,7 @@ const SharedSetlist: React.FC = () => {
       };
       setCue(entry);
       setCueVisible(true);
-      setHistory(prev => [entry, ...prev].slice(0, 5));
+      setHistory(prev => [entry, ...prev].slice(0, 3));
 
       // Highlight song if targeted
       if (targetSongId) {
