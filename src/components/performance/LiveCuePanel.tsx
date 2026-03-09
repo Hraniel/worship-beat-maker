@@ -32,48 +32,7 @@ const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = 
   { key: 'worship', icon: Heart, color: 'bg-amber-500' },
 ];
 
-// Helper to send cue to Holyrics directly from client (same local network)
-async function sendToHolyrics(holyrics: HolyricsConfig, cueLabel: string, displaySeconds: number) {
-  if (!holyrics.enabled || !holyrics.host || !holyrics.token) return;
-
-  const targetScreen = holyrics.targetScreen || 'stage';
-
-  const callHolyrics = async (action: string, payload: Record<string, unknown>) => {
-    const url = `http://${holyrics.host}/api/${encodeURIComponent(action)}?token=${encodeURIComponent(holyrics.token)}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-    try {
-      await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-        mode: 'no-cors', // Holyrics local server likely doesn't send CORS headers
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-  };
-
-  try {
-    // Send to stage monitor (communication panel) - only visible to band
-    if (targetScreen === 'stage' || targetScreen === 'all') {
-      await callHolyrics('SetTextCommunicationPanel', { text: cueLabel });
-    }
-
-    // Send to front projection (alert overlay) - visible to congregation
-    if (targetScreen === 'front' || targetScreen === 'all') {
-      await callHolyrics('SetAlert', {
-        text: cueLabel,
-        show: true,
-        display_ahead: true,
-        close_after_seconds: displaySeconds,
-      });
-    }
-  } catch (err) {
-    console.error('[Holyrics] Failed to send cue:', err);
-  }
-}
+// sendToHolyrics is now imported from '@/lib/holyrics-client'
 
 const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true, songs = [], currentSongId, channelRef, onCueFlash }) => {
   const { t } = useTranslation();
