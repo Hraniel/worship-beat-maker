@@ -176,7 +176,15 @@ const SharedSetlist: React.FC = () => {
       .on('broadcast', { event: 'reorder' }, (payload) => {
         const newSongs = payload.payload?.songs;
         if (Array.isArray(newSongs) && newSongs.length > 0) {
-          setSetlist(prev => prev ? { ...prev, songs: newSongs as SharedSong[] } : prev);
+          setSetlist(prev => {
+            if (!prev) return prev;
+            // Map reordered songs: try to match by name to preserve existing IDs, fallback to broadcast data
+            const mapped = newSongs.map((ns: any) => {
+              const existing = prev.songs.find(s => s.name === ns.name);
+              return existing || (ns as SharedSong);
+            });
+            return { ...prev, songs: mapped };
+          });
         }
       })
       .subscribe();
