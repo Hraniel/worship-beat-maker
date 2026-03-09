@@ -140,10 +140,10 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
   return (
     <>
       {flash && (
-        <div className={`fixed inset-0 z-[300] flex items-center justify-center ${flash.color}/30 animate-in fade-in duration-200`}>
-          <div className="text-center animate-in zoom-in-50 duration-300">
-            <flash.icon className="h-16 w-16 text-white mx-auto" />
-            <p className="text-4xl sm:text-5xl font-black text-white mt-3 drop-shadow-lg">{flash.label}</p>
+        <div className={`fixed inset-x-0 top-16 z-[250] flex justify-center pointer-events-none animate-in fade-in slide-in-from-top-4 duration-300`}>
+          <div className={`${flash.color} rounded-2xl shadow-2xl px-6 py-4 flex items-center gap-3 max-w-xs pointer-events-auto`}>
+            <flash.icon className="h-8 w-8 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
+            <p className="text-xl font-black text-white drop-shadow-lg truncate">{flash.label}</p>
           </div>
         </div>
       )}
