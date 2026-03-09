@@ -158,7 +158,18 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     const oldIndex = songs.findIndex(s => s.id === active.id);
     const newIndex = songs.findIndex(s => s.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    onReorderSongs?.(arrayMove(songs, oldIndex, newIndex));
+    const reordered = arrayMove(songs, oldIndex, newIndex);
+    onReorderSongs?.(reordered);
+    // Broadcast via the live cue channel
+    const simpleSongs = reordered.map(s => ({
+      id: s.id, name: s.name, bpm: s.bpm,
+      timeSignature: s.timeSignature, key: s.key || null,
+    }));
+    liveCueChannelRef.current?.send({
+      type: 'broadcast',
+      event: 'reorder',
+      payload: { songs: simpleSongs },
+    });
   }, [songs, onReorderSongs]);
 
   const keyBase = spotifyKey?.split(' ')[0] || '';
