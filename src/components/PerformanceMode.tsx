@@ -194,26 +194,12 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
               )}
             </div>
           )}
-          {!events.length && (
-            <span className="text-xs text-muted-foreground font-medium">
-              {currentIndex + 1} / {songs.length}
-            </span>
-          )}
+          <span className="text-xs text-muted-foreground font-medium">
+            {currentIndex + 1} / {songs.length}
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          {events.length > 0 && (
-            <span className="text-xs text-muted-foreground font-medium">
-              {currentIndex + 1} / {songs.length}
-            </span>
-          )}
           <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} />
-          <button
-            onClick={toggleFullscreen}
-            className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
-            title={t('performance.fullscreen')}
-          >
-            <Maximize className="h-5 w-5" />
-          </button>
           <button
             onClick={onClose}
             className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
