@@ -699,7 +699,7 @@ const Index = () => {
     return () => stopAllLoops();
   }, []);
 
-  // Auto-save key to current song whenever spotifyKey changes
+  // Debounced meta-save (BPM / compasso / tom) so Repertório e Evento Programado ficam sempre sincronizados
   const autoSaveKeyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveCurrentSongRef = useRef<(() => Promise<void>) | null>(null);
 
