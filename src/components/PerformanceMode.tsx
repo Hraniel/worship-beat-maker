@@ -101,13 +101,18 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     touchStartY.current = null;
   }, [goNext, goPrev]);
 
-  const moveSong = useCallback((index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= songs.length) return;
-    const reordered = [...songs];
-    const [moved] = reordered.splice(index, 1);
-    reordered.splice(newIndex, 0, moved);
-    onReorderSongs?.(reordered);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = songs.findIndex(s => s.id === active.id);
+    const newIndex = songs.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    onReorderSongs?.(arrayMove(songs, oldIndex, newIndex));
   }, [songs, onReorderSongs]);
 
   const keyBase = spotifyKey?.split(' ')[0] || '';
