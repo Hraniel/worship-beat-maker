@@ -982,7 +982,7 @@ function PerformanceSettingsPanel() {
       <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
         <p className="text-xs font-medium text-foreground">{t('common.tip')}</p>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          {t('performance.settingsTip')}
+          {t('performance.settingsTip', 'Os sinais ao vivo são enviados em tempo real para todos que acessam o link público do evento. Selecione um evento público no Performance e compartilhe o link com sua equipe. A música ativa é destacada automaticamente no link.')}
         </p>
       </div>
     </div>

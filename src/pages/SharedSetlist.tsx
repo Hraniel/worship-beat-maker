@@ -71,6 +71,7 @@ const SharedSetlist: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastCue, setLastCue] = useState<CueEntry | null>(null);
+  const [highlightedSongName, setHighlightedSongName] = useState<string | null>(null);
   const settingsRef = useRef(loadPerformanceSettings());
 
   useEffect(() => {
@@ -140,6 +141,10 @@ const SharedSetlist: React.FC = () => {
           });
         }
       })
+      .on('broadcast', { event: 'highlight-song' }, (payload) => {
+        const { song_name } = payload.payload || {};
+        if (song_name) setHighlightedSongName(song_name);
+      })
       .subscribe();
 
     return () => {
@@ -207,17 +212,28 @@ const SharedSetlist: React.FC = () => {
           setlist.songs.map((song, index) => {
             const keyBase = song.key?.split(' ')[0] || '';
             const keyColor = KEY_COLORS[keyBase] || 'bg-muted';
+            const isHighlighted = highlightedSongName === song.name;
             return (
-              <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 max-w-sm">
-                <span className="text-lg font-black w-6 text-center shrink-0 text-muted-foreground/30">{index + 1}</span>
+              <div
+                key={song.id}
+                className={`rounded-xl p-4 flex items-center gap-3 max-w-sm transition-all duration-500 ${
+                  isHighlighted
+                    ? 'bg-primary/15 border-2 border-primary/50 shadow-lg shadow-primary/10'
+                    : 'bg-card border border-border'
+                }`}
+              >
+                <span className={`text-lg font-black w-6 text-center shrink-0 ${isHighlighted ? 'text-primary' : 'text-muted-foreground/30'}`}>{index + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate text-foreground">{song.name}</p>
+                  <p className={`font-semibold truncate ${isHighlighted ? 'text-primary' : 'text-foreground'}`}>{song.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-muted-foreground font-mono tabular-nums">{song.bpm} BPM</span>
                     <span className="text-muted-foreground/30">·</span>
                     <span className="text-xs text-muted-foreground">{song.timeSignature}</span>
                   </div>
                 </div>
+                {isHighlighted && (
+                  <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />
+                )}
                 {song.key && (
                   <span className={`${keyColor} text-white text-xs font-bold px-2.5 py-1 rounded-lg shrink-0`}>{song.key}</span>
                 )}

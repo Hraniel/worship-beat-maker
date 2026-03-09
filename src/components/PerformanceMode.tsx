@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio, List, GripVertical } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio, List, GripVertical, Share2, Copy, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SetlistSong } from '@/lib/sounds';
 import TransposeControl from '@/components/performance/TransposeControl';
 import SongDynamicsBar from '@/components/performance/SongDynamicsBar';
 import RehearsalCounter from '@/components/performance/RehearsalCounter';
 import LiveCuePanel from '@/components/performance/LiveCuePanel';
+import PerformanceOnboarding, { shouldShowPerformanceOnboarding } from '@/components/performance/PerformanceOnboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
@@ -15,6 +16,7 @@ export interface PerformanceEvent {
   id: string;
   name: string;
   event_date: string;
+  share_token?: string | null;
 }
 
 interface PerformanceModeProps {
@@ -105,6 +107,8 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const [transpose, setTranspose] = useState(0);
   const [showEventPicker, setShowEventPicker] = useState(false);
   const [showSongList, setShowSongList] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(() => shouldShowPerformanceOnboarding());
+  const [copied, setCopied] = useState(false);
   const [cueFlash, setCueFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
@@ -116,8 +120,18 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < songs.length - 1;
 
-  // Reset transpose when song changes
-  useEffect(() => { setTranspose(0); }, [currentSongId]);
+  // Reset transpose when song changes & broadcast highlight
+  useEffect(() => {
+    setTranspose(0);
+    // Broadcast current song highlight to public viewers
+    if (currentSong && liveCueChannelRef.current) {
+      liveCueChannelRef.current.send({
+        type: 'broadcast',
+        event: 'highlight-song',
+        payload: { song_id: currentSong.id, song_name: currentSong.name },
+      });
+    }
+  }, [currentSongId]);
 
   const goNext = useCallback(() => {
     if (hasNext) onLoadSong(songs[currentIndex + 1]);
@@ -269,6 +283,27 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Share button for active event */}
+          {selectedEventId && (() => {
+            const activeEvent = events.find(e => e.id === selectedEventId);
+            if (!activeEvent?.share_token) return null;
+            const shareUrl = `${window.location.origin}/s/${activeEvent.share_token}`;
+            return (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  });
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 active:scale-95"
+                title={t('performance.shareLink', 'Compartilhar link')}
+              >
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">{copied ? t('setlist.linkCopied', 'Copiado!') : t('performance.share', 'Compartilhar')}</span>
+              </button>
+            );
+          })()}
           {/* Song list toggle */}
           <button
             onClick={() => setShowSongList(p => !p)}
@@ -449,6 +484,9 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           <span className="text-[10px] text-muted-foreground">{t('performance.next')}</span>
         </button>
       </div>
+
+      {/* Onboarding for first-time users */}
+      {showOnboarding && <PerformanceOnboarding onClose={() => setShowOnboarding(false)} />}
     </div>
   );
 };
