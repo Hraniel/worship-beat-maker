@@ -93,23 +93,6 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     touchStartY.current = null;
   }, [goNext, goPrev]);
 
-  const toggleFullscreen = useCallback(async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await containerRef.current?.requestFullscreen();
-        setFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setFullscreen(false);
-      }
-    } catch { /* fullscreen not supported */ }
-  }, []);
-
-  useEffect(() => {
-    const handler = () => setFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  }, []);
 
   const keyBase = spotifyKey?.split(' ')[0] || '';
   const keyColorClass = KEY_COLORS[keyBase] || 'bg-primary';
