@@ -43,7 +43,6 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   songs, currentSongId, bpm, spotifyKey, metronomeIsPlaying, currentBeat = 0, currentMeasure = 0, setlistId, events = [], selectedEventId, onSelectEvent, onTogglePlay, onLoadSong, onClose,
 }) => {
   const { t } = useTranslation();
-  const [fullscreen, setFullscreen] = useState(false);
   const [transpose, setTranspose] = useState(0);
   const [showEventPicker, setShowEventPicker] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
