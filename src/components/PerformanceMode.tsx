@@ -269,7 +269,6 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} channelRef={liveCueChannelRef} onCueFlash={setCueFlash} />
           {/* Song list toggle */}
           <button
             onClick={() => setShowSongList(p => !p)}
@@ -286,6 +285,11 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
             <X className="h-5 w-5" />
           </button>
         </div>
+      </div>
+
+      {/* Live Cue Panel — dedicated row below top bar */}
+      <div className="shrink-0 px-4 pb-2">
+        <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} channelRef={liveCueChannelRef} onCueFlash={setCueFlash} />
       </div>
 
       {/* Song list panel (overlay) */}
