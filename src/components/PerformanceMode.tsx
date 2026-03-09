@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio, List, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Play, Pause, Calendar, Radio, List, GripVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SetlistSong } from '@/lib/sounds';
 import TransposeControl from '@/components/performance/TransposeControl';
 import SongDynamicsBar from '@/components/performance/SongDynamicsBar';
 import RehearsalCounter from '@/components/performance/RehearsalCounter';
 import LiveCuePanel from '@/components/performance/LiveCuePanel';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 export interface PerformanceEvent {
   id: string;
