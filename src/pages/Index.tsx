@@ -1461,20 +1461,6 @@ const Index = () => {
               const reorderedIds = reordered.map((s: any) => s._setlistId || s.id);
               reorderSetlists(reorderedIds);
             }
-
-            // Broadcast reorder to public links
-            if (broadcastId) {
-              const chName = `live-cues-${broadcastId}-reorder-${Date.now()}`;
-              const ch = supabase.channel(chName, { config: { broadcast: { self: false } } });
-              ch.on('broadcast', { event: 'reorder' }, () => {})
-                .subscribe((status) => {
-                  if (status === 'SUBSCRIBED') {
-                    // Send on the main topic that SharedSetlist listens to
-                    // We need to use the same channel name the listener uses
-                    supabase.removeChannel(ch);
-                  }
-                });
-            }
           }}
         />
       )}
