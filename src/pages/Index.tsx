@@ -699,7 +699,7 @@ const Index = () => {
     return () => stopAllLoops();
   }, []);
 
-  // Auto-save key to current song whenever spotifyKey changes
+  // Debounced meta-save (BPM / compasso / tom) so Repertório e Evento Programado ficam sempre sincronizados
   const autoSaveKeyRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveCurrentSongRef = useRef<(() => Promise<void>) | null>(null);
 
@@ -1150,6 +1150,71 @@ const Index = () => {
     updateSetlist,
   ]);
 
+  // Fast meta-save for metronome edits (BPM / compasso / tom) without re-salvar buffers pesados
+  const saveCurrentSongMeta = useCallback(async () => {
+    if (!currentSongId) return;
+    const setlist = setlists.find((s) => s.id === currentSongId);
+    if (!setlist) return;
+
+    const updatedSong: SetlistSong = {
+      id: setlist.songs[0]?.id || currentSongId,
+      name: setlist.name,
+      bpm,
+      timeSignature,
+      key: spotifyKey,
+      pads: defaultPads,
+      padVolumes: { ...padVolumes },
+      padNames: { ...padNames },
+      padPans: { ...padPans },
+      padEffects: { ...padEffects },
+      padColors: { ...padColors },
+      customSounds: { ...customSounds },
+      midiMappings: getMidiMappings(),
+      midiCCMappings: getMidiCCMappings() as any,
+      midiChannel: getMidiChannel(),
+      midiCCChannel: getMidiCCChannel(),
+    };
+
+    // 1) Atualiza Repertório (setlists)
+    await updateSetlist(currentSongId, [updatedSong]);
+
+    // 2) Atualiza Evento Programado (songs_data) para refletir as mesmas mudanças no link público
+    if (!selectedEventId) return;
+    const ev = setlistEventsHook.events.find(e => e.id === selectedEventId);
+    if (!ev) return;
+    const hasSong = ev.songs_data.some(s => s.id === currentSongId);
+    if (!hasSong) return;
+
+    const nextSongs = ev.songs_data.map((s) =>
+      s.id === currentSongId
+        ? {
+            ...s,
+            bpm,
+            timeSignature,
+            key: spotifyKey || undefined,
+          }
+        : s
+    );
+
+    setlistEventsHook.reorderEventSongs(selectedEventId, nextSongs);
+  }, [
+    currentSongId,
+    setlists,
+    bpm,
+    timeSignature,
+    spotifyKey,
+    padVolumes,
+    padNames,
+    padPans,
+    padEffects,
+    padColors,
+    customSounds,
+    updateSetlist,
+    selectedEventId,
+    setlistEventsHook.events,
+    setlistEventsHook.reorderEventSongs,
+  ]);
+
   // Persist spotifyTrackName so it survives full app close
   useEffect(() => {
     if (spotifyTrackName) localStorage.setItem("drum-pads-working-track", spotifyTrackName);
@@ -1161,17 +1226,19 @@ const Index = () => {
     autoSaveCurrentSongRef.current = autoSaveCurrentSong;
   }, [autoSaveCurrentSong]);
 
-  // When key changes and there's an active song, debounce-save it
+  // Quando BPM / compasso / tom mudam com música ativa, salva e sincroniza com o evento (debounce)
   useEffect(() => {
     if (!currentSongId) return;
+
     if (autoSaveKeyRef.current) clearTimeout(autoSaveKeyRef.current);
     autoSaveKeyRef.current = setTimeout(() => {
-      autoSaveCurrentSongRef.current?.();
-    }, 600);
+      saveCurrentSongMeta();
+    }, 700);
+
     return () => {
       if (autoSaveKeyRef.current) clearTimeout(autoSaveKeyRef.current);
     };
-  }, [spotifyKey, currentSongId]);
+  }, [bpm, timeSignature, spotifyKey, currentSongId, selectedEventId, saveCurrentSongMeta]);
 
   const handleSaveSong = useCallback(
     async (name: string, overrideBpm?: number, overrideKey?: string, overrideTimeSignature?: string) => {
