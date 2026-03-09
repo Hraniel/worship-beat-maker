@@ -120,8 +120,18 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < songs.length - 1;
 
-  // Reset transpose when song changes
-  useEffect(() => { setTranspose(0); }, [currentSongId]);
+  // Reset transpose when song changes & broadcast highlight
+  useEffect(() => {
+    setTranspose(0);
+    // Broadcast current song highlight to public viewers
+    if (currentSong && liveCueChannelRef.current) {
+      liveCueChannelRef.current.send({
+        type: 'broadcast',
+        event: 'highlight-song',
+        payload: { song_id: currentSong.id, song_name: currentSong.name },
+      });
+    }
+  }, [currentSongId]);
 
   const goNext = useCallback(() => {
     if (hasNext) onLoadSong(songs[currentIndex + 1]);
