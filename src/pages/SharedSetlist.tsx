@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Music, ChevronRight, Loader2, Calendar, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart } from 'lucide-react';
+import { Music, Loader2, Calendar, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart, Pin, PinOff, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,6 +19,15 @@ interface SharedSetlistData {
   songs: SharedSong[];
   event_date?: string;
   is_event?: boolean;
+}
+
+interface CueEntry {
+  id: string;
+  label: string;
+  color: string;
+  textColor: string;
+  icon: React.FC<any>;
+  time: Date;
 }
 
 const KEY_COLORS: Record<string, string> = {
@@ -50,16 +59,25 @@ const formatEventDate = (dateStr: string) => {
   }
 };
 
+const formatTime = (date: Date) =>
+  date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
 const SharedSetlist: React.FC = () => {
   const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [setlist, setSetlist] = useState<SharedSetlistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cue, setCue] = useState<{ label: string; color: string; textColor: string; icon: React.FC<any> } | null>(null);
+  const [cue, setCue] = useState<CueEntry | null>(null);
   const [cueVisible, setCueVisible] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const [history, setHistory] = useState<CueEntry[]>([]);
   const cueTimerRef = useRef<number | null>(null);
   const fadeTimerRef = useRef<number | null>(null);
+  const pinnedRef = useRef(false);
+
+  // Keep ref in sync so the realtime callback always reads the latest value
+  useEffect(() => { pinnedRef.current = pinned; }, [pinned]);
 
   useEffect(() => {
     if (!token) { setError('Token inválido'); setLoading(false); return; }
@@ -87,21 +105,27 @@ const SharedSetlist: React.FC = () => {
     const showCue = (cueType: string, cueLabel: string) => {
       const preset = CUE_PRESETS.find(p => p.key === cueType);
       const IconComp = preset?.icon || Music;
-      setCue({
+      const entry: CueEntry = {
+        id: `${Date.now()}`,
         label: cueLabel || cueType,
         color: preset?.color || 'bg-primary',
         textColor: preset?.textColor || 'text-primary',
         icon: IconComp,
-      });
+        time: new Date(),
+      };
+      setCue(entry);
       setCueVisible(true);
+      setHistory(prev => [entry, ...prev].slice(0, 5));
 
       if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
 
-      // Start fade-out after 4s, fully gone at 5s
+      // Only auto-hide when not pinned
       cueTimerRef.current = window.setTimeout(() => {
-        setCueVisible(false);
-        fadeTimerRef.current = window.setTimeout(() => setCue(null), 600);
+        if (!pinnedRef.current) {
+          setCueVisible(false);
+          fadeTimerRef.current = window.setTimeout(() => setCue(null), 600);
+        }
       }, 4000);
     };
 
@@ -143,9 +167,7 @@ const SharedSetlist: React.FC = () => {
         <Music className="h-12 w-12 text-muted-foreground" />
         <h1 className="text-xl font-bold text-foreground">{t('sharedSetlist.notFound')}</h1>
         <p className="text-sm text-muted-foreground text-center">{error || t('sharedSetlist.notFoundDesc')}</p>
-        <Link to="/">
-          <Button variant="outline">{t('sharedSetlist.goToApp')}</Button>
-        </Link>
+        <Link to="/"><Button variant="outline">{t('sharedSetlist.goToApp')}</Button></Link>
       </div>
     );
   }
@@ -155,11 +177,9 @@ const SharedSetlist: React.FC = () => {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
-          {setlist.is_event ? (
-            <Calendar className="h-4 w-4 text-primary-foreground" />
-          ) : (
-            <Music className="h-4 w-4 text-primary-foreground" />
-          )}
+          {setlist.is_event
+            ? <Calendar className="h-4 w-4 text-primary-foreground" />
+            : <Music className="h-4 w-4 text-primary-foreground" />}
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-sm font-bold text-foreground truncate">{setlist.name}</h1>
@@ -213,18 +233,54 @@ const SharedSetlist: React.FC = () => {
         )}
       </div>
 
-      {/* Live cue bar at bottom — centered, with pulse icon + smooth fade */}
+      {/* Cue history — above the active bar */}
+      {history.length > 0 && (
+        <div className="px-4 pb-2 space-y-1">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Clock className="h-3 w-3 text-muted-foreground" />
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Histórico de sinais</span>
+          </div>
+          {history.map((entry, i) => (
+            <div
+              key={entry.id}
+              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 border border-border transition-opacity ${i === 0 ? 'opacity-100 bg-card' : 'opacity-40 bg-card/50'}`}
+            >
+              <div className={`h-6 w-6 rounded-md ${entry.color} flex items-center justify-center shrink-0`}>
+                <entry.icon className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className={`text-sm font-bold ${entry.textColor}`}>{entry.label}</span>
+              <span className="ml-auto text-[10px] text-muted-foreground font-mono tabular-nums">{formatTime(entry.time)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Live cue bar at bottom — centered, with pulse icon + smooth fade + pin toggle */}
       <div
         className={`sticky bottom-0 z-20 transition-all duration-500 ease-in-out ${
           cueVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
       >
         {cue && (
-          <div className={`${cue.color} px-6 py-5 flex flex-col items-center justify-center gap-2`}>
+          <div className={`${cue.color} px-6 py-5 flex flex-col items-center justify-center gap-2 relative`}>
+            {/* Pin toggle */}
+            <button
+              onClick={() => setPinned(p => !p)}
+              className="absolute top-3 right-3 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              title={pinned ? 'Desafixar sinal' : 'Fixar sinal na tela'}
+            >
+              {pinned
+                ? <PinOff className="h-4 w-4 text-white" />
+                : <Pin className="h-4 w-4 text-white" />}
+            </button>
+
             <cue.icon className="h-10 w-10 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
             <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg tracking-wide text-center">
               {cue.label}
             </p>
+            {pinned && (
+              <span className="text-[10px] text-white/70 font-medium uppercase tracking-widest mt-1">Fixado</span>
+            )}
           </div>
         )}
       </div>
