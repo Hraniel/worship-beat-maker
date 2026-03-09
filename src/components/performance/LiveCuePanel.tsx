@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Radio, Music, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { getCueLabel, loadPerformanceSettings, type CueKey } from '@/lib/performance-settings';
+import { getCueLabel, loadPerformanceSettings, type CueKey, type HolyricsConfig, DEFAULT_HOLYRICS_CONFIG } from '@/lib/performance-settings';
 import type { SetlistSong } from '@/lib/sounds';
 
 interface CueFlash {
@@ -30,6 +30,29 @@ const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = 
   { key: 'cut', icon: Hand, color: 'bg-red-500' },
   { key: 'worship', icon: Heart, color: 'bg-amber-500' },
 ];
+
+// Helper to send cue to Holyrics via edge function proxy
+async function sendToHolyrics(holyrics: HolyricsConfig, cueLabel: string, displaySeconds: number) {
+  if (!holyrics.enabled || !holyrics.host || !holyrics.token) return;
+
+  try {
+    await supabase.functions.invoke('holyrics-proxy', {
+      body: {
+        host: holyrics.host,
+        token: holyrics.token,
+        action: 'SetAlert',
+        payload: {
+          text: cueLabel,
+          show: true,
+          display_ahead: true,
+          close_after_seconds: displaySeconds,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('[Holyrics] Failed to send cue:', err);
+  }
+}
 
 const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true, songs = [], currentSongId, channelRef, onCueFlash }) => {
   const { t } = useTranslation();
@@ -117,6 +140,10 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
           target_song_name: songName,
         },
       });
+
+      // Send to Holyrics if enabled
+      const holyrics = settings.holyrics || DEFAULT_HOLYRICS_CONFIG;
+      sendToHolyrics(holyrics, cueLabel, settings.cueDisplaySeconds);
 
       const preset = CUE_PRESETS.find((p) => p.key === cueKey);
       const IconComp = preset?.icon || Music;
