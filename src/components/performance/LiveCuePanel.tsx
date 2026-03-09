@@ -82,12 +82,20 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       const translated = t(`performance.cue_${cueKey}`);
       const cueLabel = getCueLabel(cueKey, translated, settings);
 
+      // Write to DB for history
       await supabase.from('live_cues' as any).insert({
         setlist_id: setlistId,
         sent_by: user.id,
         cue_type: cueKey,
         cue_label: cueLabel,
       } as any);
+
+      // Also broadcast directly via channel (works for anon subscribers)
+      supabase.channel(`live-cues-${setlistId}`).send({
+        type: 'broadcast',
+        event: 'cue',
+        payload: { cue_type: cueKey, cue_label: cueLabel, sent_by: user.id },
+      });
 
       const preset = CUE_PRESETS.find((p) => p.key === cueKey);
       const IconComp = preset?.icon || Music;

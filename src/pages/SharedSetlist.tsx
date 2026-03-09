@@ -80,26 +80,35 @@ const SharedSetlist: React.FC = () => {
       .finally(() => setLoading(false));
   }, [token]);
 
-  // Subscribe to live cues in real-time
+  // Subscribe to live cues via broadcast (works for anon users)
   useEffect(() => {
     if (!setlist?.id) return;
 
+    const showCue = (cueType: string, cueLabel: string) => {
+      const preset = CUE_PRESETS.find(p => p.key === cueType);
+      const IconComp = preset?.icon || Music;
+      setFlash({
+        label: cueLabel || cueType,
+        color: preset?.color || 'bg-primary',
+        icon: IconComp,
+      });
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      flashTimerRef.current = window.setTimeout(() => setFlash(null), 3000);
+    };
+
     const channel = supabase
-      .channel(`shared-live-cues-${setlist.id}`)
+      .channel(`live-cues-${setlist.id}`)
+      .on('broadcast', { event: 'cue' }, (payload) => {
+        const { cue_type, cue_label } = payload.payload || {};
+        showCue(cue_type, cue_label);
+      })
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'live_cues', filter: `setlist_id=eq.${setlist.id}` },
+        { event: 'INSERT', schema: 'public', table: 'live_cues' },
         (payload) => {
           const cue = payload.new as any;
-          const preset = CUE_PRESETS.find(p => p.key === cue.cue_type);
-          const IconComp = preset?.icon || Music;
-          setFlash({
-            label: cue.cue_label || cue.cue_type,
-            color: preset?.color || 'bg-primary',
-            icon: IconComp,
-          });
-          if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-          flashTimerRef.current = window.setTimeout(() => setFlash(null), 3000);
+          if (cue.setlist_id !== setlist.id) return;
+          showCue(cue.cue_type, cue.cue_label);
         }
       )
       .subscribe();
