@@ -91,8 +91,8 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
         cue_label: cueLabel,
       } as any);
 
-      // Also broadcast directly via channel (works for anon subscribers)
-      supabase.channel(`live-cues-${setlistId}`).send({
+      // Broadcast via the subscribed channel (works for anon subscribers)
+      broadcastChannelRef.current?.send({
         type: 'broadcast',
         event: 'cue',
         payload: { cue_type: cueKey, cue_label: cueLabel, sent_by: user.id },
