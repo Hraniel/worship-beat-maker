@@ -1226,17 +1226,19 @@ const Index = () => {
     autoSaveCurrentSongRef.current = autoSaveCurrentSong;
   }, [autoSaveCurrentSong]);
 
-  // When key changes and there's an active song, debounce-save it
+  // Quando BPM / compasso / tom mudam com música ativa, salva e sincroniza com o evento (debounce)
   useEffect(() => {
     if (!currentSongId) return;
+
     if (autoSaveKeyRef.current) clearTimeout(autoSaveKeyRef.current);
-    autoSaveKeyRef.current = setTimeout(() => {
-      autoSaveCurrentSongRef.current?.();
-    }, 600);
+    autoSaveKeyRef.current = window.setTimeout(() => {
+      saveCurrentSongMeta();
+    }, 700);
+
     return () => {
       if (autoSaveKeyRef.current) clearTimeout(autoSaveKeyRef.current);
     };
-  }, [spotifyKey, currentSongId]);
+  }, [bpm, timeSignature, spotifyKey, currentSongId, selectedEventId, saveCurrentSongMeta]);
 
   const handleSaveSong = useCallback(
     async (name: string, overrideBpm?: number, overrideKey?: string, overrideTimeSignature?: string) => {
