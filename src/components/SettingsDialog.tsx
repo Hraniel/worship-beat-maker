@@ -1170,6 +1170,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
       case 'metronome':
         return <MetronomeSettingsPanel />;
 
+      case 'performance':
+        return <PerformanceSettingsPanel />;
+
       case 'tap':
         return <TapTempoSettings />;
 
