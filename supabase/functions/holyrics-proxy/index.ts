@@ -21,16 +21,21 @@ serve(async (req) => {
       );
     }
 
-    // Sanitize host — only allow IP:PORT or hostname:PORT
-    const hostPattern = /^[\w.\-]+:\d{1,5}$/;
+    // Sanitize host — allow IP:PORT, hostname:PORT, or full domain (tunnel URLs)
+    const hostPattern = /^[\w.\-]+(:\d{1,5})?$/;
     if (!hostPattern.test(host)) {
       return new Response(
-        JSON.stringify({ error: "Invalid host format. Use IP:PORT (e.g. 192.168.1.100:8091)" }),
+        JSON.stringify({ error: "Invalid host format. Use IP:PORT (e.g. 192.168.1.100:8091) or domain (e.g. my-tunnel.trycloudflare.com)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const holyricsUrl = `http://${host}/api/${encodeURIComponent(action)}?token=${encodeURIComponent(token)}`;
+    // Determine protocol: use https for domains without port, http for IP:port
+    const hasPort = /:\d+$/.test(host);
+    const isPrivateIP = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(host.split(':')[0]);
+    const protocol = (hasPort || isPrivateIP) ? 'http' : 'https';
+
+    const holyricsUrl = `${protocol}://${host}/api/${encodeURIComponent(action)}?token=${encodeURIComponent(token)}`;
 
     const holyricsResponse = await fetch(holyricsUrl, {
       method: "POST",

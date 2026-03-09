@@ -840,6 +840,7 @@ function ThemeSettings() {
 // ── Performance / Live Cue Settings ─────────────────────────────────────────
 
 import { loadPerformanceSettings, savePerformanceSettings, type PerformanceSettings, type CueKey, type HolyricsConfig, type HolyricsTargetScreen, DEFAULT_HOLYRICS_CONFIG } from '@/lib/performance-settings';
+import { testHolyricsConnection } from '@/lib/holyrics-client';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -1017,89 +1018,42 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
     setTestResult(null);
     setTestMessage(null);
 
-    const host = holyrics.host.trim();
-    const token = holyrics.token.trim();
-    const hostname = host.split(':')[0] || '';
-    const isPrivateNetworkHost = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname);
+    const result = await testHolyricsConnection(holyrics.host, holyrics.token);
 
-    // 1) Prefer direct local call for LAN hosts
-    try {
-      const url = `http://${host}/api/SetAlert?token=${encodeURIComponent(token)}`;
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 5000);
-
-      try {
-        await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: '✅ GloryPads conectado!',
-            show: true,
-            display_ahead: true,
-            close_after_seconds: 3,
-          }),
-          signal: controller.signal,
-          mode: 'no-cors',
-        });
-      } finally {
-        clearTimeout(timeout);
-      }
-
+    if (result.ok) {
       setTestResult('success');
-      setTestMessage(t('performance.holyricsTestSuccessHint', 'Sinal de teste enviado. Confira no Holyrics se o alerta apareceu.'));
-      return;
-    } catch (directErr) {
-      const directMessage = directErr instanceof Error ? directErr.message : String(directErr);
-      const mayBeMixedContent = /mixed content|failed to fetch|networkerror/i.test(directMessage);
+      setTestMessage(
+        result.isLocal
+          ? t('performance.holyricsTestSuccessLocal', 'Sinal enviado via rede local. Confira no Holyrics se o alerta apareceu.')
+          : t('performance.holyricsTestSuccessProxy', 'Sinal enviado via nuvem. Confira no Holyrics se o alerta apareceu.')
+      );
+    } else {
+      setTestResult('error');
+      const errMsg = result.error || '';
+      const isMixedContent = result.isLocal && /mixed content|failed to fetch|networkerror|aborted/i.test(errMsg);
 
-      if (isPrivateNetworkHost && mayBeMixedContent) {
-        setTestResult('error');
+      if (isMixedContent) {
         setTestMessage(
           t(
             'performance.holyricsTestHttpsHint',
-            'Seu navegador pode estar bloqueando HTTP local em página HTTPS. Teste pelo app Android instalado na mesma rede do Holyrics.'
+            'Navegador bloqueou HTTP local em página HTTPS. Use uma URL de túnel público (ex: Cloudflare Tunnel) ou o app Android.'
           )
         );
-        return;
+      } else if (errMsg.includes('Signal timed out')) {
+        setTestMessage(
+          t(
+            'performance.holyricsTimeoutHint',
+            'Timeout ao conectar. Verifique se o Holyrics está aberto com API Server ativo e se o IP/URL está acessível.'
+          )
+        );
+      } else {
+        setTestMessage(
+          t('performance.holyricsTestErrorHint', 'Verifique se o Holyrics está aberto, o API Server está ativo e o IP/Token estão corretos.')
+        );
       }
     }
 
-    // 2) Fallback: cloud proxy (works for publicly reachable hosts)
-    try {
-      const { data, error } = await supabase.functions.invoke('holyrics-proxy', {
-        body: {
-          host,
-          token,
-          action: 'SetAlert',
-          payload: {
-            text: '✅ GloryPads conectado!',
-            show: true,
-            display_ahead: true,
-            close_after_seconds: 3,
-          },
-        },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      setTestResult('success');
-      setTestMessage(t('performance.holyricsTestSuccessHint', 'Sinal de teste enviado. Confira no Holyrics se o alerta apareceu.'));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      console.error('[Holyrics] Test failed:', err);
-      setTestResult('error');
-      setTestMessage(
-        message?.includes('Signal timed out.')
-          ? t(
-              'performance.holyricsTimeoutHint',
-              'Timeout ao conectar. Para IP local (192.168.x.x), use o app na mesma rede do Holyrics ou exponha o API Server em uma rota acessível externamente.'
-            )
-          : t('performance.holyricsTestErrorHint', 'Verifique se o Holyrics está aberto, o API Server está ativo e o IP/Token estão corretos.')
-      );
-    } finally {
-      setTesting(false);
-    }
+    setTesting(false);
   };
 
   return (
@@ -1131,16 +1085,16 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
 
       {/* Host input */}
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-foreground">{t('performance.holyricsHost', 'IP:PORTA do Holyrics')}</label>
+        <label className="text-xs font-medium text-foreground">{t('performance.holyricsHost', 'Endereço do Holyrics')}</label>
         <input
           type="text"
           value={holyrics.host}
           onChange={(e) => updateHolyrics({ host: e.target.value.trim() })}
-          placeholder="192.168.1.100:8091"
+          placeholder="192.168.1.100:8091 ou seu-tunel.trycloudflare.com"
           className="w-full h-9 px-3 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <p className="text-[10px] text-muted-foreground">
-          {t('performance.holyricsHostHint', 'Encontre em: Holyrics > Arquivo > Configurações > API Server')}
+          {t('performance.holyricsHostHint2', 'IP:PORTA local (Android) ou URL de túnel público como Cloudflare Tunnel (PWA). Encontre o IP em: Holyrics > Arquivo > Configurações > API Server.')}
         </p>
       </div>
 
