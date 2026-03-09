@@ -168,15 +168,6 @@ const SharedSetlist: React.FC = () => {
           setSetlist(prev => prev ? { ...prev, songs: newSongs as SharedSong[] } : prev);
         }
       })
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'live_cues' },
-        (payload) => {
-          const c = payload.new as any;
-          if (c.setlist_id !== setlist.id) return;
-          showCue(c.cue_type, c.cue_label);
-        }
-      )
       .subscribe();
 
     return () => {

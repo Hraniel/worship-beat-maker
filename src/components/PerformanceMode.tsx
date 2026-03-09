@@ -54,8 +54,18 @@ interface SortableSongItemProps {
 }
 
 const SortableSongItem: React.FC<SortableSongItemProps> = ({ song, index, isActive, canDrag, onSelect }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: song.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : undefined, opacity: isDragging ? 0.7 : 1 };
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: song.id,
+    transition: { duration: 250, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' },
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.85 : 1,
+    scale: isDragging ? '1.03' : '1',
+    boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.4)' : 'none',
+  };
   const songKeyBase = song.key?.split(' ')[0] || '';
   const songKeyColor = KEY_COLORS[songKeyBase] || '';
 
