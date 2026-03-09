@@ -12,7 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { host, token, action, payload } = await req.json();
+    const body = await req.json();
+    console.log("[holyrics-proxy] Request body:", JSON.stringify(body));
+    const { host, token, action, payload } = body;
 
     if (!host || !token || !action) {
       return new Response(
