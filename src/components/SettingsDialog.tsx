@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity, Globe, Sun, Moon, Palette, Radio, Volume2, Vibrate } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity, Globe, Sun, Moon, Palette, Radio, Volume2, Vibrate, ExternalLink, Download, Copy } from 'lucide-react';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import {
