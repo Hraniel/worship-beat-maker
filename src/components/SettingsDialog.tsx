@@ -1094,7 +1094,28 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
           className="w-full h-9 px-3 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
         <p className="text-[10px] text-muted-foreground">
-          {t('performance.holyricsTokenHint', 'Gere um token com permissão "SetAlert" no API Server do Holyrics.')}
+          {t('performance.holyricsTokenHint', 'Gere um token com permissão "SetAlert" e "SetTextCommunicationPanel" no API Server do Holyrics.')}
+        </p>
+      </div>
+
+      {/* Target Screen select */}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-foreground">{t('performance.holyricsTargetScreen', 'Tela de destino')}</label>
+        <Select
+          value={holyrics.targetScreen || 'stage'}
+          onValueChange={(value: HolyricsTargetScreen) => updateHolyrics({ targetScreen: value })}
+        >
+          <SelectTrigger className="w-full h-9 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="stage">{t('performance.holyricsScreenStage', 'Apenas retorno (banda)')}</SelectItem>
+            <SelectItem value="front">{t('performance.holyricsScreenFront', 'Apenas projeção (igreja)')}</SelectItem>
+            <SelectItem value="all">{t('performance.holyricsScreenAll', 'Todas as telas')}</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className="text-[10px] text-muted-foreground">
+          {t('performance.holyricsTargetScreenHint', 'Defina onde os sinais serão exibidos no Holyrics.')}
         </p>
       </div>
 
