@@ -839,8 +839,9 @@ function ThemeSettings() {
 
 // ── Performance / Live Cue Settings ─────────────────────────────────────────
 
-import { loadPerformanceSettings, savePerformanceSettings, type PerformanceSettings, type CueKey, type HolyricsConfig, DEFAULT_HOLYRICS_CONFIG } from '@/lib/performance-settings';
+import { loadPerformanceSettings, savePerformanceSettings, type PerformanceSettings, type CueKey, type HolyricsConfig, type HolyricsTargetScreen, DEFAULT_HOLYRICS_CONFIG } from '@/lib/performance-settings';
 import { supabase } from '@/integrations/supabase/client';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function PerformanceSettingsPanel() {
   const { t } = useTranslation();
