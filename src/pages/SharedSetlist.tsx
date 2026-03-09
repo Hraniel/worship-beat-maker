@@ -71,7 +71,6 @@ const SharedSetlist: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastCue, setLastCue] = useState<CueEntry | null>(null);
-  const [highlightedSongName, setHighlightedSongName] = useState<string | null>(null);
   const settingsRef = useRef(loadPerformanceSettings());
 
   useEffect(() => {
