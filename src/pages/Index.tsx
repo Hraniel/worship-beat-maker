@@ -1464,7 +1464,8 @@ const Index = () => {
 
             // Broadcast reorder to public links
             if (broadcastId) {
-              const ch = supabase.channel(`live-cues-reorder-${broadcastId}`);
+              const chName = `live-cues-${broadcastId}`;
+              const ch = supabase.channel(chName, { config: { broadcast: { self: false } } });
               ch.subscribe((status) => {
                 if (status === 'SUBSCRIBED') {
                   ch.send({
@@ -1472,7 +1473,7 @@ const Index = () => {
                     event: 'reorder',
                     payload: { songs: simpleSongs },
                   }).then(() => {
-                    supabase.removeChannel(ch);
+                    setTimeout(() => supabase.removeChannel(ch), 500);
                   });
                 }
               });
