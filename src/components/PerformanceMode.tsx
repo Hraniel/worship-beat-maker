@@ -105,6 +105,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const [transpose, setTranspose] = useState(0);
   const [showEventPicker, setShowEventPicker] = useState(false);
   const [showSongList, setShowSongList] = useState(false);
+  const [cueFlash, setCueFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);

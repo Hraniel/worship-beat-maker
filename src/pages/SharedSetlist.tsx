@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Music, Loader2, Calendar, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart, Pin, PinOff, Clock } from 'lucide-react';
+import { Music, Loader2, Calendar, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,7 +29,6 @@ interface CueEntry {
   textColor: string;
   icon: React.FC<any>;
   time: Date;
-  targetSongId?: string | null;
   targetSongName?: string | null;
 }
 
@@ -71,19 +70,9 @@ const SharedSetlist: React.FC = () => {
   const [setlist, setSetlist] = useState<SharedSetlistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cue, setCue] = useState<CueEntry | null>(null);
-  const [cueVisible, setCueVisible] = useState(false);
-  const [pinned, setPinned] = useState(() => loadPerformanceSettings().pinCueByDefault);
-  const [history, setHistory] = useState<CueEntry[]>([]);
-  const [highlightedSongId, setHighlightedSongId] = useState<string | null>(null);
-  const cueTimerRef = useRef<number | null>(null);
-  const fadeTimerRef = useRef<number | null>(null);
-  const highlightTimerRef = useRef<number | null>(null);
-  const pinnedRef = useRef(pinned);
+  const [lastCue, setLastCue] = useState<CueEntry | null>(null);
   const settingsRef = useRef(loadPerformanceSettings());
 
-  // Keep refs in sync
-  useEffect(() => { pinnedRef.current = pinned; }, [pinned]);
   useEffect(() => {
     const sync = () => { settingsRef.current = loadPerformanceSettings(); };
     window.addEventListener('glory-performance-settings-updated', sync as EventListener);
@@ -113,7 +102,7 @@ const SharedSetlist: React.FC = () => {
   useEffect(() => {
     if (!setlist?.id) return;
 
-    const showCue = (cueType: string, cueLabel: string, targetSongId?: string | null, targetSongName?: string | null) => {
+    const showCue = (cueType: string, cueLabel: string, targetSongName?: string | null) => {
       const preset = CUE_PRESETS.find(p => p.key === cueType);
       const IconComp = preset?.icon || Music;
       const entry: CueEntry = {
@@ -123,62 +112,26 @@ const SharedSetlist: React.FC = () => {
         textColor: preset?.textColor || 'text-primary',
         icon: IconComp,
         time: new Date(),
-        targetSongId,
         targetSongName,
       };
-      setCue(entry);
-      setCueVisible(true);
-      setHistory(prev => [entry, ...prev].slice(0, 3));
+      setLastCue(entry);
 
-      // Highlight song if targeted — match by ID first, then by name
-      if (targetSongId || targetSongName) {
-        setSetlist(prev => {
-          if (!prev) return prev;
-          const matchById = prev.songs.find(s => s.id === targetSongId);
-          const matchByName = !matchById && targetSongName
-            ? prev.songs.find(s => s.name === targetSongName)
-            : null;
-          const matchedId = matchById?.id || matchByName?.id || targetSongId;
-          if (matchedId) {
-            setHighlightedSongId(matchedId);
-            if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-            highlightTimerRef.current = window.setTimeout(() => setHighlightedSongId(null), 10000);
-          }
-          return prev;
-        });
-      }
-
-      // Vibrate if enabled
       if (settingsRef.current.vibrateOnCue && typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate(120);
       }
-
-      if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
-      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
-
-      const duration = settingsRef.current.cueDisplaySeconds * 1000;
-
-      // Only auto-hide when not pinned
-      cueTimerRef.current = window.setTimeout(() => {
-        if (!pinnedRef.current) {
-          setCueVisible(false);
-          fadeTimerRef.current = window.setTimeout(() => setCue(null), 600);
-        }
-      }, duration - 600);
     };
 
     const channel = supabase
       .channel(`live-cues-${setlist.id}`)
       .on('broadcast', { event: 'cue' }, (payload) => {
-        const { cue_type, cue_label, target_song_id, target_song_name } = payload.payload || {};
-        showCue(cue_type, cue_label, target_song_id, target_song_name);
+        const { cue_type, cue_label, target_song_name } = payload.payload || {};
+        showCue(cue_type, cue_label, target_song_name);
       })
       .on('broadcast', { event: 'reorder' }, (payload) => {
         const newSongs = payload.payload?.songs;
         if (Array.isArray(newSongs) && newSongs.length > 0) {
           setSetlist(prev => {
             if (!prev) return prev;
-            // Map reordered songs: try to match by name to preserve existing IDs, fallback to broadcast data
             const mapped = newSongs.map((ns: any) => {
               const existing = prev.songs.find(s => s.name === ns.name);
               return existing || (ns as SharedSong);
@@ -191,9 +144,6 @@ const SharedSetlist: React.FC = () => {
 
     return () => {
       supabase.removeChannel(channel);
-      if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
-      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
-      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
     };
   }, [setlist?.id]);
 
@@ -249,7 +199,7 @@ const SharedSetlist: React.FC = () => {
         </div>
       )}
 
-      {/* Songs — left aligned */}
+      {/* Songs */}
       <div className="flex-1 px-4 py-4 space-y-2">
         {setlist.songs.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">{t('sharedSetlist.noSongs')}</p>
@@ -257,23 +207,11 @@ const SharedSetlist: React.FC = () => {
           setlist.songs.map((song, index) => {
             const keyBase = song.key?.split(' ')[0] || '';
             const keyColor = KEY_COLORS[keyBase] || 'bg-muted';
-            const isHighlighted = highlightedSongId === song.id;
             return (
-              <div 
-                key={song.id} 
-                className={`bg-card border rounded-xl p-4 flex items-center gap-3 max-w-sm transition-all duration-500 ${
-                  isHighlighted 
-                    ? 'border-primary ring-2 ring-primary/50 scale-[1.02] shadow-lg shadow-primary/20' 
-                    : 'border-border'
-                }`}
-              >
-                <span className={`text-lg font-black w-6 text-center shrink-0 transition-colors ${
-                  isHighlighted ? 'text-primary' : 'text-muted-foreground/30'
-                }`}>{index + 1}</span>
+              <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 max-w-sm">
+                <span className="text-lg font-black w-6 text-center shrink-0 text-muted-foreground/30">{index + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold truncate transition-colors ${
-                    isHighlighted ? 'text-primary' : 'text-foreground'
-                  }`}>{song.name}</p>
+                  <p className="font-semibold truncate text-foreground">{song.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-muted-foreground font-mono tabular-nums">{song.bpm} BPM</span>
                     <span className="text-muted-foreground/30">·</span>
@@ -283,74 +221,33 @@ const SharedSetlist: React.FC = () => {
                 {song.key && (
                   <span className={`${keyColor} text-white text-xs font-bold px-2.5 py-1 rounded-lg shrink-0`}>{song.key}</span>
                 )}
-                {isHighlighted && (
-                  <span className="h-3 w-3 rounded-full bg-primary animate-ping absolute -top-1 -right-1" />
-                )}
               </div>
             );
           })
         )}
       </div>
 
-      {/* Cue history — above the active bar */}
-      {history.length > 0 && (
-        <div className="px-4 pb-2 space-y-1">
+      {/* Last cue — only the most recent signal */}
+      {lastCue && (
+        <div className="px-4 pb-4">
           <div className="flex items-center gap-1.5 mb-2">
             <Clock className="h-3 w-3 text-muted-foreground" />
-            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Histórico de sinais</span>
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Último sinal</span>
           </div>
-          {history.map((entry, i) => (
-            <div
-              key={entry.id}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2 border border-border transition-opacity ${i === 0 ? 'opacity-100 bg-card' : 'opacity-40 bg-card/50'}`}
-            >
-              <div className={`h-6 w-6 rounded-md ${entry.color} flex items-center justify-center shrink-0`}>
-                <entry.icon className="h-3.5 w-3.5 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className={`text-sm font-bold ${entry.textColor}`}>{entry.label}</span>
-                {entry.targetSongName && (
-                  <span className="text-[10px] text-muted-foreground ml-2">→ {entry.targetSongName}</span>
-                )}
-              </div>
-              <span className="ml-auto text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">{formatTime(entry.time)}</span>
+          <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 border border-border bg-card">
+            <div className={`h-6 w-6 rounded-md ${lastCue.color} flex items-center justify-center shrink-0`}>
+              <lastCue.icon className="h-3.5 w-3.5 text-white" />
             </div>
-          ))}
+            <div className="flex-1 min-w-0">
+              <span className={`text-sm font-bold ${lastCue.textColor}`}>{lastCue.label}</span>
+              {lastCue.targetSongName && (
+                <span className="text-[10px] text-muted-foreground ml-2">→ {lastCue.targetSongName}</span>
+              )}
+            </div>
+            <span className="ml-auto text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">{formatTime(lastCue.time)}</span>
+          </div>
         </div>
       )}
-
-      {/* Floating compact cue badge — doesn't block content */}
-      <div
-        className={`fixed bottom-4 right-4 z-20 w-fit max-w-[260px] transition-all duration-500 ease-in-out ${
-          cueVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
-        }`}
-      >
-        {cue && (
-          <div className={`${cue.color} rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 relative`}>
-            <cue.icon className="h-8 w-8 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
-            <div className="flex-1 min-w-0">
-              <p className="text-lg font-black text-white drop-shadow-lg truncate leading-tight">
-                {cue.label}
-              </p>
-              {cue.targetSongName && (
-                <p className="text-[11px] text-white/80 font-medium truncate">→ {cue.targetSongName}</p>
-              )}
-              {pinned && (
-                <span className="text-[9px] text-white/60 font-semibold uppercase tracking-widest">Fixado</span>
-              )}
-            </div>
-            <button
-              onClick={() => setPinned(p => !p)}
-              className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors shrink-0"
-              title={pinned ? 'Desafixar sinal' : 'Fixar sinal na tela'}
-            >
-              {pinned
-                ? <PinOff className="h-3.5 w-3.5 text-white" />
-                : <Pin className="h-3.5 w-3.5 text-white" />}
-            </button>
-          </div>
-        )}
-      </div>
     </div>
   );
 };
