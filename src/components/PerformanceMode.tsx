@@ -122,7 +122,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   return (
     <div
       ref={containerRef}
-      className="fixed z-[200] flex flex-col items-center justify-center"
+      className="fixed z-[200] flex flex-col"
       style={{
         background: 'hsl(240 10% 4%)',
         top: 0, left: 0, right: 0, bottom: 0,
@@ -134,11 +134,10 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     >
       {/* Top bar */}
       <div
-        className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 sm:px-6 pb-2"
-        style={{ paddingTop: 'calc(1.5rem + env(safe-area-inset-top, 0px))' }}
+        className="flex items-center justify-between px-4 sm:px-6 pb-2 shrink-0"
+        style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
       >
         <div className="flex items-center gap-2">
-          {/* Event selector */}
           {events.length > 0 && (
             <div className="relative">
               <button
@@ -227,7 +226,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
 
       {/* Dynamics bar */}
       {hasSections && (
-        <div className="absolute top-16 left-0 right-0 flex justify-center" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="flex justify-center shrink-0 px-4">
           <SongDynamicsBar
             sections={currentSong!.sections!}
             totalMeasures={totalMeasures}
@@ -236,30 +235,30 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
         </div>
       )}
 
-      {/* Main content */}
-      <div className="flex flex-col items-center justify-center gap-4 px-8 text-center w-full max-w-2xl">
-        <div className="space-y-2">
+      {/* Main content — vertically centered in remaining space */}
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center w-full max-w-2xl mx-auto min-h-0">
+        <div className="space-y-1">
           {currentSong ? (
-            <h1 className="text-4xl sm:text-6xl font-black text-foreground tracking-tight leading-none break-words">
+            <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight leading-tight break-words">
               {currentSong.name}
             </h1>
           ) : (
-            <p className="text-2xl text-muted-foreground">{t('performance.noSongSelected')}</p>
+            <p className="text-xl text-muted-foreground">{t('performance.noSongSelected')}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-5 mt-3">
           {/* BPM */}
           <div className="text-center">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">BPM</p>
-            <p className="text-8xl sm:text-9xl font-black text-primary tabular-nums leading-none">{bpm}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">BPM</p>
+            <p className="text-6xl sm:text-7xl font-black text-primary tabular-nums leading-none">{bpm}</p>
           </div>
 
           {/* Key with transpose */}
           {spotifyKey && (
             <div className="text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{t('performance.key')}</p>
-              <div className={`${keyColorClass} text-white px-4 py-3 rounded-2xl shadow-lg`}>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">{t('performance.key')}</p>
+              <div className={`${keyColorClass} text-white px-3 py-2 rounded-xl shadow-lg`}>
                 <TransposeControl
                   originalKey={spotifyKey}
                   transpose={transpose}
@@ -272,60 +271,25 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
 
         {/* Rehearsal counter */}
         {totalMeasures > 0 && (
-          <RehearsalCounter
-            currentMeasure={currentMeasure}
-            totalMeasures={totalMeasures}
-            currentBeat={currentBeat}
-            beatsPerMeasure={beatsPerMeasure}
-            markers={currentSong?.markers || []}
-            isPlaying={metronomeIsPlaying}
-          />
+          <div className="mt-3">
+            <RehearsalCounter
+              currentMeasure={currentMeasure}
+              totalMeasures={totalMeasures}
+              currentBeat={currentBeat}
+              beatsPerMeasure={beatsPerMeasure}
+              markers={currentSong?.markers || []}
+              isPlaying={metronomeIsPlaying}
+            />
+          </div>
         )}
 
         {currentSong?.timeSignature && !totalMeasures && (
-          <p className="text-xl text-muted-foreground font-semibold">{currentSong.timeSignature}</p>
+          <p className="text-lg text-muted-foreground font-semibold mt-2">{currentSong.timeSignature}</p>
         )}
       </div>
 
-      {/* Bottom controls */}
-      <div
-        className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-6"
-        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
-      >
-        <button
-          onClick={goPrev}
-          disabled={!hasPrev}
-          className="flex flex-col items-center gap-1 p-4 rounded-2xl hover:bg-white/10 disabled:opacity-20 transition-all active:scale-95"
-        >
-          <ChevronLeft className="h-10 w-10 text-foreground" />
-          <span className="text-[10px] text-muted-foreground">{t('performance.previous')}</span>
-        </button>
-
-        <button
-          onClick={onTogglePlay}
-          className={`flex flex-col items-center gap-2 p-5 rounded-full transition-all active:scale-95 ${
-            metronomeIsPlaying
-              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/40'
-              : 'bg-card border-2 border-border text-foreground hover:border-primary/50'
-          }`}
-        >
-          {metronomeIsPlaying
-            ? <Pause className="h-10 w-10" />
-            : <Play className="h-10 w-10 ml-1" />}
-        </button>
-
-        <button
-          onClick={goNext}
-          disabled={!hasNext}
-          className="flex flex-col items-center gap-1 p-4 rounded-2xl hover:bg-white/10 disabled:opacity-20 transition-all active:scale-95"
-        >
-          <ChevronRight className="h-10 w-10 text-foreground" />
-          <span className="text-[10px] text-muted-foreground">{t('performance.next')}</span>
-        </button>
-      </div>
-
       {/* Song list dots */}
-      <div className="absolute left-0 right-0 flex justify-center gap-1.5" style={{ bottom: 'calc(8rem + env(safe-area-inset-bottom, 0px))' }}>
+      <div className="flex justify-center gap-1.5 shrink-0 pb-2">
         {songs.map((s, i) => (
           <button
             key={s.id}
@@ -335,6 +299,43 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
             }`}
           />
         ))}
+      </div>
+
+      {/* Bottom controls */}
+      <div
+        className="flex items-center justify-between px-6 shrink-0"
+        style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+      >
+        <button
+          onClick={goPrev}
+          disabled={!hasPrev}
+          className="flex flex-col items-center gap-1 p-3 rounded-2xl hover:bg-white/10 disabled:opacity-20 transition-all active:scale-95"
+        >
+          <ChevronLeft className="h-8 w-8 text-foreground" />
+          <span className="text-[10px] text-muted-foreground">{t('performance.previous')}</span>
+        </button>
+
+        <button
+          onClick={onTogglePlay}
+          className={`flex flex-col items-center gap-2 p-4 rounded-full transition-all active:scale-95 ${
+            metronomeIsPlaying
+              ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/40'
+              : 'bg-card border-2 border-border text-foreground hover:border-primary/50'
+          }`}
+        >
+          {metronomeIsPlaying
+            ? <Pause className="h-8 w-8" />
+            : <Play className="h-8 w-8 ml-1" />}
+        </button>
+
+        <button
+          onClick={goNext}
+          disabled={!hasNext}
+          className="flex flex-col items-center gap-1 p-3 rounded-2xl hover:bg-white/10 disabled:opacity-20 transition-all active:scale-95"
+        >
+          <ChevronRight className="h-8 w-8 text-foreground" />
+          <span className="text-[10px] text-muted-foreground">{t('performance.next')}</span>
+        </button>
       </div>
     </div>
   );
