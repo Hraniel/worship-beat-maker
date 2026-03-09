@@ -5,7 +5,6 @@ export interface PerformanceSettings {
   quickCueButtonsVisible: boolean;
   keepPanelOpenAfterSend: boolean;
   vibrateOnCue: boolean;
-  pinCueByDefault: boolean;
   soundOnCue: boolean;
   cueLabels: Partial<Record<CueKey, string>>;
 }
