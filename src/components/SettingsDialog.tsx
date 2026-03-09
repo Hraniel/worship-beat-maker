@@ -1156,6 +1156,11 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         return <MetronomeSettingsPanel />;
 
       case 'performance':
+        if (onOpenPerformance) {
+          onOpenChange(false);
+          onOpenPerformance();
+          return null;
+        }
         return <PerformanceSettingsPanel />;
 
       case 'tap':
