@@ -31,13 +31,13 @@ const KEY_COLORS: Record<string, string> = {
 };
 
 const CUE_PRESETS = [
-  { key: 'chorus', icon: Music, color: 'bg-purple-500' },
-  { key: 'verse', icon: BookOpen, color: 'bg-blue-500' },
-  { key: 'bridge', icon: Waypoints, color: 'bg-teal-500' },
-  { key: 'down', icon: ChevronDown, color: 'bg-sky-500' },
-  { key: 'up', icon: ChevronUp, color: 'bg-orange-500' },
-  { key: 'cut', icon: Hand, color: 'bg-red-500' },
-  { key: 'worship', icon: Heart, color: 'bg-amber-500' },
+  { key: 'chorus', icon: Music, color: 'bg-purple-500', textColor: 'text-purple-500' },
+  { key: 'verse', icon: BookOpen, color: 'bg-blue-500', textColor: 'text-blue-500' },
+  { key: 'bridge', icon: Waypoints, color: 'bg-teal-500', textColor: 'text-teal-500' },
+  { key: 'down', icon: ChevronDown, color: 'bg-sky-500', textColor: 'text-sky-500' },
+  { key: 'up', icon: ChevronUp, color: 'bg-orange-500', textColor: 'text-orange-500' },
+  { key: 'cut', icon: Hand, color: 'bg-red-500', textColor: 'text-red-500' },
+  { key: 'worship', icon: Heart, color: 'bg-amber-500', textColor: 'text-amber-500' },
 ];
 
 const formatEventDate = (dateStr: string) => {
@@ -56,10 +56,9 @@ const SharedSetlist: React.FC = () => {
   const [setlist, setSetlist] = useState<SharedSetlistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [flash, setFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
-  const flashTimerRef = useRef<number | null>(null);
+  const [cue, setCue] = useState<{ label: string; color: string; textColor: string; icon: React.FC<any> } | null>(null);
+  const cueTimerRef = useRef<number | null>(null);
 
-  // Fetch setlist data
   useEffect(() => {
     if (!token) { setError('Token inválido'); setLoading(false); return; }
     const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
@@ -80,20 +79,20 @@ const SharedSetlist: React.FC = () => {
       .finally(() => setLoading(false));
   }, [token]);
 
-  // Subscribe to live cues via broadcast (works for anon users)
   useEffect(() => {
     if (!setlist?.id) return;
 
     const showCue = (cueType: string, cueLabel: string) => {
       const preset = CUE_PRESETS.find(p => p.key === cueType);
       const IconComp = preset?.icon || Music;
-      setFlash({
+      setCue({
         label: cueLabel || cueType,
         color: preset?.color || 'bg-primary',
+        textColor: preset?.textColor || 'text-primary',
         icon: IconComp,
       });
-      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-      flashTimerRef.current = window.setTimeout(() => setFlash(null), 3000);
+      if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
+      cueTimerRef.current = window.setTimeout(() => setCue(null), 5000);
     };
 
     const channel = supabase
@@ -106,16 +105,16 @@ const SharedSetlist: React.FC = () => {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'live_cues' },
         (payload) => {
-          const cue = payload.new as any;
-          if (cue.setlist_id !== setlist.id) return;
-          showCue(cue.cue_type, cue.cue_label);
+          const c = payload.new as any;
+          if (c.setlist_id !== setlist.id) return;
+          showCue(c.cue_type, c.cue_label);
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
-      if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+      if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
     };
   }, [setlist?.id]);
 
@@ -141,19 +140,7 @@ const SharedSetlist: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Live cue fullscreen flash */}
-      {flash && (
-        <div className={`fixed inset-0 z-[300] flex items-center justify-center ${flash.color}/30 animate-in fade-in duration-200`}>
-          <div className="text-center animate-in zoom-in-50 duration-300">
-            <flash.icon className="h-20 w-20 text-white mx-auto drop-shadow-lg" />
-            <p className="text-5xl sm:text-6xl font-black text-white mt-4 drop-shadow-lg">
-              {flash.label}
-            </p>
-          </div>
-        </div>
-      )}
-
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card/80 backdrop-blur border-b border-border px-4 py-3 flex items-center gap-3">
         <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shrink-0">
@@ -169,7 +156,6 @@ const SharedSetlist: React.FC = () => {
             {setlist.songs.length} {t('sharedSetlist.songs')} · {t('sharedSetlist.readOnly')}
           </p>
         </div>
-        {/* Live indicator */}
         <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/15 border border-red-500/30">
           <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
           <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Live</span>
@@ -178,8 +164,8 @@ const SharedSetlist: React.FC = () => {
 
       {/* Event date badge */}
       {setlist.is_event && setlist.event_date && (
-        <div className="max-w-lg mx-auto px-4 pt-4">
-          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2">
+        <div className="px-4 pt-4">
+          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2 w-fit">
             <Calendar className="h-3.5 w-3.5 text-primary shrink-0" />
             <span className="text-xs font-medium text-primary capitalize">
               {formatEventDate(setlist.event_date)}
@@ -188,8 +174,8 @@ const SharedSetlist: React.FC = () => {
         </div>
       )}
 
-      {/* Songs */}
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-2">
+      {/* Songs — left aligned */}
+      <div className="flex-1 px-4 py-4 space-y-2">
         {setlist.songs.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">{t('sharedSetlist.noSongs')}</p>
         ) : (
@@ -197,7 +183,7 @@ const SharedSetlist: React.FC = () => {
             const keyBase = song.key?.split(' ')[0] || '';
             const keyColor = KEY_COLORS[keyBase] || 'bg-muted';
             return (
-              <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3">
+              <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 max-w-lg">
                 <span className="text-lg font-black text-muted-foreground/30 w-6 text-center shrink-0">{index + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground truncate">{song.name}</p>
@@ -210,10 +196,25 @@ const SharedSetlist: React.FC = () => {
                 {song.key && (
                   <span className={`${keyColor} text-white text-xs font-bold px-2.5 py-1 rounded-lg shrink-0`}>{song.key}</span>
                 )}
-                <ChevronRight className="h-4 w-4 text-muted-foreground/30 shrink-0" />
               </div>
             );
           })
+        )}
+      </div>
+
+      {/* Live cue bar at bottom */}
+      <div
+        className={`sticky bottom-0 z-20 transition-all duration-300 ${
+          cue ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+        }`}
+      >
+        {cue && (
+          <div className={`${cue.color} px-4 py-4 flex items-center justify-center gap-3`}>
+            <cue.icon className="h-8 w-8 text-white shrink-0 animate-in zoom-in-50 duration-300" />
+            <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-md animate-in slide-in-from-bottom-2 duration-300">
+              {cue.label}
+            </p>
+          </div>
         )}
       </div>
     </div>
