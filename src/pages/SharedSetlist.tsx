@@ -303,35 +303,35 @@ const SharedSetlist: React.FC = () => {
         </div>
       )}
 
-      {/* Live cue bar at bottom — centered, with pulse icon + smooth fade + pin toggle */}
+      {/* Floating compact cue badge — doesn't block content */}
       <div
-        className={`sticky bottom-0 z-20 transition-all duration-500 ease-in-out ${
-          cueVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
+        className={`fixed bottom-4 right-4 z-20 w-fit max-w-[260px] transition-all duration-500 ease-in-out ${
+          cueVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
         }`}
       >
         {cue && (
-          <div className={`${cue.color} px-6 py-5 flex flex-col items-center justify-center gap-2 relative`}>
-            {/* Pin toggle */}
+          <div className={`${cue.color} rounded-2xl shadow-2xl px-4 py-3 flex items-center gap-3 relative`}>
+            <cue.icon className="h-8 w-8 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
+            <div className="flex-1 min-w-0">
+              <p className="text-lg font-black text-white drop-shadow-lg truncate leading-tight">
+                {cue.label}
+              </p>
+              {cue.targetSongName && (
+                <p className="text-[11px] text-white/80 font-medium truncate">→ {cue.targetSongName}</p>
+              )}
+              {pinned && (
+                <span className="text-[9px] text-white/60 font-semibold uppercase tracking-widest">Fixado</span>
+              )}
+            </div>
             <button
               onClick={() => setPinned(p => !p)}
-              className="absolute top-3 right-3 p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition-colors shrink-0"
               title={pinned ? 'Desafixar sinal' : 'Fixar sinal na tela'}
             >
               {pinned
-                ? <PinOff className="h-4 w-4 text-white" />
-                : <Pin className="h-4 w-4 text-white" />}
+                ? <PinOff className="h-3.5 w-3.5 text-white" />
+                : <Pin className="h-3.5 w-3.5 text-white" />}
             </button>
-
-            <cue.icon className="h-10 w-10 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
-            <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg tracking-wide text-center">
-              {cue.label}
-            </p>
-            {cue.targetSongName && (
-              <p className="text-sm text-white/80 font-medium">→ {cue.targetSongName}</p>
-            )}
-            {pinned && (
-              <span className="text-[10px] text-white/70 font-medium uppercase tracking-widest mt-1">Fixado</span>
-            )}
           </div>
         )}
       </div>
