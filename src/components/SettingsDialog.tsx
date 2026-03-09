@@ -67,6 +67,7 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   onAudioSettingsChange?: (settings: AudioSettings) => void;
   onStartTutorial?: (sectionId?: string) => void;
+  onOpenPerformance?: () => void;
   initialTab?: string;
   pads?: PadSound[];
   padNames?: Record<string, string>;
