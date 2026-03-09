@@ -67,6 +67,7 @@ interface SettingsDialogProps {
   onOpenChange: (open: boolean) => void;
   onAudioSettingsChange?: (settings: AudioSettings) => void;
   onStartTutorial?: (sectionId?: string) => void;
+  onOpenPerformance?: () => void;
   initialTab?: string;
   pads?: PadSound[];
   padNames?: Record<string, string>;
@@ -1007,7 +1008,7 @@ const TAB_KEYS = [
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiCCChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiSetCCChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings, onMidiRemoveNoteMapping, onMidiRemoveCCMapping }) => {
+const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onAudioSettingsChange, onStartTutorial, initialTab, pads, padNames, customSounds, padsStereoMode, padsSide, onRenamePad, midiSupported, midiDevices, midiChannel, midiCCChannel, midiMappings, midiIsLearning, midiLearnPadId, onMidiSetChannel, onMidiSetCCChannel, onMidiStartLearn, onMidiStopLearn, onMidiResetMappings, midiCCMappings, midiIsCCLearning, midiCCLearnFunctionId, onMidiStartCCLearn, onMidiStopCCLearn, onMidiResetCCMappings, onMidiRemoveNoteMapping, onMidiRemoveCCMapping, onOpenPerformance }) => {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<AudioSettings>(loadAudioSettings);
   const [activeTab, setActiveTab] = useState<string | null>(null);
@@ -1155,6 +1156,11 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
         return <MetronomeSettingsPanel />;
 
       case 'performance':
+        if (onOpenPerformance) {
+          onOpenChange(false);
+          onOpenPerformance();
+          return null;
+        }
         return <PerformanceSettingsPanel />;
 
       case 'tap':

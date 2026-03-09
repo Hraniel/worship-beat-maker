@@ -287,7 +287,8 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           {selectedEventId && (() => {
             const activeEvent = events.find(e => e.id === selectedEventId);
             if (!activeEvent?.share_token) return null;
-            const shareUrl = `${window.location.origin}/s/${activeEvent.share_token}`;
+            const baseUrl = window.location.hostname === 'localhost' ? window.location.origin : 'https://glorypads.com';
+            const shareUrl = `${baseUrl}/s/${activeEvent.share_token}`;
             return (
               <button
                 onClick={() => {

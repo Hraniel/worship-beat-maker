@@ -2768,6 +2768,7 @@ const Index = () => {
           if (startTutorialRef.current) startTutorialRef.current(sectionId);
         }}
         initialTab={settingsTab}
+        onOpenPerformance={() => setPerformanceModeOpen(true)}
         pads={defaultPads}
         padNames={padNames}
         customSounds={customSounds}
