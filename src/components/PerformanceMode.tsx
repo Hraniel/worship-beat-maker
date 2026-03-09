@@ -269,7 +269,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} channelRef={liveCueChannelRef} />
+          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} channelRef={liveCueChannelRef} onCueFlash={setCueFlash} />
           {/* Song list toggle */}
           <button
             onClick={() => setShowSongList(p => !p)}
