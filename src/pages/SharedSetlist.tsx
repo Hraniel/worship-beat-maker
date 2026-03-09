@@ -167,6 +167,7 @@ const SharedSetlist: React.FC = () => {
         if (Array.isArray(newSongs) && newSongs.length > 0) {
           setSetlist(prev => prev ? { ...prev, songs: newSongs as SharedSong[] } : prev);
         }
+      })
       .subscribe();
 
     return () => {
