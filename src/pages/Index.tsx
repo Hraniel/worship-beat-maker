@@ -1461,17 +1461,6 @@ const Index = () => {
               const reorderedIds = reordered.map((s: any) => s._setlistId || s.id);
               reorderSetlists(reorderedIds);
             }
-
-            // Broadcast reorder to public links
-            if (broadcastId) {
-              supabase
-                .channel(`live-cues-${broadcastId}`)
-                .send({
-                  type: 'broadcast',
-                  event: 'reorder',
-                  payload: { songs: simpleSongs },
-                });
-            }
           }}
         />
       )}

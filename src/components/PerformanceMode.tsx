@@ -6,6 +6,7 @@ import TransposeControl from '@/components/performance/TransposeControl';
 import SongDynamicsBar from '@/components/performance/SongDynamicsBar';
 import RehearsalCounter from '@/components/performance/RehearsalCounter';
 import LiveCuePanel from '@/components/performance/LiveCuePanel';
+import { supabase } from '@/integrations/supabase/client';
 import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -97,6 +98,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
+  const liveCueChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const currentIndex = songs.findIndex(s => s.id === currentSongId);
   const currentSong = currentIndex >= 0 ? songs[currentIndex] : null;
@@ -156,7 +158,18 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
     const oldIndex = songs.findIndex(s => s.id === active.id);
     const newIndex = songs.findIndex(s => s.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
-    onReorderSongs?.(arrayMove(songs, oldIndex, newIndex));
+    const reordered = arrayMove(songs, oldIndex, newIndex);
+    onReorderSongs?.(reordered);
+    // Broadcast via the live cue channel
+    const simpleSongs = reordered.map(s => ({
+      id: s.id, name: s.name, bpm: s.bpm,
+      timeSignature: s.timeSignature, key: s.key || null,
+    }));
+    liveCueChannelRef.current?.send({
+      type: 'broadcast',
+      event: 'reorder',
+      payload: { songs: simpleSongs },
+    });
   }, [songs, onReorderSongs]);
 
   const keyBase = spotifyKey?.split(' ')[0] || '';
@@ -245,7 +258,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} />
+          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} channelRef={liveCueChannelRef} />
           {/* Song list toggle */}
           <button
             onClick={() => setShowSongList(p => !p)}

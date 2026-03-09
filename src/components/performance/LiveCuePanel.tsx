@@ -11,6 +11,7 @@ interface LiveCuePanelProps {
   isLeader?: boolean;
   songs?: SetlistSong[];
   currentSongId?: string | null;
+  channelRef?: React.MutableRefObject<ReturnType<typeof supabase.channel> | null>;
 }
 
 const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = [
@@ -23,7 +24,7 @@ const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = 
   { key: 'worship', icon: Heart, color: 'bg-amber-500' },
 ];
 
-const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true, songs = [], currentSongId }) => {
+const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true, songs = [], currentSongId, channelRef }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [flash, setFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
@@ -73,10 +74,12 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
       .subscribe();
 
     broadcastChannelRef.current = channel;
+    if (channelRef) channelRef.current = channel;
 
     return () => {
       supabase.removeChannel(channel);
       broadcastChannelRef.current = null;
+      if (channelRef) channelRef.current = null;
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     };
   }, [setlistId, user?.id, settings.cueDisplaySeconds, settings.vibrateOnCue]);
