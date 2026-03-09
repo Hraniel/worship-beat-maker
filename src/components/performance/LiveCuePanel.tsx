@@ -11,6 +11,7 @@ interface LiveCuePanelProps {
   isLeader?: boolean;
   songs?: SetlistSong[];
   currentSongId?: string | null;
+  channelRef?: React.MutableRefObject<ReturnType<typeof supabase.channel> | null>;
 }
 
 const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = [
