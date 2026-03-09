@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
@@ -1442,6 +1443,29 @@ const Index = () => {
           onTogglePlay={() => setMetronomeIsPlaying((p) => !p)}
           onLoadSong={handleLoadSong}
           onClose={() => setPerformanceModeOpen(false)}
+          onReorderSongs={(reordered) => {
+            // Reorder setlists based on new song order
+            const reorderedIds = reordered.map((s: any) => s._setlistId || s.id);
+            reorderSetlists(reorderedIds);
+            // Broadcast reorder to public links
+            const broadcastId = selectedEventId || currentSongId;
+            if (broadcastId) {
+              const simpleSongs = reordered.map((s: any) => ({
+                id: s.id || s._setlistId,
+                name: s.name,
+                bpm: s.bpm,
+                timeSignature: s.timeSignature,
+                key: s.key || null,
+              }));
+              supabase
+                .channel(`live-cues-${broadcastId}`)
+                .send({
+                  type: 'broadcast',
+                  event: 'reorder',
+                  payload: { songs: simpleSongs },
+                });
+            }
+          }}
         />
       )}
       <NotificationsSheet

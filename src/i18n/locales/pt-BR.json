@@ -664,7 +664,8 @@
     "customLabelsDesc": "Defina nomes customizados para cada tipo de sinal.",
     "settingsTip": "Essas configurações afetam como os sinais são enviados e exibidos durante o modo performance.",
     "targetSong": "Destacar música",
-    "targetSongDesc": "Escolha uma música para destacar na página pública"
+    "targetSongDesc": "Escolha uma música para destacar na página pública",
+    "songList": "Lista de músicas"
   },
   "toolsPanel": {
     "tapToDetect": "Toque para detectar",

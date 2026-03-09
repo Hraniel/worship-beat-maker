@@ -162,6 +162,12 @@ const SharedSetlist: React.FC = () => {
         const { cue_type, cue_label, target_song_id, target_song_name } = payload.payload || {};
         showCue(cue_type, cue_label, target_song_id, target_song_name);
       })
+      .on('broadcast', { event: 'reorder' }, (payload) => {
+        const newSongs = payload.payload?.songs;
+        if (Array.isArray(newSongs) && newSongs.length > 0) {
+          setSetlist(prev => prev ? { ...prev, songs: newSongs as SharedSong[] } : prev);
+        }
+      })
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'live_cues' },
