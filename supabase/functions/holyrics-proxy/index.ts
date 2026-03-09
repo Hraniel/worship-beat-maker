@@ -38,6 +38,7 @@ serve(async (req) => {
     const protocol = (hasPort || isPrivateIP) ? 'http' : 'https';
 
     const holyricsUrl = `${protocol}://${host}/api/${encodeURIComponent(action)}?token=${encodeURIComponent(token)}`;
+    console.log("[holyrics-proxy] Calling:", holyricsUrl);
 
     const holyricsResponse = await fetch(holyricsUrl, {
       method: "POST",
@@ -47,6 +48,7 @@ serve(async (req) => {
     });
 
     const text = await holyricsResponse.text();
+    console.log("[holyrics-proxy] Response status:", holyricsResponse.status, "body:", text);
 
     let result;
     try {
