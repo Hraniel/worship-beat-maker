@@ -1088,6 +1088,9 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
         <p className="text-[10px] text-muted-foreground">
           {t('performance.holyricsHostHint2', 'IP:PORTA local (Android) ou URL de túnel público como Cloudflare Tunnel (PWA). Encontre o IP em: Holyrics > Arquivo > Configurações > API Server.')}
         </p>
+
+        {/* Cloudflare Tunnel Guide */}
+        <CloudflareTunnelGuide />
       </div>
 
       {/* Token input */}
