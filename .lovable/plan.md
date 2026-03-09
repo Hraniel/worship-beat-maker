@@ -1,28 +1,59 @@
 
 
-## Plan: Simplify Public Page & Optimize Performance Mode Layout
+# Verificação: Persistência de dados ao fechar o app Capacitor
 
-### Changes to `src/pages/SharedSetlist.tsx`
+## Análise do estado atual
 
-1. **Remove song highlight feature**: Remove `highlightedSongId` state, `highlightTimerRef`, and all highlight-related logic in `showCue`. Remove highlight styling from song list items.
+Após revisar o código, identifiquei como cada tipo de dado é persistido:
 
-2. **Remove pin/fix cue feature**: Remove `pinned` state, `pinnedRef`, the pin button from the floating cue badge, and the "Fixado" label. The cue should always auto-hide after timeout.
+### O que já funciona corretamente
 
-3. **Signal history shows only last 1 entry**: Change `.slice(0, 3)` to `.slice(0, 1)` so only the most recent signal appears in history.
+| Dado | Mecanismo | Sobrevive ao fechamento? |
+|------|-----------|--------------------------|
+| **Login/Sessão** | Supabase Auth (localStorage automático) + fallback offline | ✅ Sim |
+| **BPM, Time Signature, Key** | localStorage (escrita imediata) | ✅ Sim |
+| **Volumes dos pads** | localStorage | ✅ Sim |
+| **Pan dos pads** | localStorage | ✅ Sim |
+| **Nomes customizados** | localStorage | ✅ Sim |
+| **Tamanho dos pads** | localStorage | ✅ Sim |
+| **Setlists (lista)** | Supabase + cache localStorage | ✅ Sim |
+| **Eventos agendados** | Supabase + cache localStorage | ✅ Sim |
+| **Sons customizados** | IndexedDB | ✅ Sim |
+| **Ambient pads customizados** | IndexedDB | ✅ Sim |
+| **Música ativa (ID)** | localStorage | ✅ Sim |
+| **Tier de assinatura** | localStorage cache | ✅ Sim |
+| **Sync/metronome settings** | localStorage | ✅ Sim |
 
-4. **Remove floating cue badge entirely**: Remove the fixed-position cue badge at bottom-right. The history section already shows the last signal.
+### Ponto crítico: Auto-save da música atual
 
-### Changes to `src/components/PerformanceMode.tsx`
+O auto-save da música ativa (que salva BPM, Key, efeitos, MIDI mappings de volta no setlist do Supabase) depende de eventos `pagehide` e `beforeunload`:
 
-5. **Add dedicated cue flash area**: Add a visible area in the main content section (below the BPM/key info) where the sent cue animation appears. Currently the flash only shows in `LiveCuePanel` overlaying the top of the screen — move/duplicate the flash display into the main performance view area so it appears in a dedicated empty space.
+```typescript
+window.addEventListener("pagehide", handlePageHide);
+window.addEventListener("beforeunload", handlePageHide);
+```
 
-6. **Optimize mobile layout**:
-   - Reduce song name from `text-2xl sm:text-4xl` to `text-lg sm:text-3xl`
-   - Reduce BPM from `text-6xl sm:text-7xl` to `text-4xl sm:text-6xl`
-   - Reduce spacing/gaps throughout
-   - Ensure cue button labels in `LiveCuePanel` are visible on small screens
+**No Capacitor Android WebView**, o comportamento desses eventos é **inconsistente**:
+- `pagehide` **pode não disparar** quando o app é removido das recentes (swipe-away)
+- `beforeunload` **raramente dispara** em WebViews Android
+- `visibilitychange` para `hidden` **dispara na maioria dos casos** ao minimizar, mas **não ao matar o app**
 
-### Changes to `src/components/performance/LiveCuePanel.tsx`
+### Risco identificado
 
-7. **Expose cue flash state**: Allow the parent `PerformanceMode` to receive cue flash events so it can display them in the dedicated area, or move the flash rendering to the performance mode layout where there's room.
+Se o usuário altera BPM/Key/efeitos/MIDI de uma música e fecha o app (swipe-away), essas alterações **podem não ser salvas no Supabase**. Porém, os valores individuais (BPM, volumes, pans) ficam no localStorage — o problema é que **não são re-associados à música do setlist**.
+
+## Plano de correção
+
+### 1. Adicionar listener do Capacitor App para `appStateChange`
+Instalar `@capacitor/app` e usar o evento `appStateChange` que é **garantido** no Android/iOS quando o app vai para background ou é fechado.
+
+### 2. Salvar com `Capacitor.App.addListener('appStateChange')`
+Quando `isActive === false`, chamar `autoSaveCurrentSong()` — este é o mecanismo nativo confiável.
+
+### 3. Adicionar save periódico como safety net
+Um `setInterval` (a cada 30-60s) que salva a música ativa automaticamente, garantindo que no máximo 1 minuto de alterações seja perdido em caso de kill forçado.
+
+## Arquivos a modificar
+- `package.json` — adicionar `@capacitor/app`
+- `src/pages/Index.tsx` — adicionar listener `appStateChange` + save periódico
 

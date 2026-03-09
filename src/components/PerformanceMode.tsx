@@ -105,6 +105,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
   const [transpose, setTranspose] = useState(0);
   const [showEventPicker, setShowEventPicker] = useState(false);
   const [showSongList, setShowSongList] = useState(false);
+  const [cueFlash, setCueFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
@@ -268,7 +269,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} channelRef={liveCueChannelRef} />
+          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} channelRef={liveCueChannelRef} onCueFlash={setCueFlash} />
           {/* Song list toggle */}
           <button
             onClick={() => setShowSongList(p => !p)}
@@ -333,29 +334,39 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
       )}
 
       {/* Main content — vertically centered in remaining space */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center w-full max-w-2xl mx-auto min-h-0">
-        <div className="space-y-1">
-          {currentSong ? (
-            <h1 className="text-2xl sm:text-4xl font-black text-foreground tracking-tight leading-tight break-words">
-              {currentSong.name}
-            </h1>
-          ) : (
-            <p className="text-xl text-muted-foreground">{t('performance.noSongSelected')}</p>
+      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center w-full max-w-2xl mx-auto min-h-0">
+        {/* Dedicated cue flash area */}
+        <div className="w-full h-16 flex items-center justify-center mb-2">
+          {cueFlash && (
+            <div className={`${cueFlash.color} rounded-2xl shadow-2xl px-5 py-3 flex items-center gap-3 animate-in fade-in zoom-in duration-300`}>
+              <cueFlash.icon className="h-7 w-7 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
+              <p className="text-xl font-black text-white drop-shadow-lg truncate">{cueFlash.label}</p>
+            </div>
           )}
         </div>
 
-        <div className="flex items-center gap-5 mt-3">
+        <div className="space-y-1">
+          {currentSong ? (
+            <h1 className="text-lg sm:text-3xl font-black text-foreground tracking-tight leading-tight break-words">
+              {currentSong.name}
+            </h1>
+          ) : (
+            <p className="text-lg text-muted-foreground">{t('performance.noSongSelected')}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4 mt-2">
           {/* BPM */}
           <div className="text-center">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">BPM</p>
-            <p className="text-6xl sm:text-7xl font-black text-primary tabular-nums leading-none">{bpm}</p>
+            <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-0.5">BPM</p>
+            <p className="text-4xl sm:text-6xl font-black text-primary tabular-nums leading-none">{bpm}</p>
           </div>
 
           {/* Key with transpose */}
           {spotifyKey && (
             <div className="text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-0.5">{t('performance.key')}</p>
-              <div className={`${keyColorClass} text-white px-3 py-2 rounded-xl shadow-lg`}>
+              <p className="text-[9px] text-muted-foreground uppercase tracking-widest mb-0.5">{t('performance.key')}</p>
+              <div className={`${keyColorClass} text-white px-2.5 py-1.5 rounded-xl shadow-lg`}>
                 <TransposeControl
                   originalKey={spotifyKey}
                   transpose={transpose}
@@ -368,7 +379,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
 
         {/* Rehearsal counter */}
         {totalMeasures > 0 && (
-          <div className="mt-3">
+          <div className="mt-2">
             <RehearsalCounter
               currentMeasure={currentMeasure}
               totalMeasures={totalMeasures}
@@ -381,7 +392,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
         )}
 
         {currentSong?.timeSignature && !totalMeasures && (
-          <p className="text-lg text-muted-foreground font-semibold mt-2">{currentSong.timeSignature}</p>
+          <p className="text-base text-muted-foreground font-semibold mt-1">{currentSong.timeSignature}</p>
         )}
       </div>
 
