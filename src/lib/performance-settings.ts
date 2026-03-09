@@ -1,15 +1,19 @@
 export type CueKey = 'chorus' | 'verse' | 'bridge' | 'down' | 'up' | 'cut' | 'worship';
 
+export type HolyricsTargetScreen = 'stage' | 'front' | 'all';
+
 export interface HolyricsConfig {
   enabled: boolean;
   host: string;
   token: string;
+  targetScreen: HolyricsTargetScreen;
 }
 
 export const DEFAULT_HOLYRICS_CONFIG: HolyricsConfig = {
   enabled: false,
   host: '',
   token: '',
+  targetScreen: 'stage',
 };
 
 export interface PerformanceSettings {
