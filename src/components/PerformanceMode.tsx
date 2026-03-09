@@ -283,6 +283,27 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Share button for active event */}
+          {selectedEventId && (() => {
+            const activeEvent = events.find(e => e.id === selectedEventId);
+            if (!activeEvent?.share_token) return null;
+            const shareUrl = `${window.location.origin}/s/${activeEvent.share_token}`;
+            return (
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(shareUrl).then(() => {
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  });
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30 active:scale-95"
+                title={t('performance.shareLink', 'Compartilhar link')}
+              >
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">{copied ? t('setlist.linkCopied', 'Copiado!') : t('performance.share', 'Compartilhar')}</span>
+              </button>
+            );
+          })()}
           {/* Song list toggle */}
           <button
             onClick={() => setShowSongList(p => !p)}
