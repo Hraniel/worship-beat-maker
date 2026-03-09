@@ -1231,7 +1231,7 @@ const Index = () => {
     if (!currentSongId) return;
 
     if (autoSaveKeyRef.current) clearTimeout(autoSaveKeyRef.current);
-    autoSaveKeyRef.current = window.setTimeout(() => {
+    autoSaveKeyRef.current = setTimeout(() => {
       saveCurrentSongMeta();
     }, 700);
 
