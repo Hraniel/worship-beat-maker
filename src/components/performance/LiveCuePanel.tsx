@@ -24,7 +24,7 @@ const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = 
   { key: 'worship', icon: Heart, color: 'bg-amber-500' },
 ];
 
-const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true, songs = [], currentSongId }) => {
+const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true, songs = [], currentSongId, channelRef }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [flash, setFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
