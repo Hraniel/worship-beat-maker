@@ -4,6 +4,7 @@ import { Music, Loader2, Calendar, BookOpen, Waypoints, ChevronDown, ChevronUp, 
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
+import { loadPerformanceSettings } from '@/lib/performance-settings';
 
 interface SharedSong {
   id: string;
@@ -28,6 +29,8 @@ interface CueEntry {
   textColor: string;
   icon: React.FC<any>;
   time: Date;
+  targetSongId?: string | null;
+  targetSongName?: string | null;
 }
 
 const KEY_COLORS: Record<string, string> = {
@@ -70,14 +73,22 @@ const SharedSetlist: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [cue, setCue] = useState<CueEntry | null>(null);
   const [cueVisible, setCueVisible] = useState(false);
-  const [pinned, setPinned] = useState(false);
+  const [pinned, setPinned] = useState(() => loadPerformanceSettings().pinCueByDefault);
   const [history, setHistory] = useState<CueEntry[]>([]);
+  const [highlightedSongId, setHighlightedSongId] = useState<string | null>(null);
   const cueTimerRef = useRef<number | null>(null);
   const fadeTimerRef = useRef<number | null>(null);
-  const pinnedRef = useRef(false);
+  const highlightTimerRef = useRef<number | null>(null);
+  const pinnedRef = useRef(pinned);
+  const settingsRef = useRef(loadPerformanceSettings());
 
-  // Keep ref in sync so the realtime callback always reads the latest value
+  // Keep refs in sync
   useEffect(() => { pinnedRef.current = pinned; }, [pinned]);
+  useEffect(() => {
+    const sync = () => { settingsRef.current = loadPerformanceSettings(); };
+    window.addEventListener('glory-performance-settings-updated', sync as EventListener);
+    return () => window.removeEventListener('glory-performance-settings-updated', sync as EventListener);
+  }, []);
 
   useEffect(() => {
     if (!token) { setError('Token inválido'); setLoading(false); return; }
@@ -102,7 +113,7 @@ const SharedSetlist: React.FC = () => {
   useEffect(() => {
     if (!setlist?.id) return;
 
-    const showCue = (cueType: string, cueLabel: string) => {
+    const showCue = (cueType: string, cueLabel: string, targetSongId?: string | null, targetSongName?: string | null) => {
       const preset = CUE_PRESETS.find(p => p.key === cueType);
       const IconComp = preset?.icon || Music;
       const entry: CueEntry = {
@@ -112,13 +123,29 @@ const SharedSetlist: React.FC = () => {
         textColor: preset?.textColor || 'text-primary',
         icon: IconComp,
         time: new Date(),
+        targetSongId,
+        targetSongName,
       };
       setCue(entry);
       setCueVisible(true);
       setHistory(prev => [entry, ...prev].slice(0, 5));
 
+      // Highlight song if targeted
+      if (targetSongId) {
+        setHighlightedSongId(targetSongId);
+        if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+        highlightTimerRef.current = window.setTimeout(() => setHighlightedSongId(null), 10000);
+      }
+
+      // Vibrate if enabled
+      if (settingsRef.current.vibrateOnCue && typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(120);
+      }
+
       if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+
+      const duration = settingsRef.current.cueDisplaySeconds * 1000;
 
       // Only auto-hide when not pinned
       cueTimerRef.current = window.setTimeout(() => {
@@ -126,14 +153,14 @@ const SharedSetlist: React.FC = () => {
           setCueVisible(false);
           fadeTimerRef.current = window.setTimeout(() => setCue(null), 600);
         }
-      }, 4000);
+      }, duration - 600);
     };
 
     const channel = supabase
       .channel(`live-cues-${setlist.id}`)
       .on('broadcast', { event: 'cue' }, (payload) => {
-        const { cue_type, cue_label } = payload.payload || {};
-        showCue(cue_type, cue_label);
+        const { cue_type, cue_label, target_song_id, target_song_name } = payload.payload || {};
+        showCue(cue_type, cue_label, target_song_id, target_song_name);
       })
       .on(
         'postgres_changes',
@@ -150,6 +177,7 @@ const SharedSetlist: React.FC = () => {
       supabase.removeChannel(channel);
       if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
       if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
     };
   }, [setlist?.id]);
 
@@ -213,11 +241,23 @@ const SharedSetlist: React.FC = () => {
           setlist.songs.map((song, index) => {
             const keyBase = song.key?.split(' ')[0] || '';
             const keyColor = KEY_COLORS[keyBase] || 'bg-muted';
+            const isHighlighted = highlightedSongId === song.id;
             return (
-              <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 max-w-sm">
-                <span className="text-lg font-black text-muted-foreground/30 w-6 text-center shrink-0">{index + 1}</span>
+              <div 
+                key={song.id} 
+                className={`bg-card border rounded-xl p-4 flex items-center gap-3 max-w-sm transition-all duration-500 ${
+                  isHighlighted 
+                    ? 'border-primary ring-2 ring-primary/50 scale-[1.02] shadow-lg shadow-primary/20' 
+                    : 'border-border'
+                }`}
+              >
+                <span className={`text-lg font-black w-6 text-center shrink-0 transition-colors ${
+                  isHighlighted ? 'text-primary' : 'text-muted-foreground/30'
+                }`}>{index + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground truncate">{song.name}</p>
+                  <p className={`font-semibold truncate transition-colors ${
+                    isHighlighted ? 'text-primary' : 'text-foreground'
+                  }`}>{song.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="text-xs text-muted-foreground font-mono tabular-nums">{song.bpm} BPM</span>
                     <span className="text-muted-foreground/30">·</span>
@@ -226,6 +266,9 @@ const SharedSetlist: React.FC = () => {
                 </div>
                 {song.key && (
                   <span className={`${keyColor} text-white text-xs font-bold px-2.5 py-1 rounded-lg shrink-0`}>{song.key}</span>
+                )}
+                {isHighlighted && (
+                  <span className="h-3 w-3 rounded-full bg-primary animate-ping absolute -top-1 -right-1" />
                 )}
               </div>
             );
@@ -248,8 +291,13 @@ const SharedSetlist: React.FC = () => {
               <div className={`h-6 w-6 rounded-md ${entry.color} flex items-center justify-center shrink-0`}>
                 <entry.icon className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className={`text-sm font-bold ${entry.textColor}`}>{entry.label}</span>
-              <span className="ml-auto text-[10px] text-muted-foreground font-mono tabular-nums">{formatTime(entry.time)}</span>
+              <div className="flex-1 min-w-0">
+                <span className={`text-sm font-bold ${entry.textColor}`}>{entry.label}</span>
+                {entry.targetSongName && (
+                  <span className="text-[10px] text-muted-foreground ml-2">→ {entry.targetSongName}</span>
+                )}
+              </div>
+              <span className="ml-auto text-[10px] text-muted-foreground font-mono tabular-nums shrink-0">{formatTime(entry.time)}</span>
             </div>
           ))}
         </div>
@@ -278,6 +326,9 @@ const SharedSetlist: React.FC = () => {
             <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg tracking-wide text-center">
               {cue.label}
             </p>
+            {cue.targetSongName && (
+              <p className="text-sm text-white/80 font-medium">→ {cue.targetSongName}</p>
+            )}
             {pinned && (
               <span className="text-[10px] text-white/70 font-medium uppercase tracking-widest mt-1">Fixado</span>
             )}
