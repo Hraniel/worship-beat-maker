@@ -1189,6 +1189,7 @@ const Index = () => {
       s.id === currentSongId
         ? {
             ...s,
+            name: setlist.name,
             bpm,
             timeSignature,
             key: spotifyKey || undefined,
