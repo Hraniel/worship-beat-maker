@@ -79,6 +79,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
     return () => {
       supabase.removeChannel(channel);
       broadcastChannelRef.current = null;
+      if (channelRef) channelRef.current = null;
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     };
   }, [setlistId, user?.id, settings.cueDisplaySeconds, settings.vibrateOnCue]);
