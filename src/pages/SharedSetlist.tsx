@@ -57,7 +57,9 @@ const SharedSetlist: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [cue, setCue] = useState<{ label: string; color: string; textColor: string; icon: React.FC<any> } | null>(null);
+  const [cueVisible, setCueVisible] = useState(false);
   const cueTimerRef = useRef<number | null>(null);
+  const fadeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!token) { setError('Token inválido'); setLoading(false); return; }
@@ -91,8 +93,16 @@ const SharedSetlist: React.FC = () => {
         textColor: preset?.textColor || 'text-primary',
         icon: IconComp,
       });
+      setCueVisible(true);
+
       if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
-      cueTimerRef.current = window.setTimeout(() => setCue(null), 5000);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
+
+      // Start fade-out after 4s, fully gone at 5s
+      cueTimerRef.current = window.setTimeout(() => {
+        setCueVisible(false);
+        fadeTimerRef.current = window.setTimeout(() => setCue(null), 600);
+      }, 4000);
     };
 
     const channel = supabase
@@ -115,6 +125,7 @@ const SharedSetlist: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
       if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
+      if (fadeTimerRef.current) clearTimeout(fadeTimerRef.current);
     };
   }, [setlist?.id]);
 
@@ -183,7 +194,7 @@ const SharedSetlist: React.FC = () => {
             const keyBase = song.key?.split(' ')[0] || '';
             const keyColor = KEY_COLORS[keyBase] || 'bg-muted';
             return (
-              <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 max-w-lg">
+              <div key={song.id} className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 max-w-sm">
                 <span className="text-lg font-black text-muted-foreground/30 w-6 text-center shrink-0">{index + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground truncate">{song.name}</p>
@@ -202,16 +213,16 @@ const SharedSetlist: React.FC = () => {
         )}
       </div>
 
-      {/* Live cue bar at bottom */}
+      {/* Live cue bar at bottom — centered, with pulse icon + smooth fade */}
       <div
-        className={`sticky bottom-0 z-20 transition-all duration-300 ${
-          cue ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
+        className={`sticky bottom-0 z-20 transition-all duration-500 ease-in-out ${
+          cueVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
         }`}
       >
         {cue && (
-          <div className={`${cue.color} px-4 py-4 flex items-center justify-center gap-3`}>
-            <cue.icon className="h-8 w-8 text-white shrink-0 animate-in zoom-in-50 duration-300" />
-            <p className="text-2xl sm:text-3xl font-black text-white drop-shadow-md animate-in slide-in-from-bottom-2 duration-300">
+          <div className={`${cue.color} px-6 py-5 flex flex-col items-center justify-center gap-2`}>
+            <cue.icon className="h-10 w-10 text-white shrink-0 animate-[pulse_1s_ease-in-out_infinite]" />
+            <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg tracking-wide text-center">
               {cue.label}
             </p>
           </div>
