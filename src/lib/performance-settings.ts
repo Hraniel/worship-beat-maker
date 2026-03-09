@@ -44,10 +44,9 @@ export function loadPerformanceSettings(): PerformanceSettings {
 
     return {
       cueDisplaySeconds: clampSeconds(Number(parsed.cueDisplaySeconds ?? DEFAULT_PERFORMANCE_SETTINGS.cueDisplaySeconds)),
-      quickCueButtonsVisible: Boolean(parsed.quickCueButtonsVisible),
+      quickCueButtonsVisible: parsed.quickCueButtonsVisible !== false,
       keepPanelOpenAfterSend: Boolean(parsed.keepPanelOpenAfterSend),
       vibrateOnCue: parsed.vibrateOnCue !== false,
-      pinCueByDefault: Boolean(parsed.pinCueByDefault),
       soundOnCue: Boolean(parsed.soundOnCue),
       cueLabels: safeLabels,
     };

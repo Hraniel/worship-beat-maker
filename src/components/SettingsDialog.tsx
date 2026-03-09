@@ -960,19 +960,22 @@ function PerformanceSettingsPanel() {
         <p className="text-sm font-semibold text-foreground">{t('performance.customLabels')}</p>
         <p className="text-xs text-muted-foreground">{t('performance.customLabelsDesc')}</p>
         <div className="space-y-2">
-          {cueKeys.map(key => (
-            <div key={key} className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground w-16 capitalize shrink-0">{t(`performance.cue_${key}`)}</span>
-              <input
-                type="text"
-                maxLength={24}
-                placeholder={t(`performance.cue_${key}`)}
-                value={settings.cueLabels[key] || ''}
-                onChange={(e) => update({ cueLabels: { ...settings.cueLabels, [key]: e.target.value } })}
-                className="flex-1 h-8 px-2 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-          ))}
+          {cueKeys.map(key => {
+            const defaultLabel = t(`performance.cue_${key}`);
+            const currentValue = settings.cueLabels[key] || '';
+            return (
+              <div key={key} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  maxLength={24}
+                  placeholder={defaultLabel}
+                  value={currentValue}
+                  onChange={(e) => update({ cueLabels: { ...settings.cueLabels, [key]: e.target.value } })}
+                  className="flex-1 h-8 px-2 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
