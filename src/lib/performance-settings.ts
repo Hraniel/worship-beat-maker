@@ -1,5 +1,17 @@
 export type CueKey = 'chorus' | 'verse' | 'bridge' | 'down' | 'up' | 'cut' | 'worship';
 
+export interface HolyricsConfig {
+  enabled: boolean;
+  host: string;
+  token: string;
+}
+
+export const DEFAULT_HOLYRICS_CONFIG: HolyricsConfig = {
+  enabled: false,
+  host: '',
+  token: '',
+};
+
 export interface PerformanceSettings {
   cueDisplaySeconds: number;
   quickCueButtonsVisible: boolean;
@@ -7,6 +19,7 @@ export interface PerformanceSettings {
   vibrateOnCue: boolean;
   soundOnCue: boolean;
   cueLabels: Partial<Record<CueKey, string>>;
+  holyrics: HolyricsConfig;
 }
 
 const STORAGE_KEY = 'glory-performance-settings';
@@ -18,6 +31,7 @@ export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
   vibrateOnCue: true,
   soundOnCue: false,
   cueLabels: {},
+  holyrics: DEFAULT_HOLYRICS_CONFIG,
 };
 
 const CUE_KEYS: CueKey[] = ['chorus', 'verse', 'bridge', 'down', 'up', 'cut', 'worship'];
@@ -42,6 +56,13 @@ export function loadPerformanceSettings(): PerformanceSettings {
       }
     }
 
+    const rawHolyrics = parsed.holyrics || {};
+    const safeHolyrics: HolyricsConfig = {
+      enabled: Boolean((rawHolyrics as any).enabled),
+      host: typeof (rawHolyrics as any).host === 'string' ? (rawHolyrics as any).host.trim() : '',
+      token: typeof (rawHolyrics as any).token === 'string' ? (rawHolyrics as any).token.trim() : '',
+    };
+
     return {
       cueDisplaySeconds: clampSeconds(Number(parsed.cueDisplaySeconds ?? DEFAULT_PERFORMANCE_SETTINGS.cueDisplaySeconds)),
       quickCueButtonsVisible: parsed.quickCueButtonsVisible !== false,
@@ -49,6 +70,7 @@ export function loadPerformanceSettings(): PerformanceSettings {
       vibrateOnCue: parsed.vibrateOnCue !== false,
       soundOnCue: Boolean(parsed.soundOnCue),
       cueLabels: safeLabels,
+      holyrics: safeHolyrics,
     };
   } catch {
     return DEFAULT_PERFORMANCE_SETTINGS;
@@ -61,6 +83,7 @@ export function savePerformanceSettings(settings: PerformanceSettings) {
     ...settings,
     cueDisplaySeconds: clampSeconds(settings.cueDisplaySeconds),
     cueLabels: settings.cueLabels || {},
+    holyrics: settings.holyrics || DEFAULT_HOLYRICS_CONFIG,
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
