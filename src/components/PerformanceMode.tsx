@@ -484,6 +484,9 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
           <span className="text-[10px] text-muted-foreground">{t('performance.next')}</span>
         </button>
       </div>
+
+      {/* Onboarding for first-time users */}
+      {showOnboarding && <PerformanceOnboarding onClose={() => setShowOnboarding(false)} />}
     </div>
   );
 };
