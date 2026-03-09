@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Radio, Music, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart } from 'lucide-react';
+import { Radio, Music, BookOpen, Waypoints, ChevronDown, ChevronUp, Hand, Heart, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { getCueLabel, loadPerformanceSettings, type CueKey } from '@/lib/performance-settings';
+import type { SetlistSong } from '@/lib/sounds';
 
 interface LiveCuePanelProps {
   setlistId: string | null;
   isLeader?: boolean;
+  songs?: SetlistSong[];
+  currentSongId?: string | null;
 }
 
 const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = [
@@ -20,11 +23,13 @@ const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = 
   { key: 'worship', icon: Heart, color: 'bg-amber-500' },
 ];
 
-const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true }) => {
+const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true, songs = [], currentSongId }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [flash, setFlash] = useState<{ label: string; color: string; icon: React.FC<any> } | null>(null);
   const [showPanel, setShowPanel] = useState(false);
+  const [showSongPicker, setShowSongPicker] = useState(false);
+  const [targetSongId, setTargetSongId] = useState<string | null>(null);
   const [settings, setSettings] = useState(loadPerformanceSettings);
   const flashTimerRef = useRef<number | null>(null);
 
@@ -83,6 +88,10 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       const translated = t(`performance.cue_${cueKey}`);
       const cueLabel = getCueLabel(cueKey, translated, settings);
 
+      // Use current song if no target selected
+      const songToHighlight = targetSongId || currentSongId || null;
+      const songName = songToHighlight ? songs.find(s => s.id === songToHighlight)?.name : null;
+
       // Write to DB for history
       await supabase.from('live_cues' as any).insert({
         setlist_id: setlistId,
@@ -95,7 +104,13 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       broadcastChannelRef.current?.send({
         type: 'broadcast',
         event: 'cue',
-        payload: { cue_type: cueKey, cue_label: cueLabel, sent_by: user.id },
+        payload: { 
+          cue_type: cueKey, 
+          cue_label: cueLabel, 
+          sent_by: user.id,
+          target_song_id: songToHighlight,
+          target_song_name: songName,
+        },
       });
 
       const preset = CUE_PRESETS.find((p) => p.key === cueKey);
@@ -109,14 +124,18 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
       flashTimerRef.current = window.setTimeout(() => setFlash(null), settings.cueDisplaySeconds * 1000);
 
+      // Clear target after send
+      setTargetSongId(null);
+
       if (!settings.quickCueButtonsVisible && !settings.keepPanelOpenAfterSend) {
         setShowPanel(false);
       }
     },
-    [setlistId, user, t, settings],
+    [setlistId, user, t, settings, targetSongId, currentSongId, songs],
   );
 
   const panelVisible = settings.quickCueButtonsVisible || showPanel;
+  const targetSong = targetSongId ? songs.find(s => s.id === targetSongId) : null;
 
   return (
     <>
@@ -142,10 +161,54 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
           )}
 
           {panelVisible && (
-            <div className="absolute top-full mt-2 right-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-3 shadow-2xl min-w-[220px] z-50">
+            <div className="absolute top-full mt-2 right-0 bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-3 shadow-2xl min-w-[240px] z-50">
               <p className="text-xs text-muted-foreground font-medium mb-2 uppercase tracking-wider">
                 {t('performance.sendCue')}
               </p>
+
+              {/* Song target selector */}
+              {songs.length > 0 && (
+                <div className="mb-3">
+                  <button
+                    onClick={() => setShowSongPicker(p => !p)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-all border ${
+                      targetSongId 
+                        ? 'bg-primary/20 border-primary/30 text-primary' 
+                        : 'bg-muted/30 border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Target className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate flex-1 text-left">
+                      {targetSong ? targetSong.name : t('performance.targetSong')}
+                    </span>
+                  </button>
+
+                  {showSongPicker && (
+                    <div className="mt-2 bg-muted/50 rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto">
+                      <button
+                        onClick={() => { setTargetSongId(null); setShowSongPicker(false); }}
+                        className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
+                          !targetSongId ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
+                        }`}
+                      >
+                        {t('performance.clearEvent')}
+                      </button>
+                      {songs.map(song => (
+                        <button
+                          key={song.id}
+                          onClick={() => { setTargetSongId(song.id); setShowSongPicker(false); }}
+                          className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors truncate ${
+                            targetSongId === song.id ? 'bg-primary/20 text-primary' : 'hover:bg-muted text-foreground'
+                          }`}
+                        >
+                          {song.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-1.5">
                 {CUE_PRESETS.map((cue) => {
                   const cueLabel = getCueLabel(cue.key, t(`performance.cue_${cue.key}`), settings);

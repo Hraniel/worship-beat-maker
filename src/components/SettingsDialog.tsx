@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity, Globe, Sun, Moon, Palette } from 'lucide-react';
+import { Headphones, Crown, HelpCircle, Info, Bell, BellOff, BellRing, Loader2, ChevronRight, ArrowLeft, Timer, Pencil, FileAudio, ChevronDown, ChevronUp, Piano, AudioLines, Lock, Music, Activity, Globe, Sun, Moon, Palette, Radio, Pin, Volume2, Vibrate } from 'lucide-react';
 import LanguageSelector from '@/components/LanguageSelector';
 import { useFeatureGates } from '@/hooks/useFeatureGates';
 import {
@@ -836,12 +836,182 @@ function ThemeSettings() {
   );
 }
 
+// ── Performance / Live Cue Settings ─────────────────────────────────────────
+
+import { loadPerformanceSettings, savePerformanceSettings, type PerformanceSettings, type CueKey } from '@/lib/performance-settings';
+
+function PerformanceSettingsPanel() {
+  const { t } = useTranslation();
+  const [settings, setSettings] = useState<PerformanceSettings>(loadPerformanceSettings);
+
+  const update = (partial: Partial<PerformanceSettings>) => {
+    const next = { ...settings, ...partial };
+    setSettings(next);
+    savePerformanceSettings(next);
+  };
+
+  const cueKeys: CueKey[] = ['chorus', 'verse', 'bridge', 'down', 'up', 'cut', 'worship'];
+
+  return (
+    <div className="flex flex-col gap-3 w-full">
+      <div className="flex justify-center items-center gap-2">
+        <Radio className="h-5 w-5 text-primary" />
+        <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{t('settings.performance')}</span>
+      </div>
+
+      {/* Cue display duration */}
+      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">{t('performance.cueDuration')}</p>
+          <span className="text-sm font-bold text-primary tabular-nums">{settings.cueDisplaySeconds}s</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t('performance.cueDurationDesc')}
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="range"
+            min={1}
+            max={15}
+            step={1}
+            value={settings.cueDisplaySeconds}
+            onChange={(e) => update({ cueDisplaySeconds: Number(e.target.value) })}
+            className="flex-1 accent-primary h-1.5"
+          />
+        </div>
+        <div className="flex justify-between text-[10px] text-muted-foreground">
+          <span>1s</span>
+          <span>15s</span>
+        </div>
+      </div>
+
+      {/* Pin by default */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Pin className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t('performance.pinByDefault')}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('performance.pinByDefaultDesc')}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => update({ pinCueByDefault: !settings.pinCueByDefault })}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            settings.pinCueByDefault ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${settings.pinCueByDefault ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Vibrate on cue */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Vibrate className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t('performance.vibrateOnCue')}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('performance.vibrateOnCueDesc')}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => update({ vibrateOnCue: !settings.vibrateOnCue })}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            settings.vibrateOnCue ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${settings.vibrateOnCue ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Sound on cue */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Volume2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t('performance.soundOnCue')}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{t('performance.soundOnCueDesc')}</p>
+          </div>
+        </div>
+        <button
+          onClick={() => update({ soundOnCue: !settings.soundOnCue })}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            settings.soundOnCue ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${settings.soundOnCue ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Quick cue buttons visible */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">{t('performance.quickButtons')}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('performance.quickButtonsDesc')}</p>
+        </div>
+        <button
+          onClick={() => update({ quickCueButtonsVisible: !settings.quickCueButtonsVisible })}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            settings.quickCueButtonsVisible ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${settings.quickCueButtonsVisible ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Keep panel open after send */}
+      <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">{t('performance.keepPanelOpen')}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{t('performance.keepPanelOpenDesc')}</p>
+        </div>
+        <button
+          onClick={() => update({ keepPanelOpenAfterSend: !settings.keepPanelOpenAfterSend })}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+            settings.keepPanelOpenAfterSend ? 'bg-primary' : 'bg-muted'
+          }`}
+        >
+          <span className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-background shadow-sm ring-0 transition-transform ${settings.keepPanelOpenAfterSend ? 'translate-x-5' : 'translate-x-0'}`} />
+        </button>
+      </div>
+
+      {/* Custom labels */}
+      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <p className="text-sm font-semibold text-foreground">{t('performance.customLabels')}</p>
+        <p className="text-xs text-muted-foreground">{t('performance.customLabelsDesc')}</p>
+        <div className="space-y-2">
+          {cueKeys.map(key => (
+            <div key={key} className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground w-16 capitalize shrink-0">{t(`performance.cue_${key}`)}</span>
+              <input
+                type="text"
+                maxLength={24}
+                placeholder={t(`performance.cue_${key}`)}
+                value={settings.cueLabels[key] || ''}
+                onChange={(e) => update({ cueLabels: { ...settings.cueLabels, [key]: e.target.value } })}
+                className="flex-1 h-8 px-2 text-xs rounded border border-border bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-1.5">
+        <p className="text-xs font-medium text-foreground">{t('common.tip')}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {t('performance.settingsTip')}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Tab definitions ─────────────────────────────────────────────────────────
 
 const TAB_KEYS = [
   { value: 'theme', labelKey: 'settings.theme', icon: Palette },
   { value: 'audio', labelKey: 'settings.audio', icon: Headphones },
   { value: 'metronome', labelKey: 'settings.metronome', icon: Activity },
+  { value: 'performance', labelKey: 'settings.performance', icon: Radio },
   { value: 'midi', labelKey: 'settings.midi', icon: Piano },
   { value: 'tap', labelKey: 'settings.tapTempo', icon: Timer },
   { value: 'notifications', labelKey: 'settings.notifications', icon: Bell },
@@ -999,6 +1169,9 @@ const SettingsDialog: React.FC<SettingsDialogProps> = ({ open, onOpenChange, onA
 
       case 'metronome':
         return <MetronomeSettingsPanel />;
+
+      case 'performance':
+        return <PerformanceSettingsPanel />;
 
       case 'tap':
         return <TapTempoSettings />;

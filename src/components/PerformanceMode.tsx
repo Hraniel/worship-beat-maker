@@ -207,7 +207,7 @@ const PerformanceMode: React.FC<PerformanceModeProps> = ({
               {currentIndex + 1} / {songs.length}
             </span>
           )}
-          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} />
+          <LiveCuePanel setlistId={selectedEventId || setlistId || null} isLeader={true} songs={songs} currentSongId={currentSongId} />
           <button
             onClick={toggleFullscreen}
             className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"

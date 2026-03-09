@@ -5,23 +5,27 @@ export interface PerformanceSettings {
   quickCueButtonsVisible: boolean;
   keepPanelOpenAfterSend: boolean;
   vibrateOnCue: boolean;
+  pinCueByDefault: boolean;
+  soundOnCue: boolean;
   cueLabels: Partial<Record<CueKey, string>>;
 }
 
 const STORAGE_KEY = 'glory-performance-settings';
 
 export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
-  cueDisplaySeconds: 3,
+  cueDisplaySeconds: 5,
   quickCueButtonsVisible: false,
   keepPanelOpenAfterSend: false,
   vibrateOnCue: true,
+  pinCueByDefault: false,
+  soundOnCue: false,
   cueLabels: {},
 };
 
 const CUE_KEYS: CueKey[] = ['chorus', 'verse', 'bridge', 'down', 'up', 'cut', 'worship'];
 
 function clampSeconds(value: number) {
-  return Math.max(1, Math.min(12, value));
+  return Math.max(1, Math.min(15, value));
 }
 
 export function loadPerformanceSettings(): PerformanceSettings {
@@ -45,6 +49,8 @@ export function loadPerformanceSettings(): PerformanceSettings {
       quickCueButtonsVisible: Boolean(parsed.quickCueButtonsVisible),
       keepPanelOpenAfterSend: Boolean(parsed.keepPanelOpenAfterSend),
       vibrateOnCue: parsed.vibrateOnCue !== false,
+      pinCueByDefault: Boolean(parsed.pinCueByDefault),
+      soundOnCue: Boolean(parsed.soundOnCue),
       cueLabels: safeLabels,
     };
   } catch {
