@@ -38,39 +38,40 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true 
     };
   }, []);
 
-  // Subscribe to live cues
+  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Subscribe to broadcast channel (for sending and receiving cues)
   useEffect(() => {
     if (!setlistId) return;
 
     const channel = supabase
       .channel(`live-cues-${setlistId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'live_cues', filter: `setlist_id=eq.${setlistId}` },
-        (payload) => {
-          const cue = payload.new as any;
-          if (cue.sent_by === user?.id) return;
+      .on('broadcast', { event: 'cue' }, (payload) => {
+        const { cue_type, cue_label, sent_by } = payload.payload || {};
+        if (sent_by === user?.id) return;
 
-          const preset = CUE_PRESETS.find((p) => p.key === cue.cue_type);
-          const IconComp = preset?.icon || Music;
-          setFlash({
-            label: cue.cue_label || cue.cue_type,
-            color: preset?.color || 'bg-primary',
-            icon: IconComp,
-          });
+        const preset = CUE_PRESETS.find((p) => p.key === cue_type);
+        const IconComp = preset?.icon || Music;
+        setFlash({
+          label: cue_label || cue_type,
+          color: preset?.color || 'bg-primary',
+          icon: IconComp,
+        });
 
-          if (settings.vibrateOnCue && typeof navigator !== 'undefined' && navigator.vibrate) {
-            navigator.vibrate(120);
-          }
+        if (settings.vibrateOnCue && typeof navigator !== 'undefined' && navigator.vibrate) {
+          navigator.vibrate(120);
+        }
 
-          if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
-          flashTimerRef.current = window.setTimeout(() => setFlash(null), settings.cueDisplaySeconds * 1000);
-        },
-      )
+        if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
+        flashTimerRef.current = window.setTimeout(() => setFlash(null), settings.cueDisplaySeconds * 1000);
+      })
       .subscribe();
+
+    broadcastChannelRef.current = channel;
 
     return () => {
       supabase.removeChannel(channel);
+      broadcastChannelRef.current = null;
       if (flashTimerRef.current) clearTimeout(flashTimerRef.current);
     };
   }, [setlistId, user?.id, settings.cueDisplaySeconds, settings.vibrateOnCue]);
