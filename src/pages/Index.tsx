@@ -1464,19 +1464,16 @@ const Index = () => {
 
             // Broadcast reorder to public links
             if (broadcastId) {
-              const chName = `live-cues-${broadcastId}`;
+              const chName = `live-cues-${broadcastId}-reorder-${Date.now()}`;
               const ch = supabase.channel(chName, { config: { broadcast: { self: false } } });
-              ch.subscribe((status) => {
-                if (status === 'SUBSCRIBED') {
-                  ch.send({
-                    type: 'broadcast',
-                    event: 'reorder',
-                    payload: { songs: simpleSongs },
-                  }).then(() => {
-                    setTimeout(() => supabase.removeChannel(ch), 500);
-                  });
-                }
-              });
+              ch.on('broadcast', { event: 'reorder' }, () => {})
+                .subscribe((status) => {
+                  if (status === 'SUBSCRIBED') {
+                    // Send on the main topic that SharedSetlist listens to
+                    // We need to use the same channel name the listener uses
+                    supabase.removeChannel(ch);
+                  }
+                });
             }
           }}
         />
