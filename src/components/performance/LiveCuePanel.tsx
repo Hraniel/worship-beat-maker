@@ -35,20 +35,37 @@ const CUE_PRESETS: Array<{ key: CueKey; icon: React.FC<any>; color: string }> = 
 async function sendToHolyrics(holyrics: HolyricsConfig, cueLabel: string, displaySeconds: number) {
   if (!holyrics.enabled || !holyrics.host || !holyrics.token) return;
 
+  const targetScreen = holyrics.targetScreen || 'stage';
+
   try {
-    await supabase.functions.invoke('holyrics-proxy', {
-      body: {
-        host: holyrics.host,
-        token: holyrics.token,
-        action: 'SetAlert',
-        payload: {
-          text: cueLabel,
-          show: true,
-          display_ahead: true,
-          close_after_seconds: displaySeconds,
+    // Send to stage monitor (communication panel) - only visible to band
+    if (targetScreen === 'stage' || targetScreen === 'all') {
+      await supabase.functions.invoke('holyrics-proxy', {
+        body: {
+          host: holyrics.host,
+          token: holyrics.token,
+          action: 'SetTextCommunicationPanel',
+          payload: { text: cueLabel },
         },
-      },
-    });
+      });
+    }
+
+    // Send to front projection (alert overlay) - visible to congregation
+    if (targetScreen === 'front' || targetScreen === 'all') {
+      await supabase.functions.invoke('holyrics-proxy', {
+        body: {
+          host: holyrics.host,
+          token: holyrics.token,
+          action: 'SetAlert',
+          payload: {
+            text: cueLabel,
+            show: true,
+            display_ahead: true,
+            close_after_seconds: displaySeconds,
+          },
+        },
+      });
+    }
   } catch (err) {
     console.error('[Holyrics] Failed to send cue:', err);
   }

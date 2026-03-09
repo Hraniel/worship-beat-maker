@@ -1,15 +1,19 @@
 export type CueKey = 'chorus' | 'verse' | 'bridge' | 'down' | 'up' | 'cut' | 'worship';
 
+export type HolyricsTargetScreen = 'stage' | 'front' | 'all';
+
 export interface HolyricsConfig {
   enabled: boolean;
   host: string;
   token: string;
+  targetScreen: HolyricsTargetScreen;
 }
 
 export const DEFAULT_HOLYRICS_CONFIG: HolyricsConfig = {
   enabled: false,
   host: '',
   token: '',
+  targetScreen: 'stage',
 };
 
 export interface PerformanceSettings {
@@ -57,10 +61,13 @@ export function loadPerformanceSettings(): PerformanceSettings {
     }
 
     const rawHolyrics = parsed.holyrics || {};
+    const rawTargetScreen = (rawHolyrics as any).targetScreen;
+    const validTargets: HolyricsTargetScreen[] = ['stage', 'front', 'all'];
     const safeHolyrics: HolyricsConfig = {
       enabled: Boolean((rawHolyrics as any).enabled),
       host: typeof (rawHolyrics as any).host === 'string' ? (rawHolyrics as any).host.trim() : '',
       token: typeof (rawHolyrics as any).token === 'string' ? (rawHolyrics as any).token.trim() : '',
+      targetScreen: validTargets.includes(rawTargetScreen) ? rawTargetScreen : 'stage',
     };
 
     return {

@@ -1,50 +1,59 @@
 
 
-## Enviar Cues Apenas para a Tela de Retorno (Stage Display) do Holyrics
+# Verificação: Persistência de dados ao fechar o app Capacitor
 
-### Contexto
+## Análise do estado atual
 
-A API do Holyrics permite direcionar alertas para telas específicas usando o parâmetro `receiver_id` no `SetAlert`. Cada tela configurada no Holyrics tem um ID (0 = tela principal, 1 = segunda tela/retorno, etc.). Também existe a API `SetTextCommunicationPanel` que é exclusiva do painel de comunicação interno (só aparece no retorno da banda).
+Após revisar o código, identifiquei como cada tipo de dado é persistido:
 
-### O que será feito
+### O que já funciona corretamente
 
-1. **Adicionar campo `targetScreen` ao `HolyricsConfig`**
-   - Opções: `"all"` (todas as telas), `"stage"` (só retorno/segunda tela), `"front"` (só projeção principal)
-   - Default: `"stage"` (retorno da banda)
+| Dado | Mecanismo | Sobrevive ao fechamento? |
+|------|-----------|--------------------------|
+| **Login/Sessão** | Supabase Auth (localStorage automático) + fallback offline | ✅ Sim |
+| **BPM, Time Signature, Key** | localStorage (escrita imediata) | ✅ Sim |
+| **Volumes dos pads** | localStorage | ✅ Sim |
+| **Pan dos pads** | localStorage | ✅ Sim |
+| **Nomes customizados** | localStorage | ✅ Sim |
+| **Tamanho dos pads** | localStorage | ✅ Sim |
+| **Setlists (lista)** | Supabase + cache localStorage | ✅ Sim |
+| **Eventos agendados** | Supabase + cache localStorage | ✅ Sim |
+| **Sons customizados** | IndexedDB | ✅ Sim |
+| **Ambient pads customizados** | IndexedDB | ✅ Sim |
+| **Música ativa (ID)** | localStorage | ✅ Sim |
+| **Tier de assinatura** | localStorage cache | ✅ Sim |
+| **Sync/metronome settings** | localStorage | ✅ Sim |
 
-2. **Atualizar a UI de configuração no SettingsDialog**
-   - Adicionar um `Select` com as opções de tela destino logo abaixo dos campos de IP e Token
-   - Labels: "Todas as telas", "Apenas retorno (banda)", "Apenas projeção (igreja)"
+### Ponto crítico: Auto-save da música atual
 
-3. **Modificar o payload enviado ao Holyrics**
-   - Quando `targetScreen === "stage"`: usar `SetTextCommunicationPanel` (painel de comunicação — aparece apenas no monitor de retorno)
-   - Quando `targetScreen === "front"`: usar `SetAlert` normal
-   - Quando `targetScreen === "all"`: enviar para ambos
+O auto-save da música ativa (que salva BPM, Key, efeitos, MIDI mappings de volta no setlist do Supabase) depende de eventos `pagehide` e `beforeunload`:
 
-4. **Atualizar persistência em `performance-settings.ts`**
-   - Incluir `targetScreen` no load/save do `HolyricsConfig`
-
-5. **Atualizar traduções** (pt-BR, en, es)
-
-### Arquitetura
-
-```text
-Configuração: targetScreen = "stage"
-       ↓
-LiveCuePanel → sendToHolyrics()
-       ↓
-action = "SetTextCommunicationPanel"  ← só aparece no retorno
-payload = { text: "REFRÃO!" }
-       ↓
-holyrics-proxy → Holyrics API Server
-       ↓
-Banda vê no monitor de retorno ✓
-Igreja NÃO vê na projeção ✓
+```typescript
+window.addEventListener("pagehide", handlePageHide);
+window.addEventListener("beforeunload", handlePageHide);
 ```
 
-### Detalhes técnicos
+**No Capacitor Android WebView**, o comportamento desses eventos é **inconsistente**:
+- `pagehide` **pode não disparar** quando o app é removido das recentes (swipe-away)
+- `beforeunload` **raramente dispara** em WebViews Android
+- `visibilitychange` para `hidden` **dispara na maioria dos casos** ao minimizar, mas **não ao matar o app**
 
-- `SetTextCommunicationPanel` é a API correta para enviar mensagens visíveis **apenas** no painel de comunicação do Holyrics (monitor de retorno da banda)
-- `SetAlert` com `display_ahead: true` aparece em **todas** as telas
-- A edge function `holyrics-proxy` já é genérica (aceita qualquer `action`), não precisa de alteração
+### Risco identificado
+
+Se o usuário altera BPM/Key/efeitos/MIDI de uma música e fecha o app (swipe-away), essas alterações **podem não ser salvas no Supabase**. Porém, os valores individuais (BPM, volumes, pans) ficam no localStorage — o problema é que **não são re-associados à música do setlist**.
+
+## Plano de correção
+
+### 1. Adicionar listener do Capacitor App para `appStateChange`
+Instalar `@capacitor/app` e usar o evento `appStateChange` que é **garantido** no Android/iOS quando o app vai para background ou é fechado.
+
+### 2. Salvar com `Capacitor.App.addListener('appStateChange')`
+Quando `isActive === false`, chamar `autoSaveCurrentSong()` — este é o mecanismo nativo confiável.
+
+### 3. Adicionar save periódico como safety net
+Um `setInterval` (a cada 30-60s) que salva a música ativa automaticamente, garantindo que no máximo 1 minuto de alterações seja perdido em caso de kill forçado.
+
+## Arquivos a modificar
+- `package.json` — adicionar `@capacitor/app`
+- `src/pages/Index.tsx` — adicionar listener `appStateChange` + save periódico
 
