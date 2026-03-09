@@ -96,6 +96,15 @@ serve(async (req) => {
     // --- Fallback to Stripe ---
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { apiVersion: "2023-10-16" });
 
+    // Fetch payment config BEFORE using it
+    const { data: lifetimeConfig } = await supabaseClient
+      .from("app_config")
+      .select("config_key, config_value")
+      .in("config_key", ["payment_mode", "lifetime_stripe_product_id"]);
+
+    const paymentMode = lifetimeConfig?.find((c: any) => c.config_key === "payment_mode")?.config_value;
+    const lifetimeProductId = lifetimeConfig?.find((c: any) => c.config_key === "lifetime_stripe_product_id")?.config_value;
+
     // Retry Stripe customer lookup to handle intermittent API issues
     const customers = await retryAsync(() => stripe.customers.list({ email, limit: 1 }));
     if (customers.data.length === 0) {
@@ -135,15 +144,6 @@ serve(async (req) => {
 
     const customerId = customers.data[0].id;
     logStep("Found customer", { customerId });
-
-    // --- Check for lifetime (one-time) purchase ---
-    const { data: lifetimeConfig } = await supabaseClient
-      .from("app_config")
-      .select("config_key, config_value")
-      .in("config_key", ["payment_mode", "lifetime_stripe_product_id"]);
-
-    const paymentMode = lifetimeConfig?.find((c: any) => c.config_key === "payment_mode")?.config_value;
-    const lifetimeProductId = lifetimeConfig?.find((c: any) => c.config_key === "lifetime_stripe_product_id")?.config_value;
 
     if (paymentMode === "lifetime" && lifetimeProductId) {
       // Check for completed checkout sessions with this product
