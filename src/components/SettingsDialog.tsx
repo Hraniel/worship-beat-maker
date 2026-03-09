@@ -1001,24 +1001,75 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
   const { t } = useTranslation();
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null);
+  const [testMessage, setTestMessage] = useState<string | null>(null);
 
   const holyrics = settings.holyrics || DEFAULT_HOLYRICS_CONFIG;
 
   const updateHolyrics = (partial: Partial<HolyricsConfig>) => {
     onUpdate({ holyrics: { ...holyrics, ...partial } });
     setTestResult(null);
+    setTestMessage(null);
   };
 
   const testConnection = async () => {
     if (!holyrics.host || !holyrics.token) return;
     setTesting(true);
     setTestResult(null);
+    setTestMessage(null);
 
+    const host = holyrics.host.trim();
+    const token = holyrics.token.trim();
+    const hostname = host.split(':')[0] || '';
+    const isPrivateNetworkHost = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(hostname);
+
+    // 1) Prefer direct local call for LAN hosts
+    try {
+      const url = `http://${host}/api/SetAlert?token=${encodeURIComponent(token)}`;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 5000);
+
+      try {
+        await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: '✅ GloryPads conectado!',
+            show: true,
+            display_ahead: true,
+            close_after_seconds: 3,
+          }),
+          signal: controller.signal,
+          mode: 'no-cors',
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      setTestResult('success');
+      setTestMessage(t('performance.holyricsTestSuccessHint', 'Sinal de teste enviado. Confira no Holyrics se o alerta apareceu.'));
+      return;
+    } catch (directErr) {
+      const directMessage = directErr instanceof Error ? directErr.message : String(directErr);
+      const mayBeMixedContent = /mixed content|failed to fetch|networkerror/i.test(directMessage);
+
+      if (isPrivateNetworkHost && mayBeMixedContent) {
+        setTestResult('error');
+        setTestMessage(
+          t(
+            'performance.holyricsTestHttpsHint',
+            'Seu navegador pode estar bloqueando HTTP local em página HTTPS. Teste pelo app Android instalado na mesma rede do Holyrics.'
+          )
+        );
+        return;
+      }
+    }
+
+    // 2) Fallback: cloud proxy (works for publicly reachable hosts)
     try {
       const { data, error } = await supabase.functions.invoke('holyrics-proxy', {
         body: {
-          host: holyrics.host,
-          token: holyrics.token,
+          host,
+          token,
           action: 'SetAlert',
           payload: {
             text: '✅ GloryPads conectado!',
@@ -1033,9 +1084,19 @@ function HolyricsSettingsPanel({ settings, onUpdate }: { settings: PerformanceSe
       if (data?.error) throw new Error(data.error);
 
       setTestResult('success');
+      setTestMessage(t('performance.holyricsTestSuccessHint', 'Sinal de teste enviado. Confira no Holyrics se o alerta apareceu.'));
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       console.error('[Holyrics] Test failed:', err);
       setTestResult('error');
+      setTestMessage(
+        message?.includes('Signal timed out.')
+          ? t(
+              'performance.holyricsTimeoutHint',
+              'Timeout ao conectar. Para IP local (192.168.x.x), use o app na mesma rede do Holyrics ou exponha o API Server em uma rota acessível externamente.'
+            )
+          : t('performance.holyricsTestErrorHint', 'Verifique se o Holyrics está aberto, o API Server está ativo e o IP/Token estão corretos.')
+      );
     } finally {
       setTesting(false);
     }
