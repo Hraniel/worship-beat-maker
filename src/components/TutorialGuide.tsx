@@ -196,6 +196,57 @@ export const TUTORIAL_SECTIONS: TutorialSection[] = [
     ],
   },
   {
+    id: 'performance',
+    label: 'Modo Performance',
+    steps: [
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Modo Performance',
+        description: 'Tela de palco em tela cheia otimizada para apresentações ao vivo. Exibe BPM, tom, compasso e músicas com alta visibilidade.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Navegação entre Músicas',
+        description: 'Use swipe horizontal, setas do teclado (← →) ou toque nos dots na parte inferior para navegar. A barra de espaço inicia/para o metrônomo.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Sinais ao Vivo (Live Cues)',
+        description: 'Envie sinais visuais em tempo real para sua equipe: Refrão, Verso, Ponte, Sobe, Desce, Corta e Adoração. Todos recebem instantaneamente no link compartilhado.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Rótulos Personalizados',
+        description: 'Personalize os nomes dos sinais em Configurações > Performance > Rótulos. Pode ser qualquer texto, como "Ponte Musical" ou "Solo Guitarra".',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Compartilhar com a Equipe',
+        description: 'Selecione um evento público e toque em Compartilhar. Sua equipe verá o repertório, sinais e música em destaque ao vivo pelo link, sem precisar atualizar a página.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Destaque de Música ao Vivo',
+        description: 'Quando você seleciona uma música no performance, ela é destacada automaticamente no link público em tempo real. Ideal para que a equipe saiba qual música está tocando.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Reordenação ao Vivo',
+        description: 'Arraste as músicas na lista para reordenar. A nova ordem é sincronizada em tempo real para todos que estão acompanhando pelo link.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Eventos Programados',
+        description: 'Crie eventos com data (ex: "Culto Domingo") e ative-os no Performance. Use o botão de compartilhar para enviar o link do evento à equipe.',
+      },
+      {
+        targetSelector: '[data-tutorial="pad-grid"]',
+        title: 'Configurações de Performance',
+        description: 'Em Configurações > Performance, ajuste: tempo de exibição do sinal, vibração, som ao receber, botões rápidos e rótulos personalizados.',
+      },
+    ],
+  },
+  {
     id: 'store',
     label: 'Glory Store',
     steps: [
