@@ -74,6 +74,7 @@ const LiveCuePanel: React.FC<LiveCuePanelProps> = ({ setlistId, isLeader = true,
       .subscribe();
 
     broadcastChannelRef.current = channel;
+    if (channelRef) channelRef.current = channel;
 
     return () => {
       supabase.removeChannel(channel);
