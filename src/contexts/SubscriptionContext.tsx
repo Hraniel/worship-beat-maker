@@ -25,6 +25,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try { localStorage.setItem('app_cached_tier', t); } catch {}
   }, []);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const checkSubscription = useCallback(async () => {
