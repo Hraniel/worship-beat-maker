@@ -7,6 +7,7 @@ import { useNewUserUnlock } from '@/hooks/useNewUserUnlock';
 interface SubscriptionContextType {
   tier: TierKey;
   loading: boolean;
+  error: boolean;
   subscriptionEnd: string | null;
   checkSubscription: () => Promise<void>;
   tierConfig: typeof TIERS[TierKey];
