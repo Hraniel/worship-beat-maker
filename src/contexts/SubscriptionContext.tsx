@@ -98,6 +98,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     <SubscriptionContext.Provider value={{
       tier,
       loading,
+      error,
       subscriptionEnd,
       checkSubscription,
       tierConfig: effectiveTierConfig,
