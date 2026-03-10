@@ -1000,6 +1000,7 @@ function PerformanceSettingsPanel() {
 
 function CloudflareTunnelGuide() {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation();
 
   return (
     <div className="mt-2">
@@ -1009,26 +1010,24 @@ function CloudflareTunnelGuide() {
         className="flex items-center gap-1.5 text-[11px] font-medium text-primary hover:underline"
       >
         <ExternalLink className="h-3 w-3" />
-        {open ? 'Fechar guia do Cloudflare Tunnel' : 'Como configurar o Cloudflare Tunnel?'}
+        {open ? t('performance.tunnelClose', 'Fechar guia do Cloudflare Tunnel') : t('performance.tunnelOpen', 'Como configurar o Cloudflare Tunnel?')}
         <ChevronDown className={`h-3 w-3 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
         <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-foreground">
-          <p className="font-semibold text-sm">☁️ Configurar Cloudflare Tunnel (acesso remoto)</p>
+          <p className="font-semibold text-sm">{t('performance.tunnelTitle', '☁️ Configurar Cloudflare Tunnel (acesso remoto)')}</p>
           <p className="text-muted-foreground">
-            O Cloudflare Tunnel permite que o Glory Pads se conecte ao Holyrics pela internet, 
-            sem precisar estar na mesma rede Wi-Fi.
+            {t('performance.tunnelDesc', 'O Cloudflare Tunnel permite que o Glory Pads se conecte ao Holyrics pela internet, sem precisar estar na mesma rede Wi-Fi.')}
           </p>
           <p className="text-muted-foreground font-medium">
-            📱 <strong>Ideal para quem instalou o Glory Pads pelo navegador (PWA)</strong> ao invés da Play Store. 
-            Quem usa o app Android nativo (Play Store) na mesma rede Wi-Fi do Holyrics não precisa de túnel — basta usar o IP local.
+            {t('performance.tunnelPwaNote', '📱 Ideal para quem instalou o Glory Pads pelo navegador (PWA) ao invés da Play Store. Quem usa o app Android nativo (Play Store) na mesma rede Wi-Fi do Holyrics não precisa de túnel — basta usar o IP local.')}
           </p>
 
           {/* Step 1 */}
           <div className="space-y-1">
-            <p className="font-semibold">1. Baixe o Cloudflared</p>
-            <p className="text-muted-foreground">Instale o cliente do Cloudflare Tunnel no computador onde roda o Holyrics:</p>
+            <p className="font-semibold">{t('performance.tunnelStep1Title', '1. Baixe o Cloudflared')}</p>
+            <p className="text-muted-foreground">{t('performance.tunnelStep1Desc', 'Instale o cliente do Cloudflare Tunnel no computador onde roda o Holyrics:')}</p>
             <div className="flex flex-wrap gap-2 mt-1">
               <a
                 href="https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.msi"
@@ -1059,16 +1058,14 @@ function CloudflareTunnelGuide() {
 
           {/* Step 2 */}
           <div className="space-y-1">
-            <p className="font-semibold">2. Confirme a porta do API Server</p>
-            <p className="text-muted-foreground">
-              No Holyrics, vá em <strong>Arquivo → Configurações → API Server</strong> e veja a porta configurada (padrão: <code className="bg-muted px-1 rounded">8091</code>).
-            </p>
+            <p className="font-semibold">{t('performance.tunnelStep2Title', '2. Confirme a porta do API Server')}</p>
+            <p className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: t('performance.tunnelStep2Desc', 'No Holyrics, vá em <strong>Arquivo → Configurações → API Server</strong> e veja a porta configurada (padrão: <code>8091</code>).') }} />
           </div>
 
           {/* Step 3 */}
           <div className="space-y-1">
-            <p className="font-semibold">3. Abra o terminal e execute</p>
-            <p className="text-muted-foreground">Cole o comando abaixo no Prompt de Comando (Windows) ou Terminal (Mac):</p>
+            <p className="font-semibold">{t('performance.tunnelStep3Title', '3. Abra o terminal e execute')}</p>
+            <p className="text-muted-foreground">{t('performance.tunnelStep3Desc', 'Cole o comando abaixo no Prompt de Comando (Windows) ou Terminal (Mac):')}</p>
             <div className="relative mt-1">
               <pre className="bg-background border border-border rounded-md p-2.5 text-[11px] font-mono overflow-x-auto whitespace-pre-wrap break-all select-all">
 {`cloudflared tunnel --url http://localhost:8091`}
@@ -1077,47 +1074,42 @@ function CloudflareTunnelGuide() {
                 type="button"
                 onClick={() => navigator.clipboard.writeText('cloudflared tunnel --url http://localhost:8091')}
                 className="absolute top-1.5 right-1.5 p-1 rounded bg-muted hover:bg-muted/80 text-muted-foreground"
-                title="Copiar"
+                title={t('common.copy', 'Copiar')}
               >
                 <Copy className="h-3 w-3" />
               </button>
             </div>
             <p className="text-[10px] text-muted-foreground mt-1">
-              ⚠️ Se a sua porta for diferente de 8091, substitua no comando acima.
+              {t('performance.tunnelStep3Hint', '⚠️ Se a sua porta for diferente de 8091, substitua no comando acima.')}
             </p>
           </div>
 
           {/* Step 4 */}
           <div className="space-y-1">
-            <p className="font-semibold">4. Copie a URL gerada</p>
+            <p className="font-semibold">{t('performance.tunnelStep4Title', '4. Copie a URL gerada')}</p>
             <p className="text-muted-foreground">
-              O terminal irá mostrar uma URL como:
+              {t('performance.tunnelStep4Desc', 'O terminal irá mostrar uma URL como:')}
             </p>
             <pre className="bg-background border border-border rounded-md p-2 text-[11px] font-mono text-primary">
 {`https://abc-xyz-123.trycloudflare.com`}
             </pre>
-            <p className="text-muted-foreground">
-              Copie essa URL e cole no campo <strong>"Endereço do Holyrics"</strong> acima.
-            </p>
+            <p className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: t('performance.tunnelStep4Hint', 'Copie essa URL e cole no campo <strong>"Endereço do Holyrics"</strong> acima.') }} />
           </div>
 
           {/* Step 5 */}
           <div className="space-y-1">
-            <p className="font-semibold">5. Pronto!</p>
-            <p className="text-muted-foreground">
-              Clique em <strong>"Testar Conexão"</strong> para verificar. A cada reinício do Cloudflared, 
-              uma nova URL será gerada — basta atualizar aqui.
-            </p>
+            <p className="font-semibold">{t('performance.tunnelStep5Title', '5. Pronto!')}</p>
+            <p className="text-muted-foreground" dangerouslySetInnerHTML={{ __html: t('performance.tunnelStep5Desc', 'Clique em <strong>"Testar Conexão"</strong> para verificar. A cada reinício do Cloudflared, uma nova URL será gerada — basta atualizar aqui.') }} />
           </div>
 
           {/* Tips */}
           <div className="rounded-md bg-primary/5 border border-primary/20 p-2.5 space-y-1">
-            <p className="font-semibold text-primary text-[11px]">💡 Dicas</p>
+            <p className="font-semibold text-primary text-[11px]">{t('performance.tunnelTipsTitle', '💡 Dicas')}</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-0.5 text-[11px]">
-              <li>O Cloudflared precisa estar rodando enquanto usar o Glory Pads remotamente.</li>
-              <li>Para porta personalizada, ajuste o número no comando.</li>
-              <li>No Windows, você pode criar um atalho na área de trabalho com o comando para facilitar.</li>
-              <li>Não precisa de conta Cloudflare para o túnel rápido (Quick Tunnel).</li>
+              <li>{t('performance.tunnelTip1', 'O Cloudflared precisa estar rodando enquanto usar o Glory Pads remotamente.')}</li>
+              <li>{t('performance.tunnelTip2', 'Para porta personalizada, ajuste o número no comando.')}</li>
+              <li>{t('performance.tunnelTip3', 'No Windows, você pode criar um atalho na área de trabalho com o comando para facilitar.')}</li>
+              <li>{t('performance.tunnelTip4', 'Não precisa de conta Cloudflare para o túnel rápido (Quick Tunnel).')}</li>
             </ul>
           </div>
         </div>
