@@ -97,7 +97,7 @@ const Dashboard = () => {
   const CATEGORY_GROUPS = useCategoryGroups();
   useBodyScroll();
   const { user, signOut } = useAuth();
-  const { tier, subscriptionEnd, loading } = useSubscription();
+  const { tier, subscriptionEnd, loading, error: subscriptionError, checkSubscription } = useSubscription();
   const { packs: dbPacks, loading: packsLoading, refetch } = useStorePacks();
   const { isAdmin } = useAdminRole();
   const { get: sc, getJSON } = useStoreConfig();
