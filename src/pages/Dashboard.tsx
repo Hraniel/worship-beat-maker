@@ -414,6 +414,22 @@ const Dashboard = () => {
             </div>
           </div>
 
+          {/* Subscription error fallback */}
+          {subscriptionError && (
+            <div className="mb-4 flex flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+              <p className="text-sm font-medium text-foreground">Não foi possível verificar sua assinatura</p>
+              <p className="text-xs text-muted-foreground max-w-sm">A loja pode não exibir todos os recursos corretamente. Verifique sua conexão e tente novamente.</p>
+              <button
+                onClick={() => { checkSubscription(); }}
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Tentar novamente
+              </button>
+            </div>
+          )}
+
           {/* Mobile: categories + filters above search */}
           <div className="lg:hidden space-y-3 mb-4">
             {/* Categories button + library filters row */}
