@@ -1018,7 +1018,11 @@ function CloudflareTunnelGuide() {
           <p className="font-semibold text-sm">☁️ Configurar Cloudflare Tunnel (acesso remoto)</p>
           <p className="text-muted-foreground">
             O Cloudflare Tunnel permite que o Glory Pads se conecte ao Holyrics pela internet, 
-            sem precisar estar na mesma rede Wi-Fi. Ideal para uso via PWA no navegador.
+            sem precisar estar na mesma rede Wi-Fi.
+          </p>
+          <p className="text-muted-foreground font-medium">
+            📱 <strong>Ideal para quem instalou o Glory Pads pelo navegador (PWA)</strong> ao invés da Play Store. 
+            Quem usa o app Android nativo (Play Store) na mesma rede Wi-Fi do Holyrics não precisa de túnel — basta usar o IP local.
           </p>
 
           {/* Step 1 */}
