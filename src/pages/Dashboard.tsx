@@ -27,7 +27,8 @@ import {
   User, Mail, Calendar, Loader2,
   ChevronDown, ChevronRight, Drum, Waves, Sparkles, Music, Headphones,
   Volume2, Layers, AudioWaveform, Lock, ShieldCheck, Filter, Search, X,
-  Library, RotateCcw, Package, CheckCircle, BookOpen, Globe, Settings, Gift, Rocket
+  Library, RotateCcw, Package, CheckCircle, BookOpen, Globe, Settings, Gift, Rocket,
+  AlertTriangle, RefreshCw
 } from 'lucide-react';
 import AdminPrelaunchManager from '@/components/AdminPrelaunchManager';
 
