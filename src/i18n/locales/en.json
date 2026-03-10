@@ -177,6 +177,8 @@
     "activeCount_other": "{{count}} active",
     "removedCount_one": "{{count}} removed",
     "removedCount_other": "{{count}} removed",
+    "subscriptionErrorTitle": "Could not verify your subscription",
+    "subscriptionErrorDesc": "The store may not display all features correctly. Check your connection and try again.",
     "all": "All",
     "drums": "Drums",
     "loops": "Loops",

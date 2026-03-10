@@ -128,7 +128,9 @@
     "activeCount_one": "{{count}} ativo",
     "activeCount_other": "{{count}} ativos",
     "removedCount_one": "{{count}} removido",
-    "removedCount_other": "{{count}} removidos"
+    "removedCount_other": "{{count}} removidos",
+    "subscriptionErrorTitle": "Não foi possível verificar a sua subscrição",
+    "subscriptionErrorDesc": "A loja pode não exibir todos os recursos corretamente. Verifique a sua ligação e tente novamente."
   },
   "tickets": {
     "title": "Os Meus Tickets",
