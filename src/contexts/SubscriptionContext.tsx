@@ -33,6 +33,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setTier('free');
       setSubscriptionEnd(null);
       setLoading(false);
+      setError(false);
       return;
     }
 
@@ -42,11 +43,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
+    setError(false);
     const maxRetries = 2;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        const { data, error } = await supabase.functions.invoke('check-subscription');
-        if (error) throw error;
+        const { data, error: fnError } = await supabase.functions.invoke('check-subscription');
+        if (fnError) throw fnError;
         const result = data as { subscribed: boolean; product_id: string | null; subscription_end: string | null };
         
         if (result && 'error' in result) {
@@ -56,10 +58,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setTier(getTierByProductId(result.product_id));
         setSubscriptionEnd(result.subscription_end);
         setLoading(false);
+        setError(false);
         return;
       } catch (e) {
         console.warn(`Subscription check attempt ${attempt + 1} failed:`, e);
         if (attempt === maxRetries) {
+          setError(true);
           if (tier === 'free') {
             setTier('free');
           }
