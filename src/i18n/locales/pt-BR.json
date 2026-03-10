@@ -177,6 +177,8 @@
     "activeCount_other": "{{count}} ativos",
     "removedCount_one": "{{count}} removido",
     "removedCount_other": "{{count}} removidos",
+    "subscriptionErrorTitle": "Não foi possível verificar sua assinatura",
+    "subscriptionErrorDesc": "A loja pode não exibir todos os recursos corretamente. Verifique sua conexão e tente novamente.",
     "all": "Todos",
     "drums": "Bateria",
     "loops": "Loops",
