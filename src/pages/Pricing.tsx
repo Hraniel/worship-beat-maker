@@ -220,8 +220,7 @@ const Pricing = () => {
                   Desbloqueie todas as funcionalidades do app para sempre.
                 </p>
 
-                {/* Show all features from all tiers */}
-                <ul className="space-y-2 text-sm text-left">
+                <ul className="space-y-2 text-sm text-left max-h-52 overflow-y-auto pr-1 scrollbar-thin">
                   {['free', 'pro', 'master'].flatMap(tier =>
                     features
                       .filter(f => f.tier === tier && f.enabled)
