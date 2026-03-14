@@ -1052,12 +1052,14 @@ const Pricing = ({
   pricing,
   features,
   L,
+  paymentMode,
 }: {
   navigate: ReturnType<typeof useNavigate>;
   config: Record<string, string>;
   pricing: any[];
   features: any[];
   L: (key: string, fb?: string) => string;
+  paymentMode: ReturnType<typeof usePaymentMode>;
 }) => {
   const { t } = useTranslation();
   if (config.show_pricing === "false") return null;
