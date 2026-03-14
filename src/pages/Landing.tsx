@@ -1069,6 +1069,16 @@ const Pricing = ({
   const subtitleColor = config.pricing_subtitle_color || "hsl(0 0% 100% / 0.45)";
   const tierOrder = ["free", "pro", "master"];
 
+  // Lifetime mode: show single card with all master features
+  const isLifetime = paymentMode.isLifetime;
+
+  const lifetimeTitle = isLifetime
+    ? L('plans_title', paymentMode.lifetime_name)
+    : L('plans_title', "Comece grátis. Cresça quando quiser.");
+  const lifetimeSubtitle = isLifetime
+    ? L('plans_subtitle', "Pagamento único — acesso completo para sempre.")
+    : L('plans_subtitle', "Sem contrato, cancele quando quiser.");
+
   return (
     <section
       id="planos"
@@ -1103,7 +1113,7 @@ const Pricing = ({
             custom={0}
             className="text-xs font-semibold uppercase tracking-widest text-primary mb-3"
           >
-            {L('pricing_section_label', 'Planos')}
+            {L('pricing_section_label', isLifetime ? 'Oferta Especial' : 'Planos')}
           </motion.p>
           <motion.h2
             variants={fadeUp}
@@ -1111,139 +1121,212 @@ const Pricing = ({
             className="text-3xl sm:text-5xl font-extrabold mb-4"
             style={{ color: titleColor }}
           >
-            {L('plans_title', "Comece grátis. Cresça quando quiser.")}
+            {lifetimeTitle}
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="max-w-lg mx-auto" style={{ color: subtitleColor }}>
-            {L('plans_subtitle', "Sem contrato, cancele quando quiser.")}
+            {lifetimeSubtitle}
           </motion.p>
         </motion.div>
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-40px" }}
-          variants={stagger}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6"
-        >
-          {tierOrder.map((tierKey, i) => {
-            const plan = pricing.find((p) => p.tier === tierKey);
-            if (!plan) return null;
-            const tierFeats = features
-              .filter((f) => f.tier === tierKey)
-              .sort((a: any, b: any) => a.sort_order - b.sort_order);
-
-            return (
-              <motion.div
-                key={tierKey}
-                variants={fadeUp}
-                custom={i}
-                className="relative rounded-2xl p-7 sm:p-8 flex flex-col"
-                style={
-                  plan.highlight
-                    ? {
-                        background: "hsl(0 0% 100%)",
-                        border: "2px solid hsl(0 0% 100%)",
-                        transform: "scale(1.02)",
-                        boxShadow: "0 20px 60px hsl(0 0% 0% / 0.4)",
-                      }
-                    : {
-                        border: "1px solid hsl(0 0% 100% / 0.1)",
-                        background: "hsl(0 0% 100% / 0.03)",
-                      }
-                }
+        {isLifetime ? (
+          /* ── LIFETIME CARD ─────────────────────────────────── */
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            variants={stagger}
+            className="max-w-md mx-auto"
+          >
+            <motion.div
+              variants={fadeUp}
+              custom={0}
+              className="relative rounded-2xl p-7 sm:p-10 flex flex-col items-center text-center"
+              style={{
+                background: "hsl(0 0% 100%)",
+                border: "2px solid hsl(0 0% 100%)",
+                boxShadow: "0 20px 60px hsl(0 0% 0% / 0.4)",
+              }}
+            >
+              <span
+                className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full"
+                style={{ background: "linear-gradient(135deg, hsl(40 90% 55%), hsl(30 95% 50%))", color: "hsl(0 0% 100%)" }}
               >
-                {plan.badge_text && (
-                  <span
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full"
-                    style={{ background: "hsl(var(--primary))", color: "hsl(0 0% 100%)" }}
-                  >
-                    {plan.badge_text}
-                  </span>
-                )}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    {tierKey === "master" && (
-                      <Crown
-                        className="h-5 w-5"
-                        style={{ color: plan.highlight ? "hsl(var(--primary))" : "hsl(45 80% 55%)" }}
-                      />
-                    )}
-                    {tierKey === "pro" && (
-                      <Zap
-                        className="h-5 w-5"
-                        style={{ color: plan.highlight ? "hsl(var(--primary))" : "hsl(262 75% 65%)" }}
-                      />
-                    )}
-                    <h3
-                      className="text-xl font-bold"
-                      style={{ color: plan.highlight ? "hsl(220 15% 10%)" : "hsl(0 0% 100%)" }}
-                    >
-                      {plan.name}
-                    </h3>
-                  </div>
-                  <div
-                    className="text-4xl font-black"
-                    style={{ color: plan.highlight ? "hsl(220 15% 10%)" : "hsl(0 0% 100%)" }}
-                  >
-                    {plan.price_brl === 0 ? L('pricing_free', t('landing.free')) : `R$${Number(plan.price_brl).toFixed(2)}`}
-                    {plan.period && (
-                      <span
-                        className="text-base font-normal ml-1"
-                        style={{ color: plan.highlight ? "hsl(0 0% 0% / 0.4)" : "hsl(0 0% 100% / 0.35)" }}
-                      >
-                        {plan.period}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                {L('lifetime_badge', '⚡ Oferta Única')}
+              </span>
 
-                <ul className="space-y-2.5 flex-1 mb-6">
-                  {tierFeats.map((f: any) => (
+              <div className="flex items-center gap-2 mb-4 mt-2">
+                <Sparkles className="h-6 w-6" style={{ color: "hsl(40 90% 50%)" }} />
+                <h3 className="text-2xl font-bold" style={{ color: "hsl(220 15% 10%)" }}>
+                  {paymentMode.lifetime_name}
+                </h3>
+              </div>
+
+              <div className="text-5xl font-black mb-1" style={{ color: "hsl(220 15% 10%)" }}>
+                R${paymentMode.lifetime_price_brl.toFixed(2)}
+              </div>
+              <p className="text-sm mb-6" style={{ color: "hsl(0 0% 0% / 0.4)" }}>
+                {L('lifetime_period', 'pagamento único')}
+              </p>
+
+              <ul className="space-y-2.5 w-full text-left mb-8">
+                {features
+                  .filter((f) => f.tier === "master" && f.enabled)
+                  .sort((a: any, b: any) => a.sort_order - b.sort_order)
+                  .map((f: any) => (
                     <li
                       key={f.feature_key}
                       className="flex items-start gap-2.5 text-sm"
-                      style={{
-                        color: f.enabled
-                          ? plan.highlight
-                            ? "hsl(220 15% 15%)"
-                            : "hsl(0 0% 100%)"
-                          : plan.highlight
-                            ? "hsl(0 0% 0% / 0.2)"
-                            : "hsl(0 0% 100% / 0.2)",
-                      }}
+                      style={{ color: "hsl(220 15% 15%)" }}
                     >
-                      {f.enabled ? (
-                        <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(142 70% 50%)" }} />
-                      ) : (
-                        <X className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(0 0% 50%)" }} />
-                      )}
+                      <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(142 70% 50%)" }} />
                       {f.feature_label}
                     </li>
                   ))}
-                </ul>
+              </ul>
 
-                <Button
-                  onClick={() => navigate("/auth?mode=signup")}
-                  className="w-full rounded-xl py-5 font-semibold"
+              <Button
+                onClick={() => navigate("/auth?mode=signup")}
+                className="w-full rounded-xl py-5 font-semibold text-base"
+                style={{
+                  background: "linear-gradient(135deg, hsl(40 90% 55%), hsl(30 95% 50%))",
+                  color: "hsl(0 0% 100%)",
+                  border: "none",
+                }}
+              >
+                {paymentMode.lifetime_cta_text}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </motion.div>
+          </motion.div>
+        ) : (
+          /* ── SUBSCRIPTION CARDS ────────────────────────────── */
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-40px" }}
+            variants={stagger}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6"
+          >
+            {tierOrder.map((tierKey, i) => {
+              const plan = pricing.find((p) => p.tier === tierKey);
+              if (!plan) return null;
+              const tierFeats = features
+                .filter((f) => f.tier === tierKey)
+                .sort((a: any, b: any) => a.sort_order - b.sort_order);
+
+              return (
+                <motion.div
+                  key={tierKey}
+                  variants={fadeUp}
+                  custom={i}
+                  className="relative rounded-2xl p-7 sm:p-8 flex flex-col"
                   style={
                     plan.highlight
                       ? {
-                          background: "hsl(220 15% 10%)",
-                          color: "hsl(0 0% 100%)",
+                          background: "hsl(0 0% 100%)",
+                          border: "2px solid hsl(0 0% 100%)",
+                          transform: "scale(1.02)",
+                          boxShadow: "0 20px 60px hsl(0 0% 0% / 0.4)",
                         }
                       : {
-                          background: "hsl(0 0% 100% / 0.1)",
-                          color: "hsl(0 0% 100%)",
-                          border: "1px solid hsl(0 0% 100% / 0.15)",
+                          border: "1px solid hsl(0 0% 100% / 0.1)",
+                          background: "hsl(0 0% 100% / 0.03)",
                         }
                   }
                 >
-                  {plan.cta_text}
-                </Button>
-              </motion.div>
-            );
-          })}
-        </motion.div>
+                  {plan.badge_text && (
+                    <span
+                      className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-4 py-1 rounded-full"
+                      style={{ background: "hsl(var(--primary))", color: "hsl(0 0% 100%)" }}
+                    >
+                      {plan.badge_text}
+                    </span>
+                  )}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      {tierKey === "master" && (
+                        <Crown
+                          className="h-5 w-5"
+                          style={{ color: plan.highlight ? "hsl(var(--primary))" : "hsl(45 80% 55%)" }}
+                        />
+                      )}
+                      {tierKey === "pro" && (
+                        <Zap
+                          className="h-5 w-5"
+                          style={{ color: plan.highlight ? "hsl(var(--primary))" : "hsl(262 75% 65%)" }}
+                        />
+                      )}
+                      <h3
+                        className="text-xl font-bold"
+                        style={{ color: plan.highlight ? "hsl(220 15% 10%)" : "hsl(0 0% 100%)" }}
+                      >
+                        {plan.name}
+                      </h3>
+                    </div>
+                    <div
+                      className="text-4xl font-black"
+                      style={{ color: plan.highlight ? "hsl(220 15% 10%)" : "hsl(0 0% 100%)" }}
+                    >
+                      {plan.price_brl === 0 ? L('pricing_free', t('landing.free')) : `R$${Number(plan.price_brl).toFixed(2)}`}
+                      {plan.period && (
+                        <span
+                          className="text-base font-normal ml-1"
+                          style={{ color: plan.highlight ? "hsl(0 0% 0% / 0.4)" : "hsl(0 0% 100% / 0.35)" }}
+                        >
+                          {plan.period}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <ul className="space-y-2.5 flex-1 mb-6">
+                    {tierFeats.map((f: any) => (
+                      <li
+                        key={f.feature_key}
+                        className="flex items-start gap-2.5 text-sm"
+                        style={{
+                          color: f.enabled
+                            ? plan.highlight
+                              ? "hsl(220 15% 15%)"
+                              : "hsl(0 0% 100%)"
+                            : plan.highlight
+                              ? "hsl(0 0% 0% / 0.2)"
+                              : "hsl(0 0% 100% / 0.2)",
+                        }}
+                      >
+                        {f.enabled ? (
+                          <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(142 70% 50%)" }} />
+                        ) : (
+                          <X className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(0 0% 50%)" }} />
+                        )}
+                        {f.feature_label}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    onClick={() => navigate("/auth?mode=signup")}
+                    className="w-full rounded-xl py-5 font-semibold"
+                    style={
+                      plan.highlight
+                        ? {
+                            background: "hsl(220 15% 10%)",
+                            color: "hsl(0 0% 100%)",
+                          }
+                        : {
+                            background: "hsl(0 0% 100% / 0.1)",
+                            color: "hsl(0 0% 100%)",
+                            border: "1px solid hsl(0 0% 100% / 0.15)",
+                          }
+                    }
+                  >
+                    {plan.cta_text}
+                  </Button>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
       </div>
     </section>
   );
