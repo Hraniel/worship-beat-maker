@@ -220,11 +220,14 @@ const Pricing = () => {
                   Desbloqueie todas as funcionalidades do app para sempre.
                 </p>
 
-                {/* Show master features */}
+                {/* Show all features from all tiers */}
                 <ul className="space-y-2 text-sm text-left">
-                  {features
-                    .filter(f => f.tier === 'master' && f.enabled)
-                    .sort((a, b) => a.sort_order - b.sort_order)
+                  {['free', 'pro', 'master'].flatMap(tier =>
+                    features
+                      .filter(f => f.tier === tier && f.enabled)
+                      .sort((a, b) => a.sort_order - b.sort_order)
+                  )
+                    .filter((f, i, arr) => arr.findIndex(x => x.feature_key === f.feature_key) === i)
                     .map((f) => (
                       <li key={f.feature_key} className="flex items-start gap-2 text-foreground">
                         <Check className="h-3.5 w-3.5 shrink-0 mt-0.5" style={{ color: 'hsl(142 70% 50%)' }} />

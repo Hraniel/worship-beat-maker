@@ -1169,9 +1169,12 @@ const Pricing = ({
               </p>
 
               <ul className="space-y-2.5 w-full text-left mb-8">
-                {features
-                  .filter((f) => f.tier === "master" && f.enabled)
-                  .sort((a: any, b: any) => a.sort_order - b.sort_order)
+                {['free', 'pro', 'master'].flatMap(tier =>
+                  features
+                    .filter((f) => f.tier === tier && f.enabled)
+                    .sort((a: any, b: any) => a.sort_order - b.sort_order)
+                )
+                  .filter((f: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.feature_key === f.feature_key) === i)
                   .map((f: any) => (
                     <li
                       key={f.feature_key}
