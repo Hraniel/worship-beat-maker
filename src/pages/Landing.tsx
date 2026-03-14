@@ -1556,7 +1556,7 @@ const Landing = () => {
       <Divider fromLight={true} darkColor={darkColor} />
 
       {/* DARK pricing (conditional) */}
-      {!loading && <Pricing navigate={prelaunchNavigate} config={config} pricing={pricing} features={features} L={getLocalized} />}
+      {!loading && <Pricing navigate={prelaunchNavigate} config={config} pricing={pricing} features={features} L={getLocalized} paymentMode={paymentMode} />}
 
       {/* dark → white gradient */}
       <Divider fromLight={false} darkColor={darkColor} />
