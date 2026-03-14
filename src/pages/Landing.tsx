@@ -1175,6 +1175,7 @@ const Pricing = ({
                     .sort((a: any, b: any) => a.sort_order - b.sort_order)
                 )
                   .filter((f: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.feature_key === f.feature_key) === i)
+                  .filter((f: any) => !/tudo\s+do\s+pro/i.test(f.feature_label))
                   .map((f: any) => (
                     <li
                       key={f.feature_key}
