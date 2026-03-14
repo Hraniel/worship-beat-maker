@@ -1451,6 +1451,7 @@ const Landing = () => {
   const { config, pricing, features, landingFeatures, loading, getLocalized } = useLandingConfig();
   const prelaunch = usePrelaunchMode();
   const maintenance = useMaintenanceMode();
+  const paymentMode = usePaymentMode();
   const restrictedMode = prelaunch.enabled || maintenance.enabled;
   const [showPrelaunch, setShowPrelaunch] = useState(false);
 
