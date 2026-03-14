@@ -8,6 +8,7 @@ import LanguageSelector from "@/components/LanguageSelector";
 import { useLandingConfig, type LandingFeature } from "@/hooks/useLandingConfig";
 import { usePrelaunchMode } from "@/hooks/usePrelaunchMode";
 import { useMaintenanceMode } from "@/hooks/useMaintenanceMode";
+import { usePaymentMode } from "@/hooks/usePaymentMode";
 import PrelaunchCountdownModal from "@/components/PrelaunchCountdownModal";
 import logoDark from "@/assets/logo-dark.png";
 import logoLight from "@/assets/logo-light.png";
