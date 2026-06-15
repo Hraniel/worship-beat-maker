@@ -280,6 +280,7 @@ const AdminAnalytics: React.FC = () => {
   const pieData = subStats ? [
     { name: 'Pro', value: subStats.pro_count, fill: 'hsl(262,80%,55%)' },
     { name: 'Master', value: subStats.master_count, fill: 'hsl(40,85%,55%)' },
+    { name: 'Vitalício', value: subStats.lifetime_count ?? 0, fill: 'hsl(160,70%,45%)' },
     { name: 'Free', value: Math.max(0, (analytics.totalBuyers || 1) - subStats.pro_count - subStats.master_count), fill: 'hsl(215,15%,40%)' },
   ].filter(d => d.value > 0) : [];
 
@@ -451,11 +452,37 @@ const AdminAnalytics: React.FC = () => {
                 </div>
                 <span className="text-sm font-bold text-foreground tabular-nums">{subStats.master_count}</span>
               </div>
+              {(subStats.lifetime_count ?? 0) > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Crown className="h-3.5 w-3.5 text-emerald-400" />
+                    <span className="text-xs text-muted-foreground">Vitalício</span>
+                  </div>
+                  <span className="text-sm font-bold text-foreground tabular-nums">{subStats.lifetime_count}</span>
+                </div>
+              )}
+              {(subStats.cancelled_last_30d ?? 0) > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 text-orange-400" />
+                    <span className="text-xs text-muted-foreground">Cancelados (30d)</span>
+                  </div>
+                  <span className="text-sm font-bold text-foreground tabular-nums">{subStats.cancelled_last_30d}</span>
+                </div>
+              )}
               <div className="h-px bg-border" />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">MRR Estimado</span>
-                <span className="text-sm font-bold text-emerald-400 tabular-nums">R$ {subStats.total_mrr.toFixed(2)}</span>
-              </div>
+              {subStats.total_mrr > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">MRR Estimado</span>
+                  <span className="text-sm font-bold text-emerald-400 tabular-nums">R$ {subStats.total_mrr.toFixed(2)}</span>
+                </div>
+              )}
+              {(subStats.lifetime_revenue ?? 0) > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Receita Vitalícia</span>
+                  <span className="text-sm font-bold text-emerald-400 tabular-nums">R$ {(subStats.lifetime_revenue ?? 0).toFixed(2)}</span>
+                </div>
+              )}
             </div>
             {pieData.length > 0 && (
               <ResponsiveContainer width={100} height={100}>
