@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,12 +7,35 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function unauthorized() {
+  return new Response(JSON.stringify({ error: "Unauthorized" }), {
+    status: 401,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Require a valid signed-in user — prevents SSRF abuse by anonymous actors.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) return unauthorized();
+    try {
+      const sb = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { global: { headers: { Authorization: authHeader } } },
+      );
+      const token = authHeader.replace("Bearer ", "");
+      const { data } = await sb.auth.getClaims(token);
+      if (!data?.claims?.sub) return unauthorized();
+    } catch {
+      return unauthorized();
+    }
+
     const body = await req.json();
     console.log("[holyrics-proxy] Request body:", JSON.stringify(body));
     const { host, token, action, payload } = body;
@@ -28,6 +52,15 @@ serve(async (req) => {
     if (!hostPattern.test(host)) {
       return new Response(
         JSON.stringify({ error: "Invalid host format. Use IP:PORT (e.g. 192.168.1.100:8091) or domain (e.g. my-tunnel.trycloudflare.com)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Block cloud-metadata and link-local addresses to prevent SSRF to instance metadata.
+    const hostname = host.split(":")[0];
+    if (/^(169\.254\.|0\.0\.0\.0|metadata\.google\.internal)/i.test(hostname)) {
+      return new Response(
+        JSON.stringify({ error: "Host not allowed" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

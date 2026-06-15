@@ -13,11 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    const { email, full_name, phone } = await req.json();
+    const body = await req.json();
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    const full_name = typeof body.full_name === "string" ? body.full_name.trim() : "";
+    const phone = typeof body.phone === "string" ? body.phone.trim() : "";
 
-    if (!email || !full_name) {
+    // Validation: format + sane length limits to deter spam abuse.
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
+    if (!emailOk || !full_name || full_name.length > 100 || phone.length > 30) {
       return new Response(
-        JSON.stringify({ error: "Missing email or full_name" }),
+        JSON.stringify({ error: "Invalid input" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }

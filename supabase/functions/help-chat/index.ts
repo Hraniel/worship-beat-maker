@@ -408,7 +408,18 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages: rawMessages } = await req.json();
+    if (!Array.isArray(rawMessages)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid request" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    // Cap conversation length and individual message size to limit AI quota abuse.
+    const messages = rawMessages.slice(-20).map((m: any) => ({
+      role: typeof m?.role === "string" ? m.role : "user",
+      content: String(m?.content ?? "").slice(0, 2000),
+    }));
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@4.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,11 +16,34 @@ serve(async (req) => {
   try {
     const { email } = await req.json();
 
-    if (!email) {
+    if (!email || typeof email !== "string" || email.length > 254) {
       return new Response(
-        JSON.stringify({ error: "Missing email" }),
+        JSON.stringify({ error: "Invalid email" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
+    }
+
+    // Anti-spam: only send the welcome email to addresses that correspond to a real
+    // auth user created within the last 10 minutes. This blocks anonymous abusers
+    // from spraying welcome emails to arbitrary inboxes while preserving the
+    // legitimate post-signup flow (which runs before email confirmation completes).
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && serviceKey) {
+      const admin = createClient(supabaseUrl, serviceKey);
+      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const match = list?.users?.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase(),
+      );
+      const createdMs = match?.created_at ? Date.parse(match.created_at) : 0;
+      const recent = createdMs && Date.now() - createdMs < 10 * 60 * 1000;
+      if (!match || !recent) {
+        // Silently succeed so we don't leak whether the email exists.
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
     }
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
