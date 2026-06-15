@@ -9,7 +9,6 @@ interface PackSound {
   preview_path: string | null;
   duration_ms: number;
   category: string;
-  file_path: string | null;
 }
 
 export interface StorePackData {
@@ -47,9 +46,12 @@ export function useStorePacks() {
 
       if (packsErr) throw packsErr;
 
+      // NOTE: file_path is restricted to service_role (security migration).
+      // Frontend only needs metadata + preview_path; actual binary is delivered
+      // by the download-sound edge function for purchased users.
       const { data: soundsData, error: soundsErr } = await supabase
         .from('pack_sounds')
-        .select('*')
+        .select('id, pack_id, name, short_name, preview_path, duration_ms, category, sort_order')
         .order('sort_order');
 
       if (soundsErr) throw soundsErr;
@@ -85,7 +87,6 @@ export function useStorePacks() {
           preview_path: s.preview_path,
           duration_ms: s.duration_ms,
           category: s.category,
-          file_path: s.file_path,
         });
         soundsByPack.set(s.pack_id, list);
       });

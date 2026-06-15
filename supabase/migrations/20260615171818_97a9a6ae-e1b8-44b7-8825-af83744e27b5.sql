@@ -1,0 +1,1 @@
+GRANT SELECT (file_path) ON public.pack_sounds TO anon, authenticated;
