@@ -25,6 +25,9 @@ interface SubscriptionStats {
   pro_count: number;
   master_count: number;
   total_mrr: number;
+  lifetime_count?: number;
+  lifetime_revenue?: number;
+  cancelled_last_30d?: number;
 }
 
 interface OnlineUser {
@@ -184,8 +187,10 @@ const AdminAnalytics: React.FC = () => {
     (async () => {
       try {
         const { data, error } = await supabase.functions.invoke('subscription-stats');
-        if (!error && data && typeof data.total_mrr === 'number') {
-          setSubStats(data);
+        // Accept any well-formed response, even if total_mrr is 0 or only lifetime exists
+        const parsed = typeof data === 'string' ? (() => { try { return JSON.parse(data); } catch { return null; } })() : data;
+        if (!error && parsed && (typeof parsed.total_mrr === 'number' || typeof parsed.lifetime_count === 'number')) {
+          setSubStats(parsed);
         } else {
           console.warn('Subscription stats response:', data, error);
         }
