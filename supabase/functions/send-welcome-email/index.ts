@@ -14,26 +14,6 @@ serve(async (req) => {
   }
 
   try {
-    // Require authenticated user; only allow sending to caller's own email to prevent spam abuse.
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-    const sb = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } },
-    );
-    const { data: userData } = await sb.auth.getUser(authHeader.replace("Bearer ", ""));
-    const callerEmail = userData?.user?.email?.toLowerCase();
-    if (!callerEmail) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
     const { email } = await req.json();
 
     if (!email || typeof email !== "string" || email.length > 254) {
@@ -42,11 +22,28 @@ serve(async (req) => {
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
-    if (email.toLowerCase() !== callerEmail) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden" }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+
+    // Anti-spam: only send the welcome email to addresses that correspond to a real
+    // auth user created within the last 10 minutes. This blocks anonymous abusers
+    // from spraying welcome emails to arbitrary inboxes while preserving the
+    // legitimate post-signup flow (which runs before email confirmation completes).
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (supabaseUrl && serviceKey) {
+      const admin = createClient(supabaseUrl, serviceKey);
+      const { data: list } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+      const match = list?.users?.find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase(),
       );
+      const createdMs = match?.created_at ? Date.parse(match.created_at) : 0;
+      const recent = createdMs && Date.now() - createdMs < 10 * 60 * 1000;
+      if (!match || !recent) {
+        // Silently succeed so we don't leak whether the email exists.
+        return new Response(
+          JSON.stringify({ success: true }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
     }
 
     const resendKey = Deno.env.get("RESEND_API_KEY");
