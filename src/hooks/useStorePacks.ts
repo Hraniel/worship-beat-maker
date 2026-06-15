@@ -9,7 +9,6 @@ interface PackSound {
   preview_path: string | null;
   duration_ms: number;
   category: string;
-  file_path: string | null;
 }
 
 export interface StorePackData {
@@ -88,7 +87,6 @@ export function useStorePacks() {
           preview_path: s.preview_path,
           duration_ms: s.duration_ms,
           category: s.category,
-          file_path: s.file_path,
         });
         soundsByPack.set(s.pack_id, list);
       });
